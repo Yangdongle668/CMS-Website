@@ -20,6 +20,18 @@ class Product extends Model
         'slug',
         'meta_title',
         'meta_description',
+        'process_type',
+        'capacity_min',
+        'capacity_max',
+        'internal_resistance',
+        'cycle_life',
+        'energy_density',
+        'applications',
+        'certifications',
+        'customization_info',
+        'highlights',
+        'operating_temperature',
+        'weight',
     ];
 
     public function inquiries()

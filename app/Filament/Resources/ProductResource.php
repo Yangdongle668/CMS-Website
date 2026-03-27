@@ -56,6 +56,55 @@ class ProductResource extends Resource
                             ->imageEditor(),
                     ])->columns(2),
 
+                Forms\Components\Section::make('聚合物电池技术参数')
+                    ->schema([
+                        Forms\Components\Select::make('process_type')
+                            ->label('工艺类型')
+                            ->options([
+                                'wound' => '卷绕工艺 (成本低、交期快)',
+                                'stacked' => '叠片工艺 (低内阻、循环强)',
+                            ])
+                            ->placeholder('选择工艺类型'),
+                        Forms\Components\TextInput::make('capacity_min')
+                            ->label('最小容量 (mAh)')
+                            ->numeric(),
+                        Forms\Components\TextInput::make('capacity_max')
+                            ->label('最大容量 (mAh)')
+                            ->numeric(),
+                        Forms\Components\TextInput::make('internal_resistance')
+                            ->label('内阻 (mΩ)')
+                            ->numeric()
+                            ->step(0.01),
+                        Forms\Components\TextInput::make('cycle_life')
+                            ->label('循环寿命')
+                            ->placeholder('例: >1000'),
+                        Forms\Components\TextInput::make('energy_density')
+                            ->label('能量密度')
+                            ->placeholder('例: 200+ Wh/L'),
+                        Forms\Components\TextInput::make('operating_temperature')
+                            ->label('工作温度范围')
+                            ->placeholder('例: -20°C ~ 60°C'),
+                        Forms\Components\TextInput::make('weight')
+                            ->label('重量')
+                            ->placeholder('例: 10g'),
+                    ])->columns(2),
+
+                Forms\Components\Section::make('应用与定制')
+                    ->schema([
+                        Forms\Components\Textarea::make('applications')
+                            ->label('应用领域')
+                            ->placeholder('例: 智能手表、医疗设备、可穿戴设备'),
+                        Forms\Components\Textarea::make('highlights')
+                            ->label('核心亮点')
+                            ->placeholder('突出该产品的主要优势和特点'),
+                        Forms\Components\Textarea::make('customization_info')
+                            ->label('定制说明')
+                            ->placeholder('描述定制能力、周期、起订量等'),
+                        Forms\Components\TextInput::make('certifications')
+                            ->label('认证信息')
+                            ->placeholder('例: UL、CE、FCC'),
+                    ])->columns(1),
+
                 Forms\Components\Section::make('SEO Settings')
                     ->schema([
                         Forms\Components\TextInput::make('slug')
@@ -63,15 +112,15 @@ class ProductResource extends Resource
                             ->required()
                             ->unique(Product::class, 'slug', ignoreRecord: true)
                             ->maxLength(255)
-                            ->helperText('Used for SEO-friendly URLs like /products/{slug}'),
+                            ->helperText('用于SEO友好的URL，如 /products/{slug}'),
                         Forms\Components\TextInput::make('meta_title')
-                            ->label('Meta Title')
+                            ->label('SEO标题')
                             ->maxLength(255)
-                            ->helperText('Title for search engines (recommended 50-60 chars)'),
+                            ->helperText('搜索引擎标题（建议50-60字符）'),
                         Forms\Components\Textarea::make('meta_description')
-                            ->label('Meta Description')
+                            ->label('SEO描述')
                             ->maxLength(160)
-                            ->helperText('Description for search engines (recommended 150-160 chars)'),
+                            ->helperText('搜索引擎描述（建议150-160字符）'),
                     ])->columns(1),
             ]);
     }
