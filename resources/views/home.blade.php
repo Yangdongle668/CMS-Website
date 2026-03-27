@@ -1,288 +1,481 @@
 @extends('layouts.app')
 
-@section('title', '聚合物锂电池供应商 - 可穿戴&医疗设备电池方案 - ZUFEK')
-@section('description', 'DONGGUAN ZUFEK是专业的聚合物锂电池供应商，提供卷绕工艺和叠片工艺电池，广泛应用于可穿戴设备和医疗设备。支持异形电池定制。')
-@section('keywords', '聚合物锂电池,异形电池,卷绕工艺,叠片工艺,可穿戴设备,医疗设备,B2B电池供应商')
-
-@section('schema')
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  "name": "Raven Battery",
-  "url": "{{ url('/') }}",
-  "logo": "{{ url('/logo.png') }}",
-  "description": "Professional B2B battery solutions",
-  "contactPoint": {
-    "@type": "ContactPoint",
-    "telephone": "+1-555-123-4567",
-    "contactType": "Sales"
-  }
-}
-</script>
-@endsection
+@section('title', 'Premium Polymer Lithium Battery Solutions - ZUFEK')
+@section('description', 'ZUFEK provides professional polymer lithium battery solutions with wound and stacked cell technologies for wearables, medical devices, and IoT applications.')
 
 @section('content')
-<!-- Hero Section with Parallax -->
-<section class="relative bg-gradient-to-r from-blue-600 to-blue-800 text-white py-32 overflow-hidden">
-    <!-- Animated background elements -->
-    <div class="absolute inset-0 opacity-10">
-        <div class="absolute top-10 left-10 w-96 h-96 bg-blue-400 rounded-full blur-3xl animate-pulse"></div>
-        <div class="absolute bottom-10 right-10 w-96 h-96 bg-blue-500 rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s;"></div>
+
+<!-- ============================================================
+     SECTION 1: HERO - With Dynamic Background & CTA
+     ============================================================ -->
+<section class="relative min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 overflow-hidden">
+    <!-- Animated Background Elements -->
+    <div class="absolute inset-0 overflow-hidden">
+        <div class="absolute top-20 left-10 w-96 h-96 bg-blue-500 rounded-full blur-3xl opacity-20 animate-pulse"></div>
+        <div class="absolute bottom-20 right-10 w-96 h-96 bg-cyan-500 rounded-full blur-3xl opacity-20 animate-pulse" style="animation-delay: 1s;"></div>
+        <div class="absolute top-1/2 left-1/2 w-96 h-96 bg-purple-500 rounded-full blur-3xl opacity-10 animate-pulse" style="animation-delay: 2s;"></div>
     </div>
 
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div class="text-center">
-            <h1 class="text-5xl md:text-6xl font-bold mb-4 animate-slideInDown">DONGGUAN ZUFEK TECHNOLOGY</h1>
-            <p class="text-xl md:text-2xl text-blue-100 mb-2 animate-slideInUp" style="animation-delay: 0.2s;">专业聚合物锂电池供应商</p>
-            <p class="text-lg md:text-xl text-blue-100 mb-8 max-w-3xl mx-auto animate-slideInUp" style="animation-delay: 0.4s;">为可穿戴设备和医疗设备提供卷绕工艺和叠片工艺电池解决方案</p>
-            <div class="space-x-4 animate-slideInUp" style="animation-delay: 0.6s;">
-                <a href="/products" class="inline-block btn-primary text-white hover:shadow-lg hover:scale-105 transition-all duration-300">浏览产品</a>
-                <a href="/contact" class="inline-block btn-secondary hover:shadow-lg hover:scale-105 transition-all duration-300">联系我们</a>
+    <!-- Animated Grid Background -->
+    <div class="absolute inset-0 bg-grid-pattern opacity-5"></div>
+
+    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-screen flex items-center">
+        <div class="w-full">
+            <!-- Main Headline -->
+            <h1 class="text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-6 leading-tight animate-slideInDown">
+                Advanced Polymer <span class="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">Battery Solutions</span>
+            </h1>
+
+            <!-- Subheading -->
+            <p class="text-xl md:text-2xl text-blue-100 mb-8 max-w-3xl leading-relaxed animate-slideInUp" style="animation-delay: 0.2s;">
+                Engineered for performance. Designed for reliability. Powering tomorrow's wearables and medical devices with precision-crafted lithium polymer batteries.
+            </p>
+
+            <!-- Stats Row -->
+            <div class="grid grid-cols-3 md:grid-cols-4 gap-6 mb-12 max-w-2xl">
+                <div class="animate-slideInUp" style="animation-delay: 0.4s;">
+                    <div class="text-4xl font-bold text-cyan-400 counter" data-target="500000">0</div>
+                    <p class="text-sm text-blue-200 mt-2">Units Produced</p>
+                </div>
+                <div class="animate-slideInUp" style="animation-delay: 0.5s;">
+                    <div class="text-4xl font-bold text-cyan-400 counter" data-target="50">0</div>
+                    <p class="text-sm text-blue-200 mt-2">Countries Served</p>
+                </div>
+                <div class="animate-slideInUp" style="animation-delay: 0.6s;">
+                    <div class="text-4xl font-bold text-cyan-400 counter" data-target="6">0</div>
+                    <p class="text-sm text-blue-200 mt-2">Years Experience</p>
+                </div>
+                <div class="hidden md:block animate-slideInUp" style="animation-delay: 0.7s;">
+                    <div class="text-4xl font-bold text-cyan-400">99.8%</div>
+                    <p class="text-sm text-blue-200 mt-2">Quality Rate</p>
+                </div>
+            </div>
+
+            <!-- CTA Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 animate-slideInUp" style="animation-delay: 0.8s;">
+                <a href="#solutions" class="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold rounded-lg hover:shadow-2xl hover:shadow-cyan-500/50 transition-all duration-300 group">
+                    Explore Solutions
+                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                </a>
+                <a href="/contact" class="inline-flex items-center justify-center px-8 py-4 border-2 border-cyan-400 text-cyan-400 font-bold rounded-lg hover:bg-cyan-400 hover:text-slate-900 transition-all duration-300">
+                    Request Sample
+                </a>
+            </div>
+
+            <!-- Scroll Indicator -->
+            <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+                <div class="flex flex-col items-center">
+                    <p class="text-blue-300 text-sm mb-2">Scroll to discover</p>
+                    <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                    </svg>
+                </div>
             </div>
         </div>
     </div>
 </section>
 
-<!-- 公司简介 -->
-<section class="bg-white py-16 md:py-20">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            <div data-aos="fade-in-up">
-                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-6">关于 ZUFEK</h2>
-                <p class="text-gray-600 mb-4 leading-relaxed">DONGGUAN ZUFEK TECHNOLOGY CO.,LTD 成立于2018年，是一家专注于聚合物锂电池研发和生产的高新技术企业。我们拥有先进的卷绕和叠片工艺技术，为全球可穿戴设备制造商和医疗设备企业提供高品质的电池解决方案。</p>
-                <p class="text-gray-600 mb-6 leading-relaxed">多年的行业经验使我们深刻理解客户需求，能够提供快速交样、成本优化和可靠的异形电池定制服务。</p>
-                <div class="flex space-x-8">
-                    <div class="text-center group">
-                        <div class="text-3xl md:text-4xl font-bold text-blue-600 group-hover:scale-110 transition-transform duration-300">2018</div>
-                        <div class="text-sm text-gray-600">成立年份</div>
+<!-- ============================================================
+     SECTION 2: SOLUTIONS OVERVIEW
+     ============================================================ -->
+<section id="solutions" class="py-20 md:py-32 bg-white relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Section Header -->
+        <div class="text-center mb-20" data-aos="fade-in">
+            <span class="inline-block px-4 py-2 bg-cyan-100 text-cyan-600 rounded-full text-sm font-semibold mb-4">OUR SOLUTIONS</span>
+            <h2 class="text-5xl md:text-6xl font-bold text-slate-900 mb-6">Comprehensive Battery Technology</h2>
+            <p class="text-xl text-slate-600 max-w-3xl mx-auto">Two cutting-edge manufacturing processes engineered for different performance profiles</p>
+        </div>
+
+        <!-- Solutions Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
+            <!-- Wound Cell Technology -->
+            <div class="group relative" data-aos="fade-in-right">
+                <div class="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+                <div class="relative bg-white border-2 border-slate-200 group-hover:border-green-400 rounded-2xl p-8 transition-all duration-300">
+                    <div class="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-circle text-white text-2xl"></i>
                     </div>
-                    <div class="text-center group">
-                        <div class="text-3xl md:text-4xl font-bold text-blue-600 group-hover:scale-110 transition-transform duration-300">东莞</div>
-                        <div class="text-sm text-gray-600">生产基地</div>
+                    <h3 class="text-2xl font-bold text-slate-900 mb-4">Wound Cell Technology</h3>
+                    <p class="text-slate-600 mb-6">Cost-effective manufacturing with rapid turnaround times. Ideal for high-volume applications with proven reliability.</p>
+
+                    <div class="space-y-4 mb-8">
+                        <div class="flex items-center">
+                            <span class="w-3 h-3 bg-green-500 rounded-full mr-3"></span>
+                            <span class="text-slate-700"><strong>Internal Resistance:</strong> 70-85 mΩ</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-3 h-3 bg-green-500 rounded-full mr-3"></span>
+                            <span class="text-slate-700"><strong>Cycle Life:</strong> >1000 cycles</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-3 h-3 bg-green-500 rounded-full mr-3"></span>
+                            <span class="text-slate-700"><strong>Energy Density:</strong> 200+ Wh/L</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-3 h-3 bg-green-500 rounded-full mr-3"></span>
+                            <span class="text-slate-700"><strong>Sample Lead Time:</strong> 3-5 days</span>
+                        </div>
                     </div>
+
+                    <a href="/products?process=wound" class="inline-block text-green-600 font-bold hover:text-green-700 transition-colors">
+                        Explore Wound Cells <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
                 </div>
             </div>
-            <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-8 rounded-lg shadow-lg transform hover:shadow-2xl transition-all duration-300" data-aos="fade-in-left">
-                <h3 class="text-xl font-bold text-gray-800 mb-6">核心优势</h3>
-                <ul class="space-y-4">
-                    <li class="flex items-start group hover:pl-2 transition-all duration-300">
-                        <i class="fas fa-check text-blue-600 mr-3 mt-1 group-hover:scale-125 transition-transform"></i>
-                        <span class="text-gray-700"><strong>卷绕工艺：</strong>成本低、交期快、可靠稳定</span>
+
+            <!-- Stacked Cell Technology -->
+            <div class="group relative" data-aos="fade-in-left">
+                <div class="absolute inset-0 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-2xl opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+                <div class="relative bg-white border-2 border-slate-200 group-hover:border-purple-400 rounded-2xl p-8 transition-all duration-300">
+                    <div class="w-16 h-16 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-layer-group text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-900 mb-4">Stacked Cell Technology</h3>
+                    <p class="text-slate-600 mb-6">Ultra-low impedance with exceptional cycle life. Premium performance for demanding medical and wearable applications.</p>
+
+                    <div class="space-y-4 mb-8">
+                        <div class="flex items-center">
+                            <span class="w-3 h-3 bg-purple-500 rounded-full mr-3"></span>
+                            <span class="text-slate-700"><strong>Internal Resistance:</strong> 25-35 mΩ</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-3 h-3 bg-purple-500 rounded-full mr-3"></span>
+                            <span class="text-slate-700"><strong>Cycle Life:</strong> >2000 cycles</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-3 h-3 bg-purple-500 rounded-full mr-3"></span>
+                            <span class="text-slate-700"><strong>Energy Density:</strong> 230+ Wh/L</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-3 h-3 bg-purple-500 rounded-full mr-3"></span>
+                            <span class="text-slate-700"><strong>Sample Lead Time:</strong> 5-10 days</span>
+                        </div>
+                    </div>
+
+                    <a href="/products?process=stacked" class="inline-block text-purple-600 font-bold hover:text-purple-700 transition-colors">
+                        Explore Stacked Cells <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     SECTION 3: CORE ADVANTAGES WITH ANIMATED STATS
+     ============================================================ -->
+<section class="py-20 md:py-32 bg-gradient-to-b from-slate-50 to-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-20" data-aos="fade-in">
+            <h2 class="text-5xl md:text-6xl font-bold text-slate-900 mb-6">Why Choose ZUFEK</h2>
+            <p class="text-xl text-slate-600 max-w-3xl mx-auto">Industry-leading expertise in polymer lithium battery innovation</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <!-- Advantage 1 -->
+            <div class="group p-8 bg-white rounded-xl border-2 border-slate-200 hover:border-cyan-400 hover:shadow-xl transition-all duration-300" data-aos="fade-in-up">
+                <div class="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-cyan-500 group-hover:text-white transition-all">
+                    <i class="fas fa-bolt text-cyan-600 group-hover:text-white"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 mb-3">High Performance</h3>
+                <p class="text-slate-600">Ultra-low internal resistance enables high-rate discharge with minimal energy loss</p>
+            </div>
+
+            <!-- Advantage 2 -->
+            <div class="group p-8 bg-white rounded-xl border-2 border-slate-200 hover:border-green-400 hover:shadow-xl transition-all duration-300" data-aos="fade-in-up" style="animation-delay: 0.1s;">
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-green-500 group-hover:text-white transition-all">
+                    <i class="fas fa-dollar-sign text-green-600 group-hover:text-white"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 mb-3">Cost Optimized</h3>
+                <p class="text-slate-600">Competitive pricing without compromising on quality or performance standards</p>
+            </div>
+
+            <!-- Advantage 3 -->
+            <div class="group p-8 bg-white rounded-xl border-2 border-slate-200 hover:border-purple-400 hover:shadow-xl transition-all duration-300" data-aos="fade-in-up" style="animation-delay: 0.2s;">
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-purple-500 group-hover:text-white transition-all">
+                    <i class="fas fa-rocket text-purple-600 group-hover:text-white"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 mb-3">Rapid Delivery</h3>
+                <p class="text-slate-600">Fast prototyping and sample production accelerates your time-to-market</p>
+            </div>
+
+            <!-- Advantage 4 -->
+            <div class="group p-8 bg-white rounded-xl border-2 border-slate-200 hover:border-orange-400 hover:shadow-xl transition-all duration-300" data-aos="fade-in-up" style="animation-delay: 0.3s;">
+                <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-orange-500 group-hover:text-white transition-all">
+                    <i class="fas fa-check-circle text-orange-600 group-hover:text-white"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 mb-3">Certified Quality</h3>
+                <p class="text-slate-600">Comprehensive certifications meet global medical and industrial standards</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     SECTION 4: TARGET MARKETS - Highlighted Applications
+     ============================================================ -->
+<section class="py-20 md:py-32 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-20" data-aos="fade-in">
+            <span class="inline-block px-4 py-2 bg-blue-100 text-blue-600 rounded-full text-sm font-semibold mb-4">TARGET MARKETS</span>
+            <h2 class="text-5xl md:text-6xl font-bold text-slate-900 mb-6">Powering Innovation Across Industries</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <!-- Wearables Market -->
+            <div class="group" data-aos="fade-in-right">
+                <div class="relative bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl overflow-hidden mb-6 h-80">
+                    <div class="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 group-hover:from-blue-500/30 group-hover:to-cyan-500/30 transition-all duration-300"></div>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <i class="fas fa-watch text-8xl text-blue-200 group-hover:scale-110 transition-transform duration-300"></i>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-900 mb-3">Wearable Devices</h3>
+                <p class="text-slate-600 mb-6">Smartwatches, fitness trackers, AR glasses, and health monitoring devices demand compact, lightweight batteries with exceptional reliability.</p>
+                <ul class="space-y-2 text-slate-700">
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-cyan-500 mr-3 mt-1 flex-shrink-0"></i>
+                        <span>Ultra-compact form factors</span>
                     </li>
-                    <li class="flex items-start group hover:pl-2 transition-all duration-300">
-                        <i class="fas fa-check text-blue-600 mr-3 mt-1 group-hover:scale-125 transition-transform"></i>
-                        <span class="text-gray-700"><strong>叠片工艺：</strong>内阻低、循环性能强、能量密度高</span>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-cyan-500 mr-3 mt-1 flex-shrink-0"></i>
+                        <span>Long cycle life for daily use</span>
                     </li>
-                    <li class="flex items-start group hover:pl-2 transition-all duration-300">
-                        <i class="fas fa-check text-blue-600 mr-3 mt-1 group-hover:scale-125 transition-transform"></i>
-                        <span class="text-gray-700"><strong>异形定制：</strong>任意形状设计，充分利用可用空间</span>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-cyan-500 mr-3 mt-1 flex-shrink-0"></i>
+                        <span>Custom shapes available</span>
                     </li>
-                    <li class="flex items-start group hover:pl-2 transition-all duration-300">
-                        <i class="fas fa-check text-blue-600 mr-3 mt-1 group-hover:scale-125 transition-transform"></i>
-                        <span class="text-gray-700"><strong>快速交样：</strong>3-10天完成样品，减少上市周期</span>
+                </ul>
+            </div>
+
+            <!-- Medical Devices Market -->
+            <div class="group" data-aos="fade-in-left">
+                <div class="relative bg-gradient-to-br from-red-50 to-pink-50 rounded-2xl overflow-hidden mb-6 h-80">
+                    <div class="absolute inset-0 bg-gradient-to-r from-red-500/20 to-pink-500/20 group-hover:from-red-500/30 group-hover:to-pink-500/30 transition-all duration-300"></div>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <i class="fas fa-heartbeat text-8xl text-red-200 group-hover:scale-110 transition-transform duration-300"></i>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-900 mb-3">Medical Devices</h3>
+                <p class="text-slate-600 mb-6">Portable diagnostic equipment, patient monitors, and implantable devices require medical-grade batteries with highest safety standards.</p>
+                <ul class="space-y-2 text-slate-700">
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-red-500 mr-3 mt-1 flex-shrink-0"></i>
+                        <span>FDA & UL2054 certified</span>
                     </li>
-                    <li class="flex items-start group hover:pl-2 transition-all duration-300">
-                        <i class="fas fa-check text-blue-600 mr-3 mt-1 group-hover:scale-125 transition-transform"></i>
-                        <span class="text-gray-700"><strong>医疗级认证：</strong>UL2054、CE、医疗器械认证</span>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-red-500 mr-3 mt-1 flex-shrink-0"></i>
+                        <span>Biocompatible materials</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check text-red-500 mr-3 mt-1 flex-shrink-0"></i>
+                        <span>Extended reliability testing</span>
                     </li>
                 </ul>
             </div>
         </div>
+
+        <!-- IoT and Other Markets -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+            <div class="p-6 bg-slate-50 rounded-xl hover:shadow-lg transition-all" data-aos="fade-in-up">
+                <i class="fas fa-cube text-4xl text-amber-500 mb-4"></i>
+                <h4 class="text-lg font-bold text-slate-900 mb-2">IoT Sensors</h4>
+                <p class="text-slate-600 text-sm">Connected devices requiring minimal power with maximum uptime</p>
+            </div>
+            <div class="p-6 bg-slate-50 rounded-xl hover:shadow-lg transition-all" data-aos="fade-in-up" style="animation-delay: 0.1s;">
+                <i class="fas fa-power-off text-4xl text-green-500 mb-4"></i>
+                <h4 class="text-lg font-bold text-slate-900 mb-2">Power Tools</h4>
+                <p class="text-slate-600 text-sm">High-rate batteries for cordless tools and equipment</p>
+            </div>
+            <div class="p-6 bg-slate-50 rounded-xl hover:shadow-lg transition-all" data-aos="fade-in-up" style="animation-delay: 0.2s;">
+                <i class="fas fa-building text-4xl text-blue-500 mb-4"></i>
+                <h4 class="text-lg font-bold text-slate-900 mb-2">Smart Home</h4>
+                <p class="text-slate-600 text-sm">IoT devices for connected home automation systems</p>
+            </div>
+        </div>
     </div>
 </section>
 
-<!-- Featured Products Section -->
-<section class="py-16 md:py-20 bg-gray-50">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="text-4xl md:text-5xl font-bold text-center mb-4 text-gray-800" data-aos="fade-in">精选产品</h2>
-        <p class="text-center text-gray-600 mb-12 text-lg" data-aos="fade-in" data-aos-delay="200">高品质聚合物锂电池解决方案</p>
+<!-- ============================================================
+     SECTION 5: CERTIFICATION SHOWCASE
+     ============================================================ -->
+<section class="py-20 md:py-32 bg-gradient-to-r from-slate-900 to-slate-800 text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-20" data-aos="fade-in">
+            <h2 class="text-5xl md:text-6xl font-bold mb-6">Global Certifications & Compliance</h2>
+            <p class="text-xl text-slate-300 max-w-3xl mx-auto">ZUFEK batteries meet the highest international standards for safety, quality, and performance</p>
+        </div>
 
-        @if($products->count() > 0)
+        <!-- Certificates Carousel -->
+        <div class="relative">
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                <!-- UL Certification -->
+                <div class="group p-8 bg-white/10 backdrop-blur rounded-xl border border-white/20 hover:border-cyan-400 hover:bg-white/20 transition-all text-center" data-aos="fade-in-up">
+                    <div class="text-5xl mb-4">🔒</div>
+                    <h4 class="font-bold mb-2">UL2054</h4>
+                    <p class="text-sm text-slate-300">Safety Standard</p>
+                </div>
+
+                <!-- CE Certification -->
+                <div class="group p-8 bg-white/10 backdrop-blur rounded-xl border border-white/20 hover:border-cyan-400 hover:bg-white/20 transition-all text-center" data-aos="fade-in-up" style="animation-delay: 0.1s;">
+                    <div class="text-5xl mb-4">✓</div>
+                    <h4 class="font-bold mb-2">CE Mark</h4>
+                    <p class="text-sm text-slate-300">European Compliance</p>
+                </div>
+
+                <!-- FDA -->
+                <div class="group p-8 bg-white/10 backdrop-blur rounded-xl border border-white/20 hover:border-cyan-400 hover:bg-white/20 transition-all text-center" data-aos="fade-in-up" style="animation-delay: 0.2s;">
+                    <div class="text-5xl mb-4">⚕️</div>
+                    <h4 class="font-bold mb-2">FDA</h4>
+                    <p class="text-sm text-slate-300">Medical Approval</p>
+                </div>
+
+                <!-- RoHS -->
+                <div class="group p-8 bg-white/10 backdrop-blur rounded-xl border border-white/20 hover:border-cyan-400 hover:bg-white/20 transition-all text-center" data-aos="fade-in-up" style="animation-delay: 0.3s;">
+                    <div class="text-5xl mb-4">♻️</div>
+                    <h4 class="font-bold mb-2">RoHS</h4>
+                    <p class="text-sm text-slate-300">Environmental</p>
+                </div>
+
+                <!-- FCC -->
+                <div class="group p-8 bg-white/10 backdrop-blur rounded-xl border border-white/20 hover:border-cyan-400 hover:bg-white/20 transition-all text-center" data-aos="fade-in-up" style="animation-delay: 0.4s;">
+                    <div class="text-5xl mb-4">📡</div>
+                    <h4 class="font-bold mb-2">FCC</h4>
+                    <p class="text-sm text-slate-300">EMI Compliance</p>
+                </div>
+
+                <!-- ISO 9001 -->
+                <div class="group p-8 bg-white/10 backdrop-blur rounded-xl border border-white/20 hover:border-cyan-400 hover:bg-white/20 transition-all text-center" data-aos="fade-in-up" style="animation-delay: 0.5s;">
+                    <div class="text-5xl mb-4">🏆</div>
+                    <h4 class="font-bold mb-2">ISO 9001</h4>
+                    <p class="text-sm text-slate-300">Quality Management</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-12" data-aos="fade-in">
+            <p class="text-slate-300 mb-6">All certifications validated and regularly audited to ensure continuous compliance</p>
+            <a href="/about#certifications" class="inline-block px-8 py-3 bg-cyan-500 hover:bg-cyan-600 text-white font-bold rounded-lg transition-all duration-300">
+                View Full Certification Details
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     SECTION 6: FEATURED PRODUCTS
+     ============================================================ -->
+<section class="py-20 md:py-32 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-20" data-aos="fade-in">
+            <span class="inline-block px-4 py-2 bg-slate-100 text-slate-600 rounded-full text-sm font-semibold mb-4">PRODUCT PORTFOLIO</span>
+            <h2 class="text-5xl md:text-6xl font-bold text-slate-900 mb-6">Engineered Excellence</h2>
+            <p class="text-xl text-slate-600 max-w-3xl mx-auto">Explore our comprehensive range of polymer battery solutions</p>
+        </div>
+
+        @if($products && $products->count() > 0)
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                @foreach($products as $product)
-                    <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-2xl hover:-translate-y-2 transition-all duration-300" data-aos="fade-in-up" data-aos-delay="{{ $loop->index * 100 }}">
-                        @if($product->image)
-                            <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300">
-                        @else
-                            <div class="w-full h-48 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
-                                <i class="fas fa-battery text-blue-600 text-4xl"></i>
-                            </div>
-                        @endif
-
+                @foreach($products->take(6) as $product)
+                    <div class="group bg-white border-2 border-slate-200 rounded-xl overflow-hidden hover:border-cyan-400 hover:shadow-2xl transition-all duration-300" data-aos="fade-in-up">
+                        <div class="relative h-56 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center overflow-hidden">
+                            <i class="fas fa-battery-full text-8xl text-slate-300 group-hover:scale-110 transition-transform duration-300"></i>
+                        </div>
                         <div class="p-6">
-                            @if($product->process_type)
-                                <div class="mb-3">
-                                    @if($product->process_type === 'wound')
-                                        <span class="inline-block bg-green-100 text-green-800 text-xs font-bold px-3 py-1 rounded-full">卷绕工艺</span>
-                                    @else
-                                        <span class="inline-block bg-purple-100 text-purple-800 text-xs font-bold px-3 py-1 rounded-full">叠片工艺</span>
-                                    @endif
-                                </div>
-                            @endif
+                            <h3 class="text-xl font-bold text-slate-900 mb-2">{{ $product->name }}</h3>
+                            <p class="text-slate-600 text-sm mb-4">{{ Str::limit($product->description, 80) }}</p>
 
-                            <h3 class="text-xl font-bold text-gray-800 mb-2">{{ $product->name }}</h3>
-                            <p class="text-gray-600 text-sm mb-4">{{ Str::limit($product->description, 100) }}</p>
-
-                            <div class="grid grid-cols-2 gap-3 mb-6 text-sm bg-gray-50 p-3 rounded">
+                            <div class="grid grid-cols-2 gap-3 mb-6 text-sm">
                                 @if($product->capacity)
-                                    <div><span class="font-semibold text-blue-600">容量:</span> <span class="font-bold">{{ $product->capacity }}</span> mAh</div>
-                                @endif
-                                @if($product->voltage)
-                                    <div><span class="font-semibold text-blue-600">电压:</span> <span class="font-bold">{{ $product->voltage }}</span>V</div>
+                                    <div class="bg-slate-50 p-3 rounded">
+                                        <span class="text-slate-600">Capacity</span>
+                                        <p class="font-bold text-slate-900">{{ $product->capacity }}mAh</p>
+                                    </div>
                                 @endif
                                 @if($product->internal_resistance)
-                                    <div><span class="font-semibold text-blue-600">内阻:</span> <span class="font-bold">{{ $product->internal_resistance }}</span> mΩ</div>
-                                @endif
-                                @if($product->cycle_life)
-                                    <div><span class="font-semibold text-blue-600">循环:</span> <span class="font-bold">{{ $product->cycle_life }}</span></div>
+                                    <div class="bg-slate-50 p-3 rounded">
+                                        <span class="text-slate-600">Impedance</span>
+                                        <p class="font-bold text-slate-900">{{ $product->internal_resistance }}mΩ</p>
+                                    </div>
                                 @endif
                             </div>
 
-                            <a href="{{ route('products.show', $product->slug) }}" class="btn-primary text-sm w-full text-center hover:shadow-lg transition-all duration-300">查看详情</a>
+                            <a href="{{ route('products.show', $product->slug) }}" class="block w-full text-center px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold rounded-lg hover:shadow-lg transition-all">
+                                View Details
+                            </a>
                         </div>
                     </div>
                 @endforeach
             </div>
 
             <div class="text-center mt-16">
-                <a href="/products" class="btn-secondary inline-block hover:shadow-lg hover:scale-105 transition-all duration-300">查看全部产品</a>
-            </div>
-        @else
-            <div class="text-center py-12">
-                <p class="text-gray-600 text-lg">暂无产品信息。</p>
+                <a href="/products" class="inline-block px-8 py-4 border-2 border-slate-900 text-slate-900 font-bold rounded-lg hover:bg-slate-900 hover:text-white transition-all duration-300">
+                    Browse All Products
+                </a>
             </div>
         @endif
     </div>
 </section>
 
-<!-- 工艺技术对比 -->
-<section class="bg-gradient-to-b from-gray-50 to-gray-100 py-16 md:py-20">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="text-4xl md:text-5xl font-bold text-center mb-4 text-gray-800" data-aos="fade-in">ZUFEK 工艺技术对比</h2>
-        <p class="text-center text-gray-600 mb-16 text-lg" data-aos="fade-in" data-aos-delay="200">两大核心工艺，满足多样化需求</p>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
-            <!-- 卷绕工艺 -->
-            <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group" data-aos="fade-in-right">
-                <div class="bg-gradient-to-r from-green-500 via-green-600 to-emerald-600 text-white p-8">
-                    <h3 class="text-3xl font-bold flex items-center">
-                        <i class="fas fa-circle text-yellow-300 mr-4 text-2xl"></i>卷绕工艺
-                    </h3>
-                    <p class="text-green-100 mt-2">Wound Cell Technology</p>
-                </div>
-                <div class="p-8">
-                    <div class="space-y-6">
-                        <div class="border-l-4 border-green-500 pl-4">
-                            <h4 class="font-bold text-gray-800 mb-3 text-lg">核心优势</h4>
-                            <ul class="text-gray-600 space-y-2 text-sm">
-                                <li class="flex items-center hover:text-green-600 transition-colors"><i class="fas fa-check text-green-500 mr-2"></i>成本低：高效生产工艺，价格优势明显</li>
-                                <li class="flex items-center hover:text-green-600 transition-colors"><i class="fas fa-check text-green-500 mr-2"></i>交期快：3-5天可交样，批量交货周期短</li>
-                                <li class="flex items-center hover:text-green-600 transition-colors"><i class="fas fa-check text-green-500 mr-2"></i>可靠稳定：成熟稳定的工艺，一致性好</li>
-                                <li class="flex items-center hover:text-green-600 transition-colors"><i class="fas fa-check text-green-500 mr-2"></i>容量范围广：300-2000+ mAh灵活覆盖</li>
-                            </ul>
-                        </div>
-                        <div class="border-l-4 border-green-500 pl-4">
-                            <h4 class="font-bold text-gray-800 mb-2">应用领域</h4>
-                            <p class="text-gray-600 text-sm">智能手表、手环、医疗监护设备、消费级可穿戴</p>
-                        </div>
-                        <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-500">
-                            <h4 class="font-bold text-gray-800 mb-3">典型指标</h4>
-                            <div class="grid grid-cols-2 gap-2 text-sm">
-                                <div><span class="text-gray-600">内阻:</span> <span class="font-bold text-green-600">70-85 mΩ</span></div>
-                                <div><span class="text-gray-600">循环寿命:</span> <span class="font-bold text-green-600">>1000次</span></div>
-                                <div class="col-span-2"><span class="text-gray-600">能量密度:</span> <span class="font-bold text-green-600">200+ Wh/L</span></div>
-                            </div>
-                        </div>
-                    </div>
-                    <a href="/products" class="mt-8 block w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white text-center py-3 rounded-lg font-bold hover:shadow-lg transition-all duration-300 group-hover:scale-105">浏览卷绕电池</a>
-                </div>
-            </div>
-
-            <!-- 叠片工艺 -->
-            <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group" data-aos="fade-in-left">
-                <div class="bg-gradient-to-r from-purple-500 via-purple-600 to-indigo-600 text-white p-8">
-                    <h3 class="text-3xl font-bold flex items-center">
-                        <i class="fas fa-layer-group text-yellow-300 mr-4 text-2xl"></i>叠片工艺
-                    </h3>
-                    <p class="text-purple-100 mt-2">Stacked Cell Technology</p>
-                </div>
-                <div class="p-8">
-                    <div class="space-y-6">
-                        <div class="border-l-4 border-purple-500 pl-4">
-                            <h4 class="font-bold text-gray-800 mb-3 text-lg">核心优势</h4>
-                            <ul class="text-gray-600 space-y-2 text-sm">
-                                <li class="flex items-center hover:text-purple-600 transition-colors"><i class="fas fa-check text-purple-500 mr-2"></i>内阻极低：25-35 mΩ，支持高倍率放电</li>
-                                <li class="flex items-center hover:text-purple-600 transition-colors"><i class="fas fa-check text-purple-500 mr-2"></i>循环性能强：>2000次循环，寿命长</li>
-                                <li class="flex items-center hover:text-purple-600 transition-colors"><i class="fas fa-check text-purple-500 mr-2"></i>能量密度高：230+ Wh/L，空间利用最优</li>
-                                <li class="flex items-center hover:text-purple-600 transition-colors"><i class="fas fa-check text-purple-500 mr-2"></i>安全可靠：多层隔膜设计，防爆裂</li>
-                            </ul>
-                        </div>
-                        <div class="border-l-4 border-purple-500 pl-4">
-                            <h4 class="font-bold text-gray-800 mb-2">应用领域</h4>
-                            <p class="text-gray-600 text-sm">医疗级可穿戴、诊断设备、高功率应用、运动设备</p>
-                        </div>
-                        <div class="bg-purple-50 p-4 rounded-lg border-l-4 border-purple-500">
-                            <h4 class="font-bold text-gray-800 mb-3">典型指标</h4>
-                            <div class="grid grid-cols-2 gap-2 text-sm">
-                                <div><span class="text-gray-600">内阻:</span> <span class="font-bold text-purple-600">25-35 mΩ</span></div>
-                                <div><span class="text-gray-600">循环寿命:</span> <span class="font-bold text-purple-600">>2000次</span></div>
-                                <div class="col-span-2"><span class="text-gray-600">能量密度:</span> <span class="font-bold text-purple-600">230+ Wh/L</span></div>
-                            </div>
-                        </div>
-                    </div>
-                    <a href="/products" class="mt-8 block w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-center py-3 rounded-lg font-bold hover:shadow-lg transition-all duration-300 group-hover:scale-105">浏览叠片电池</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- 异形电池定制 -->
-        <div class="bg-white rounded-xl shadow-lg p-8 md:p-12" data-aos="fade-in-up">
-            <h3 class="text-3xl font-bold text-gray-800 mb-2 text-center">异形电池定制能力</h3>
-            <p class="text-center text-gray-600 mb-10">满足各种设备形状需求，充分利用可用空间</p>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="text-center group p-6 rounded-lg hover:bg-blue-50 transition-all duration-300 hover:shadow-md">
-                    <i class="fas fa-pen text-blue-600 text-5xl mb-4 group-hover:scale-110 transition-transform duration-300"></i>
-                    <h4 class="font-bold text-gray-800 mb-2 text-lg">自由设计</h4>
-                    <p class="text-gray-600 text-sm leading-relaxed">L型、T型、弧形、圆形等任意形状，充分利用设备空间</p>
-                </div>
-                <div class="text-center group p-6 rounded-lg hover:bg-blue-50 transition-all duration-300 hover:shadow-md">
-                    <i class="fas fa-tachometer-alt text-blue-600 text-5xl mb-4 group-hover:scale-110 transition-transform duration-300"></i>
-                    <h4 class="font-bold text-gray-800 mb-2 text-lg">快速交样</h4>
-                    <p class="text-gray-600 text-sm leading-relaxed">3-10天完成工程样品，加速您的产品开发周期</p>
-                </div>
-                <div class="text-center group p-6 rounded-lg hover:bg-blue-50 transition-all duration-300 hover:shadow-md">
-                    <i class="fas fa-check-circle text-blue-600 text-5xl mb-4 group-hover:scale-110 transition-transform duration-300"></i>
-                    <h4 class="font-bold text-gray-800 mb-2 text-lg">可行性评估</h4>
-                    <p class="text-gray-600 text-sm leading-relaxed">专业团队评估，提供设计建议，确保最优方案</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- CTA Section -->
-<section class="relative bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 text-white py-16 md:py-24 overflow-hidden">
-    <!-- Animated background elements -->
-    <div class="absolute inset-0 opacity-10">
-        <div class="absolute top-0 left-1/4 w-64 h-64 bg-white rounded-full blur-3xl animate-pulse" style="animation-duration: 4s;"></div>
-        <div class="absolute bottom-0 right-1/4 w-80 h-80 bg-blue-300 rounded-full blur-3xl animate-pulse" style="animation-duration: 5s; animation-delay: 1s;"></div>
-    </div>
-
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-        <h2 class="text-4xl md:text-5xl font-bold mb-6 animate-slideInDown">准备与 ZUFEK 合作？</h2>
-        <p class="text-lg md:text-xl text-blue-100 mb-10 leading-relaxed animate-slideInUp" style="animation-delay: 0.2s;">
-            无论您需要卷绕工艺还是叠片工艺电池，是否需要异形定制，ZUFEK都有专业团队为您服务。<br>
-            <span class="text-blue-200">快速交样、成本透明、品质保证。</span>
+<!-- ============================================================
+     SECTION 7: CTA - Get in Touch
+     ============================================================ -->
+<section class="py-20 md:py-32 bg-gradient-to-r from-cyan-500 to-blue-600 text-white">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h2 class="text-5xl md:text-6xl font-bold mb-6" data-aos="fade-in">Ready to Power Your Innovation?</h2>
+        <p class="text-xl text-cyan-50 mb-12 max-w-2xl mx-auto" data-aos="fade-in" data-aos-delay="200">
+            Let's discuss how ZUFEK polymer lithium batteries can enhance your product performance
         </p>
-        <div class="flex flex-col sm:flex-row gap-4 justify-center animate-slideInUp" style="animation-delay: 0.4s;">
-            <a href="/contact" class="inline-block bg-white text-blue-600 px-8 py-4 rounded-lg font-bold hover:bg-blue-50 hover:shadow-xl hover:scale-105 transition-all duration-300 text-center">
-                <i class="fas fa-envelope mr-2"></i>发送询盘
+
+        <div class="flex flex-col sm:flex-row gap-4 justify-center" data-aos="fade-in" data-aos-delay="400">
+            <a href="/contact" class="inline-flex items-center justify-center px-8 py-4 bg-white text-blue-600 font-bold rounded-lg hover:bg-slate-100 transition-all duration-300 shadow-lg hover:shadow-2xl">
+                <i class="fas fa-envelope mr-2"></i>
+                Send Inquiry
             </a>
-            <a href="/products" class="inline-block border-3 border-white text-white px-8 py-4 rounded-lg font-bold hover:bg-blue-500 hover:shadow-xl hover:scale-105 transition-all duration-300 text-center">
-                <i class="fas fa-list mr-2"></i>浏览全部产品
+            <a href="tel:+1234567890" class="inline-flex items-center justify-center px-8 py-4 border-2 border-white text-white font-bold rounded-lg hover:bg-white/20 transition-all duration-300">
+                <i class="fas fa-phone mr-2"></i>
+                Call Us
             </a>
         </div>
     </div>
 </section>
+
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Counter animation
+    const counters = document.querySelectorAll('.counter');
+    const speed = 200;
+    const options = {
+        threshold: 0.5
+    };
+
+    const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && !entry.target.classList.contains('counted')) {
+                const target = parseInt(entry.target.dataset.target);
+                const increment = target / speed;
+                let current = 0;
+
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= target) {
+                        entry.target.textContent = target.toLocaleString();
+                        entry.target.classList.add('counted');
+                        clearInterval(timer);
+                    } else {
+                        entry.target.textContent = Math.floor(current).toLocaleString();
+                    }
+                }, 10);
+
+                observer.unobserve(entry.target);
+            }
+        });
+    }, options);
+
+    counters.forEach(counter => observer.observe(counter));
+});
+</script>
+@endpush

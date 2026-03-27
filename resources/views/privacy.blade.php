@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Privacy Policy - Raven Battery')
-@section('description', 'Privacy policy for Raven Battery. Learn how we protect and use your personal information.')
+@section('title', 'Privacy Policy - ZUFEK Polymer Batteries')
+@section('description', 'Privacy policy for ZUFEK. Learn how we protect and use your personal information.')
 
 @section('content')
 <section class="py-12">
@@ -15,7 +15,7 @@
 
             <h2 class="text-2xl font-bold text-gray-800 mt-8">1. Introduction</h2>
             <p class="text-gray-600">
-                Raven Battery ("we", "us", "our") operates the website. This page informs you of our policies regarding the collection, use, and disclosure of personal data when you use our website and the choices you have associated with that data.
+                ZUFEK ("we", "us", "our") operates the website. This page informs you of our policies regarding the collection, use, and disclosure of personal data when you use our website and the choices you have associated with that data.
             </p>
 
             <h2 class="text-2xl font-bold text-gray-800 mt-8">2. Information Collection and Use</h2>
@@ -30,7 +30,7 @@
 
             <h2 class="text-2xl font-bold text-gray-800 mt-8">3. Use of Data</h2>
             <p class="text-gray-600">
-                Raven Battery uses the collected data for various purposes:
+                ZUFEK uses the collected data for various purposes:
             </p>
             <ul class="list-disc list-inside text-gray-600 space-y-2">
                 <li>To provide and maintain our website and services</li>
@@ -50,8 +50,8 @@
                 If you have any questions about this Privacy Policy, please contact us at:
             </p>
             <div class="bg-gray-100 p-4 rounded-lg text-gray-700">
-                <p>Email: privacy@raven.com</p>
-                <p>Phone: +1 (555) 123-4567</p>
+                <p>Email: sales@zufek.com</p>
+                <p>Phone: +86 138 0013 8000</p>
             </div>
         </div>
     </div>
