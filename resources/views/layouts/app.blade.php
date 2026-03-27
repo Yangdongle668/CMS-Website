@@ -16,7 +16,9 @@
     <meta property="og:description" content="@yield('description', 'Premium polymer lithium battery manufacturer for global markets')">
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ url()->current() }}">
-    @yield('og-image', '<meta property="og:image" content="' . url('/logo.png') . '">')
+    @hasSection('og-image')
+        @yield('og-image')
+    @endhasSection
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="@yield('title', 'ZUFEK - Polymer Lithium Batteries')">
@@ -144,6 +146,10 @@
                         </div>
                     </div>
 
+                    <a href="/solutions" class="text-gray-700 hover:text-cyan-600 font-medium transition-colors duration-300">
+                        <i class="fas fa-puzzle-piece mr-2"></i>Solutions
+                    </a>
+
                     <a href="/about" class="text-gray-700 hover:text-cyan-600 font-medium transition-colors duration-300">
                         <i class="fas fa-info-circle mr-2"></i>About
                     </a>
@@ -185,6 +191,9 @@
                     <i class="fas fa-balance-scale mr-2"></i>Compare
                 </a>
                 <div class="border-t border-gray-200 my-2"></div>
+                <a href="/solutions" class="block text-gray-700 hover:text-cyan-600 font-medium py-2 px-3 rounded-lg hover:bg-cyan-50 transition-colors">
+                    <i class="fas fa-puzzle-piece mr-2"></i>Solutions
+                </a>
                 <a href="/about" class="block text-gray-700 hover:text-cyan-600 font-medium py-2 px-3 rounded-lg hover:bg-cyan-50 transition-colors">
                     <i class="fas fa-info-circle mr-2"></i>About
                 </a>
@@ -248,6 +257,7 @@
                     <ul class="space-y-3 text-gray-400 text-sm">
                         <li><a href="/" class="hover:text-cyan-400 transition-colors duration-300"><i class="fas fa-chevron-right mr-2"></i>Home</a></li>
                         <li><a href="/products" class="hover:text-cyan-400 transition-colors duration-300"><i class="fas fa-chevron-right mr-2"></i>Products</a></li>
+                        <li><a href="/solutions" class="hover:text-cyan-400 transition-colors duration-300"><i class="fas fa-chevron-right mr-2"></i>Solutions</a></li>
                         <li><a href="/about" class="hover:text-cyan-400 transition-colors duration-300"><i class="fas fa-chevron-right mr-2"></i>About Us</a></li>
                         <li><a href="/contact" class="hover:text-cyan-400 transition-colors duration-300"><i class="fas fa-chevron-right mr-2"></i>Contact</a></li>
                     </ul>
