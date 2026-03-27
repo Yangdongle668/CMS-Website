@@ -146,6 +146,15 @@ class ProductResource extends Resource
                     ->label('Voltage')
                     ->numeric()
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('process_type')
+                    ->label('Process Type')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'wound' => 'info',
+                        'stacked' => 'success',
+                        default => 'gray',
+                    })
+                    ->toggleable(),
                 Tables\Columns\ImageColumn::make('image')
                     ->label('Image')
                     ->square(),
@@ -160,7 +169,15 @@ class ProductResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('process_type')
+                    ->label('Process Type')
+                    ->options([
+                        'wound' => '卷绕工艺 (成本低、交期快)',
+                        'stacked' => '叠片工艺 (低内阻、循环强)',
+                    ]),
+                Tables\Filters\Filter::make('applications')
+                    ->query(fn (Builder $query): Builder => $query->whereNotNull('applications'))
+                    ->label('Has Applications'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
