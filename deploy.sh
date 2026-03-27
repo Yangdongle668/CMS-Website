@@ -8,6 +8,10 @@
 
 set -e
 
+# 禁用交互式提示，自动同意所有更新
+export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_MODE=a
+
 # ============================================================
 # 配置区域 - 修改以下变量
 # ============================================================
@@ -63,12 +67,18 @@ fi
 # ============================================================
 step "步骤 1/9: 更新系统并安装基础依赖"
 
+# 自动同意所有更新和重启
+export NEEDRESTART_MODE=a
+
 apt-get update -qq
-apt-get install -y -qq \
+apt-get upgrade -y -qq -o Dpkg::Pre-Install-Pkgs::="/usr/sbin/etckeeper pre-install 2>/dev/null || true" -o DPkg::Post-Install-Pkgs::="/usr/sbin/etckeeper post-install 2>/dev/null || true" || true
+
+# 安装基础依赖（自动同意）
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     curl wget git unzip zip \
     software-properties-common \
     apt-transport-https ca-certificates \
-    lsb-release gnupg
+    lsb-release gnupg needrestart
 
 success "基础依赖安装完成"
 
@@ -80,7 +90,7 @@ step "步骤 2/9: 安装 PHP ${PHP_VERSION}"
 if ! php -v 2>/dev/null | grep -q "PHP ${PHP_VERSION}"; then
     add-apt-repository -y ppa:ondrej/php 2>/dev/null || true
     apt-get update -qq
-    apt-get install -y -qq \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
         php${PHP_VERSION} \
         php${PHP_VERSION}-fpm \
         php${PHP_VERSION}-cli \
@@ -95,9 +105,9 @@ if ! php -v 2>/dev/null | grep -q "PHP ${PHP_VERSION}"; then
         php${PHP_VERSION}-fileinfo
 
     if [ "$DB_TYPE" = "sqlite" ]; then
-        apt-get install -y -qq php${PHP_VERSION}-sqlite3
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq php${PHP_VERSION}-sqlite3
     else
-        apt-get install -y -qq php${PHP_VERSION}-mysql
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq php${PHP_VERSION}-mysql
     fi
 fi
 
@@ -121,7 +131,7 @@ step "步骤 4/9: 安装 Node.js 18"
 
 if ! node -v 2>/dev/null | grep -q "v18\|v20\|v22"; then
     curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-    apt-get install -y -qq nodejs
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq nodejs
 fi
 
 success "Node.js $(node -v) / npm $(npm -v) 安装完成"
@@ -132,7 +142,7 @@ success "Node.js $(node -v) / npm $(npm -v) 安装完成"
 step "步骤 5/9: 安装 Nginx"
 
 if ! command -v nginx &>/dev/null; then
-    apt-get install -y -qq nginx
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq nginx
 fi
 
 success "Nginx $(nginx -v 2>&1 | awk -F/ '{print $2}') 安装完成"
@@ -143,7 +153,7 @@ success "Nginx $(nginx -v 2>&1 | awk -F/ '{print $2}') 安装完成"
 if [ "$DB_TYPE" = "mysql" ]; then
     step "步骤 6/9: 安装 MySQL"
     if ! command -v mysql &>/dev/null; then
-        apt-get install -y -qq mysql-server
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq mysql-server
         systemctl start mysql
         systemctl enable mysql
     fi
@@ -322,8 +332,8 @@ success "Nginx 配置完成"
 # ============================================================
 if [ "$INSTALL_SSL" = "true" ] && [ -n "$DOMAIN" ]; then
     info "安装 Let's Encrypt SSL 证书..."
-    apt-get install -y -qq certbot python3-certbot-nginx
-    certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq certbot python3-certbot-nginx
+    DEBIAN_FRONTEND=noninteractive certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos \
         --email "admin@${DOMAIN}" --redirect && success "SSL 证书安装完成" || warn "SSL 安装失败，请手动配置"
 fi
 
