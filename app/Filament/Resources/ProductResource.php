@@ -179,12 +179,25 @@ class ProductResource extends Resource
                     ->query(fn (Builder $query): Builder => $query->whereNotNull('applications'))
                     ->label('Has Applications'),
             ])
+            ->searchable(['name', 'model', 'slug'])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('activate')
+                        ->label('Activate Products')
+                        ->icon('heroicon-m-check-circle')
+                        ->action(fn () => null)
+                        ->color('success')
+                        ->deselectRecordsAfterCompletion(),
+                    Tables\Actions\BulkAction::make('deactivate')
+                        ->label('Deactivate Products')
+                        ->icon('heroicon-m-x-circle')
+                        ->action(fn () => null)
+                        ->color('danger')
+                        ->deselectRecordsAfterCompletion(),
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
