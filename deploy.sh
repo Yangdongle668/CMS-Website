@@ -338,7 +338,18 @@ fi
 # ============================================================
 # 完成 - 输出部署摘要
 # ============================================================
-SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')
+# 获取 IPv4 地址（优先使用外网IP，其次使用本地IP）
+SERVER_IP=$(curl -s https://ipv4.icanhazip.com 2>/dev/null || curl -s http://ifconfig.me 2>/dev/null || hostname -I | grep -oP '^\S+' | grep -v ':' | head -1)
+
+# 如果还是没获取到，使用本地 IP
+if [ -z "$SERVER_IP" ] || [[ "$SERVER_IP" == *":"* ]]; then
+    SERVER_IP=$(hostname -I | tr ' ' '\n' | grep -v ':' | head -1)
+fi
+
+# 最后的备选方案
+if [ -z "$SERVER_IP" ]; then
+    SERVER_IP="localhost"
+fi
 
 echo ""
 echo -e "${GREEN}${BOLD}"
