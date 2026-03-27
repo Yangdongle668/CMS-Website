@@ -243,9 +243,10 @@ php artisan storage:link --force 2>/dev/null || true
 info "运行数据库迁移..."
 php artisan migrate --force -q
 
-# 自动运行数据填充（填充示例产品）
-php artisan db:seed --force -q
-success "示例数据填充完成"
+# 自动运行产品数据填充（使用 updateOrCreate 防止重复）
+info "填充示例产品数据..."
+php artisan db:seed --class=ProductSeeder --force -q
+success "示例产品数据填充完成"
 
 # 优化缓存
 php artisan config:cache -q
