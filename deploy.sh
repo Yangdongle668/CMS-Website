@@ -248,6 +248,21 @@ info "填充示例产品数据..."
 php artisan db:seed --class=ProductSeeder --force -q
 success "示例产品数据填充完成"
 
+# 创建 Filament 管理员账号
+info "创建管理员账号..."
+php artisan tinker --execute="
+\App\Models\User::updateOrCreate(
+    ['email' => 'info@zufek.com'],
+    [
+        'name' => 'ZUFEK Admin',
+        'email' => 'info@zufek.com',
+        'password' => \Illuminate\Support\Facades\Hash::make('danli1219')
+    ]
+);
+" 2>/dev/null || php artisan make:filament-user --name="ZUFEK Admin" --email="info@zufek.com" --password="danli1219" --force -q 2>/dev/null || true
+
+success "管理员账号创建成功 (邮箱: info@zufek.com, 密码: danli1219)"
+
 # 优化缓存
 php artisan config:cache -q
 php artisan route:cache -q
@@ -367,9 +382,9 @@ echo -e "  ${BOLD}数据库用户:${NC}  ${MYSQL_USER}"
 echo -e "  ${BOLD}数据库密码:${NC}  ${MYSQL_PASS}  ${RED}(请妥善保管！)${NC}"
 fi
 echo ""
-echo -e "  ${BOLD}后台初始账号:${NC}"
-echo -e "    运行以下命令创建管理员账号:"
-echo -e "    ${YELLOW}cd ${APP_DIR} && php artisan make:filament-user${NC}"
+echo -e "  ${BOLD}后台管理员账号:${NC}"
+echo -e "    邮箱: ${YELLOW}info@zufek.com${NC}"
+echo -e "    密码: ${YELLOW}danli1219${NC}"
 echo ""
 echo -e "  ${BOLD}日志查看:${NC}"
 echo -e "    ${YELLOW}tail -f ${APP_DIR}/storage/logs/laravel.log${NC}"
