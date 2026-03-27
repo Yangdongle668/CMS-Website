@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Cookie Policy - Raven Battery')
-@section('description', 'Cookie policy for Raven Battery. Learn about how we use cookies and similar tracking technologies.')
+@section('title', 'Cookie Policy - ZUFEK Polymer Batteries')
+@section('description', 'Cookie policy for ZUFEK. Learn about how we use cookies and similar tracking technologies.')
 
 @section('content')
 <section class="py-12">
@@ -61,8 +61,8 @@
                 If you have questions about our cookie policy, please contact us at:
             </p>
             <div class="bg-gray-100 p-4 rounded-lg text-gray-700">
-                <p>Email: privacy@raven.com</p>
-                <p>Phone: +1 (555) 123-4567</p>
+                <p>Email: sales@zufek.com</p>
+                <p>Phone: +86 138 0013 8000</p>
             </div>
         </div>
     </div>
