@@ -4,25 +4,31 @@
 @section('description', $product->meta_description ?? Str::limit($product->description, 160))
 @section('keywords', $product->name . ', ' . ($product->model ?? '') . ', lithium battery, B2B')
 
+@php
+$schemaData = [
+    "@context" => "https://schema.org",
+    "@type" => "Product",
+    "name" => $product->name,
+    "description" => $product->description,
+    "brand" => [
+        "@type" => "Brand",
+        "name" => "ZUFEK"
+    ],
+    "sku" => $product->slug,
+];
+
+if ($product->image) {
+    $schemaData["image"] = url('storage/' . $product->image);
+}
+
+if ($product->model) {
+    $schemaData["model"] = $product->model;
+}
+@endphp
+
 @section('schema')
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Product",
-  "name": "{{ $product->name }}",
-  "description": "{{ $product->description }}",
-  @if($product->image)
-  "image": "{{ url('storage/' . $product->image) }}",
-  @endif
-  "brand": {
-    "@type": "Brand",
-    "name": "ZUFEK"
-  },
-  @if($product->model)
-  "model": "{{ $product->model }}",
-  @endif
-  "sku": "{{ $product->slug }}"
-}
+{{ json_encode($schemaData) }}
 </script>
 @endsection
 
