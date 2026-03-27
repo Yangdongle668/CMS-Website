@@ -21,7 +21,7 @@
                         <label for="product_id" class="block text-sm font-semibold text-gray-700 mb-2">
                             Interested Product (Optional)
                         </label>
-                        <select name="product_id" id="product_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <select name="product_id" id="product_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
                             <option value="">-- Select a product --</option>
                             @foreach($products as $prod)
                                 <option value="{{ $prod->id }}">{{ $prod->name }} @if($prod->model)- {{ $prod->model }} @endif</option>
@@ -29,9 +29,9 @@
                         </select>
                     </div>
                 @else
-                    <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div class="mb-6 p-4 bg-cyan-50 rounded-lg border border-cyan-200">
                         <p class="text-sm text-gray-600">Interested Product:</p>
-                        <p class="text-lg font-bold text-blue-600">{{ $product->name }}</p>
+                        <p class="text-lg font-bold text-cyan-600">{{ $product->name }}</p>
                         <input type="hidden" name="product_id" value="{{ $product->id }}">
                     </div>
                 @endif
@@ -47,7 +47,7 @@
                         id="name"
                         value="{{ old('name') }}"
                         required
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('name') border-red-500 @enderror"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent @error('name') border-red-500 @enderror"
                         placeholder="John Doe"
                     >
                     @error('name')
@@ -66,7 +66,7 @@
                         id="email"
                         value="{{ old('email') }}"
                         required
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('email') border-red-500 @enderror"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent @error('email') border-red-500 @enderror"
                         placeholder="john@company.com"
                     >
                     @error('email')
@@ -84,7 +84,7 @@
                         id="message"
                         rows="6"
                         required
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('message') border-red-500 @enderror"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent @error('message') border-red-500 @enderror"
                         placeholder="Tell us about your inquiry, requirements, or custom needs..."
                     >{{ old('message') }}</textarea>
                     @error('message')
@@ -109,19 +109,19 @@
         <!-- Contact Information -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
             <div class="text-center">
-                <i class="fas fa-envelope text-blue-600 text-4xl mb-4"></i>
+                <i class="fas fa-envelope text-cyan-600 text-4xl mb-4"></i>
                 <h3 class="font-bold text-gray-800 mb-2">Email</h3>
-                <p class="text-gray-600">sales@raven.com</p>
+                <p class="text-gray-600">sales@zufek.com</p>
             </div>
             <div class="text-center">
-                <i class="fas fa-phone text-blue-600 text-4xl mb-4"></i>
+                <i class="fas fa-phone text-cyan-600 text-4xl mb-4"></i>
                 <h3 class="font-bold text-gray-800 mb-2">Phone</h3>
-                <p class="text-gray-600">+1 (555) 123-4567</p>
+                <p class="text-gray-600">+86 138 0013 8000</p>
             </div>
             <div class="text-center">
-                <i class="fas fa-map-marker-alt text-blue-600 text-4xl mb-4"></i>
+                <i class="fas fa-map-marker-alt text-cyan-600 text-4xl mb-4"></i>
                 <h3 class="font-bold text-gray-800 mb-2">Address</h3>
-                <p class="text-gray-600">123 Battery St, Tech City, TC 12345</p>
+                <p class="text-gray-600">Dongguan, Guangdong, China</p>
             </div>
         </div>
     </div>
