@@ -243,12 +243,9 @@ php artisan storage:link --force 2>/dev/null || true
 info "运行数据库迁移..."
 php artisan migrate --force -q
 
-# 可选: 运行数据填充
-read -t 10 -p "$(echo -e ${YELLOW})是否填充示例产品数据? [y/N] $(echo -e ${NC})" SEED_CONFIRM 2>/dev/null || SEED_CONFIRM="n"
-if [[ "$SEED_CONFIRM" =~ ^[Yy]$ ]]; then
-    php artisan db:seed --force -q
-    success "示例数据填充完成"
-fi
+# 自动运行数据填充（填充示例产品）
+php artisan db:seed --force -q
+success "示例数据填充完成"
 
 # 优化缓存
 php artisan config:cache -q
