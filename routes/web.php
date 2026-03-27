@@ -10,6 +10,10 @@ Route::get('/', function () {
 });
 
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+Route::get('/products/compare', function () {
+    $allProducts = \App\Models\Product::all();
+    return view('products.compare', compact('allProducts'));
+})->name('products.compare');
 Route::get('/products/{slug}', [ProductController::class, 'show'])->name('products.show');
 
 Route::get('/contact', [InquiryController::class, 'create'])->name('inquiries.create');
