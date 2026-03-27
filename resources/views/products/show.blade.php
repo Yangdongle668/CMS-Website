@@ -1,7 +1,8 @@
 @extends('layouts.app')
 
-@section('title', $product->meta_title ?? $product->name)
-@section('description', $product->meta_description ?? $product->description)
+@section('title', $product->meta_title ?? $product->name . ' - B2B Lithium Battery')
+@section('description', $product->meta_description ?? Str::limit($product->description, 160))
+@section('keywords', $product->name . ', ' . ($product->model ?? '') . ', lithium battery, B2B')
 
 @section('schema')
 <script type="application/ld+json">

@@ -3,9 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0066cc">
+
     <title>@yield('title', 'B2B Battery Solutions')</title>
     <meta name="description" content="@yield('description', 'Professional B2B battery solutions for AR glasses and electronic devices')">
-    <meta name="robots" content="index, follow">
+    <meta name="keywords" content="@yield('keywords', 'battery, lithium, B2B, AR glasses, electronics')">
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="language" content="English">
+    <meta name="author" content="Raven Battery">
+
+    <meta property="og:title" content="@yield('title', 'B2B Battery Solutions')">
+    <meta property="og:description" content="@yield('description', 'Professional B2B battery solutions for AR glasses and electronic devices')">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ url()->current() }}">
+    @yield('og-image', '<meta property="og:image" content="' . url('/logo.png') . '">')
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="@yield('title', 'B2B Battery Solutions')">
+    <meta name="twitter:description" content="@yield('description', 'Professional B2B battery solutions for AR glasses and electronic devices')">
+
+    <link rel="canonical" href="{{ url()->current() }}">
+    <link rel="alternate" hreflang="en" href="{{ url()->current() }}">
 
     @yield('schema')
 

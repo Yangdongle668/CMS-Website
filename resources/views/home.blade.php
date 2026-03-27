@@ -1,7 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Home - B2B Battery Solutions')
-@section('description', 'Professional B2B battery solutions for AR glasses and electronic devices. Explore our high-quality lithium batteries.')
+@section('title', 'B2B Battery Solutions - High-Quality Lithium Batteries for AR Glasses')
+@section('description', 'Professional B2B battery solutions for AR glasses and electronic devices. Explore our high-quality lithium batteries with competitive pricing.')
+@section('keywords', 'lithium battery, B2B, AR glasses, battery supplier, electronic battery')
 
 @section('schema')
 <script type="application/ld+json">
