@@ -196,8 +196,8 @@ step "步骤 8/9: 配置 Laravel 应用"
 cd "$APP_DIR"
 
 # 安装 PHP 依赖
-info "安装 PHP 依赖 (composer install)..."
-composer install --no-dev --optimize-autoloader --no-interaction -q
+info "安装 PHP 依赖 (composer update)..."
+composer update --no-dev --optimize-autoloader --no-interaction -q || composer install --no-dev --optimize-autoloader --no-interaction -q
 
 # 安装 Node.js 依赖并构建前端
 info "安装前端依赖 (npm install)..."
