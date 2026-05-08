@@ -3158,16 +3158,6 @@ a:hover .news-link, .news-link:hover { color: #f5a623; }
   box-shadow: 0 20px 48px rgba(0,0,0,0.10) !important;
   border-color: #171a20 !important;
 }
-/* Featured (dark) cards keep dark theme on hover */
-.product-card.featured:hover {
-  border-color: transparent !important;
-  box-shadow: 0 20px 48px rgba(0,0,0,0.30), 0 0 0 1px rgba(245,166,35,0.5) !important;
-}
-/* App cards have full-bleed images — lift via scale instead */
-.app-card:hover {
-  transform: translateY(-4px) scale(1.012) !important;
-  box-shadow: 0 22px 52px rgba(0,0,0,0.20) !important;
-}
 /* Cert chip — light amber on hover */
 .cert-chip {
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease !important;
@@ -3175,7 +3165,6 @@ a:hover .news-link, .news-link:hover { color: #f5a623; }
 .cert-chip:hover {
   transform: translateY(-2px) !important;
   border-color: #f5a623 !important;
-  background: #fffaf0 !important;
   box-shadow: 0 10px 24px rgba(245,166,35,0.18) !important;
 }
 
@@ -3257,23 +3246,29 @@ a:hover > .news-link::after,
   pointer-events: none !important;
 }
 
-/* Belt and braces: every card type also gets a visible background
-   change on hover so the user always sees feedback even if a
-   transform glitches. */
-.process-card:hover,
-.step-card:hover,
-.feat-item:hover,
-.contact-card:hover {
-  background: #fffaf0 !important;
+/* THE actual root cause of "middle cards have no hover":
+   .cookie-modal has `display: flex` in its CSS, which OVERRIDES the
+   user-agent `[hidden] { display: none }` rule. So even when the
+   modal had the `hidden` attribute set, it stayed visually rendered
+   (opacity: 0 makes it invisible) at 520x... pixels in the centre
+   of the viewport with z-index 2700 — silently blocking every
+   pointer event in that area. Same risk for the cookie banner and
+   the modal overlay. Force them to display: none when hidden, and
+   set pointer-events: none when not .visible as a belt-and-braces. */
+.cookie-modal[hidden],
+.cookie-modal-overlay[hidden],
+.cookie-banner[hidden] {
+  display: none !important;
 }
-.product-card:hover,
-.news-card:hover,
-.blog-card:hover,
-.pillar-card:hover {
-  background: #fffaf0 !important;
+.cookie-modal:not(.visible),
+.cookie-modal-overlay:not(.visible),
+.cookie-banner:not(.visible) {
+  pointer-events: none;
 }
-/* The dark featured product card keeps its dark gradient on hover. */
-.product-card.featured:hover {
-  background: linear-gradient(135deg, #171a20 0%, #2a2f3b 100%) !important;
+/* When the modal IS visible, restore interactivity to its inputs. */
+.cookie-modal.visible,
+.cookie-modal-overlay.visible,
+.cookie-banner.visible {
+  pointer-events: auto;
 }
 
