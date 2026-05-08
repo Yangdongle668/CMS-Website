@@ -194,38 +194,46 @@ INSERT INTO pillar_pages (
 ON CONFLICT (slug) DO NOTHING;
 
 -- ----- Applications -----
-INSERT INTO applications (slug, name, icon, summary, body, sort_order) VALUES
+INSERT INTO applications (slug, name, icon, cover_url, summary, body, sort_order) VALUES
 ('medical', 'Medical Devices', 'medical',
+ 'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=1200&q=80',
  'IEC 60601-compliant cells for patient monitors, infusion pumps, hearing aids and surgical tools.',
  'We supply medical OEMs with cells that meet IEC 60601 leakage requirements, ISO 13485 traceability and 5+ year shelf life. Common formats include ultra-thin Li-Po for wearable monitors and 18650 packs for portable diagnostic carts.',
  1),
-('wearables', 'Wearables & Hearables', 'wearables',
+('wearables', 'Wearables', 'wearables',
+ 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1200&q=80',
  'Ultra-small round and curved Li-Po cells for TWS earbuds, smart bands and patches.',
  'From 25 mAh discoid cells in 10 mm earbuds to 200 mAh curved cells in fitness bands, we deliver the highest energy density in the smallest envelopes for consumer wearables.',
  2),
-('iot', 'IoT & Smart Sensors',  'iot',
+('iot', 'IoT Devices',  'iot',
+ 'https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=1200&q=80',
  'Long shelf-life cells with low self-discharge for asset trackers, gateways and smart meters.',
  'Industrial IoT requires cells that survive on shelves for 12+ months and operate from -20°C to +60°C. Our IFR 18650 and Li-Po cells are widely used in trackers, smart locks and LoRaWAN sensors.',
  3),
+('ar-vr', 'AR / VR Glasses', 'ar-vr',
+ 'https://images.unsplash.com/photo-1592478411213-6153e4ebc07d?w=1200&q=80',
+ 'Ultra-thin and curved cells for slim AR temples and VR headsets.',
+ 'Headset OEMs use our custom stepped Li-Po cells to free up optical and PCB volume while maintaining 2-4 hour runtime targets.',
+ 4),
 ('drones', 'Drones & UAV', 'drones',
+ 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=1200&q=80',
  'High C-rate Li-Po and 21700 packs for commercial UAV platforms.',
  'We support commercial drone OEMs with 5C-15C continuous discharge cells, balanced BMS and IP-rated battery enclosures certified for outdoor flight operations.',
- 4),
+ 5),
 ('power-tools', 'Power Tools', 'power-tools',
+ 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=1200&q=80',
  '20A continuous, high cycle 18650/21700 packs for cordless tools.',
  'Our INR 21700 cells support 35A pulse and 15-20A continuous, with proven longevity in 18V/40V/60V cordless tool platforms.',
- 5),
+ 6),
 ('e-mobility', 'E-Mobility', 'e-mobility',
+ 'https://images.unsplash.com/photo-1556122071-e404eaedb77f?w=1200&q=80',
  'NMC and LFP cylindrical packs for e-bikes, e-scooters, AGVs and light EVs.',
  'Acme designs and assembles 36V to 96V battery packs with integrated BMS, CAN bus, and IP67 housings for e-mobility OEMs across Europe and Southeast Asia.',
- 6),
+ 7),
 ('energy-storage', 'Energy Storage', 'energy-storage',
+ 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=1200&q=80',
  'LFP cylindrical and prismatic systems for residential, telecom and commercial ESS.',
  'Cycle-optimised LiFePO4 cells (3,000-6,000 cycles) configured into 48V telecom modules, 5kWh wall-mount residential batteries, and 100kWh+ commercial cabinets.',
- 7),
-('ar-vr', 'AR / VR Headsets', 'ar-vr',
- 'Curved and stepped Li-Po cells designed around tight optical engine envelopes.',
- 'Headset OEMs use our custom stepped Li-Po cells to free up optical and PCB volume while maintaining 2-4 hour runtime targets.',
  8)
 ON CONFLICT (slug) DO NOTHING;
 
@@ -282,9 +290,9 @@ ON CONFLICT (slug) DO NOTHING;
 -- ----- Settings -----
 INSERT INTO settings (key, value) VALUES
 ('site',
- '{"name":"Acme Battery Co., Ltd.","tagline":"B2B Lithium Battery Manufacturer","email":"sales@example.com","phone":"+86 755 0000 0000","address":"Building A, Industrial Park, Shenzhen 518000, China","founded_year":2008,"factory_size_sqm":18000,"staff_count":420}'),
+ '{"name":"Acme Battery","tagline":"Custom lithium batteries for AR/VR, medical, wearables and IoT. Founded 2018 in Dongguan.","email":"sales@example.com","engineering_email":"engineering@example.com","phone":"+86 755 0000 0000","address":"Building A, Industrial Park, Shenzhen 518000, China","founded_year":2008,"factory_size_sqm":18000,"staff_count":420}'),
 ('social',
- '{"linkedin":"https://www.linkedin.com/","youtube":"","x":""}'),
+ '{"linkedin":"","whatsapp":""}'),
 ('seo',
  '{"default_meta_description":"OEM/ODM lithium battery manufacturer specialising in polymer Li-Po, custom-shaped Li-Po and cylindrical Li-Ion cells. ISO 9001, UN 38.3, CE compliant.","default_meta_image":"/assets/img/og-default.svg"}'),
 ('gdpr',
@@ -292,5 +300,5 @@ INSERT INTO settings (key, value) VALUES
 ('mail',
  '{"reply_to":"sales@example.com","subject_prefix":"[Inquiry]","auto_reply_enabled":true}'),
 ('navigation',
- '{"header":[{"label":"Products","url":"#","children":[{"label":"Polymer Lithium Battery","url":"/products/polymer-lithium-battery"},{"label":"Custom-Shaped Li-Po","url":"/products/custom-shaped-polymer-lithium-battery"},{"label":"Cylindrical Li-Ion","url":"/products/cylindrical-steel-shell-lithium-battery"}]},{"label":"Applications","url":"/applications"},{"label":"Custom Solutions","url":"/custom-solutions"},{"label":"Quality","url":"/quality"},{"label":"Insights","url":"/blog"},{"label":"About","url":"/about"},{"label":"Contact","url":"/contact"}],"footer":[{"label":"Privacy Policy","url":"/privacy"},{"label":"Cookie Policy","url":"/cookies"},{"label":"Terms","url":"/terms"},{"label":"GDPR Requests","url":"/gdpr"}]}')
+ '{"header":[{"label":"HOME","url":"/","nav":"home"},{"label":"PRODUCTS","url":"/products/","nav":"products","children":[{"label":"Standard Batteries","url":"/products/standard.html"},{"label":"Custom Batteries","url":"/products/custom.html"}]},{"label":"APPLICATIONS","url":"/applications/","nav":"applications","children":[{"label":"AR / VR Glasses","url":"/applications/ar-vr.html"},{"label":"Medical Devices","url":"/applications/medical.html"},{"label":"Wearables","url":"/applications/wearables.html"},{"label":"IoT Devices","url":"/applications/iot.html"}]},{"label":"CUSTOM SOLUTIONS","url":"/solutions/","nav":"solutions","children":[{"label":"Design Support","url":"/solutions/design.html"},{"label":"Prototyping","url":"/solutions/prototyping.html"},{"label":"Mass Production","url":"/solutions/mass-production.html"}]},{"label":"ABOUT US","url":"/about/","nav":"about","children":[{"label":"Company Profile","url":"/about/profile.html"},{"label":"Factory Tour","url":"/about/factory.html"},{"label":"Team","url":"/about/team.html"}]},{"label":"BLOG","url":"/blog/","nav":"blog"},{"label":"FAQ","url":"/faq.html","nav":"faq"},{"label":"CONTACT","url":"/contact.html","nav":"contact"}]}')
 ON CONFLICT (key) DO NOTHING;

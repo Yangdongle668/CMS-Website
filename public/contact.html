@@ -1,81 +1,150 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Contact Acme Battery | Sales &amp; Engineering | B2B Lithium Battery Manufacturer</title>
-<meta name="description" content="Talk to Acme Battery's sales and engineering team. Multiple regional contacts, 1-business-day response, GDPR-compliant data handling."/>
-<link rel="canonical" href="/contact"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/css/theme.css"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact — Zufek</title>
+<meta name="description" content="Get in touch with Zufek — request a quote, schedule a factory tour or start a custom battery program.">
+<link rel="stylesheet" href="/styles.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
-<div data-mount="header"></div>
+<body data-nav="contact">
+<div id="header-mount"></div>
 
-<section class="hero">
-  <div class="container">
-    <nav class="crumbs"><a href="/">Home</a><span>/</span>Contact</nav>
-    <div class="hero__inner">
-      <div class="hero__copy reveal">
-        <span class="eyebrow">Contact</span>
-        <h1>Talk to a battery engineer, not a sales script.</h1>
-        <p>Tell us your specs once. Our sales engineering team responds within one business day with a feasibility note, lead time and indicative pricing.</p>
-      </div>
-      <div class="hero__visual reveal" style="background:#fff; padding:32px;">
-        <div style="display:grid; gap:16px;">
+<main>
+  <section class="page-hero" style="background-image:url('https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&q=80');">
+    <div class="breadcrumbs"><a href="/">Home</a><span>/</span><span>Contact ★</span></div>
+    <h1>Let's power your next product.</h1>
+    <p>Tell us about your device — we'll reply within one business day with a feasibility assessment.</p>
+  </section>
+
+  <section class="section section-dark">
+    <div class="section-inner">
+      <form class="contact-form" onsubmit="return handleContactSubmit(event)">
+        <!-- Honeypot — hidden from humans, bots fill everything -->
+        <div class="hp-field" aria-hidden="true">
+          <label>Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+        </div>
+        <div class="form-row">
+          <label><span>Name *</span><input type="text" name="name" required></label>
+          <label><span>Company *</span><input type="text" name="company" required></label>
+        </div>
+        <div class="form-row">
+          <label><span>Email *</span><input type="email" name="email" required></label>
+          <label><span>Country</span><input type="text" name="country"></label>
+        </div>
+        <div class="form-row">
+          <label><span>Phone / WhatsApp</span><input type="text" name="phone"></label>
+          <label>
+            <span>Application</span>
+            <select name="application">
+              <option>AR / VR Glasses</option>
+              <option>Medical Device</option>
+              <option>Wearable</option>
+              <option>IoT Device</option>
+              <option>Other</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          <span>Inquiry Type</span>
+          <select name="inquiry">
+            <option>Request a Quote</option>
+            <option>Start a Custom Project</option>
+            <option>Schedule a Factory Tour</option>
+            <option>Request Datasheet / Samples</option>
+            <option>Media / Press</option>
+            <option>Careers</option>
+            <option>Other</option>
+          </select>
+        </label>
+        <label>
+          <span>Tell us about your project</span>
+          <textarea name="message" rows="6" required minlength="10" placeholder="Target capacity, dimensions, cycle life, certification needs, timeline, expected annual volume…"></textarea>
+        </label>
+
+        <div data-turnstile data-turnstile-theme="dark" style="display:flex; justify-content:center;"></div>
+
+        <label class="cookie-opt" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); padding:14px; border-radius:8px;">
+          <input type="checkbox" name="consent" required>
           <div>
-            <h4 style="font-size:13px; color:var(--color-fg-mute); text-transform:uppercase; letter-spacing:0.08em; margin:0;">Sales</h4>
-            <a href="mailto:sales@example.com" data-contact-email style="font-size:18px; font-weight:600;">sales@example.com</a>
+            <span class="cookie-opt-title" style="color:#f5f5f7;">I agree to be contacted about my inquiry</span>
+            <span class="cookie-opt-desc" style="color:#a1a1a6;">I have read the <a href="/privacy.html" style="color:#f5a623;">Privacy Policy</a> and consent to my data being processed for the purpose of responding to my inquiry. I can withdraw consent anytime via the <a href="/gdpr.html" style="color:#f5a623;">GDPR request page</a>.</span>
           </div>
-          <div>
-            <h4 style="font-size:13px; color:var(--color-fg-mute); text-transform:uppercase; letter-spacing:0.08em; margin:0;">Phone</h4>
-            <span data-contact-phone style="font-size:18px; font-weight:600;">+86 755 0000 0000</span>
-          </div>
-          <div>
-            <h4 style="font-size:13px; color:var(--color-fg-mute); text-transform:uppercase; letter-spacing:0.08em; margin:0;">Address</h4>
-            <span data-contact-address style="font-size:15px; color:var(--color-fg-soft);">Building A, Industrial Park, Shenzhen 518000, China</span>
-          </div>
-          <div>
-            <h4 style="font-size:13px; color:var(--color-fg-mute); text-transform:uppercase; letter-spacing:0.08em; margin:0;">Privacy</h4>
-            <a href="/gdpr" style="font-size:15px;">GDPR data subject requests →</a>
-          </div>
+        </label>
+
+        <button type="submit" class="btn btn-primary">Send Inquiry</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="section section-light">
+    <div class="section-inner">
+      <span class="eyebrow">Direct Contact</span>
+      <h2>Or reach the right team directly.</h2>
+      <div class="feat-grid">
+        <div class="feat-item">
+          <div class="feat-icon">✉</div>
+          <h3>Sales &amp; Quotes</h3>
+          <p><strong>info@zufek.com</strong><br>+86 755 0000 0000<br>WeChat / WhatsApp on request</p>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon">⚙</div>
+          <h3>Engineering</h3>
+          <p><strong>engineering@zufek.com</strong><br>For DFM reviews and technical questions</p>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon">+</div>
+          <h3>Medical Programs</h3>
+          <p><strong>info@zufek.com</strong><br>Quality agreements, DHF support, audits</p>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon">📣</div>
+          <h3>Press &amp; Media</h3>
+          <p><strong>info@zufek.com</strong><br>Corporate profile and interview requests</p>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon">👤</div>
+          <h3>Careers</h3>
+          <p><strong>info@zufek.com</strong><br>Engineering, QA, operations roles</p>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon">⚠</div>
+          <h3>After-sales</h3>
+          <p><strong>info@zufek.com</strong><br>RMA, field returns, CAPA</p>
         </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<section class="section">
-  <div class="container">
-    <div class="rfq rfq--light reveal">
-      <div>
-        <span class="eyebrow">Contact Form</span>
-        <h2>Send a detailed inquiry.</h2>
-        <p>Use this form for project inquiries, datasheet requests, NDAs and audit visits.</p>
-        <div class="rfq__perks">
-          <div class="rfq__perk"><span class="rfq__perk-icon">✓</span><div><strong>Reply within 1 business day</strong><small>From a real engineer.</small></div></div>
-          <div class="rfq__perk"><span class="rfq__perk-icon">✓</span><div><strong>Confidential</strong><small>NDA available before drawings exchange.</small></div></div>
-          <div class="rfq__perk"><span class="rfq__perk-icon">✓</span><div><strong>GDPR compliant</strong><small>Your data stays under your control.</small></div></div>
+  <section class="section section-grey">
+    <div class="section-inner">
+      <span class="eyebrow">Locations</span>
+      <h2>Two sites, both audit-ready.</h2>
+      <div class="content-split">
+        <div class="text-col">
+          <h3>Headquarters — Dongguan</h3>
+          <p>Room 432, Building 1, No. 34 Jinniu Road<br>Guancheng Subdistrict<br>Dongguan City, Guangdong Province, China</p>
+          <h3>Office hours</h3>
+          <p>Monday – Friday, 09:00 – 18:00 CST (UTC+8)<br>Email replies within one business day worldwide</p>
+          <h3>Connect with us</h3>
+          <p>
+            <strong>WhatsApp:</strong> +86 153 7772 0020<br>
+            <strong>LinkedIn:</strong> <a href="https://www.linkedin.com/company/zufek" target="_blank" rel="noopener">linkedin.com/company/zufek</a>
+          </p>
+        </div>
+        <div class="img-col">
+          <img src="https://images.unsplash.com/photo-1566275529824-cca6d008f3da?w=1000&q=80" alt="Dongguan">
         </div>
       </div>
-      <div data-rfq-mount></div>
     </div>
-  </div>
-</section>
+  </section>
+</main>
 
-<div data-mount="footer"></div>
-<script src="/assets/js/site.js"></script>
-<script>
-document.addEventListener('site:ready', (ev) => {
-  const site = (ev.detail.settings || {}).site;
-  if (!site) return;
-  const e = document.querySelector('[data-contact-email]');
-  if (e && site.email) { e.textContent = site.email; e.href = 'mailto:' + site.email; }
-  const p = document.querySelector('[data-contact-phone]');
-  if (p && site.phone) p.textContent = site.phone;
-  const a = document.querySelector('[data-contact-address]');
-  if (a && site.address) a.textContent = site.address;
-});
-</script>
+<div id="footer-mount"></div>
+<div id="sidemenu-mount"></div>
+<script src="/partials.js"></script>
+<script src="/script.js"></script>
 </body>
 </html>

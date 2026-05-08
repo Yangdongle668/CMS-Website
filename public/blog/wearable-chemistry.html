@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Choosing Between LiPo, Li-ion and LiFePO4 for Wearables — Zufek Blog</title>
+<meta name="description" content="A decision framework for picking the right lithium chemistry for wearables: energy density, safety, cycle life and form factor.">
+<link rel="stylesheet" href="/styles.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body data-nav="blog">
+<div id="header-mount"></div>
+
+<main>
+  <section class="page-hero" style="background-image:url('https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1920&q=80');">
+    <div class="breadcrumbs"><a href="/">Home</a><span>/</span><a href="/blog/">Blog</a><span>/</span><a href="/blog/guides.html">Battery Guides</a><span>/</span><span>Wearable Chemistry</span></div>
+    <h1>Choosing Between LiPo, Li-ion and LiFePO4 for Wearables</h1>
+    <p>A decision framework for sub-10-gram devices where every cubic millimetre counts.</p>
+  </section>
+
+  <section class="section section-light">
+    <div class="section-inner">
+      <div class="article-meta">
+        <span>Guide</span><span class="dot">·</span>
+        <span>8 min read</span><span class="dot">·</span>
+        <span>Chemistry</span>
+      </div>
+
+      <article class="article-body">
+        <p class="lede">When a product manager asks &ldquo;which chemistry should we use?&rdquo;, the honest first answer is almost always a counter-question: how small, how long, and how safe does it have to be? Those three constraints collapse the choice faster than any spec sheet.</p>
+
+        <h2>The three candidates, in one table</h2>
+        <table>
+          <thead><tr><th>Property</th><th>LiPo (LCO / NMC)</th><th>Li-ion cylindrical</th><th>LiFePO4</th></tr></thead>
+          <tbody>
+            <tr><td>Energy density (Wh/L)</td><td>600–760</td><td>550–730</td><td>320–420</td></tr>
+            <tr><td>Cycle life to 80% SOH</td><td>500–800</td><td>500–1,000</td><td>2,000–3,000</td></tr>
+            <tr><td>Nominal voltage</td><td>3.7–3.85 V</td><td>3.6–3.7 V</td><td>3.2 V</td></tr>
+            <tr><td>Thermal runaway onset</td><td>~150 °C</td><td>~150 °C</td><td>~270 °C</td></tr>
+            <tr><td>Minimum thickness achievable</td><td>0.45 mm</td><td>~4 mm (dia)</td><td>~4 mm (dia)</td></tr>
+          </tbody>
+        </table>
+
+        <h2>For most wearables, LiPo wins</h2>
+        <p>Watches, TWS earbuds, fitness bands, smart rings, AR glasses — almost every device in this category uses a lithium-polymer pouch cell. The reason is mechanical: only a pouch can be made curved, stepped, rectangular or under 1 mm thick, which is what an industrial-design team needs when the cell has to disappear into the enclosure.</p>
+        <p>Within LiPo, the default cathode is LCO for sub-1 Ah cells. Above 1 Ah you see NMC more often, which trades a little volumetric density for better cycle life and easier fast charging.</p>
+
+        <h2>When cylindrical Li-ion makes sense</h2>
+        <ul>
+          <li>The enclosure has a natural cylindrical cavity (barrel-shaped handheld, some medical pumps).</li>
+          <li>You need cells in parallel beyond ~2 Ah and want a mature supply chain.</li>
+          <li>Mechanical robustness against drop/crush matters more than a few grams of weight.</li>
+        </ul>
+
+        <h2>When LiFePO4 is worth considering</h2>
+        <p>LFP has one job: cycle life and thermal stability. For a wearable, its lower density usually disqualifies it — you give up 35–50% of runtime at the same volume. The cases where it still wins:</p>
+        <ul>
+          <li>Long-life industrial wearables (thermometers, logistics wristbands) that charge daily for 5+ years.</li>
+          <li>Medical-adjacent devices where thermal runaway risk must be pushed as far as possible.</li>
+          <li>Charging docks or hub batteries where volume is not critical.</li>
+        </ul>
+
+        <h2>High-voltage LCO: the new default for AR</h2>
+        <p>The recent move to 4.45 V and 4.48 V charge cut-off extends the energy envelope by about 8% at the same cell volume. For AR glasses where the battery cavity is fixed, those 8 percentage points can be the difference between 4-hour and 4.5-hour runtime. The trade-off is cycle life — typical 4.48 V formulations retain 80% SOH for around 400–500 cycles instead of 600–800, which is acceptable if the device is charged nightly and replaced after 2–3 years.</p>
+
+        <h2>A 3-question decision shortcut</h2>
+        <ol>
+          <li><strong>Can the cell fit inside a pouch under 2 mm thick?</strong> → LiPo.</li>
+          <li><strong>Does the device charge more than 1,000 cycles in its expected life?</strong> → Consider LFP for a packable product, or accept LiPo with over-sizing.</li>
+          <li><strong>Are you ready to trade ~30% cycle life for ~8% more runtime?</strong> → HV LCO.</li>
+        </ol>
+
+        <h2>The thing we see most often go wrong</h2>
+        <p>Engineering teams pick a chemistry based on a single metric — usually energy density — and discover six months later that cycle life at their actual operating temperature is half the datasheet number. Always ask a vendor for cycle data at <em>your</em> C-rate, depth of discharge and ambient temperature, not the lab conditions.</p>
+
+        <nav class="article-nav">
+          <a href="/blog/guides.html" class="prev">← Back to Battery Guides</a>
+          <a href="/blog/ar-thin-battery.html" class="next">Next: Ultra-Thin Battery for AR Glasses →</a>
+        </nav>
+      </article>
+    </div>
+  </section>
+
+  <section class="section section-dark cta-band">
+    <div class="section-inner">
+      <h2>Still undecided?</h2>
+      <p class="lead">Send us your power profile and enclosure — we&rsquo;ll recommend a chemistry and cell size within 3 working days.</p>
+      <a href="/contact.html" class="btn btn-accent">Ask an Engineer</a>
+    </div>
+  </section>
+</main>
+
+<div id="footer-mount"></div>
+<div id="sidemenu-mount"></div>
+<script src="/partials.js"></script>
+<script src="/script.js"></script>
+</body>
+</html>
