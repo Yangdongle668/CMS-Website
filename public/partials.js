@@ -175,7 +175,6 @@ function footerHtml(settings) {
         <li><a href="/privacy.html">Privacy Policy</a></li>
         <li><a href="/terms.html">Terms of Use</a></li>
         <li><a href="/legal.html">Legal</a></li>
-        <li><a href="/gdpr.html">GDPR Requests</a></li>
         <li><a href="/sitemap.xml">Sitemap</a></li>
         <li><a href="#" id="cookie-settings-link">Cookie Settings</a></li>
       </ul>
