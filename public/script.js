@@ -66,6 +66,22 @@ function bindDropdowns() {
     else if (__ddState.activeLi) scheduleClose();
   });
 
+  // Backup: pointermove (throttled) checks the actual element under the
+  // cursor via elementFromPoint. Catches edge cases where mouseover
+  // mis-fires (rare but seen on some browser/OS combos when crossing
+  // small gaps between elements).
+  let __lastPointerCheck = 0;
+  document.addEventListener('pointermove', (ev) => {
+    const now = Date.now();
+    if (now - __lastPointerCheck < 80) return;
+    __lastPointerCheck = now;
+    const el = document.elementFromPoint(ev.clientX, ev.clientY);
+    if (!el) return;
+    const li = el.closest && el.closest('.has-dropdown');
+    if (li) openLi(li);
+    else if (__ddState.activeLi) scheduleClose();
+  });
+
   // Keyboard focus
   document.addEventListener('focusin', (ev) => {
     const li = ev.target.closest && ev.target.closest('.has-dropdown');
