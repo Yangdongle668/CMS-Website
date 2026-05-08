@@ -3231,3 +3231,49 @@ a:hover > .news-link::after,
   color: #b67500;
 }
 
+
+/* =============================================================
+   Final defensive layer (v13) — kill all pointer interference
+   from decorative pseudo-elements + add visible background change
+   on every card hover.
+   ============================================================= */
+
+/* Decorative pseudos must NEVER intercept mouse events.
+   Without this, the .process-grid::before connector line, the
+   .hero/.page-hero gradient overlays, the .app-card image layers,
+   the .tesla-slide gradient and others were eating hover on
+   anything that visually overlapped them. */
+.process-grid::before,
+.hero::before,
+.page-hero::before,
+.article-hero::before,
+.cta-band::before,
+.tesla-slide::before,
+.app-card::before,
+.app-card::after,
+.blog-featured__media::after,
+.pillar-card__media::after,
+.dropdown::before {
+  pointer-events: none !important;
+}
+
+/* Belt and braces: every card type also gets a visible background
+   change on hover so the user always sees feedback even if a
+   transform glitches. */
+.process-card:hover,
+.step-card:hover,
+.feat-item:hover,
+.contact-card:hover {
+  background: #fffaf0 !important;
+}
+.product-card:hover,
+.news-card:hover,
+.blog-card:hover,
+.pillar-card:hover {
+  background: #fffaf0 !important;
+}
+/* The dark featured product card keeps its dark gradient on hover. */
+.product-card.featured:hover {
+  background: linear-gradient(135deg, #171a20 0%, #2a2f3b 100%) !important;
+}
+
