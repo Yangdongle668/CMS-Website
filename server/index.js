@@ -17,26 +17,37 @@ const ROOT = path.join(__dirname, '..');
 
 app.set('trust proxy', 1);
 
-// ----- Security headers (loose CSP for inline static admin/site) -----
+// ----- Security headers -----
+// HTTPS enforcement (HSTS + upgrade-insecure-requests) is only enabled when
+// FORCE_HTTPS=true. When the site is served over plain HTTP (e.g. running
+// via `docker compose up` without a TLS terminator), forcing upgrades
+// breaks every CSS/JS asset because the browser tries to fetch them over
+// HTTPS and gets ERR_SSL_PROTOCOL_ERROR.
+const forceHttps = String(process.env.FORCE_HTTPS || 'false') === 'true';
+
+const cspDirectives = {
+  'default-src': ["'self'"],
+  'script-src': ["'self'", "'unsafe-inline'", 'https://challenges.cloudflare.com'],
+  'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+  'font-src': ["'self'", 'https://fonts.gstatic.com', 'data:'],
+  'img-src': ["'self'", 'data:', 'blob:', 'http:', 'https:'],
+  'connect-src': ["'self'", 'https://challenges.cloudflare.com'],
+  'frame-src': ['https://challenges.cloudflare.com'],
+  'object-src': ["'none'"],
+  'base-uri': ["'self'"],
+  'form-action': ["'self'"],
+};
+// `useDefaults: true` would inject upgrade-insecure-requests, so explicitly
+// null it out unless HTTPS is actually being served.
+cspDirectives['upgrade-insecure-requests'] = forceHttps ? [] : null;
+
 app.use(
   helmet({
-    contentSecurityPolicy: {
-      useDefaults: true,
-      directives: {
-        'default-src': ["'self'"],
-        'script-src': ["'self'", "'unsafe-inline'", 'https://challenges.cloudflare.com'],
-        'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-        'font-src': ["'self'", 'https://fonts.gstatic.com', 'data:'],
-        'img-src': ["'self'", 'data:', 'blob:', 'https:'],
-        'connect-src': ["'self'", 'https://challenges.cloudflare.com'],
-        'frame-src': ['https://challenges.cloudflare.com'],
-        'object-src': ["'none'"],
-        'base-uri': ["'self'"],
-        'form-action': ["'self'"],
-        'upgrade-insecure-requests': [],
-      },
-    },
+    contentSecurityPolicy: { useDefaults: true, directives: cspDirectives },
     crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: forceHttps ? undefined : false,
+    originAgentCluster: false,
+    hsts: forceHttps,
   })
 );
 
