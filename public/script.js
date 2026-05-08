@@ -201,6 +201,45 @@ window.handleContactSubmit = handleContactSubmit;
   });
 })();
 
+// ===== Tesla-style horizontal slider =====
+// Wires the prev/next arrows to scroll the track by ~one card width and
+// disables them at the edges. Idempotent: skips already-bound sliders.
+function bindSliders() {
+  document.querySelectorAll('[data-slider]').forEach((slider) => {
+    if (slider.__bound) return;
+    slider.__bound = true;
+    const track = slider.querySelector('[data-slider-track]');
+    const prev  = slider.querySelector('.tesla-slider__arrow--prev');
+    const next  = slider.querySelector('.tesla-slider__arrow--next');
+    if (!track || !prev || !next) return;
+
+    const cardWidth = () => {
+      const first = track.firstElementChild;
+      if (!first) return track.clientWidth;
+      const gap = parseFloat(getComputedStyle(track).columnGap || '0') || 0;
+      return first.getBoundingClientRect().width + gap;
+    };
+    const updateArrows = () => {
+      const max = track.scrollWidth - track.clientWidth - 2;
+      prev.toggleAttribute('disabled', track.scrollLeft <= 2);
+      next.toggleAttribute('disabled', track.scrollLeft >= max);
+    };
+    prev.addEventListener('click', () => {
+      track.scrollBy({ left: -cardWidth(), behavior: 'smooth' });
+    });
+    next.addEventListener('click', () => {
+      track.scrollBy({ left: cardWidth(), behavior: 'smooth' });
+    });
+    track.addEventListener('scroll', updateArrows, { passive: true });
+    window.addEventListener('resize', updateArrows, { passive: true });
+    // Initial state
+    requestAnimationFrame(updateArrows);
+  });
+}
+document.addEventListener('cms:ready', bindSliders);
+if (document.readyState !== 'loading') bindSliders();
+else document.addEventListener('DOMContentLoaded', bindSliders);
+
 // ===== Reveal-on-scroll (refined slide-up) =====
 const fadeTargets = document.querySelectorAll(
   '.product-card, .app-card, .step-card, .news-card, .about-tab, .about-stats > div, .contact-card, .faq-list details, .feat-item, [data-reveal]'
