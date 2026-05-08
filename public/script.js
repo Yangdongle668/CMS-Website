@@ -28,38 +28,70 @@ function bindSideMenu() {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
 }
 
-// ===== Nav dropdowns with grace delay =====
-// Without this, moving the mouse from the parent nav item to the dropdown
-// items can lose :hover briefly and close the menu before the user picks
-// an option. This adds a 220ms close delay and re-uses an .is-open class
-// that the CSS opens identically to the :hover state.
+// ===== Nav dropdowns =====
+// Uses a document-level bubbling `mouseover` handler instead of per-<li>
+// mouseenter/leave. The previous approach lost track when the cursor
+// crossed the gap between the parent nav item and the absolute-positioned
+// .dropdown — it sometimes mis-fired mouseleave on the third or fourth
+// item. With document-level mouseover we get a continuous signal of
+// "what element is under the cursor right now", so the menu stays open
+// as long as the cursor is anywhere in the .has-dropdown subtree.
+let __ddState = { activeLi: null, closeTimer: null };
 function bindDropdowns() {
-  document.querySelectorAll('.has-dropdown').forEach((li) => {
-    if (li.__ddBound) return;
-    li.__ddBound = true;
-    let timer = null;
-    const open = () => { clearTimeout(timer); li.classList.add('is-open'); };
-    const close = () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => li.classList.remove('is-open'), 220);
-    };
-    li.addEventListener('mouseenter', open);
-    li.addEventListener('mouseleave', close);
-    li.addEventListener('focusin', open);
-    li.addEventListener('focusout', (ev) => {
-      // Close only when focus has actually left the whole dropdown subtree
-      if (!li.contains(ev.relatedTarget)) close();
-    });
-    // Tap-on-mobile: first tap opens, second navigates
-    const trigger = li.querySelector(':scope > a');
-    if (trigger) {
-      trigger.addEventListener('click', (ev) => {
-        if (window.matchMedia('(hover: hover)').matches) return;
-        if (!li.classList.contains('is-open')) {
-          ev.preventDefault();
-          li.classList.add('is-open');
-        }
-      });
+  if (window.__ddBound) return;
+  window.__ddBound = true;
+
+  const openLi = (li) => {
+    clearTimeout(__ddState.closeTimer);
+    if (__ddState.activeLi && __ddState.activeLi !== li) {
+      __ddState.activeLi.classList.remove('is-open');
+    }
+    __ddState.activeLi = li;
+    li.classList.add('is-open');
+  };
+  const scheduleClose = () => {
+    clearTimeout(__ddState.closeTimer);
+    __ddState.closeTimer = setTimeout(() => {
+      if (__ddState.activeLi) {
+        __ddState.activeLi.classList.remove('is-open');
+        __ddState.activeLi = null;
+      }
+    }, 240);
+  };
+
+  // Mouse: bubbling mouseover continuously tells us where the cursor is.
+  document.addEventListener('mouseover', (ev) => {
+    const li = ev.target.closest && ev.target.closest('.has-dropdown');
+    if (li) openLi(li);
+    else if (__ddState.activeLi) scheduleClose();
+  });
+
+  // Keyboard focus
+  document.addEventListener('focusin', (ev) => {
+    const li = ev.target.closest && ev.target.closest('.has-dropdown');
+    if (li) openLi(li);
+    else if (__ddState.activeLi) scheduleClose();
+  });
+
+  // Escape closes immediately
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && __ddState.activeLi) {
+      clearTimeout(__ddState.closeTimer);
+      __ddState.activeLi.classList.remove('is-open');
+      __ddState.activeLi = null;
+    }
+  });
+
+  // Touch: first tap opens, second tap navigates. Bound per-trigger so
+  // we can preventDefault selectively.
+  document.addEventListener('click', (ev) => {
+    if (window.matchMedia('(hover: hover)').matches) return;
+    const trigger = ev.target.closest && ev.target.closest('.has-dropdown > a');
+    if (!trigger) return;
+    const li = trigger.parentElement;
+    if (li && !li.classList.contains('is-open')) {
+      ev.preventDefault();
+      openLi(li);
     }
   });
 }
