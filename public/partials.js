@@ -312,6 +312,29 @@ async function loadSettings() {
   } catch (_) { /* keep fallback */ }
 }
 
+// Floating "Quick Quote" button (sitewide) — appears after the user has
+// scrolled past the hero. Hidden on /contact.html and on the admin shell.
+function injectFloatingQuote() {
+  if (location.pathname.startsWith('/admin/')) return;
+  if (location.pathname === '/contact.html') return;
+  if (document.querySelector('.floating-quote')) return;
+  const a = document.createElement('a');
+  a.className = 'floating-quote';
+  a.href = '/contact.html';
+  a.setAttribute('aria-label', 'Get a quote');
+  a.innerHTML = 'Get a Quote';
+  document.body.appendChild(a);
+  let lastY = 0;
+  const sync = () => {
+    const y = window.scrollY;
+    // Show after scrolling 60% of the viewport height
+    a.classList.toggle('is-visible', y > Math.max(window.innerHeight * 0.6, 320));
+    lastY = y;
+  };
+  window.addEventListener('scroll', sync, { passive: true });
+  sync();
+}
+
 // Boot: render fallback synchronously so other scripts (script.js) find
 // the DOM elements they need; then override with live data.
 (async function () {
@@ -320,6 +343,7 @@ async function loadSettings() {
   // 2. Inject cookie banner once
   document.body.insertAdjacentHTML('beforeend', COOKIE_BANNER_HTML);
   bindCookieBanner();
+  injectFloatingQuote();
   // 3. Live load and re-render
   await loadSettings();
   renderAll();
