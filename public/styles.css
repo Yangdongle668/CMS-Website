@@ -3272,3 +3272,127 @@ a:hover > .news-link::after,
   pointer-events: auto;
 }
 
+
+/* =============================================================
+   v15 — nav slide animation + redesigned stat counters
+   ============================================================= */
+
+/* Animated underline on top-level nav links — sleek + subtle. */
+.nav-main > li > a {
+  position: relative;
+}
+.nav-main > li > a::after {
+  content: '';
+  position: absolute;
+  left: 14px; right: 14px;
+  bottom: 2px;
+  height: 2px;
+  background: #f5a623;
+  border-radius: 2px;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.3s cubic-bezier(.2,.8,.2,1);
+  pointer-events: none;
+}
+.nav-main > li > a:hover::after,
+.nav-main > li.active-nav > a::after,
+.nav-main > li.has-dropdown.is-open > a::after,
+.nav-main > li.has-dropdown:hover > a::after {
+  transform: scaleX(1);
+}
+/* Slightly darker hover bg, no warm cream (per user request) */
+.nav-main > li > a:hover {
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+#site-header:not(.scrolled) .nav-main > li > a:hover {
+  background: rgba(255, 255, 255, 0.10) !important;
+}
+
+/* =============================================================
+   Redesigned stats / counter section
+   ============================================================= */
+.about-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 28px;
+  padding-top: 56px !important;
+  padding-bottom: 16px;
+  border-top: 1px solid #d4d4d4;
+}
+.section-dark .about-stats {
+  border-top-color: rgba(255,255,255,0.10);
+}
+
+.about-stats > div {
+  display: flex !important;
+  flex-direction: column;
+  align-items: flex-start !important;
+  text-align: left !important;
+  position: relative;
+  padding: 6px 0 6px 22px;
+}
+.about-stats > div::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 6px;
+  width: 3px; height: 64px;
+  background: linear-gradient(180deg, #f5a623 0%, rgba(245,166,35,0) 100%);
+  border-radius: 2px;
+}
+
+/* Big display number — gradient text on light, amber-tinted on dark */
+.about-stats strong {
+  display: flex !important;
+  align-items: baseline;
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  font-size: clamp(48px, 6vw, 76px) !important;
+  font-weight: 300 !important;
+  letter-spacing: -2.5px !important;
+  line-height: 0.95 !important;
+  margin: 0;
+  font-feature-settings: "tnum" 1, "lnum" 1;  /* tabular numbers */
+  color: #171a20 !important;
+  background: linear-gradient(135deg, #171a20 0%, #5c5e62 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.section-dark .about-stats strong {
+  background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.about-stats strong > span {
+  font-family: 'Inter', sans-serif;
+  font-size: 22px !important;
+  font-weight: 500 !important;
+  margin-left: 8px !important;
+  letter-spacing: -0.4px;
+  color: #f5a623 !important;
+  -webkit-text-fill-color: #f5a623;
+  background: none;
+  -webkit-background-clip: initial;
+  align-self: flex-end;
+  padding-bottom: 8px;
+}
+.about-stats em {
+  font-style: normal !important;
+  display: block;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: 1.6px !important;
+  text-transform: uppercase;
+  color: #5c5e62 !important;
+  margin-top: 18px !important;
+}
+.section-dark .about-stats em { color: #a1a1a6 !important; }
+
+@media (max-width: 900px) {
+  .about-stats { grid-template-columns: repeat(2, 1fr); gap: 32px 20px; }
+  .about-stats strong { font-size: 48px !important; }
+}
+@media (max-width: 480px) {
+  .about-stats { grid-template-columns: 1fr; gap: 24px; }
+}
+
