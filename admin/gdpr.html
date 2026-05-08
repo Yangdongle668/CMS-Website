@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="robots" content="noindex"/>
-<title>GDPR Requests | Acme CMS</title>
+<title>GDPR 请求 | 后台管理</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/admin/assets/css/admin.css"/>
 </head>
@@ -14,16 +14,16 @@
 <script>
 (async function () {
   const { api, escapeHtml, formatDate, toast, bootShell } = window.AdminAPI;
-  const shell = await bootShell({ title: 'GDPR Requests', crumbs: 'Compliance / GDPR' });
+  const shell = await bootShell({ title: 'GDPR 请求', crumbs: '合规 / GDPR' });
   if (!shell) return;
 
   async function refresh() {
     const { items } = await api('/api/gdpr');
     shell.content.innerHTML = `
       <div class="panel">
-        <p style="margin:0 0 16px; color:var(--a-mute2); font-size:13px;">Data subject access, rectification and erasure requests under GDPR Articles 15-22. We are required to respond within 30 days.</p>
+        <p style="margin:0 0 16px; color:var(--a-mute2); font-size:13px;">GDPR 第 15-22 条规定的数据访问、更正、删除请求。需在 30 天内响应。</p>
         <table class="table">
-          <thead><tr><th>Reference</th><th>Type</th><th>Email</th><th>Status</th><th>Verified</th><th>Submitted</th><th></th></tr></thead>
+          <thead><tr><th>编号</th><th>类型</th><th>邮箱</th><th>状态</th><th>已验证</th><th>提交时间</th><th></th></tr></thead>
           <tbody>
             ${items.length ? items.map((g) => `
               <tr>
@@ -31,26 +31,26 @@
                 <td><span class="pill pill--read">${escapeHtml(g.request_type)}</span></td>
                 <td>${escapeHtml(g.email)}</td>
                 <td><span class="pill pill--${g.status}">${g.status}</span></td>
-                <td>${g.verified_at ? formatDate(g.verified_at) : '<span style="color:var(--a-mute2);">Not verified</span>'}</td>
+                <td>${g.verified_at ? formatDate(g.verified_at) : '<span style="color:var(--a-mute2);">未验证</span>'}</td>
                 <td>${formatDate(g.created_at)}</td>
                 <td>
                   ${g.status !== 'completed' && g.verified_at ? `
-                    <a class="btn btn--ghost btn--sm" href="/api/gdpr/${g.id}/export" target="_blank">Export</a>
-                    <button class="btn btn--sm" data-complete="${g.id}" data-type="${g.request_type}">Mark complete</button>
+                    <a class="btn btn--ghost btn--sm" href="/api/gdpr/${g.id}/export" target="_blank">导出</a>
+                    <button class="btn btn--sm" data-complete="${g.id}" data-type="${g.request_type}">标记为已处理</button>
                   ` : ''}
                 </td>
               </tr>
-            `).join('') : '<tr><td colspan="7"><div class="empty">No GDPR requests yet.</div></td></tr>'}
+            `).join('') : '<tr><td colspan="7"><div class="empty">还没有 GDPR 请求。</div></td></tr>'}
           </tbody>
         </table>
       </div>
     `;
     document.querySelectorAll('[data-complete]').forEach((b) => b.addEventListener('click', async () => {
       const t = b.dataset.type;
-      const msg = t === 'delete' ? 'Mark this delete request as completed? This will soft-delete all inquiries with the requester\'s email address.' : 'Mark this request as completed?';
+      const msg = t === 'delete' ? 'Mark this delete request as completed? This will soft-delete all inquiries with the requester\'s email address.' : '确认完成此请求？';
       if (!confirm(msg)) return;
       await api('/api/gdpr/' + b.dataset.complete + '/complete', { method: 'POST' });
-      toast('Request completed', 'success');
+      toast('请求已完成', 'success');
       refresh();
     }));
   }

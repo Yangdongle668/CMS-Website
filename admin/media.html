@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="robots" content="noindex"/>
-<title>Media Library | Acme CMS</title>
+<title>媒体库 | 后台管理</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/admin/assets/css/admin.css"/>
 </head>
@@ -14,15 +14,15 @@
 <script>
 (async function () {
   const { api, escapeHtml, formatDate, toast, bootShell } = window.AdminAPI;
-  const shell = await bootShell({ title: 'Media Library', crumbs: 'Content / Media' });
+  const shell = await bootShell({ title: '媒体库', crumbs: '内容 / 媒体库' });
   if (!shell) return;
-  shell.actions.innerHTML = `<input type="file" id="upload" accept="image/*,application/pdf" style="display:none;"/><button class="btn btn--sm" id="upload-btn">+ Upload file</button>`;
+  shell.actions.innerHTML = `<input type="file" id="upload" accept="image/*,application/pdf" style="display:none;"/><button class="btn btn--sm" id="upload-btn">+ 上传文件</button>`;
 
   async function refresh() {
     const { items } = await api('/api/media');
     shell.content.innerHTML = `
       <div class="panel">
-        <p style="margin:0 0 16px; color:var(--a-mute2); font-size:13px;">Allowed: PNG, JPEG, WebP, SVG, GIF, PDF — up to 8 MB. Files are served from <code>/uploads/</code>.</p>
+        <p style="margin:0 0 16px; color:var(--a-mute2); font-size:13px;">支持格式：PNG / JPEG / WebP / SVG / GIF / PDF，单个文件最大 8 MB。访问路径 <code>/uploads/</code>。</p>
         <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px;">
           ${items.length ? items.map((m) => `
             <div style="border:1px solid var(--a-line); border-radius:8px; overflow:hidden;">
@@ -32,19 +32,19 @@
                 <div style="color:var(--a-mute2);">${(m.size / 1024).toFixed(1)} KB · ${formatDate(m.created_at)}</div>
                 <input value="${escapeHtml(m.url)}" readonly onclick="this.select()" class="mono" style="width:100%; margin-top:6px; font-size:11px; padding:5px 6px; border:1px solid var(--a-line); border-radius:4px;"/>
                 <div style="display:flex; gap:6px; margin-top:6px;">
-                  <a href="${escapeHtml(m.url)}" target="_blank" class="btn btn--ghost btn--sm" style="flex:1; text-align:center;">Open</a>
-                  <button class="btn btn--ghost btn--sm" data-delete="${m.id}">Delete</button>
+                  <a href="${escapeHtml(m.url)}" target="_blank" class="btn btn--ghost btn--sm" style="flex:1; text-align:center;">打开</a>
+                  <button class="btn btn--ghost btn--sm" data-delete="${m.id}">删除</button>
                 </div>
               </div>
             </div>
-          `).join('') : '<div class="empty" style="grid-column:1/-1;">No files uploaded yet.</div>'}
+          `).join('') : '<div class="empty" style="grid-column:1/-1;">还没有上传文件。</div>'}
         </div>
       </div>
     `;
     document.querySelectorAll('[data-delete]').forEach((b) => b.addEventListener('click', async () => {
-      if (!confirm('Delete this file? This cannot be undone.')) return;
+      if (!confirm('删除 this file? This cannot be undone.')) return;
       await api('/api/media/' + b.dataset.delete, { method: 'DELETE' });
-      toast('Deleted', 'success');
+      toast('删除d', 'success');
       refresh();
     }));
   }
@@ -61,10 +61,10 @@
       const res = await fetch('/api/media', { method: 'POST', credentials: 'include', body: fd });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'upload_failed');
-      toast('Uploaded: ' + json.filename, 'success');
+      toast('已上传：' + json.filename, 'success');
       refresh();
     } catch (err) {
-      toast('Upload failed: ' + err.message, 'error');
+      toast('上传失败：' + err.message, 'error');
     }
     ev.target.value = '';
   });

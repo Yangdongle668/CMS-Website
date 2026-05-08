@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="robots" content="noindex"/>
-<title>Dashboard | Acme CMS</title>
+<title>仪表盘 | 后台管理</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/admin/assets/css/admin.css"/>
 </head>
@@ -14,7 +14,7 @@
 <script>
 (async function () {
   const { api, el, escapeHtml, formatDate, bootShell } = window.AdminAPI;
-  const shell = await bootShell({ title: 'Dashboard', crumbs: 'Overview' });
+  const shell = await bootShell({ title: '仪表盘', crumbs: '概览' });
   if (!shell) return;
 
   const { items, stats } = await api('/api/inquiries?limit=8');
@@ -22,20 +22,20 @@
 
   shell.content.innerHTML = `
     <div class="kpi-grid">
-      <div class="kpi"><div class="kpi__label">Total Inquiries</div><div class="kpi__value">${stats.total}</div></div>
-      <div class="kpi"><div class="kpi__label">Unread</div><div class="kpi__value" style="color:var(--a-warning);">${stats.unread}</div></div>
-      <div class="kpi"><div class="kpi__label">Last 7 days</div><div class="kpi__value">${stats.week}</div></div>
-      <div class="kpi"><div class="kpi__label">Conversion focus</div><div class="kpi__value" style="font-size:18px; padding-top:6px;">Reply within 24h</div></div>
+      <div class="kpi"><div class="kpi__label">询盘总数</div><div class="kpi__value">${stats.total}</div></div>
+      <div class="kpi"><div class="kpi__label">未读</div><div class="kpi__value" style="color:var(--a-warning);">${stats.unread}</div></div>
+      <div class="kpi"><div class="kpi__label">近 7 天</div><div class="kpi__value">${stats.week}</div></div>
+      <div class="kpi"><div class="kpi__label">转化重点</div><div class="kpi__value" style="font-size:18px; padding-top:6px;">24 小时内回复</div></div>
     </div>
 
     <div class="split">
       <div class="panel">
         <div class="panel__head">
-          <h2>Recent Inquiries</h2>
-          <a href="/admin/inquiries.html" class="btn btn--ghost btn--sm">View all →</a>
+          <h2>最新询盘</h2>
+          <a href="/admin/inquiries.html" class="btn btn--ghost btn--sm">查看全部 →</a>
         </div>
         <table class="table">
-          <thead><tr><th>Reference</th><th>Company</th><th>Country</th><th>Status</th><th>Received</th></tr></thead>
+          <thead><tr><th>编号</th><th>公司</th><th>国家</th><th>状态</th><th>提交时间</th></tr></thead>
           <tbody>
             ${items.length ? items.map((i) => `
               <tr class="${i.status === 'new' ? 'is-unread' : ''}">
@@ -45,23 +45,23 @@
                 <td><span class="pill pill--${i.status}">${i.status}</span></td>
                 <td>${formatDate(i.created_at)}</td>
               </tr>
-            `).join('') : '<tr><td colspan="5"><div class="empty">No inquiries yet. Share your site and they will start landing here.</div></td></tr>'}
+            `).join('') : '<tr><td colspan="5"><div class="empty">还没有询盘。分享一下你的网站，询盘会在这里出现。</div></td></tr>'}
           </tbody>
         </table>
       </div>
 
       <div class="panel">
-        <div class="panel__head"><h2>Recent Activity</h2><a href="/admin/audit.html" class="btn btn--ghost btn--sm">Audit log →</a></div>
+        <div class="panel__head"><h2>最近动态</h2><a href="/admin/audit.html" class="btn btn--ghost btn--sm">审计日志 →</a></div>
         <div style="display:grid; gap: 10px;">
           ${audit.items.length ? audit.items.map((a) => `
             <div style="display:flex; gap:8px; align-items:flex-start; font-size:13px;">
               <span class="pill pill--read" style="text-transform:none; padding:2px 8px;">${escapeHtml(a.action)}</span>
               <div>
-                <div><strong>${escapeHtml(a.user_email || 'system')}</strong> · ${escapeHtml(a.entity)}${a.entity_id ? ' #' + escapeHtml(a.entity_id) : ''}</div>
+                <div><strong>${escapeHtml(a.user_email || '系统')}</strong> · ${escapeHtml(a.entity)}${a.entity_id ? ' #' + escapeHtml(a.entity_id) : ''}</div>
                 <div style="color:var(--a-mute2); font-size:12px;">${formatDate(a.created_at)}</div>
               </div>
             </div>
-          `).join('') : '<div class="empty" style="padding:24px;">No activity yet.</div>'}
+          `).join('') : '<div class="empty" style="padding:24px;">没有活动记录。</div>'}
         </div>
       </div>
     </div>

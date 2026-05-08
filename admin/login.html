@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="robots" content="noindex"/>
-<title>Sign in | Acme CMS</title>
+<title>登录 | 后台管理</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/admin/assets/css/admin.css"/>
 </head>
@@ -13,23 +13,23 @@
   <div class="auth-card">
     <div style="display:flex; align-items:center; gap:10px; margin-bottom: 24px;">
       <div class="sidebar__brand-mark">A</div>
-      <strong>Acme CMS</strong>
+      <strong>后台管理</strong>
     </div>
-    <h1 id="title">Sign in</h1>
-    <p id="subtitle">Manage products, inquiries and GDPR requests.</p>
+    <h1 id="title">登录</h1>
+    <p id="subtitle">管理产品、询盘、博客与合规配置。</p>
     <div id="bootstrap-banner" style="display:none; padding:12px 14px; background:var(--a-brand-soft); color:var(--a-brand); border-radius:6px; font-size:13px; margin-bottom:16px;">
-      <strong>First-time setup.</strong> No admin account exists yet. The email and password you submit below will become the first administrator account.
+      <strong>首次安装。</strong>系统中还没有任何管理员账号，下面提交的邮箱和密码将成为第一个管理员账号。
     </div>
     <form id="login-form">
       <div class="field">
-        <label>Email</label>
+        <label>邮箱</label>
         <input name="email" type="email" required autocomplete="email" autofocus/>
       </div>
       <div class="field">
-        <label>Password <span class="hint" id="pw-hint" style="color:var(--a-mute2); font-weight:400;"></span></label>
+        <label>密码 <span class="hint" id="pw-hint" style="color:var(--a-mute2); font-weight:400;"></span></label>
         <input name="password" type="password" required minlength="4" autocomplete="current-password"/>
       </div>
-      <button type="submit" class="btn btn--lg" style="width:100%;" id="submit-btn">Sign in</button>
+      <button type="submit" class="btn btn--lg" style="width:100%;" id="submit-btn">登录</button>
       <p class="form-status" data-status style="margin-top:14px; min-height:1em; font-size:13px;"></p>
     </form>
   </div>
@@ -44,7 +44,6 @@
   const submitBtn = document.getElementById('submit-btn');
   const pwHint = document.getElementById('pw-hint');
 
-  // Detect bootstrap mode
   let bootstrap = false;
   try {
     const r = await fetch('/api/auth/bootstrap-status');
@@ -53,10 +52,10 @@
   } catch (_) {}
   if (bootstrap) {
     banner.style.display = '';
-    document.getElementById('title').textContent = 'Create admin account';
-    document.getElementById('subtitle').textContent = 'No administrator exists yet. Set up the first account below.';
-    submitBtn.textContent = 'Create admin';
-    pwHint.textContent = '(min 8 chars)';
+    document.getElementById('title').textContent = '创建管理员账号';
+    document.getElementById('subtitle').textContent = '系统尚无管理员，下方将创建首个账号。';
+    submitBtn.textContent = '创建管理员';
+    pwHint.textContent = '（至少 8 位）';
     form.querySelector('input[name="password"]').setAttribute('minlength', '8');
     form.querySelector('input[name="password"]').setAttribute('autocomplete', 'new-password');
   }
@@ -67,7 +66,7 @@
     status.textContent = '';
     status.style.color = '';
     submitBtn.disabled = true;
-    submitBtn.textContent = bootstrap ? 'Creating…' : 'Signing in…';
+    submitBtn.textContent = bootstrap ? '创建中…' : '登录中…';
     try {
       const json = await window.AdminAPI.api('/api/auth/login', {
         method: 'POST',
@@ -75,19 +74,19 @@
       });
       if (json.bootstrap) {
         status.style.color = 'var(--a-success)';
-        status.textContent = 'Admin created. Redirecting…';
+        status.textContent = '管理员已创建，正在跳转…';
       }
       const next = new URLSearchParams(location.search).get('next');
       location.href = next && next.startsWith('/admin/') ? next : '/admin/index.html';
     } catch (err) {
       status.style.color = 'var(--a-danger)';
-      const msg = err.message === 'invalid_credentials' ? 'Email or password is incorrect.'
-        : err.message === 'password_too_short' ? 'Password must be at least 8 characters for the first admin.'
-        : 'Sign-in failed: ' + err.message;
+      const msg = err.message === 'invalid_credentials' ? '邮箱或密码不正确。'
+        : err.message === 'password_too_short' ? '首次创建管理员密码至少需要 8 位。'
+        : '登录失败：' + err.message;
       status.textContent = msg;
     } finally {
       submitBtn.disabled = false;
-      submitBtn.textContent = bootstrap ? 'Create admin' : 'Sign in';
+      submitBtn.textContent = bootstrap ? '创建管理员' : '登录';
     }
   });
 })();

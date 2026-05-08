@@ -39,15 +39,38 @@ async function hydrate() {
   const title = page.meta_title || page.title;
   if (title) document.title = title;
   const desc = page.meta_description;
-  if (desc) {
-    let m = document.querySelector('meta[name="description"]');
+  function upsertMeta(selector, attrs) {
+    let m = document.querySelector(selector);
     if (!m) {
       m = document.createElement('meta');
-      m.setAttribute('name', 'description');
+      Object.entries(attrs.baseAttrs).forEach(([k, v]) => m.setAttribute(k, v));
       document.head.appendChild(m);
     }
-    m.setAttribute('content', desc);
+    m.setAttribute('content', attrs.content);
   }
+  if (desc) {
+    upsertMeta('meta[name="description"]', { baseAttrs: { name: 'description' }, content: desc });
+    upsertMeta('meta[property="og:description"]', { baseAttrs: { property: 'og:description' }, content: desc });
+    upsertMeta('meta[name="twitter:description"]', { baseAttrs: { name: 'twitter:description' }, content: desc });
+  }
+  if (title) {
+    upsertMeta('meta[property="og:title"]', { baseAttrs: { property: 'og:title' }, content: title });
+    upsertMeta('meta[name="twitter:title"]', { baseAttrs: { name: 'twitter:title' }, content: title });
+  }
+  if (page.hero_image) {
+    upsertMeta('meta[property="og:image"]', { baseAttrs: { property: 'og:image' }, content: page.hero_image });
+    upsertMeta('meta[name="twitter:image"]', { baseAttrs: { name: 'twitter:image' }, content: page.hero_image });
+  }
+  upsertMeta('meta[property="og:type"]', { baseAttrs: { property: 'og:type' }, content: 'website' });
+  upsertMeta('meta[name="twitter:card"]', { baseAttrs: { name: 'twitter:card' }, content: 'summary_large_image' });
+  // Canonical
+  let can = document.querySelector('link[rel="canonical"]');
+  if (!can) {
+    can = document.createElement('link');
+    can.setAttribute('rel', 'canonical');
+    document.head.appendChild(can);
+  }
+  can.setAttribute('href', location.origin + location.pathname);
 
   // Hero — works for both .hero (homepage) and .page-hero (subpages)
   const hero = document.querySelector('.page-hero, .hero');

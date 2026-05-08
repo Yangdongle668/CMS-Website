@@ -8,6 +8,7 @@ const router = express.Router();
 const FIELDS = `
   a.id, a.pillar_id, a.category_id, a.slug, a.title, a.excerpt, a.cover_url,
   a.content, a.author, a.meta_title, a.meta_description, a.reading_minutes,
+  a.template, a.hero_image,
   a.published_at, a.status, a.created_at, a.updated_at,
   c.name AS category_name, c.slug AS category_slug,
   p.slug AS pillar_slug, p.short_name AS pillar_short_name, p.name AS pillar_name
@@ -86,11 +87,12 @@ router.post('/', requireAuth, async (req, res) => {
   const title = trimStr(b.title, 255);
   if (!title) return res.status(400).json({ error: 'title_required' });
   const status = b.status === 'published' ? 'published' : 'draft';
+  const tpl = ['standard','guide','case-study'].includes(b.template) ? b.template : 'standard';
   const r = await query(
     `INSERT INTO articles (
        pillar_id, category_id, slug, title, excerpt, cover_url, content, author,
-       meta_title, meta_description, reading_minutes, published_at, status
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id`,
+       meta_title, meta_description, reading_minutes, template, hero_image, published_at, status
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING id`,
     [
       b.pillar_id || null,
       b.category_id || null,
@@ -103,6 +105,8 @@ router.post('/', requireAuth, async (req, res) => {
       trimStr(b.meta_title, 255),
       trimStr(b.meta_description, 500),
       clamp(b.reading_minutes, 1, 60, 5),
+      tpl,
+      trimStr(b.hero_image, 500),
       status === 'published' ? new Date() : null,
       status,
     ]
@@ -116,11 +120,13 @@ router.put('/:id', requireAuth, async (req, res) => {
   if (!id) return res.status(400).json({ error: 'invalid_id' });
   const b = req.body || {};
   const status = b.status === 'published' ? 'published' : 'draft';
+  const tpl = ['standard','guide','case-study'].includes(b.template) ? b.template : 'standard';
   await query(
     `UPDATE articles SET pillar_id=$1, category_id=$2, title=$3, excerpt=$4, cover_url=$5,
        content=$6, author=$7, meta_title=$8, meta_description=$9, reading_minutes=$10,
-       status=$11, published_at=COALESCE(published_at, CASE WHEN $11='published' THEN now() END),
-       updated_at=now() WHERE id = $12`,
+       template=$11, hero_image=$12,
+       status=$13, published_at=COALESCE(published_at, CASE WHEN $13='published' THEN now() END),
+       updated_at=now() WHERE id = $14`,
     [
       b.pillar_id || null,
       b.category_id || null,
@@ -132,6 +138,8 @@ router.put('/:id', requireAuth, async (req, res) => {
       trimStr(b.meta_title, 255),
       trimStr(b.meta_description, 500),
       clamp(b.reading_minutes, 1, 60, 5),
+      tpl,
+      trimStr(b.hero_image, 500),
       status,
       id,
     ]

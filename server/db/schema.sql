@@ -115,11 +115,17 @@ CREATE TABLE IF NOT EXISTS articles (
   meta_title    VARCHAR(255) NOT NULL DEFAULT '',
   meta_description TEXT NOT NULL DEFAULT '',
   reading_minutes INT NOT NULL DEFAULT 5,
+  template      VARCHAR(40) NOT NULL DEFAULT 'standard',  -- standard | guide | case-study
+  hero_image    VARCHAR(500) NOT NULL DEFAULT '',
   published_at  TIMESTAMPTZ,
   status        VARCHAR(20) NOT NULL DEFAULT 'draft',
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Idempotent migrations for existing deployments:
+ALTER TABLE articles ADD COLUMN IF NOT EXISTS template VARCHAR(40) NOT NULL DEFAULT 'standard';
+ALTER TABLE articles ADD COLUMN IF NOT EXISTS hero_image VARCHAR(500) NOT NULL DEFAULT '';
 
 CREATE INDEX IF NOT EXISTS idx_articles_pillar ON articles(pillar_id);
 CREATE INDEX IF NOT EXISTS idx_articles_status ON articles(status, published_at DESC);

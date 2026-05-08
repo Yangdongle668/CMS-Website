@@ -5,25 +5,25 @@
   'use strict';
 
   const NAV = [
-    { group: 'Inquiries', items: [
-      { label: 'Inbox', href: '/admin/inquiries.html', icon: '✉' },
-      { label: 'Dashboard', href: '/admin/index.html', icon: '⌂' },
+    { group: '询盘', items: [
+      { label: '收件箱', href: '/admin/inquiries.html', icon: '✉' },
+      { label: '仪表盘', href: '/admin/index.html', icon: '⌂' },
     ]},
-    { group: 'Content', items: [
-      { label: 'Pages', href: '/admin/pages.html', icon: '☰' },
-      { label: 'Pillar Pages', href: '/admin/pillars.html', icon: '◇' },
-      { label: 'Products', href: '/admin/products.html', icon: '▣' },
-      { label: 'Applications', href: '/admin/applications.html', icon: '◷' },
-      { label: 'Articles', href: '/admin/articles.html', icon: '✎' },
-      { label: 'Media Library', href: '/admin/media.html', icon: '◫' },
+    { group: '内容', items: [
+      { label: '页面', href: '/admin/pages.html', icon: '☰' },
+      { label: '支柱页', href: '/admin/pillars.html', icon: '◇' },
+      { label: '产品', href: '/admin/products.html', icon: '▣' },
+      { label: '应用行业', href: '/admin/applications.html', icon: '◷' },
+      { label: '博客文章', href: '/admin/articles.html', icon: '✎' },
+      { label: '媒体库', href: '/admin/media.html', icon: '◫' },
     ]},
-    { group: 'Compliance', items: [
-      { label: 'GDPR Requests', href: '/admin/gdpr.html', icon: '⚖' },
-      { label: 'Audit Log', href: '/admin/audit.html', icon: '⊟' },
+    { group: '合规', items: [
+      { label: 'GDPR 请求', href: '/admin/gdpr.html', icon: '⚖' },
+      { label: '审计日志', href: '/admin/audit.html', icon: '⊟' },
     ]},
-    { group: 'Settings', items: [
-      { label: 'Site Settings', href: '/admin/settings.html', icon: '⚙' },
-      { label: 'Users', href: '/admin/users.html', icon: '◉' },
+    { group: '设置', items: [
+      { label: '站点设置', href: '/admin/settings.html', icon: '⚙' },
+      { label: '用户', href: '/admin/users.html', icon: '◉' },
     ]},
   ];
 
@@ -124,8 +124,8 @@
               <div style="font-size:11.5px; color:var(--a-mute2);">${escapeHtml(user && user.role || '')}</div>
             </div>
           </div>
-          <a href="#" data-logout style="font-size:12px; color:var(--a-muted); display:block; padding:6px 8px;">Sign out →</a>
-          <a href="/" target="_blank" style="font-size:12px; color:var(--a-muted); display:block; padding:6px 8px;">View site ↗</a>
+          <a href="#" data-logout style="font-size:12px; color:var(--a-muted); display:block; padding:6px 8px;">退出登录 →</a>
+          <a href="/" target="_blank" style="font-size:12px; color:var(--a-muted); display:block; padding:6px 8px;">查看前台 ↗</a>
         </div>
       </aside>
       <main class="main">
