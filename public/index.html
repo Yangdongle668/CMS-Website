@@ -16,6 +16,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/assets/css/theme.css"/>
+<style>
+  body.home { background:#0b1120; }
+</style>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -29,68 +32,99 @@
 }
 </script>
 </head>
-<body>
+<body class="home">
 <div data-mount="header"></div>
 
-<!-- ========== HERO ========== -->
-<section class="hero">
-  <div class="container hero__inner">
-    <div class="hero__copy reveal">
-      <span class="eyebrow">Custom OEM / ODM Lithium Cells</span>
-      <h1>Lithium batteries engineered for mission-critical OEMs.</h1>
-      <p>From 30 mAh medical wearables to 100 kWh energy storage cabinets, Acme designs and manufactures polymer, custom-shaped and cylindrical lithium cells under one ISO 9001 roof. UN 38.3, IEC 62133, CE compliant.</p>
-      <div class="hero__actions">
-        <a href="/quote" class="btn btn--primary btn--lg">Request a Quotation</a>
-        <a href="/applications" class="btn btn--ghost btn--lg">See Applications</a>
+<!-- ============= HERO (full-screen) ============= -->
+<section class="tsection tsection--hero">
+  <div class="tsection__inner">
+    <div class="tsection__top" style="margin-top: 8vh;">
+      <div class="tsection__eyebrow">Engineered for Industry · Since 2008</div>
+      <h1 class="tsection__title">Lithium energy,<br/>built for the next product.</h1>
+      <p class="tsection__sub">OEM/ODM lithium cells in three pillar lines — polymer, custom-shaped and cylindrical — designed and manufactured under one ISO 9001 roof.</p>
+    </div>
+    <div class="tsection__visual" aria-hidden="true">
+      <!-- subtle floating SVG -->
+      <svg viewBox="0 0 600 300" style="max-height:42vh;">
+        <defs>
+          <linearGradient id="hg" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0" stop-color="#3b82f6" stop-opacity="0.55"/>
+            <stop offset="1" stop-color="#1e40af" stop-opacity="0.15"/>
+          </linearGradient>
+        </defs>
+        <g transform="translate(300 150)">
+          <rect x="-220" y="-80" width="440" height="160" rx="20" fill="url(#hg)" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
+          <rect x="-200" y="-60" width="400" height="120" rx="10" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)"/>
+          <text x="0" y="6" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="32" font-weight="800" letter-spacing="14" fill="rgba(255,255,255,0.7)">3.7 V · Li-Po</text>
+        </g>
+      </svg>
+    </div>
+    <div class="tsection__bottom">
+      <div class="tsection__ctas">
+        <a class="btn btn--primary btn--lg" href="/quote">Request a Quote</a>
+        <a class="btn btn--ghost btn--lg" href="#pillars">Explore Products</a>
       </div>
-      <div class="hero__metrics">
-        <div><div class="metric__value">17 yrs</div><div class="metric__label">In Lithium</div></div>
-        <div><div class="metric__value">420+</div><div class="metric__label">Engineers &amp; QC</div></div>
-        <div><div class="metric__value">18,000 m²</div><div class="metric__label">Factory</div></div>
-        <div><div class="metric__value">35+</div><div class="metric__label">Export Countries</div></div>
+      <span class="scroll-cue" style="margin-top:24px;">Scroll</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============= STATS STRIP ============= -->
+<section class="tsection-strip">
+  <div class="tsection-strip__inner">
+    <div><div class="metric__value">17 yrs</div><div class="metric__label">Lithium experience</div></div>
+    <div><div class="metric__value">420+</div><div class="metric__label">Engineers &amp; QC</div></div>
+    <div><div class="metric__value">18,000 m²</div><div class="metric__label">Factory floor</div></div>
+    <div><div class="metric__value">35+</div><div class="metric__label">Export countries</div></div>
+  </div>
+</section>
+
+<!-- ============= 3 PILLAR SECTIONS (rendered by JS) ============= -->
+<div id="pillars" data-pillar-sections></div>
+
+<!-- ============= APPLICATIONS (full-screen, dark) ============= -->
+<section class="tsection tsection--dark">
+  <div class="tsection__inner">
+    <div class="tsection__top" style="margin-top: 5vh;">
+      <div class="tsection__eyebrow">Applications</div>
+      <h2 class="tsection__title">Trusted across regulated industries.</h2>
+      <p class="tsection__sub">Each industry brings its own certifications, abuse profiles and lifecycle expectations. We engineer the cell around them — not the other way around.</p>
+    </div>
+    <div class="tsection__visual" style="align-self:stretch;">
+      <div class="container">
+        <div class="app-grid" data-app-grid></div>
       </div>
     </div>
-    <div class="hero__visual reveal">
-      <img src="/assets/img/hero-illustration.svg" alt="Polymer, custom-shaped and cylindrical lithium battery cells"/>
+    <div class="tsection__bottom">
+      <a class="btn btn--ghost btn--lg" href="/applications">View all applications</a>
     </div>
   </div>
 </section>
 
-<!-- ========== PILLAR PRODUCTS ========== -->
-<section class="section">
-  <div class="container">
-    <div class="section__head reveal">
-      <span class="eyebrow">Product Lines</span>
-      <h2>Three pillar product lines, fully under our roof.</h2>
-      <p>Standard catalogue cells for fast OEM integration, plus full custom design service for non-standard envelopes.</p>
+<!-- ============= INSIGHTS (light) ============= -->
+<section class="tsection">
+  <div class="tsection__inner">
+    <div class="tsection__top" style="margin-top: 5vh;">
+      <div class="tsection__eyebrow">Engineering Insights</div>
+      <h2 class="tsection__title">Technical guides from our cell engineers.</h2>
+      <p class="tsection__sub">Deep-dives that help your hardware team specify the right cell, the first time.</p>
     </div>
-    <div class="pillar-grid" data-pillar-grid>
-      <!-- Filled by JS from /api/pillars -->
+    <div class="tsection__visual" style="align-self:stretch;">
+      <div class="container">
+        <div class="article-grid" data-article-grid></div>
+      </div>
     </div>
-  </div>
-</section>
-
-<!-- ========== APPLICATIONS ========== -->
-<section class="section section--alt">
-  <div class="container">
-    <div class="section__head reveal">
-      <span class="eyebrow">Applications</span>
-      <h2>Trusted across regulated industries.</h2>
-      <p>Each industry brings its own certifications, abuse profiles and lifecycle expectations. We engineer the cell around them.</p>
-    </div>
-    <div class="app-grid reveal" data-app-grid></div>
-    <div class="text-center" style="margin-top:32px;">
-      <a class="btn btn--ghost" href="/applications">View all applications →</a>
+    <div class="tsection__bottom">
+      <a class="btn btn--ghost btn--lg" href="/blog">Browse all insights</a>
     </div>
   </div>
 </section>
 
-<!-- ========== CERTIFICATIONS BAR ========== -->
-<section class="section">
+<!-- ============= CERTIFICATIONS (light, compact) ============= -->
+<section class="section section--alt" style="padding: 64px 0;">
   <div class="container">
     <div class="section__head reveal" style="margin-bottom:24px;">
-      <span class="eyebrow">Compliance</span>
-      <h2>Independently certified.</h2>
+      <span class="eyebrow">Independently Certified</span>
     </div>
     <div class="cert-wall reveal">
       <span class="cert-chip">ISO 9001</span>
@@ -107,28 +141,13 @@
   </div>
 </section>
 
-<!-- ========== INSIGHTS / BLOG ========== -->
-<section class="section section--alt">
+<!-- ============= RFQ (dark) ============= -->
+<section class="section section--dark" style="background:#050a17;">
   <div class="container">
-    <div class="section__head reveal">
-      <span class="eyebrow">Engineering Insights</span>
-      <h2>Technical guides from our cell engineers.</h2>
-      <p>Deep-dives that help your hardware team specify the right cell, the first time.</p>
-    </div>
-    <div class="article-grid" data-article-grid></div>
-    <div class="text-center" style="margin-top:32px;">
-      <a class="btn btn--ghost" href="/blog">Browse all insights →</a>
-    </div>
-  </div>
-</section>
-
-<!-- ========== RFQ ========== -->
-<section class="section">
-  <div class="container">
-    <div class="rfq reveal">
+    <div class="rfq reveal" style="background:transparent; padding: 32px 0;">
       <div>
         <span class="eyebrow" style="background:rgba(147,197,253,.15); color:#93c5fd;">Request a Quote</span>
-        <h2>Tell us what you're building.</h2>
+        <h2 style="color:#fff;">Tell us what you're building.</h2>
         <p>Send us your specs and our sales engineering team will respond within 1 business day with a feasibility note and indicative pricing.</p>
         <div class="rfq__perks">
           <div class="rfq__perk"><span class="rfq__perk-icon">✓</span><div><strong>Reply within 1 business day</strong><small>Engineering review, not auto-reply.</small></div></div>
@@ -148,42 +167,72 @@
 (async function () {
   const { fetchJson, escapeHtml } = window.SiteAPI;
 
-  // RFQ form is auto-mounted by site.js into [data-rfq-mount]
+  // Make header transparent over the hero
+  const header = document.querySelector('.site-header');
+  if (header) {
+    const sync = () => header.classList.toggle('is-overlay', window.scrollY < 60);
+    sync(); window.addEventListener('scroll', sync, { passive: true });
+  }
 
-  // Pillars
+  // Pillars — Tesla-style full-screen sections
   try {
     const { items } = await fetchJson('/api/pillars');
-    const html = items.map((p) => `
-      <a class="pillar-card reveal" href="/products/${escapeHtml(p.slug)}">
-        <div class="pillar-card__media"><img src="${escapeHtml(p.hero_image || '/assets/img/hero-illustration.svg')}" alt="${escapeHtml(p.name)}"/></div>
-        <div class="pillar-card__body">
-          <span class="tag">${escapeHtml(p.short_name)}</span>
-          <h3 style="margin-top:10px;">${escapeHtml(p.name)}</h3>
-          <p>${escapeHtml(p.hero_subtitle.slice(0, 160))}</p>
-          <div class="pillar-card__meta">
-            <span>Standard</span>
-            <span>·</span>
-            <span>Custom</span>
+    // Decoration: alternate light / dark for variety
+    const tones = [
+      { cls: 'tsection--gradient' },             // light
+      { cls: 'tsection--dark' },                 // dark
+      { cls: '' },                               // white
+    ];
+    document.querySelector('[data-pillar-sections]').innerHTML = items.map((p, idx) => {
+      const tone = tones[idx % tones.length];
+      const eyebrow = p.hero_eyebrow || `Pillar Series 0${idx + 1}`;
+      const sub = p.hero_subtitle || '';
+      return `
+        <section class="tsection ${tone.cls}" id="pillar-${escapeHtml(p.slug)}">
+          <div class="tsection__inner">
+            <div class="tsection__top" style="margin-top: 4vh;">
+              <div class="tsection__eyebrow">${escapeHtml(eyebrow)}</div>
+              <h2 class="tsection__title">${escapeHtml(p.name)}</h2>
+              <p class="tsection__sub">${escapeHtml(sub.slice(0, 200))}</p>
+            </div>
+            <div class="tsection__visual">
+              <img src="${escapeHtml(p.hero_image || '/assets/img/hero-illustration.svg')}" alt="${escapeHtml(p.name)}" onerror="this.src='/assets/img/hero-illustration.svg'"/>
+            </div>
+            <div class="tsection__bottom">
+              <div class="tsection__ctas">
+                <a class="btn btn--primary btn--lg" href="/products/${escapeHtml(p.slug)}">Explore the line</a>
+                <a class="btn btn--ghost btn--lg" href="/quote">Get a Quote</a>
+              </div>
+            </div>
           </div>
-          <span class="pillar-card__cta">Explore the line →</span>
+        </section>`;
+    }).join('');
+  } catch (e) {
+    console.warn('Pillars not loaded', e);
+    document.querySelector('[data-pillar-sections]').innerHTML = `
+      <section class="tsection">
+        <div class="tsection__inner">
+          <div class="tsection__top" style="margin-top: 6vh;">
+            <div class="tsection__eyebrow">Setup</div>
+            <h2 class="tsection__title">Pillar pages not loaded</h2>
+            <p class="tsection__sub">The pillar list could not be fetched from the API. Check that the database is seeded: <code>docker compose exec app node server/db/init.js --seed</code>.</p>
+          </div>
         </div>
-      </a>
-    `).join('');
-    document.querySelector('[data-pillar-grid]').innerHTML = html;
-  } catch (e) { console.warn(e); }
+      </section>`;
+  }
 
   // Applications
   try {
     const { items } = await fetchJson('/api/applications');
     const html = items.slice(0, 8).map((a) => `
-      <a class="app-tile" href="/applications/${escapeHtml(a.slug)}">
-        <span class="app-tile__icon">${escapeHtml(a.name.charAt(0))}</span>
-        <h4>${escapeHtml(a.name)}</h4>
-        <p>${escapeHtml(a.summary.slice(0, 90))}</p>
+      <a class="app-tile" href="/applications/${escapeHtml(a.slug)}" style="background:rgba(255,255,255,0.04); border-color:rgba(255,255,255,0.12); color:#e2e8f0;">
+        <span class="app-tile__icon" style="background:rgba(147,197,253,0.15); color:#93c5fd;">${escapeHtml(a.name.charAt(0))}</span>
+        <h4 style="color:#fff;">${escapeHtml(a.name)}</h4>
+        <p style="color:#94a3b8;">${escapeHtml((a.summary || '').slice(0, 90))}</p>
       </a>
     `).join('');
     document.querySelector('[data-app-grid]').innerHTML = html;
-  } catch (e) { console.warn(e); }
+  } catch (_) {}
 
   // Articles
   try {
@@ -196,13 +245,13 @@
           <div class="article-card__body">
             ${a.pillar_short_name ? `<span class="article-card__pill">${escapeHtml(a.pillar_short_name)}</span>` : ''}
             <h3>${escapeHtml(a.title)}</h3>
-            <p>${escapeHtml(a.excerpt.slice(0, 130))}</p>
+            <p>${escapeHtml((a.excerpt || '').slice(0, 130))}</p>
             <div class="article-card__meta">${date ? date + ' · ' : ''}${a.reading_minutes} min read</div>
           </div>
         </a>`;
     }).join('');
     document.querySelector('[data-article-grid]').innerHTML = html;
-  } catch (e) { console.warn(e); }
+  } catch (_) {}
 })();
 </script>
 </body>

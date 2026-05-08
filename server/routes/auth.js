@@ -16,6 +16,30 @@ router.post('/login', loginLimiter, async (req, res) => {
   if (!isEmail(email) || password.length < 4) {
     return res.status(400).json({ error: 'invalid_credentials' });
   }
+
+  // Bootstrap: when the user table is empty, the first POST creates the
+  // admin with the submitted credentials. Removes the "what's the default
+  // password" footgun and survives partial seed failures.
+  const { rows: countRows } = await query('SELECT count(*)::int AS n FROM users');
+  if (!countRows[0] || countRows[0].n === 0) {
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'password_too_short' });
+    }
+    const hash = await bcrypt.hash(password, 10);
+    const { rows: created } = await query(
+      `INSERT INTO users (email, password_hash, name, role, is_active)
+       VALUES ($1, $2, $3, 'admin', TRUE)
+       RETURNING id, email, name, role`,
+      [email, hash, 'Administrator']
+    );
+    const user = created[0];
+    const token = signToken(user);
+    setAuthCookie(res, token);
+    req.user = user;
+    await recordAudit({ req, action: 'bootstrap_admin', entity: 'user', entityId: user.id });
+    return res.json({ user, bootstrap: true });
+  }
+
   const user = await one(
     'SELECT id, email, password_hash, name, role, is_active FROM users WHERE email = $1',
     [email]
@@ -32,6 +56,13 @@ router.post('/login', loginLimiter, async (req, res) => {
   req.user = user;
   await recordAudit({ req, action: 'login', entity: 'user', entityId: user.id });
   res.json({ user: { id: user.id, email: user.email, name: user.name, role: user.role } });
+});
+
+// Whether the system has any users yet — used by the login UI to show
+// "first-run" wording instead of "incorrect password".
+router.get('/bootstrap-status', async (_req, res) => {
+  const { rows } = await query('SELECT count(*)::int AS n FROM users');
+  res.json({ has_users: rows[0] ? rows[0].n > 0 : false });
 });
 
 router.post('/logout', requireAuth, async (req, res) => {

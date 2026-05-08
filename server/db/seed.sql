@@ -26,7 +26,7 @@ INSERT INTO pillar_pages (
   'Pillar Series 01',
   'Polymer Lithium Battery',
   'High energy density Li-Po cells engineered for thin, light, and mission-critical applications. From wearables to medical devices, our polymer lithium batteries deliver consistent performance across thousands of cycles.',
-  '/assets/img/pillar-polymer-hero.svg',
+  '/assets/img/pillar-polymer.svg',
   'Get a Quote', '/quote', 'Download Datasheet', '/uploads/datasheet-polymer.pdf',
   '{"title":"What is a Polymer Lithium Battery?","body":"Polymer lithium batteries (Li-Po) use a gel-like polymer electrolyte instead of the liquid electrolyte found in conventional lithium-ion cells. This allows for ultra-thin profiles, flexible form factors, and improved safety under abuse conditions. Acme manufactures Li-Po cells from 30 mAh up to 20 Ah, with thicknesses as low as 0.4 mm."}',
   '[
@@ -84,7 +84,7 @@ INSERT INTO pillar_pages (
   'Pillar Series 02',
   'Custom-Shaped Polymer Lithium Battery',
   'When a rectangular cell will not fit, our engineering team designs the battery around your enclosure. Round, curved, stepped or notched – we manufacture polymer lithium cells in any non-standard geometry.',
-  '/assets/img/pillar-custom-hero.svg',
+  '/assets/img/pillar-custom.svg',
   'Start a Custom Project', '/quote', 'See Capabilities', '#capabilities',
   '{"title":"Why Custom Geometry?","body":"Modern devices leave little room for off-the-shelf cells. By co-designing the battery with your mechanical team, we recover 10-30% more volumetric energy density and remove dead space. Acme has shipped over 200 custom geometries for medical, wearable and defence customers."}',
   '[
@@ -143,7 +143,7 @@ INSERT INTO pillar_pages (
   'Pillar Series 03',
   'Cylindrical Steel-Shell Lithium Battery',
   'Robust cylindrical Li-Ion cells in standard 14500, 18650, 21700, 26650 and 32700 formats. Available in INR (NMC) and IFR (LFP) chemistries for power tools, light EVs and stationary storage.',
-  '/assets/img/pillar-cylindrical-hero.svg',
+  '/assets/img/pillar-cylindrical.svg',
   'Request Bulk Pricing', '/quote', 'Compare Sizes', '#variants',
   '{"title":"Steel-Shell Reliability","body":"Steel-cased cylindrical cells offer the highest mechanical robustness in lithium chemistry. Our 18650 and 21700 cells are built on automated lines with laser-welded current collectors, CID safety vents and PTC current interrupt for OEM-grade consistency."}',
   '[

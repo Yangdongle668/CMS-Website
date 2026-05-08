@@ -15,18 +15,21 @@
       <div class="sidebar__brand-mark">A</div>
       <strong>Acme CMS</strong>
     </div>
-    <h1>Sign in</h1>
-    <p>Manage products, inquiries and GDPR requests.</p>
+    <h1 id="title">Sign in</h1>
+    <p id="subtitle">Manage products, inquiries and GDPR requests.</p>
+    <div id="bootstrap-banner" style="display:none; padding:12px 14px; background:var(--a-brand-soft); color:var(--a-brand); border-radius:6px; font-size:13px; margin-bottom:16px;">
+      <strong>First-time setup.</strong> No admin account exists yet. The email and password you submit below will become the first administrator account.
+    </div>
     <form id="login-form">
       <div class="field">
         <label>Email</label>
         <input name="email" type="email" required autocomplete="email" autofocus/>
       </div>
       <div class="field">
-        <label>Password</label>
-        <input name="password" type="password" required autocomplete="current-password"/>
+        <label>Password <span class="hint" id="pw-hint" style="color:var(--a-mute2); font-weight:400;"></span></label>
+        <input name="password" type="password" required minlength="4" autocomplete="current-password"/>
       </div>
-      <button type="submit" class="btn btn--lg" style="width:100%;">Sign in</button>
+      <button type="submit" class="btn btn--lg" style="width:100%;" id="submit-btn">Sign in</button>
       <p class="form-status" data-status style="margin-top:14px; min-height:1em; font-size:13px;"></p>
     </form>
   </div>
@@ -34,31 +37,60 @@
 
 <script src="/admin/assets/js/admin.js"></script>
 <script>
-const form = document.getElementById('login-form');
-const status = form.querySelector('[data-status]');
-form.addEventListener('submit', async (ev) => {
-  ev.preventDefault();
-  const data = Object.fromEntries(new FormData(form).entries());
-  status.textContent = '';
-  status.style.color = '';
-  const submit = form.querySelector('[type="submit"]');
-  submit.disabled = true;
-  submit.textContent = 'Signing in…';
+(async function () {
+  const form = document.getElementById('login-form');
+  const status = form.querySelector('[data-status]');
+  const banner = document.getElementById('bootstrap-banner');
+  const submitBtn = document.getElementById('submit-btn');
+  const pwHint = document.getElementById('pw-hint');
+
+  // Detect bootstrap mode
+  let bootstrap = false;
   try {
-    await window.AdminAPI.api('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-    const next = new URLSearchParams(location.search).get('next');
-    location.href = next && next.startsWith('/admin/') ? next : '/admin/index.html';
-  } catch (err) {
-    status.style.color = 'var(--a-danger)';
-    status.textContent = err.message === 'invalid_credentials' ? 'Email or password is incorrect.' : 'Sign-in failed.';
-  } finally {
-    submit.disabled = false;
-    submit.textContent = 'Sign in';
+    const r = await fetch('/api/auth/bootstrap-status');
+    const j = await r.json();
+    bootstrap = !j.has_users;
+  } catch (_) {}
+  if (bootstrap) {
+    banner.style.display = '';
+    document.getElementById('title').textContent = 'Create admin account';
+    document.getElementById('subtitle').textContent = 'No administrator exists yet. Set up the first account below.';
+    submitBtn.textContent = 'Create admin';
+    pwHint.textContent = '(min 8 chars)';
+    form.querySelector('input[name="password"]').setAttribute('minlength', '8');
+    form.querySelector('input[name="password"]').setAttribute('autocomplete', 'new-password');
   }
-});
+
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const data = Object.fromEntries(new FormData(form).entries());
+    status.textContent = '';
+    status.style.color = '';
+    submitBtn.disabled = true;
+    submitBtn.textContent = bootstrap ? 'Creating…' : 'Signing in…';
+    try {
+      const json = await window.AdminAPI.api('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      if (json.bootstrap) {
+        status.style.color = 'var(--a-success)';
+        status.textContent = 'Admin created. Redirecting…';
+      }
+      const next = new URLSearchParams(location.search).get('next');
+      location.href = next && next.startsWith('/admin/') ? next : '/admin/index.html';
+    } catch (err) {
+      status.style.color = 'var(--a-danger)';
+      const msg = err.message === 'invalid_credentials' ? 'Email or password is incorrect.'
+        : err.message === 'password_too_short' ? 'Password must be at least 8 characters for the first admin.'
+        : 'Sign-in failed: ' + err.message;
+      status.textContent = msg;
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = bootstrap ? 'Create admin' : 'Sign in';
+    }
+  });
+})();
 </script>
 </body>
 </html>
