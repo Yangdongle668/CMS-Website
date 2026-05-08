@@ -135,60 +135,67 @@ INSERT INTO pillar_pages (
   2
 ),
 (
-  'cylindrical-steel-shell-lithium-battery',
-  'Cylindrical Steel-Shell Lithium Battery',
-  'Cylindrical Li-Ion',
-  'Cylindrical Lithium Battery Manufacturer | 18650, 21700, 26650',
-  'High-cycle cylindrical lithium-ion batteries in steel cases: 14500, 18650, 21700, 26650, 32700. INR & IFR chemistries for power tools, e-mobility and energy storage.',
+  'coin-steel-shell-lithium-battery',
+  'Coin Steel-Shell Lithium Battery',
+  'Coin Cell',
+  'Rechargeable Coin Lithium Battery Manufacturer | LIR / ML Steel-Shell Cells',
+  'Rechargeable coin lithium batteries in stainless-steel cases — LIR2032, LIR2450, ML2032, ML2430. Hermetic seal, 500-1,000+ cycles, hearing aid / wearable / IoT grade.',
   'Pillar Series 03',
-  'Cylindrical Steel-Shell Lithium Battery',
-  'Robust cylindrical Li-Ion cells in standard 14500, 18650, 21700, 26650 and 32700 formats. Available in INR (NMC) and IFR (LFP) chemistries for power tools, light EVs and stationary storage.',
-  '/assets/img/pillar-cylindrical.svg',
-  'Request Bulk Pricing', '/quote', 'Compare Sizes', '#variants',
-  '{"title":"Steel-Shell Reliability","body":"Steel-cased cylindrical cells offer the highest mechanical robustness in lithium chemistry. Our 18650 and 21700 cells are built on automated lines with laser-welded current collectors, CID safety vents and PTC current interrupt for OEM-grade consistency."}',
+  'Coin Steel-Shell Lithium Battery',
+  'Rechargeable coin cells in hermetic stainless-steel cases. LIR (Li-ion 3.6 V) and ML (Li-MnO2 3.0 V) chemistries from Ø10 mm — for hearing aids, smart watches, IoT sensors and reflow-mount RTC backup.',
+  'https://images.unsplash.com/photo-1580407195669-d0c11ee3c1c2?w=1920&q=80',
+  'Get a Quote', '/contact.html', 'See Specifications', '#specs',
+  '{"title":"Why rechargeable steel-shell coin cells?","body":"The hermetic stainless-steel can is what makes a small lithium cell viable in a sealed wearable, a hearing aid or an automotive PCB: it survives reflow soldering, eliminates leakage and resists external mechanical abuse. Our line is exclusively rechargeable — both Li-ion (LIR series) for high cycle count and Li-MnO2 (ML series) for high-temperature reflow-mount applications. Every cell ships with full IEC 60086-4 / 62133 documentation."}',
   '[
-    {"name":"INR (NMC)","summary":"High energy density 3.6 V chemistry. Ideal for power tools, light EV and consumer electronics.","image":"/assets/img/variant-inr.svg"},
-    {"name":"IFR (LiFePO4)","summary":"Long cycle life 3.2 V chemistry. Ideal for ESS, telecom backup and solar storage.","image":"/assets/img/variant-ifr.svg"},
-    {"name":"Standard Sizes","summary":"14500 / 18650 / 21700 / 26650 / 32700 with stocked SKUs.","image":"/assets/img/variant-standard.svg"},
-    {"name":"Custom Packs","summary":"Welded packs, BMS-integrated battery modules, plastic/metal housings.","image":"/assets/img/variant-pack.svg"}
+    {"name":"LIR Series — Rechargeable Li-ion","summary":"3.6 V Li-ion in standard coin formats (LIR1620 / LIR2025 / LIR2032 / LIR2450 / LIR2477). 500+ cycles, ideal for wearables, smart cards and TWS earbuds.","image":""},
+    {"name":"ML Series — Rechargeable Li-MnO2","summary":"3.0 V rechargeable Li-MnO2 (ML414 / ML2032 / ML2430). 1,000+ cycles, reflow-compatible, used in industrial RTC backup and BLE beacons.","image":""},
+    {"name":"High-Temp Automotive","summary":"-40 to +85 °C operating range (storage to +125 °C peak). Hermetic crimp survives full SMD reflow. For automotive ECUs, T-BOX and aftermarket modules.","image":""},
+    {"name":"Pin & Custom Form","summary":"Pin-style Ø5-6 mm and custom-tabbed coin cells for hearing aids, implantable medical devices and high-density wearables.","image":""}
   ]',
   '{
-    "headers":["Format","Capacity","Voltage","Max Discharge","Cycles"],
+    "headers":["Format","Chemistry","Voltage","Capacity","Cycles","Operating Temp"],
     "rows":[
-      ["18650 INR","2,500 – 3,500 mAh","3.6 V","10 A","≥ 500"],
-      ["18650 IFR","1,500 – 1,800 mAh","3.2 V","30 A","≥ 2,000"],
-      ["21700 INR","4,000 – 5,000 mAh","3.6 V","15 A","≥ 500"],
-      ["21700 IFR","3,000 – 3,300 mAh","3.2 V","30 A","≥ 3,000"],
-      ["26650 IFR","3,200 – 3,400 mAh","3.2 V","30 A","≥ 3,000"],
-      ["32700 IFR","6,000 – 6,500 mAh","3.2 V","30 A","≥ 3,500"]
+      ["LIR1620","Li-ion","3.6 V","12 mAh","≥ 500","-20 ~ +60 °C"],
+      ["LIR2025","Li-ion","3.6 V","30 mAh","≥ 500","-20 ~ +60 °C"],
+      ["LIR2032","Li-ion","3.6 V","40 mAh","≥ 500","-20 ~ +60 °C"],
+      ["LIR2450","Li-ion","3.6 V","120 mAh","≥ 500","-20 ~ +60 °C"],
+      ["LIR2477","Li-ion","3.6 V","180 mAh","≥ 500","-20 ~ +60 °C"],
+      ["ML2032","Li-MnO2","3.0 V","65 mAh","≥ 1,000","-40 ~ +85 °C"],
+      ["ML2430","Li-MnO2","3.0 V","100 mAh","≥ 1,000","-40 ~ +85 °C"],
+      ["Custom","LIR / ML","Per spec","Per spec","Per spec","Per spec"]
     ]
   }',
-  '["power-tools","e-mobility","energy-storage","iot"]',
+  '["medical","wearables","iot"]',
   '{
     "enabled": true,
     "items":[
-      {"label":"Pack Configuration","value":"Series/parallel up to 14S20P standard"},
-      {"label":"BMS","value":"Integrated, with CAN/RS485/UART communication"},
-      {"label":"Connectors","value":"XT60, Anderson, M8, custom busbars"},
-      {"label":"Housing","value":"Plastic, aluminium, IP65 enclosures"},
-      {"label":"Welding","value":"Laser or spot welding, full traceability"}
+      {"label":"Welded tabs / leads","value":"Nickel or copper tabs in horizontal or vertical orientation; through-hole posts, JST connectors or custom wires"},
+      {"label":"Reflow-compatible (ML)","value":"ML2032 and ML2430 survive standard lead-free reflow profiles up to 260 °C peak (IPC/JEDEC J-STD-020)"},
+      {"label":"Custom diameter","value":"Down to Ø5 mm pin cells for hearing aids and implantable medical devices"},
+      {"label":"Capacity tuning","value":"Within format constraints — engineered for runtime or pulse current per application"},
+      {"label":"Branding / lot codes","value":"Custom can-stamping, shrink wrap, lot codes and barcodes for traceability"},
+      {"label":"Holders &amp; sockets","value":"Optional matching SMD or through-hole holders shipped pre-fitted to the cell"}
     ]
   }',
-  '{"title":"Automated Cylindrical Cell Line","body":"Our cylindrical cell production runs on Korean and Japanese automation with in-line OCV/IR/CCD inspection. Cells are graded into A/B grades with full traceability by serial number.","image":"/assets/img/manufacturing-cylindrical.svg"}',
+  '{"title":"Hermetic coin cell line","body":"Our coin cell line runs Korean and Japanese automation: stainless-steel can stamping, electrolyte filling under controlled humidity, hermetic crimping, formation cycling and 100% OCV/IR/leak-test inspection. Each shipment carries serialised lot codes for medical-grade traceability."}',
   '[
-    {"name":"UN 38.3","image":"/assets/img/cert-un38.svg"},
-    {"name":"IEC 62133","image":"/assets/img/cert-iec.svg"},
-    {"name":"UL 1642","image":"/assets/img/cert-ul.svg"},
-    {"name":"KC","image":"/assets/img/cert-kc.svg"},
-    {"name":"PSE","image":"/assets/img/cert-pse.svg"}
+    {"name":"UN 38.3","image":""},
+    {"name":"IEC 62133-2","image":""},
+    {"name":"IEC 60086-4","image":""},
+    {"name":"CE","image":""},
+    {"name":"RoHS","image":""},
+    {"name":"REACH","image":""},
+    {"name":"MSDS","image":""}
   ]',
   '[
-    {"q":"Do you supply individual cells or only assembled packs?","a":"Both. Our minimum cell order is 500 pieces; pack assembly minimum depends on configuration but typically starts at 50 packs."},
-    {"q":"What is the difference between INR and IFR chemistries?","a":"INR (NMC) offers higher energy density (~250 Wh/kg) at 3.6 V, ideal for compact tools and EVs. IFR (LFP) offers longer cycle life (3,000+) at 3.2 V, ideal for stationary storage and safety-critical applications."},
-    {"q":"Can you provide test reports?","a":"Yes, every shipment includes UN 38.3 test summary, MSDS and a Certificate of Conformity. IEC 62133, UL 1642 and KC reports are available on request."},
-    {"q":"Are LFP cells safe for indoor energy storage?","a":"Yes, LiFePO4 chemistry is non-flammable in normal abuse scenarios and is the preferred chemistry for residential and telecom ESS deployments."}
+    {"q":"What is the difference between LIR and ML coin cells?","a":"LIR is rechargeable Li-ion at 3.6 V with 500+ cycles, used in wearables, smart cards and TWS earbuds. ML is rechargeable Li-MnO2 at 3.0 V with 1,000+ cycles and a much wider operating range (-40 to +85 °C); ML survives reflow soldering, so it can be SMD-mounted as an RTC backup."},
+    {"q":"Can I get coin cells with welded tabs?","a":"Yes. We weld nickel or copper tabs in horizontal or vertical orientation per drawing. Through-hole posts and JST connectors are also available."},
+    {"q":"Is the ML series really reflow-compatible?","a":"Yes. ML2032 and ML2430 survive standard lead-free reflow profiles up to 260 °C peak (per IPC/JEDEC J-STD-020). Treat them as a true SMD component."},
+    {"q":"What is the MOQ for custom coin cells?","a":"Standard LIR / ML formats: 5,000 pieces. Custom-tabbed or branded cells: 10,000 pieces minimum, with 25-30 day lead time."},
+    {"q":"Are these cells suitable for medical devices?","a":"Our coin cells ship to multiple medical OEMs under ISO 13485 traceability. We provide IEC 62133-2 reports, biocompatibility statements (ISO 10993) and lot-level documentation on request."},
+    {"q":"Do the cells pass UN 38.3 air shipping?","a":"Yes, every batch is tested per UN Manual of Tests and Criteria, Section 38.3 and ships with valid test summaries. Both LIR and ML coin cells are ATA / IATA compliant."}
   ]',
-  '["18650 manufacturer","cylindrical lithium battery","21700 cell","LFP cylindrical","steel shell lithium battery"]',
+  '["rechargeable coin lithium battery","LIR2032 manufacturer","ML2032 reflow","steel shell coin cell","button cell battery","coin cell hearing aid"]',
   3
 )
 ON CONFLICT (slug) DO NOTHING;
@@ -253,13 +260,27 @@ INSERT INTO products (pillar_id, slug, name, model_no, tagline, specs, features,
  '["High-voltage 3.85V chemistry","Coin form factor","Custom FPC tab on request"]',
  'Round 12.4 mm discoid Li-Po designed for premium TWS earbud platforms.',
  TRUE, 1, 'published'),
-((SELECT id FROM pillar_pages WHERE slug='cylindrical-steel-shell-lithium-battery'),
- 'inr21700-50e', 'INR 21700-50E 5000mAh', 'INR21700-50E',
- 'High capacity NMC cell',
- '{"voltage":"3.6V","capacity":"5000 mAh","format":"21700","max_discharge":"15A","cycles":"≥ 500"}',
- '["Automated production","Tier-1 quality","Laser welded current collector"]',
- 'High-density NMC 21700 for power tools, light EV and high-end portable electronics.',
- FALSE, 1, 'published')
+((SELECT id FROM pillar_pages WHERE slug='coin-steel-shell-lithium-battery'),
+ 'lir2032-40', 'LIR2032 40mAh Rechargeable', 'LIR2032',
+ 'Rechargeable Li-ion coin cell',
+ '{"voltage":"3.6V","capacity":"40 mAh","format":"LIR2032","diameter":"20 mm","thickness":"3.2 mm","cycles":"≥ 500"}',
+ '["Hermetic stainless-steel case","Optional welded nickel tabs","Drop-in replacement for CR2032 sockets"]',
+ 'The workhorse rechargeable coin cell — direct upgrade for any CR2032 socket where in-circuit recharging is wanted (smart cards, RFID writers, dev boards).',
+ FALSE, 1, 'published'),
+((SELECT id FROM pillar_pages WHERE slug='coin-steel-shell-lithium-battery'),
+ 'ml2032-65-reflow', 'ML2032 65mAh Reflow-Compatible', 'ML2032',
+ 'Reflow-mountable rechargeable RTC backup',
+ '{"voltage":"3.0V","capacity":"65 mAh","format":"ML2032","cycles":"≥ 1000","temp_range":"-40 ~ +85 °C","reflow":"260 °C peak"}',
+ '["SMD reflow-compatible (J-STD-020)","-40 to +85 °C operating","1,000+ cycles","Industrial RTC / BLE beacon ready"]',
+ 'A true SMD rechargeable lithium cell for industrial RTC backup and IoT beacons. Goes through your standard PCB reflow line — no hand assembly needed.',
+ FALSE, 2, 'published'),
+((SELECT id FROM pillar_pages WHERE slug='coin-steel-shell-lithium-battery'),
+ 'lir2450-120', 'LIR2450 120mAh', 'LIR2450',
+ 'High capacity rechargeable coin cell',
+ '{"voltage":"3.6V","capacity":"120 mAh","format":"LIR2450","diameter":"24.5 mm","thickness":"5.0 mm","cycles":"≥ 500"}',
+ '["3x the capacity of LIR2032","Welded tabs available","UN 38.3 / IEC 62133-2"]',
+ 'When LIR2032 runs out of room — Ø24.5 mm format with 120 mAh, used in fitness trackers and BLE asset tags.',
+ FALSE, 3, 'published')
 ON CONFLICT (slug) DO NOTHING;
 
 -- ----- Sample Articles (cluster content) -----
@@ -278,13 +299,13 @@ INSERT INTO articles (pillar_id, category_id, slug, title, excerpt, content, aut
  'How curvature radius, electrode coating and stack geometry affect cycle life in curved Li-Po cells.',
  '<p>Curved batteries unlock 10-30% extra volume in wearable enclosures, but they also introduce manufacturing trade-offs that affect cycle life. This article explains what to ask your battery vendor before committing to a curved design.</p><h2>Minimum curvature radius</h2><p>For single-curvature cells we recommend R ≥ 25 mm to maintain coating integrity over 500 cycles. Tighter radii are achievable but require thinner electrodes and reduce capacity.</p>',
  'Acme Engineering', 7, now() - interval '12 days', 'published'),
-((SELECT id FROM pillar_pages WHERE slug='cylindrical-steel-shell-lithium-battery'),
+((SELECT id FROM pillar_pages WHERE slug='coin-steel-shell-lithium-battery'),
  (SELECT id FROM categories WHERE slug='industry-insights'),
- '18650-vs-21700-which-cell-format-to-choose',
- '18650 vs. 21700: Which Cylindrical Cell Format to Choose',
- 'A side-by-side comparison of the two most common cylindrical lithium-ion formats for OEM products.',
- '<p>The 21700 cell, popularised by Tesla in the Model 3, has rapidly displaced the 18650 in many high-power applications. But not every product should switch. Here is how we advise our customers.</p><h2>Energy and power</h2><p>A 21700 cell stores roughly 35-40% more energy than an 18650 in the same chemistry, while keeping similar discharge rates. For battery packs, this means fewer cells, lower BMS complexity and reduced welding labour.</p>',
- 'Acme Engineering', 8, now() - interval '20 days', 'published')
+ 'lir-vs-ml-coin-cell-which-to-choose',
+ 'LIR vs. ML Coin Cells: Which Rechargeable Chemistry to Choose',
+ 'A practical decision guide for picking between LIR (Li-ion 3.6 V) and ML (Li-MnO2 3.0 V) rechargeable coin cells.',
+ '<p>Most engineers default to LIR2032 because it''s the obvious CR2032 replacement. That''s usually correct — but for an industrial PCB that has to be reflow-mounted or run hot, ML is the only sensible choice. Here is how we steer customers.</p><h2>Voltage and the regulator question</h2><p>LIR (Li-ion) sits at 3.6-4.2 V, ML (Li-MnO2) at 2.8-3.0 V. If your circuit was designed for a CR2032 (3.0 V) and you can''t add a regulator, ML drops in. LIR needs an LDO or boost depending on the load.</p><h2>Reflow compatibility</h2><p>Only ML survives standard lead-free reflow profiles (260 °C peak). LIR cells must be hand-soldered or socket-mounted.</p><h2>Cycle count</h2><p>ML offers 1,000+ cycles vs. LIR''s 500+. For a daily-charge wearable that''s 1.4 vs. 2.7 years of design life — usually a deciding factor for product warranty.</p>',
+ 'Acme Engineering', 7, now() - interval '20 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 
 -- ----- Pages (hero + meta for each static HTML + homepage sections JSON) -----
@@ -299,13 +320,14 @@ INSERT INTO pages (slug, nav, title, meta_title, meta_description, hero_eyebrow,
  '[]'::jsonb,
  '{
    "hero_cta_primary":  {"text":"Request a Quote","link":"/contact.html"},
-   "hero_cta_secondary":{"text":"Custom Capabilities","link":"/products/custom.html"},
-   "products_eyebrow":"Products",
-   "products_title":"A battery for every form factor.",
-   "products_lead":"From off-the-shelf cells to fully custom packs — capacities 15 mAh to 20,000 mAh in pouch, cylindrical, coin and prismatic formats.",
+   "hero_cta_secondary":{"text":"Custom Solutions","link":"/products/custom-shaped-polymer-lithium-battery"},
+   "products_eyebrow":"Product Lines",
+   "products_title":"Three product lines, one factory.",
+   "products_lead":"Polymer Li-Po, custom-shaped Li-Po and rechargeable coin steel-shell cells — engineered and manufactured under one ISO 9001 roof.",
    "products_cards":[
-     {"tag":"Standard","title":"Standard Batteries","desc":"200+ catalog models. LiPo pouches, 18650/21700 cylindrical, coin cells — sample in 3-5 days.","link":"/products/standard.html","cta":"Browse catalog","featured":false},
-     {"tag":"Custom ★","title":"Custom Batteries","desc":"Tailored chemistry, shape, connector and BMS for your exact enclosure and power profile.","link":"/products/custom.html","cta":"See capabilities","featured":true}
+     {"tag":"Polymer","title":"Polymer Lithium Battery","desc":"Pouch Li-Po cells from 15 mAh to 20 Ah. Standard catalogue with 3-5 day samples.","link":"/products/polymer-lithium-battery","cta":"Explore line","featured":false},
+     {"tag":"Custom ★","title":"Custom-Shaped Polymer","desc":"Bespoke geometry, capacity, BMS and connectors for your exact enclosure and power profile.","link":"/products/custom-shaped-polymer-lithium-battery","cta":"See capabilities","featured":true},
+     {"tag":"Coin Cell","title":"Coin Steel-Shell Lithium","desc":"Rechargeable LIR & ML coin cells in stainless-steel cases. Reflow-compatible, 500-1,000+ cycles.","link":"/products/coin-steel-shell-lithium-battery","cta":"Compare formats","featured":false}
    ],
    "apps_eyebrow":"Applications",
    "apps_title":"Powering the next generation of devices.",
@@ -325,23 +347,11 @@ INSERT INTO pages (slug, nav, title, meta_title, meta_description, hero_eyebrow,
 
 -- Products
 ('products/index', 'products', 'Products',
- 'Lithium Battery Products — Standard & Custom',
- 'Standard catalogue and bespoke lithium batteries: pouch, cylindrical, coin and prismatic cells with custom BMS.',
- '', 'Two ways to buy a battery.', 'Order from our catalogue, or co-design a fully custom cell with our engineering team.',
+ 'Lithium Battery Product Lines — Polymer, Custom-Shaped, Coin Cell',
+ 'Three product lines under one factory: pouch Li-Po, custom-shaped Li-Po, and rechargeable coin steel-shell cells. ISO 9001 certified manufacturing.',
+ '', 'Three product lines, one factory.', 'Polymer Li-Po · Custom-Shaped Polymer · Coin Steel-Shell — pick the line that fits your enclosure and certification needs.',
  'https://images.unsplash.com/photo-1612392987824-d63f57e9b1cf?w=1920&q=80',
  '[{"label":"Home","url":"/"},{"label":"Products"}]'::jsonb, '{}'::jsonb),
-('products/standard', 'products', 'Standard Batteries',
- 'Standard Lithium Batteries — Catalogue Cells in Stock',
- 'Off-the-shelf LiPo, cylindrical (18650/21700) and coin cells, samples in 3-5 days.',
- '', 'Standard Batteries.', '200+ catalogue models, samples in 3-5 days.',
- 'https://images.unsplash.com/photo-1620455243023-2c80b3a02ee3?w=1920&q=80',
- '[{"label":"Home","url":"/"},{"label":"Products","url":"/products/"},{"label":"Standard"}]'::jsonb, '{}'::jsonb),
-('products/custom', 'products', 'Custom Batteries',
- 'Custom Lithium Batteries — Bespoke Chemistry, Shape & BMS',
- 'Tailored chemistry, shape, connector and BMS for your exact enclosure and power profile.',
- '', 'Custom Batteries.', 'A battery designed around your enclosure, certifications and power profile.',
- 'https://images.unsplash.com/photo-1593642634402-b0eb5e2eebc9?w=1920&q=80',
- '[{"label":"Home","url":"/"},{"label":"Products","url":"/products/"},{"label":"Custom ★"}]'::jsonb, '{}'::jsonb),
 
 -- Applications
 ('applications/index', 'applications', 'Applications',
@@ -473,7 +483,7 @@ INSERT INTO settings (key, value) VALUES
 ('mail',
  '{"reply_to":"sales@example.com","subject_prefix":"[Inquiry]","auto_reply_enabled":true}'),
 ('navigation',
- '{"header":[{"label":"HOME","url":"/","nav":"home"},{"label":"PRODUCTS","url":"/products/","nav":"products","children":[{"label":"Standard Batteries","url":"/products/standard.html"},{"label":"Custom Batteries","url":"/products/custom.html"}]},{"label":"APPLICATIONS","url":"/applications/","nav":"applications","children":[{"label":"AR / VR Glasses","url":"/applications/ar-vr.html"},{"label":"Medical Devices","url":"/applications/medical.html"},{"label":"Wearables","url":"/applications/wearables.html"},{"label":"IoT Devices","url":"/applications/iot.html"}]},{"label":"CUSTOM SOLUTIONS","url":"/solutions/","nav":"solutions","children":[{"label":"Design Support","url":"/solutions/design.html"},{"label":"Prototyping","url":"/solutions/prototyping.html"},{"label":"Mass Production","url":"/solutions/mass-production.html"}]},{"label":"ABOUT US","url":"/about/","nav":"about","children":[{"label":"Company Profile","url":"/about/profile.html"},{"label":"Factory Tour","url":"/about/factory.html"},{"label":"Team","url":"/about/team.html"}]},{"label":"BLOG","url":"/blog/","nav":"blog"},{"label":"FAQ","url":"/faq.html","nav":"faq"},{"label":"CONTACT","url":"/contact.html","nav":"contact"}]}')
+ '{"header":[{"label":"HOME","url":"/","nav":"home"},{"label":"PRODUCTS","url":"/products/","nav":"products","children":[{"label":"Polymer Lithium Battery","url":"/products/polymer-lithium-battery"},{"label":"Custom-Shaped Polymer (Li-Po)","url":"/products/custom-shaped-polymer-lithium-battery"},{"label":"Coin Steel-Shell Lithium","url":"/products/coin-steel-shell-lithium-battery"}]},{"label":"APPLICATIONS","url":"/applications/","nav":"applications","children":[{"label":"AR / VR Glasses","url":"/applications/ar-vr.html"},{"label":"Medical Devices","url":"/applications/medical.html"},{"label":"Wearables","url":"/applications/wearables.html"},{"label":"IoT Devices","url":"/applications/iot.html"}]},{"label":"CUSTOM SOLUTIONS","url":"/solutions/","nav":"solutions","children":[{"label":"Design Support","url":"/solutions/design.html"},{"label":"Prototyping","url":"/solutions/prototyping.html"},{"label":"Mass Production","url":"/solutions/mass-production.html"}]},{"label":"ABOUT US","url":"/about/","nav":"about","children":[{"label":"Company Profile","url":"/about/profile.html"},{"label":"Factory Tour","url":"/about/factory.html"},{"label":"Team","url":"/about/team.html"}]},{"label":"BLOG","url":"/blog/","nav":"blog"},{"label":"FAQ","url":"/faq.html","nav":"faq"},{"label":"CONTACT","url":"/contact.html","nav":"contact"}]}')
 ON CONFLICT (key) DO NOTHING;
 
 

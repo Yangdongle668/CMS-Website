@@ -1,372 +1,305 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="zh-CN">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title data-meta="title">Lithium Battery Pillar | Acme Battery</title>
-<meta name="description" data-meta="description" content=""/>
-<meta property="og:title" data-og="title" content=""/>
-<meta property="og:description" data-og="description" content=""/>
-<meta property="og:image" data-og="image" content="/assets/img/og-default.svg"/>
-<meta property="og:type" content="product.group"/>
-<link rel="canonical" data-canonical href=""/>
-<link rel="icon" href="/assets/img/og-default.svg" type="image/svg+xml"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/css/theme.css"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title data-meta-title>Pillar Lithium Battery</title>
+<meta name="description" data-meta-description content="">
+<meta property="og:type" content="product.group">
+<meta property="og:title" data-og-title content="">
+<meta property="og:description" data-og-description content="">
+<meta property="og:image" data-og-image content="">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" data-canonical href="">
+<link rel="stylesheet" href="/styles.css?v=7">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script type="application/ld+json" data-jsonld></script>
 </head>
-<body>
-<div data-mount="header"></div>
+<body data-nav="products">
+
+<div id="header-mount"></div>
 
 <main>
-  <!-- Hero -->
-  <section class="hero">
-    <div class="container">
-      <nav class="crumbs"><a href="/">Home</a><span>/</span><a href="/applications">Products</a><span>/</span><span data-pillar-name></span></nav>
-      <div class="hero__inner">
-        <div class="hero__copy reveal">
-          <span class="eyebrow" data-pillar-eyebrow></span>
-          <h1 data-pillar-title></h1>
-          <p data-pillar-subtitle></p>
-          <div class="hero__actions">
-            <a class="btn btn--primary btn--lg" data-cta-primary href="/quote"></a>
-            <a class="btn btn--ghost btn--lg" data-cta-secondary href=""></a>
-          </div>
-        </div>
-        <div class="hero__visual reveal">
-          <img data-pillar-image src="" alt=""/>
-        </div>
-      </div>
+  <!-- 1. Hero -->
+  <section class="page-hero" data-pillar-hero>
+    <div class="breadcrumbs">
+      <a href="/">Home</a><span>/</span>
+      <a href="/products/">Products</a><span>/</span>
+      <span data-crumb-current></span>
+    </div>
+    <h1 data-hero-title>Pillar</h1>
+    <p data-hero-subtitle></p>
+  </section>
+
+  <!-- 2. Sibling cross-link strip — sits right under the hero -->
+  <section class="section section-light pillar-strip" style="padding: 28px 24px; border-bottom: 1px solid #ececec;">
+    <div class="section-inner" style="display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap;">
+      <span style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:#5c5e62; font-weight:600;">Compare lines</span>
+      <div data-siblings style="display:flex; gap:10px; flex-wrap:wrap;"></div>
     </div>
   </section>
 
-  <!-- Cross-link to other pillars (sibling internal linking) -->
-  <section class="section" style="padding:32px 0; border-bottom:1px solid var(--color-line);">
-    <div class="container">
-      <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
-        <span class="muted" style="font-size:13px;">Compare with</span>
-        <div data-siblings style="display:flex; gap:10px; flex-wrap:wrap;"></div>
-      </div>
+  <!-- 3. Overview -->
+  <section class="section section-light">
+    <div class="section-inner">
+      <span class="eyebrow">Overview</span>
+      <h2 data-overview-title>What is this product line</h2>
+      <p class="lead" data-overview-body></p>
     </div>
   </section>
 
-  <!-- Overview -->
-  <section class="section">
-    <div class="container" style="max-width:880px;">
-      <div class="reveal">
-        <h2 data-overview-title></h2>
-        <p data-overview-body style="font-size:17px;"></p>
-      </div>
+  <!-- 4. Variants — Standard / Custom split -->
+  <section class="section section-grey">
+    <div class="section-inner">
+      <span class="eyebrow">Variants</span>
+      <h2>Standard catalogue and full-custom design.</h2>
+      <p class="lead">Same chemistry, same QC. Pick the catalogue when speed matters; pick custom when geometry, capacity or BMS need to be designed around your enclosure.</p>
+      <div class="feat-grid" data-variants></div>
     </div>
   </section>
 
-  <!-- Variants -->
-  <section class="section section--alt" id="variants">
-    <div class="container">
-      <div class="section__head reveal">
-        <span class="eyebrow">Types &amp; Variants</span>
-        <h2>Standard catalogue and full custom service.</h2>
-      </div>
-      <div class="variant-grid" data-variants></div>
+  <!-- 5. Specifications table -->
+  <section class="section section-light" id="specs">
+    <div class="section-inner">
+      <span class="eyebrow">Specifications</span>
+      <h2>Technical envelope &amp; performance.</h2>
+      <p class="lead">Extended ranges available on request — speak to engineering for non-standard targets.</p>
+      <div data-spec-table></div>
     </div>
   </section>
 
-  <!-- Spec Table -->
-  <section class="section" id="specs">
-    <div class="container">
-      <div class="section__head reveal">
-        <span class="eyebrow">Specifications</span>
-        <h2>Technical envelope &amp; performance.</h2>
-        <p>Reach out for the full datasheet, abuse-test report and IEC 62133 / UN 38.3 certificates.</p>
-      </div>
-      <div class="reveal" data-spec-table></div>
+  <!-- 6. Customisation capabilities (only when enabled) -->
+  <section class="section section-grey" id="capabilities" data-customization-section style="display:none;">
+    <div class="section-inner">
+      <span class="eyebrow">Customisation</span>
+      <h2>Bespoke design service.</h2>
+      <p class="lead">Send a 3D model and target spec — we return a feasibility study within 5 working days, including capacity estimate, cycle-life model and BOM cost.</p>
+      <div class="feat-grid" data-customization></div>
     </div>
   </section>
 
-  <!-- Applications -->
-  <section class="section section--alt">
-    <div class="container">
-      <div class="section__head reveal">
-        <span class="eyebrow">Applications</span>
-        <h2>Common deployments.</h2>
-      </div>
-      <div class="app-grid reveal" data-app-grid></div>
+  <!-- 7. Manufacturing & QC -->
+  <section class="section section-light">
+    <div class="section-inner">
+      <span class="eyebrow">Manufacturing &amp; QC</span>
+      <h2 data-mfg-title>From prototype to mass production.</h2>
+      <p class="lead" data-mfg-body></p>
     </div>
   </section>
 
-  <!-- Customization (only if enabled) -->
-  <section class="section" id="capabilities" data-customization-section style="display:none;">
-    <div class="container">
-      <div class="section__head reveal">
-        <span class="eyebrow">Customization</span>
-        <h2>Bespoke design service.</h2>
-        <p>Send us a 3D model and target spec; we return a feasibility study within 5 business days.</p>
-      </div>
-      <div class="variant-grid" data-customization></div>
+  <!-- 8. Applications -->
+  <section class="section section-grey">
+    <div class="section-inner">
+      <span class="eyebrow">Applications</span>
+      <h2>Common deployments.</h2>
+      <div class="app-grid" data-applications></div>
     </div>
   </section>
 
-  <!-- Manufacturing -->
-  <section class="section section--dark">
-    <div class="container" style="max-width:920px; text-align:center;" data-manufacturing>
-      <span class="eyebrow" style="background:rgba(147,197,253,.15); color:#93c5fd;">Manufacturing &amp; QC</span>
-      <h2 data-mfg-title></h2>
-      <p data-mfg-body style="font-size:17px; max-width:720px; margin:0 auto;"></p>
+  <!-- 9. Related Insights (cluster articles) -->
+  <section class="section section-light">
+    <div class="section-inner">
+      <span class="eyebrow">Insights</span>
+      <h2>Articles in this topic cluster.</h2>
+      <p class="lead">Engineering deep-dives that help your hardware team specify the right cell, the first time.</p>
+      <div class="news-grid" data-articles style="display:grid;"></div>
+      <div style="margin-top: 32px;"><a href="/blog/" class="news-link">Browse all insights &rarr;</a></div>
     </div>
   </section>
 
-  <!-- Certifications -->
-  <section class="section">
-    <div class="container">
-      <div class="section__head reveal">
-        <span class="eyebrow">Compliance</span>
-        <h2>Independently certified to international standards.</h2>
-      </div>
-      <div class="cert-wall reveal" data-certs></div>
+  <!-- 10. Certifications -->
+  <section class="section section-light" style="padding-top: 60px;">
+    <div class="section-inner">
+      <span class="eyebrow">Compliance</span>
+      <h2>Independently certified.</h2>
+      <p class="lead">Each shipment carries valid UN 38.3 test summary, MSDS and Certificate of Conformity. Additional reports on request.</p>
+      <div class="cert-wall" data-certifications></div>
     </div>
   </section>
 
-  <!-- Cluster: Insights -->
-  <section class="section section--alt">
-    <div class="container">
-      <div class="section__head reveal">
-        <span class="eyebrow">Related Insights</span>
-        <h2>Engineering articles in this topic cluster.</h2>
-      </div>
-      <div class="article-grid" data-articles></div>
-      <div class="text-center" style="margin-top:32px;">
-        <a class="btn btn--ghost" href="/blog">Browse all insights →</a>
-      </div>
+  <!-- 11. FAQ -->
+  <section class="section section-grey" id="faq">
+    <div class="section-inner">
+      <span class="eyebrow">FAQ</span>
+      <h2>Common questions.</h2>
+      <div class="faq-list" data-faq></div>
     </div>
   </section>
 
-  <!-- FAQ -->
-  <section class="section" id="faq">
-    <div class="container">
-      <div class="section__head reveal">
-        <span class="eyebrow">FAQ</span>
-        <h2>Common questions from buyers and engineers.</h2>
-      </div>
-      <div class="faq reveal" data-faq></div>
-    </div>
-  </section>
-
-  <!-- RFQ -->
-  <section class="section">
-    <div class="container">
-      <div class="rfq reveal">
-        <div>
-          <span class="eyebrow" style="background:rgba(147,197,253,.15); color:#93c5fd;">Get a Quote</span>
-          <h2 data-rfq-headline>Talk to a cell engineer.</h2>
-          <p>Tell us your envelope, capacity, cycle and certification needs. We will respond within 1 business day.</p>
-          <div class="rfq__perks">
-            <div class="rfq__perk"><span class="rfq__perk-icon">✓</span><div><strong>Free feasibility review</strong><small>Capacity estimate &amp; cycle-life model.</small></div></div>
-            <div class="rfq__perk"><span class="rfq__perk-icon">✓</span><div><strong>NDA available</strong><small>Mutual NDA before drawings.</small></div></div>
-            <div class="rfq__perk"><span class="rfq__perk-icon">✓</span><div><strong>GDPR compliant</strong><small>Your data is processed lawfully.</small></div></div>
-          </div>
-        </div>
-        <div data-rfq-mount></div>
-      </div>
+  <!-- 12. CTA band -->
+  <section class="section section-dark cta-band">
+    <div class="section-inner">
+      <h2 data-cta-title>Ready for a feasibility review?</h2>
+      <p class="lead" data-cta-lead>Send us your envelope and target spec — engineering will respond within one business day.</p>
+      <a href="/contact.html" class="btn btn-accent" data-cta-btn>Request a Quote</a>
     </div>
   </section>
 </main>
 
-<div data-mount="footer"></div>
-
-<script src="/assets/js/site.js"></script>
+<div id="footer-mount"></div>
+<div id="sidemenu-mount"></div>
+<script src="/partials.js?v=7"></script>
+<script src="/script.js?v=7"></script>
 <script>
 (async function () {
-  const { fetchJson, escapeHtml } = window.SiteAPI;
   const slug = location.pathname.replace(/^\/products\//, '').replace(/\/$/, '');
-  if (!slug) { location.href = '/'; return; }
+  if (!slug) { location.href = '/products/'; return; }
+  const escape = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-  let data, isProduct = false;
+  let data;
   try {
-    data = await fetchJson('/api/pillars/' + encodeURIComponent(slug));
+    data = await (await fetch('/api/pillars/' + encodeURIComponent(slug))).json();
   } catch (_) {
     // Fall back to a specific product
     try {
-      const productData = await fetchJson('/api/products/' + encodeURIComponent(slug));
-      isProduct = true;
-      // Adapt product shape to the template's pillar shape
-      const pr = productData.product;
-      const par = productData.pillar || {};
+      const pr = await (await fetch('/api/products/' + encodeURIComponent(slug))).json();
+      const p = pr.product;
+      const par = pr.pillar || {};
       data = {
         pillar: {
-          slug: pr.slug,
-          name: pr.name,
-          short_name: pr.model_no || par.short_name || pr.name,
-          meta_title: pr.meta_title,
-          meta_description: pr.meta_description,
-          hero_eyebrow: par.short_name || 'Product',
-          hero_title: pr.name,
-          hero_subtitle: pr.tagline || pr.description,
-          hero_image: pr.cover_url,
-          primary_cta_text: 'Request a Quote',
-          primary_cta_link: '/quote',
-          secondary_cta_text: pr.datasheet_url ? 'Download Datasheet' : 'See Specifications',
-          secondary_cta_link: pr.datasheet_url || '#specs',
-          overview: { title: 'Overview', body: pr.description },
-          variants: [],
-          spec_table: pr.specs ? {
+          slug: p.slug, name: p.name, short_name: p.model_no || par.short_name || p.name,
+          meta_title: p.meta_title, meta_description: p.meta_description,
+          hero_title: p.name, hero_subtitle: p.tagline || p.description,
+          hero_image: p.cover_url,
+          overview: { title: 'Overview', body: p.description },
+          variants: [], spec_table: p.specs ? {
             headers: ['Parameter', 'Value'],
-            rows: Object.entries(pr.specs).map(([k, v]) => [k.replace(/_/g, ' '), String(v)])
+            rows: Object.entries(p.specs).map(([k, v]) => [k.replace(/_/g, ' '), String(v)])
           } : { headers: [], rows: [] },
-          customization: { enabled: pr.is_custom, items: [] },
-          manufacturing: {},
-          certifications: [],
-          faq: [],
+          customization: { enabled: !!p.is_custom, items: [] },
+          manufacturing: {}, certifications: [], faq: [], applications: [],
         },
         siblings: par.slug ? [{ slug: par.slug, name: par.name, short_name: par.short_name }] : [],
-        products: productData.related || [],
-        articles: [],
-        applications: [],
+        articles: [], applications: [], products: pr.related || [],
       };
-    } catch (__) {
-      location.href = '/404.html'; return;
-    }
+    } catch (__) { location.href = '/404.html'; return; }
   }
 
+  if (!data || !data.pillar) { location.href = '/products/'; return; }
   const p = data.pillar;
-  document.body.dataset.rfqCategory = p.slug;
 
-  // ----- Meta -----
+  // ----- Meta + OG -----
   const title = p.meta_title || `${p.name} | Acme Battery`;
-  const desc = p.meta_description || p.hero_subtitle;
+  const desc = p.meta_description || p.hero_subtitle || '';
   document.title = title;
-  document.querySelector('[data-meta="description"]').setAttribute('content', desc);
-  document.querySelector('[data-og="title"]').setAttribute('content', title);
-  document.querySelector('[data-og="description"]').setAttribute('content', desc);
+  document.querySelector('[data-meta-title]').textContent = title;
+  document.querySelector('[data-meta-description]').setAttribute('content', desc);
+  document.querySelector('[data-og-title]').setAttribute('content', title);
+  document.querySelector('[data-og-description]').setAttribute('content', desc);
+  document.querySelector('[data-og-image]').setAttribute('content', p.hero_image || '');
   document.querySelector('[data-canonical]').setAttribute('href', '/products/' + p.slug);
 
-  // ----- JSON-LD: Product + FAQPage + BreadcrumbList -----
+  // ----- JSON-LD: Product + BreadcrumbList + FAQPage -----
   const ld = [
-    {
-      "@context":"https://schema.org",
-      "@type":"Product",
-      "name": p.name,
-      "description": desc,
-      "image": p.hero_image || '/assets/img/og-default.svg',
+    { "@context":"https://schema.org","@type":"Product",
+      "name": p.name, "description": desc,
+      "image": p.hero_image || '',
       "brand": {"@type":"Brand","name":"Acme Battery"},
-      "category": "Lithium Battery"
-    },
-    {
-      "@context":"https://schema.org",
-      "@type":"BreadcrumbList",
-      "itemListElement": [
+      "category": "Lithium Battery" },
+    { "@context":"https://schema.org","@type":"BreadcrumbList",
+      "itemListElement":[
         {"@type":"ListItem","position":1,"name":"Home","item":"/"},
-        {"@type":"ListItem","position":2,"name":"Products","item":"/applications"},
+        {"@type":"ListItem","position":2,"name":"Products","item":"/products/"},
         {"@type":"ListItem","position":3,"name": p.name,"item":"/products/" + p.slug}
-      ]
-    }
+      ]},
   ];
   if (Array.isArray(p.faq) && p.faq.length) {
-    ld.push({
-      "@context":"https://schema.org",
-      "@type":"FAQPage",
+    ld.push({ "@context":"https://schema.org","@type":"FAQPage",
       "mainEntity": p.faq.map((f) => ({
         "@type":"Question","name": f.q,
-        "acceptedAnswer":{"@type":"Answer","text": f.a}
-      }))
-    });
+        "acceptedAnswer": { "@type":"Answer","text": f.a }
+      })) });
   }
   document.querySelector('[data-jsonld]').textContent = JSON.stringify(ld);
 
-  // ----- Hero / overview -----
-  document.querySelector('[data-pillar-name]').textContent = p.name;
-  document.querySelector('[data-pillar-eyebrow]').textContent = p.hero_eyebrow || p.short_name;
-  document.querySelector('[data-pillar-title]').textContent = p.hero_title || p.name;
-  document.querySelector('[data-pillar-subtitle]').textContent = p.hero_subtitle;
-  const img = document.querySelector('[data-pillar-image]');
-  img.src = p.hero_image || '/assets/img/hero-illustration.svg';
-  img.alt = p.name;
-  const cta1 = document.querySelector('[data-cta-primary]');
-  cta1.textContent = p.primary_cta_text || 'Get a Quote';
-  cta1.href = p.primary_cta_link || '/quote';
-  const cta2 = document.querySelector('[data-cta-secondary]');
-  cta2.textContent = p.secondary_cta_text || 'Learn more';
-  cta2.href = p.secondary_cta_link || '#specs';
+  // ----- Hero -----
+  const hero = document.querySelector('[data-pillar-hero]');
+  if (p.hero_image) hero.style.backgroundImage = `url('${p.hero_image.replace(/'/g, "\\'")}')`;
+  document.querySelector('[data-crumb-current]').textContent = p.short_name || p.name;
+  document.querySelector('[data-hero-title]').textContent = p.hero_title || p.name;
+  document.querySelector('[data-hero-subtitle]').textContent = p.hero_subtitle || '';
 
+  // ----- Sibling cross-links -----
+  const sib = (data.siblings || []).map((s) =>
+    `<a class="news-link" style="color:#171a20; padding:6px 12px; border-radius:20px; background:#fff; border:1px solid #e4e4e4;" href="/products/${escape(s.slug)}">${escape(s.short_name || s.name)} &rarr;</a>`
+  ).join('');
+  document.querySelector('[data-siblings]').innerHTML = sib || '';
+
+  // ----- Overview -----
   if (p.overview && p.overview.title) document.querySelector('[data-overview-title]').textContent = p.overview.title;
   if (p.overview && p.overview.body) document.querySelector('[data-overview-body]').textContent = p.overview.body;
 
-  // ----- Siblings -----
-  const sib = (data.siblings || []).map((s) =>
-    `<a class="btn btn--ghost btn--sm" href="/products/${escapeHtml(s.slug)}">${escapeHtml(s.short_name || s.name)}</a>`
-  ).join('');
-  document.querySelector('[data-siblings]').innerHTML = sib;
-
   // ----- Variants -----
   document.querySelector('[data-variants]').innerHTML = (p.variants || []).map((v) =>
-    `<div class="variant-card"><h4>${escapeHtml(v.name)}</h4><p>${escapeHtml(v.summary || '')}</p></div>`
-  ).join('');
+    `<div class="feat-item">
+      <div class="feat-icon">${escape((v.name || '?').charAt(0))}</div>
+      <h3>${escape(v.name || '')}</h3>
+      <p>${escape(v.summary || '')}</p>
+    </div>`
+  ).join('') || '<p class="muted" style="grid-column:1/-1; text-align:center; color:#5c5e62;">Variant data not configured.</p>';
 
   // ----- Spec table -----
-  if (p.spec_table && Array.isArray(p.spec_table.headers)) {
+  if (p.spec_table && Array.isArray(p.spec_table.headers) && p.spec_table.headers.length) {
     const t = p.spec_table;
     document.querySelector('[data-spec-table]').innerHTML = `
       <table class="spec-table">
-        <thead><tr>${t.headers.map((h) => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
+        <thead><tr>${t.headers.map((h) => `<th>${escape(h)}</th>`).join('')}</tr></thead>
         <tbody>${(t.rows || []).map((row) =>
-          `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`
+          `<tr>${row.map((cell) => `<td>${escape(cell)}</td>`).join('')}</tr>`
         ).join('')}</tbody>
       </table>`;
   }
 
-  // ----- Applications -----
-  document.querySelector('[data-app-grid]').innerHTML = (data.applications || []).map((a) =>
-    `<a class="app-tile" href="/applications/${escapeHtml(a.slug)}">
-       <span class="app-tile__icon">${escapeHtml(a.name.charAt(0))}</span>
-       <h4>${escapeHtml(a.name)}</h4>
-       <p>${escapeHtml((a.summary || '').slice(0, 100))}</p>
-     </a>`
-  ).join('');
-
-  // ----- Customization -----
-  if (p.customization && p.customization.enabled && Array.isArray(p.customization.items)) {
+  // ----- Customisation -----
+  if (p.customization && p.customization.enabled && Array.isArray(p.customization.items) && p.customization.items.length) {
     document.querySelector('[data-customization-section]').style.display = '';
     document.querySelector('[data-customization]').innerHTML = p.customization.items.map((c) =>
-      `<div class="variant-card"><h4>${escapeHtml(c.label)}</h4><p>${escapeHtml(c.value)}</p></div>`
+      `<div class="feat-item">
+        <div class="feat-icon">+</div>
+        <h3>${escape(c.label || '')}</h3>
+        <p>${escape(c.value || '')}</p>
+      </div>`
     ).join('');
   }
 
   // ----- Manufacturing -----
-  if (p.manufacturing) {
-    if (p.manufacturing.title) document.querySelector('[data-mfg-title]').textContent = p.manufacturing.title;
-    if (p.manufacturing.body) document.querySelector('[data-mfg-body]').textContent = p.manufacturing.body;
-  }
+  if (p.manufacturing && p.manufacturing.title) document.querySelector('[data-mfg-title]').textContent = p.manufacturing.title;
+  if (p.manufacturing && p.manufacturing.body) document.querySelector('[data-mfg-body]').textContent = p.manufacturing.body;
+
+  // ----- Applications grid (link to /applications/<slug>.html) -----
+  document.querySelector('[data-applications]').innerHTML = (data.applications || []).map((a) => {
+    const bg = a.cover_url ? ` style="background-image:url('${a.cover_url.replace(/'/g, "\\'")}');"` : '';
+    return `<a class="app-card" href="/applications/${escape(a.slug)}.html"${bg}>
+      <div class="app-overlay"><h3>${escape(a.name)}</h3><p>${escape((a.summary || '').slice(0, 110))}</p></div>
+    </a>`;
+  }).join('');
 
   // ----- Certifications -----
-  document.querySelector('[data-certs]').innerHTML = (p.certifications || []).map((c) =>
-    `<span class="cert-chip">${escapeHtml(c.name)}</span>`
-  ).join('');
-
-  // ----- FAQ -----
-  document.querySelector('[data-faq]').innerHTML = (p.faq || []).map((f) =>
-    `<details class="faq__item"><summary>${escapeHtml(f.q)}</summary><div class="faq__answer">${escapeHtml(f.a)}</div></details>`
+  document.querySelector('[data-certifications]').innerHTML = (p.certifications || []).map((c) =>
+    `<span class="cert-chip">${escape(c.name || '')}</span>`
   ).join('');
 
   // ----- Articles (cluster) -----
-  document.querySelector('[data-articles]').innerHTML = (data.articles || []).map((a) => {
+  const aHtml = (data.articles || []).map((a) => {
     const date = a.published_at ? new Date(a.published_at).toLocaleDateString('en-GB', { year:'numeric', month:'short', day:'2-digit' }) : '';
-    return `<a class="article-card" href="/blog/${escapeHtml(a.slug)}">
-      <div class="article-card__media"><img src="${escapeHtml(a.cover_url || '/assets/img/hero-illustration.svg')}" alt=""/></div>
-      <div class="article-card__body">
-        <span class="article-card__pill">${escapeHtml(p.short_name)}</span>
-        <h3>${escapeHtml(a.title)}</h3>
-        <p>${escapeHtml((a.excerpt || '').slice(0, 130))}</p>
-        <div class="article-card__meta">${date ? date + ' · ' : ''}${a.reading_minutes} min read</div>
-      </div></a>`;
-  }).join('') || '<p class="muted text-center" style="grid-column:1/-1;">No related articles yet.</p>';
+    return `<article class="news-card">
+      <div class="news-date">${escape(p.short_name || p.name)} · ${a.reading_minutes || 5} min${date ? ' · ' + date : ''}</div>
+      <h3>${escape(a.title)}</h3>
+      <p>${escape((a.excerpt || '').slice(0, 130))}</p>
+      <a href="/blog/${escape(a.slug)}" class="news-link">Read more &rarr;</a>
+    </article>`;
+  }).join('');
+  document.querySelector('[data-articles]').innerHTML = aHtml || '<p style="grid-column:1/-1; text-align:center; color:#5c5e62;">No related articles yet.</p>';
 
-  // ----- RFQ preselect (form is auto-mounted by site.js) -----
-  // Wait briefly for site.js to inject the form, then preselect category
-  const setSelect = () => {
-    const sel = document.querySelector('[data-rfq-mount] select[name="product_categories"]');
-    if (sel) sel.value = p.slug;
-  };
-  setTimeout(setSelect, 200);
-  setTimeout(setSelect, 800);
+  // ----- FAQ -----
+  document.querySelector('[data-faq]').innerHTML = (p.faq || []).map((f) =>
+    `<details><summary>${escape(f.q || '')}</summary><p>${escape(f.a || '')}</p></details>`
+  ).join('') || '<p style="text-align:center; color:#5c5e62;">FAQ not configured.</p>';
+
+  // ----- CTA -----
+  if (p.primary_cta_text) document.querySelector('[data-cta-btn]').textContent = p.primary_cta_text;
+  if (p.primary_cta_link) document.querySelector('[data-cta-btn]').setAttribute('href', p.primary_cta_link);
 })();
 </script>
 </body>
