@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sizing a Cell From a Power Profile — Zufek Blog</title>
+<meta name="description" content="How to turn a current-vs-time trace into a real-world capacity specification — with a worked IoT example.">
+<link rel="stylesheet" href="/styles.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body data-nav="blog">
+<div id="header-mount"></div>
+
+<main>
+  <section class="page-hero" style="background-image:url('https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=1920&q=80');">
+    <div class="breadcrumbs"><a href="/">Home</a><span>/</span><a href="/blog/">Blog</a><span>/</span><a href="/blog/guides.html">Battery Guides</a><span>/</span><span>Cell Sizing</span></div>
+    <h1>Sizing a Cell From a Power Profile</h1>
+    <p>Capacity is never the number on the spec sheet. Here&rsquo;s how to compute the real one.</p>
+  </section>
+
+  <section class="section section-light">
+    <div class="section-inner">
+      <div class="article-meta">
+        <span>Guide</span><span class="dot">·</span>
+        <span>9 min read</span><span class="dot">·</span>
+        <span>Sizing</span>
+      </div>
+
+      <article class="article-body">
+        <p class="lede">Most &ldquo;battery dies too fast&rdquo; complaints trace back to the same mistake: picking a cell capacity that matches nameplate runtime, not real-world runtime. The right method is uncomfortable because it forces you to give up capacity on paper to gain it in the field.</p>
+
+        <h2>Start with the current trace, not the datasheet</h2>
+        <p>You need four inputs before you can size a cell:</p>
+        <ul>
+          <li><strong>Average current (I<sub>avg</sub>)</strong> across a representative use session.</li>
+          <li><strong>Peak current (I<sub>pk</sub>)</strong> and its duration &mdash; for radio bursts, display ramp, motor kick-in.</li>
+          <li><strong>Ambient temperature range</strong> the device operates in.</li>
+          <li><strong>Target lifetime</strong> in charge cycles, or in years for calendar-limited designs.</li>
+        </ul>
+        <p>If you don&rsquo;t have a current trace, capture one. A cheap shunt + logger in series with the battery terminal gets you a usable profile in an afternoon.</p>
+
+        <h2>Compute ideal capacity</h2>
+        <p>The arithmetic is trivial:</p>
+        <blockquote>Q<sub>ideal</sub> = I<sub>avg</sub> &times; T<sub>target</sub></blockquote>
+        <p>For a wearable that draws 18 mA average over an 18-hour session: Q<sub>ideal</sub> = 18 &times; 18 = 324 mAh. That&rsquo;s your starting point, and you should never stop there.</p>
+
+        <h2>Apply the derating cascade</h2>
+        <p>Four factors chip away at the headline number. Multiply them in order:</p>
+        <table>
+          <thead><tr><th>Factor</th><th>Typical value</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td>Usable SOC window</td><td>&times; 1 / 0.90</td><td>You can&rsquo;t drain a Li-ion cell to 0% without harming it &mdash; most BMSes cut at 3.0 V.</td></tr>
+            <tr><td>End-of-life capacity</td><td>&times; 1 / 0.80</td><td>A cell rated for 500 cycles has 80% SOH at end of life. Design for that, not day-1 capacity.</td></tr>
+            <tr><td>Temperature derating</td><td>&times; 1 / 0.90 (if used below 10 &deg;C)</td><td>Low-temp capacity falls off a cliff. Ignorable for indoor wearables, critical for outdoor IoT.</td></tr>
+            <tr><td>Peak-current headroom</td><td>&times; 1.05&ndash;1.15</td><td>Voltage sag during I<sub>pk</sub> cuts into usable capacity. Bigger pulses = bigger factor.</td></tr>
+          </tbody>
+        </table>
+        <p>Chained together, the 324 mAh wearable needs roughly <strong>324 &times; 1.11 &times; 1.25 &times; 1.0 &times; 1.05 &approx; 470 mAh</strong> to deliver 18-hour runtime through its end of life.</p>
+
+        <h2>A worked IoT example</h2>
+        <p>Consider a LoRa asset tracker with this duty cycle:</p>
+        <ul>
+          <li>Sleep: 20 &micro;A, 59 minutes per hour</li>
+          <li>GPS fix: 25 mA for 45 seconds, once per hour</li>
+          <li>LoRa TX: 120 mA for 1 second, once per hour</li>
+        </ul>
+        <p>Hourly charge consumed: (20 &micro;A &times; 59/60 h) + (25 mA &times; 45/3600 h) + (120 mA &times; 1/3600 h) &asymp; 0.345 mAh/hour.</p>
+        <p>Target: 3 years without battery replacement = 26,280 hours &rarr; 9,067 mAh.</p>
+        <p>Apply the derating: for an outdoor device operating at &minus;10&nbsp;&deg;C to +50&nbsp;&deg;C, the cold-temperature factor alone pushes this to &sim;11.3 Ah. The design converges on either a large Li-SOCl&sub;2 cell or a Li-SOCl&sub;2 + high-pulse-capacitor hybrid to handle the TX bursts.</p>
+
+        <h2>Three shortcuts that ship real products</h2>
+        <ol>
+          <li><strong>When you don&rsquo;t know, over-size by 30%.</strong> Design in more capacity than you think you need. Shrinking later is cheap; fielded returns are not.</li>
+          <li><strong>Target end-of-life runtime in the marketing copy.</strong> If you say &ldquo;7 days&rdquo; and the user gets 7.8 days out of the box and 6.1 after a year, they feel cheated. Say &ldquo;6 days&rdquo; and over-deliver on day one.</li>
+          <li><strong>Measure, don&rsquo;t estimate.</strong> One honest lab current trace beats a spreadsheet full of datasheet numbers.</li>
+        </ol>
+
+        <nav class="article-nav">
+          <a href="/blog/un-iec-compliance.html" class="prev">&larr; Previous: UN 38.3 &amp; IEC 62133</a>
+          <a href="/blog/bms-pcm-smart.html" class="next">Next: PCM vs Smart Battery &rarr;</a>
+        </nav>
+      </article>
+    </div>
+  </section>
+
+  <section class="section section-dark cta-band">
+    <div class="section-inner">
+      <h2>Want a sizing review?</h2>
+      <p class="lead">Share your current trace and target runtime &mdash; we&rsquo;ll propose two or three cell options with honest end-of-life numbers.</p>
+      <a href="/contact.html" class="btn btn-accent">Send Your Power Profile</a>
+    </div>
+  </section>
+</main>
+
+<div id="footer-mount"></div>
+<div id="sidemenu-mount"></div>
+<script src="/partials.js"></script>
+<script src="/script.js"></script>
+</body>
+</html>

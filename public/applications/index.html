@@ -1,50 +1,55 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Battery Applications &amp; Industries | Acme Battery</title>
-<meta name="description" content="Lithium battery solutions for medical devices, wearables, IoT, drones, power tools, e-mobility and energy storage. OEM/ODM with full certification."/>
-<link rel="canonical" href="/applications"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/css/theme.css"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Applications — Zufek</title>
+<meta name="description" content="Battery solutions for AR/VR glasses, medical devices, wearables and IoT products.">
+<link rel="stylesheet" href="/styles.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
-<div data-mount="header"></div>
+<body data-nav="applications">
+<div id="header-mount"></div>
 
-<section class="hero" style="border-bottom:1px solid var(--color-line);">
-  <div class="container">
-    <nav class="crumbs"><a href="/">Home</a><span>/</span>Applications</nav>
-    <div class="hero__inner" style="grid-template-columns:1fr; padding: 64px 0 32px;">
-      <div class="hero__copy reveal" style="max-width:760px;">
-        <span class="eyebrow">Applications &amp; Industries</span>
-        <h1>Battery solutions across regulated B2B industries.</h1>
-        <p>Each industry brings its own certifications, abuse profiles and lifecycle expectations. Browse the deployment areas where Acme cells and packs are already shipping.</p>
+<main>
+  <section class="page-hero" style="background-image:url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=1920&q=80');">
+    <div class="breadcrumbs"><a href="/">Home</a><span>/</span><span>Applications</span></div>
+    <h1>Where Zufek ships today.</h1>
+    <p>Four domains, same obsession: the smallest, lightest, safest cell that meets your spec.</p>
+  </section>
+
+  <section class="section section-light">
+    <div class="section-inner">
+      <div class="app-grid">
+        <a href="/applications/ar-vr.html" class="app-card" style="background-image:url('https://images.unsplash.com/photo-1592478411213-6153e4ebc07d?w=1200&q=80');">
+          <div class="app-overlay"><h3>AR / VR Glasses</h3><p>Ultra-thin cells that fit inside slim temples and headsets without adding weight.</p></div>
+        </a>
+        <a href="/applications/medical.html" class="app-card" style="background-image:url('https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=1200&q=80');">
+          <div class="app-overlay"><h3>Medical Devices</h3><p>ISO 13485-aligned production for wearable monitors, hearing aids and pumps.</p></div>
+        </a>
+        <a href="/applications/wearables.html" class="app-card" style="background-image:url('https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1200&q=80');">
+          <div class="app-overlay"><h3>Wearables</h3><p>Curved and shaped cells for smartwatches, TWS earbuds, fitness trackers and rings.</p></div>
+        </a>
+        <a href="/applications/iot.html" class="app-card" style="background-image:url('https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=1200&q=80');">
+          <div class="app-overlay"><h3>IoT Devices</h3><p>Long-life cells for sensors, trackers and asset-monitoring edge devices.</p></div>
+        </a>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<section class="section">
-  <div class="container">
-    <div class="app-grid" data-app-grid></div>
-  </div>
-</section>
+  <section class="section section-dark cta-band">
+    <div class="section-inner">
+      <h2>Don't see your category?</h2>
+      <p class="lead">We also ship into drones, robotics, power tools and industrial handhelds. Tell us what you're building.</p>
+      <a href="/contact.html" class="btn btn-accent">Discuss Your Device</a>
+    </div>
+  </section>
+</main>
 
-<div data-mount="footer"></div>
-<script src="/assets/js/site.js"></script>
-<script>
-(async function () {
-  const { fetchJson, escapeHtml } = window.SiteAPI;
-  const { items } = await fetchJson('/api/applications');
-  document.querySelector('[data-app-grid]').innerHTML = items.map((a) => `
-    <a class="app-tile" href="/applications/${escapeHtml(a.slug)}">
-      <span class="app-tile__icon">${escapeHtml(a.name.charAt(0))}</span>
-      <h4>${escapeHtml(a.name)}</h4>
-      <p>${escapeHtml(a.summary || '')}</p>
-    </a>
-  `).join('');
-})();
-</script>
+<div id="footer-mount"></div>
+<div id="sidemenu-mount"></div>
+<script src="/partials.js"></script>
+<script src="/script.js"></script>
 </body>
 </html>

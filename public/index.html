@@ -1,255 +1,130 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Acme Battery Co., Ltd. | B2B Lithium Battery Manufacturer</title>
-<meta name="description" content="OEM/ODM lithium battery manufacturer specialising in polymer Li-Po, custom-shaped Li-Po and cylindrical Li-Ion cells. ISO 9001, UN 38.3, IEC 62133, CE compliant."/>
-<meta property="og:title" content="Acme Battery Co., Ltd. | B2B Lithium Battery Manufacturer"/>
-<meta property="og:description" content="Polymer, custom-shaped and cylindrical lithium batteries for industrial OEMs."/>
-<meta property="og:image" content="/assets/img/og-default.svg"/>
-<meta property="og:type" content="website"/>
-<meta name="twitter:card" content="summary_large_image"/>
-<link rel="canonical" href="/"/>
-<link rel="icon" href="/assets/img/og-default.svg" type="image/svg+xml"/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/css/theme.css?v=4"/>
-<style>
-  body.home { background:#050a17; }
-</style>
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  "name": "Acme Battery Co., Ltd.",
-  "url": "/",
-  "logo": "/assets/img/og-default.svg",
-  "description": "B2B manufacturer of polymer, custom-shaped and cylindrical lithium-ion batteries.",
-  "address": {"@type":"PostalAddress","streetAddress":"Building A, Industrial Park","addressLocality":"Shenzhen","postalCode":"518000","addressCountry":"CN"},
-  "contactPoint": [{"@type":"ContactPoint","contactType":"sales","email":"sales@example.com","areaServed":["EU","NA","APAC"]}]
-}
-</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Custom Lithium Batteries for AR/VR, Medical, Wearables &amp; IoT</title>
+<meta name="description" content="Custom lithium batteries for AR/VR, medical, wearable and IoT devices. OEM/ODM polymer, custom-shaped and cylindrical Li-Ion cells.">
+<link rel="stylesheet" href="/styles.css?v=5">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="home">
-<div data-mount="header"></div>
+<body data-nav="home">
 
-<!-- ============= HERO (full-screen) ============= -->
-<section class="tsection tsection--hero">
-  <!-- Decorative floating cells -->
-  <div class="hero-cells" aria-hidden="true">
-    <span></span><span></span><span></span><span></span>
-  </div>
+<div id="header-mount"></div>
 
-  <div class="tsection__inner" style="justify-content: center; gap: 32px;">
-    <div class="tsection__top" style="margin-top: 0;">
-      <div class="tsection__eyebrow">Engineered for Industry · Since 2008</div>
-      <h1 class="tsection__title">
-        Lithium energy,<br/>
-        built for the <em>next product</em>.
-      </h1>
-      <p class="tsection__sub">OEM/ODM lithium cells in three pillar lines — polymer, custom-shaped and cylindrical — designed and manufactured under one ISO 9001 roof.</p>
+<main>
+
+  <section class="hero" style="background-image:url('https://images.unsplash.com/photo-1593642634443-44adaa06623a?w=1920&q=80');">
+    <div class="hero-top">
+      <h1>Custom Batteries,<br>Engineered Precisely.</h1>
+      <p class="subtitle">Lithium-polymer and lithium-ion solutions for AR/VR, medical, wearable and IoT devices.</p>
     </div>
-
-    <div class="tsection__bottom">
-      <div class="tsection__ctas">
-        <a class="btn btn--primary btn--lg" href="/quote">Request a Quote</a>
-        <a class="btn btn--ghost btn--lg" href="#pillars">Explore Products</a>
-      </div>
-      <div class="hero-trust">
-        <span>ISO 9001</span>
-        <span>UN 38.3</span>
-        <span>IEC 62133</span>
-        <span>CE</span>
-        <span>UL 1642</span>
-        <span>RoHS</span>
-      </div>
-      <span class="scroll-cue" style="margin-top:24px;">Scroll</span>
-    </div>
-  </div>
-</section>
-
-<!-- ============= STATS STRIP ============= -->
-<section class="tsection-strip">
-  <div class="tsection-strip__inner">
-    <div><div class="metric__value">17 yrs</div><div class="metric__label">Lithium experience</div></div>
-    <div><div class="metric__value">420+</div><div class="metric__label">Engineers &amp; QC</div></div>
-    <div><div class="metric__value">18,000 m²</div><div class="metric__label">Factory floor</div></div>
-    <div><div class="metric__value">35+</div><div class="metric__label">Export countries</div></div>
-  </div>
-</section>
-
-<!-- ============= 3 PILLAR SECTIONS (rendered by JS) ============= -->
-<div id="pillars" data-pillar-sections></div>
-
-<!-- ============= APPLICATIONS (full-screen, dark) ============= -->
-<section class="tsection tsection--dark">
-  <div class="tsection__inner">
-    <div class="tsection__top" style="margin-top: 5vh;">
-      <div class="tsection__eyebrow">Applications</div>
-      <h2 class="tsection__title">Trusted across regulated industries.</h2>
-      <p class="tsection__sub">Each industry brings its own certifications, abuse profiles and lifecycle expectations. We engineer the cell around them — not the other way around.</p>
-    </div>
-    <div class="tsection__visual" style="align-self:stretch;">
-      <div class="container">
-        <div class="app-grid" data-app-grid></div>
+    <div class="hero-bottom">
+      <div class="cta-group">
+        <a href="/contact.html" class="btn btn-primary">Request a Quote</a>
+        <a href="/products/custom.html" class="btn btn-secondary">Custom Capabilities</a>
       </div>
     </div>
-    <div class="tsection__bottom">
-      <a class="btn btn--ghost btn--lg" href="/applications">View all applications</a>
-    </div>
-  </div>
-</section>
+  </section>
 
-<!-- ============= INSIGHTS (light) ============= -->
-<section class="tsection">
-  <div class="tsection__inner">
-    <div class="tsection__top" style="margin-top: 5vh;">
-      <div class="tsection__eyebrow">Engineering Insights</div>
-      <h2 class="tsection__title">Technical guides from our cell engineers.</h2>
-      <p class="tsection__sub">Deep-dives that help your hardware team specify the right cell, the first time.</p>
-    </div>
-    <div class="tsection__visual" style="align-self:stretch;">
-      <div class="container">
-        <div class="article-grid" data-article-grid></div>
+  <!-- Product categories -->
+  <section class="section section-light">
+    <div class="section-inner">
+      <span class="eyebrow">Products</span>
+      <h2>A battery for every form factor.</h2>
+      <p class="lead">From off-the-shelf cells to fully custom packs — capacities 15 mAh to 20,000 mAh in pouch, cylindrical, coin and prismatic formats.</p>
+
+      <div class="product-grid">
+        <a href="/products/standard.html" class="product-card">
+          <div class="product-tag">Standard</div>
+          <h3>Standard Batteries</h3>
+          <p>200+ catalog models. LiPo pouches, 18650/21700 cylindrical, coin cells — sample in 3–5 days.</p>
+          <span class="news-link">Browse catalog →</span>
+        </a>
+        <a href="/products/custom.html" class="product-card featured">
+          <div class="product-tag tag-star">Custom ★</div>
+          <h3>Custom Batteries</h3>
+          <p>Tailored chemistry, shape, connector and BMS for your exact enclosure and power profile.</p>
+          <span class="news-link">See capabilities →</span>
+        </a>
       </div>
     </div>
-    <div class="tsection__bottom">
-      <a class="btn btn--ghost btn--lg" href="/blog">Browse all insights</a>
-    </div>
-  </div>
-</section>
+  </section>
 
-<!-- ============= CERTIFICATIONS (light, compact) ============= -->
-<section class="section section--alt" style="padding: 64px 0;">
-  <div class="container">
-    <div class="section__head reveal" style="margin-bottom:24px;">
-      <span class="eyebrow">Independently Certified</span>
-    </div>
-    <div class="cert-wall reveal">
-      <span class="cert-chip">ISO 9001</span>
-      <span class="cert-chip">UN 38.3</span>
-      <span class="cert-chip">IEC 62133</span>
-      <span class="cert-chip">CE</span>
-      <span class="cert-chip">UL 1642</span>
-      <span class="cert-chip">KC</span>
-      <span class="cert-chip">PSE</span>
-      <span class="cert-chip">RoHS</span>
-      <span class="cert-chip">REACH</span>
-      <span class="cert-chip">MSDS</span>
-    </div>
-  </div>
-</section>
-
-<!-- ============= RFQ (dark) ============= -->
-<section class="section section--dark" style="background:#050a17;">
-  <div class="container">
-    <div class="rfq reveal" style="background:transparent; padding: 32px 0;">
-      <div>
-        <span class="eyebrow" style="background:rgba(147,197,253,.15); color:#93c5fd;">Request a Quote</span>
-        <h2 style="color:#fff;">Tell us what you're building.</h2>
-        <p>Send us your specs and our sales engineering team will respond within 1 business day with a feasibility note and indicative pricing.</p>
-        <div class="rfq__perks">
-          <div class="rfq__perk"><span class="rfq__perk-icon">✓</span><div><strong>Reply within 1 business day</strong><small>Engineering review, not auto-reply.</small></div></div>
-          <div class="rfq__perk"><span class="rfq__perk-icon">✓</span><div><strong>NDA on request</strong><small>Mutual NDA before drawings exchange.</small></div></div>
-          <div class="rfq__perk"><span class="rfq__perk-icon">✓</span><div><strong>GDPR compliant</strong><small>Your data stays under your control.</small></div></div>
-        </div>
+  <!-- Applications grid -->
+  <section class="section section-grey">
+    <div class="section-inner">
+      <span class="eyebrow">Applications</span>
+      <h2>Powering the next generation of devices.</h2>
+      <div class="app-grid">
+        <a href="/applications/ar-vr.html" class="app-card" style="background-image:url('https://images.unsplash.com/photo-1592478411213-6153e4ebc07d?w=1200&q=80');">
+          <div class="app-overlay"><h3>AR / VR Glasses</h3><p>Ultra-thin cells that fit inside slim temples and headsets.</p></div>
+        </a>
+        <a href="/applications/medical.html" class="app-card" style="background-image:url('https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=1200&q=80');">
+          <div class="app-overlay"><h3>Medical Devices</h3><p>ISO 13485-aligned production for life-critical equipment.</p></div>
+        </a>
+        <a href="/applications/wearables.html" class="app-card" style="background-image:url('https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1200&q=80');">
+          <div class="app-overlay"><h3>Wearables</h3><p>Curved and shaped cells for watches, earbuds and rings.</p></div>
+        </a>
+        <a href="/applications/iot.html" class="app-card" style="background-image:url('https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=1200&q=80');">
+          <div class="app-overlay"><h3>IoT Devices</h3><p>Long-life cells for sensors, trackers and edge devices.</p></div>
+        </a>
       </div>
-      <div data-rfq-mount></div>
     </div>
-  </div>
-</section>
+  </section>
 
-<div data-mount="footer"></div>
+  <!-- Why us -->
+  <section class="section section-light">
+    <div class="section-inner">
+      <span class="eyebrow">Why Zufek</span>
+      <h2>A battery partner, not just a supplier.</h2>
+      <div class="about-stats">
+        <div><strong>8<span>yrs</span></strong><em>since 2018</em></div>
+        <div><strong>100<span>+</span></strong><em>team members</em></div>
+        <div><strong>3<span></span></strong><em>tier-1 OEM programs</em></div>
+        <div><strong>ISO 9001<span></span></strong><em>certified</em></div>
+      </div>
+    </div>
+  </section>
 
-<script src="/assets/js/site.js?v=4"></script>
+  <!-- CTA band -->
+  <section class="section section-dark cta-band">
+    <div class="section-inner">
+      <h2>Have a project in mind?</h2>
+      <p class="lead">Share your device specs — we'll respond with a feasibility assessment within one business day.</p>
+      <a href="/contact.html" class="btn btn-accent">Start a Conversation</a>
+    </div>
+  </section>
+
+</main>
+
+<div id="footer-mount"></div>
+<div id="sidemenu-mount"></div>
+
+<script src="/partials.js?v=5"></script>
+<script src="/script.js?v=5"></script>
 <script>
-(async function () {
-  const { fetchJson, escapeHtml } = window.SiteAPI;
-
-  // (Header overlay-on-hero behaviour is wired up in site.js so it runs
-  // after the header has actually been rendered into the DOM.)
-
-  // Pillars — Tesla-style full-screen sections
-  try {
-    const { items } = await fetchJson('/api/pillars');
-    // Decoration: alternate light / dark for variety
-    const tones = [
-      { cls: 'tsection--gradient' },             // light
-      { cls: 'tsection--dark' },                 // dark
-      { cls: '' },                               // white
-    ];
-    document.querySelector('[data-pillar-sections]').innerHTML = items.map((p, idx) => {
-      const tone = tones[idx % tones.length];
-      const eyebrow = p.hero_eyebrow || `Pillar Series 0${idx + 1}`;
-      const sub = p.hero_subtitle || '';
-      return `
-        <section class="tsection ${tone.cls}" id="pillar-${escapeHtml(p.slug)}">
-          <div class="tsection__inner">
-            <div class="tsection__top" style="margin-top: 4vh;">
-              <div class="tsection__eyebrow">${escapeHtml(eyebrow)}</div>
-              <h2 class="tsection__title">${escapeHtml(p.name)}</h2>
-              <p class="tsection__sub">${escapeHtml(sub.slice(0, 200))}</p>
-            </div>
-            <div class="tsection__visual">
-              <img src="${escapeHtml(p.hero_image || '/assets/img/hero-illustration.svg')}" alt="${escapeHtml(p.name)}" onerror="this.src='/assets/img/hero-illustration.svg'"/>
-            </div>
-            <div class="tsection__bottom">
-              <div class="tsection__ctas">
-                <a class="btn btn--primary btn--lg" href="/products/${escapeHtml(p.slug)}">Explore the line</a>
-                <a class="btn btn--ghost btn--lg" href="/quote">Get a Quote</a>
-              </div>
-            </div>
-          </div>
-        </section>`;
-    }).join('');
-  } catch (e) {
-    console.warn('Pillars not loaded', e);
-    document.querySelector('[data-pillar-sections]').innerHTML = `
-      <section class="tsection">
-        <div class="tsection__inner">
-          <div class="tsection__top" style="margin-top: 6vh;">
-            <div class="tsection__eyebrow">Setup</div>
-            <h2 class="tsection__title">Pillar pages not loaded</h2>
-            <p class="tsection__sub">The pillar list could not be fetched from the API. Check that the database is seeded: <code>docker compose exec app node server/db/init.js --seed</code>.</p>
-          </div>
-        </div>
-      </section>`;
+// Wire dynamic Applications grid (and articles strip if added) from CMS APIs.
+document.addEventListener('cms:ready', async () => {
+  const escape = window.CMS.escapeHtml;
+  // Replace applications with live data if available
+  const grid = document.querySelector('.app-grid');
+  if (grid) {
+    try {
+      const r = await fetch('/api/applications');
+      const j = await r.json();
+      if (j.items && j.items.length) {
+        grid.innerHTML = j.items.slice(0, 4).map((a) => {
+          const bg = a.cover_url || '';
+          return `<a href="/applications/${escape(a.slug)}" class="app-card"${bg ? ` style="background-image:url('${escape(bg)}');"` : ''}>
+            <div class="app-overlay"><h3>${escape(a.name)}</h3><p>${escape((a.summary || '').slice(0, 130))}</p></div>
+          </a>`;
+        }).join('');
+      }
+    } catch (_) { /* keep static fallback */ }
   }
-
-  // Applications
-  try {
-    const { items } = await fetchJson('/api/applications');
-    const html = items.slice(0, 8).map((a) => `
-      <a class="app-tile" href="/applications/${escapeHtml(a.slug)}" style="background:rgba(255,255,255,0.04); border-color:rgba(255,255,255,0.12); color:#e2e8f0;">
-        <span class="app-tile__icon" style="background:rgba(147,197,253,0.15); color:#93c5fd;">${escapeHtml(a.name.charAt(0))}</span>
-        <h4 style="color:#fff;">${escapeHtml(a.name)}</h4>
-        <p style="color:#94a3b8;">${escapeHtml((a.summary || '').slice(0, 90))}</p>
-      </a>
-    `).join('');
-    document.querySelector('[data-app-grid]').innerHTML = html;
-  } catch (_) {}
-
-  // Articles
-  try {
-    const { items } = await fetchJson('/api/articles?limit=3');
-    const html = items.map((a) => {
-      const date = a.published_at ? new Date(a.published_at).toLocaleDateString('en-GB', { year:'numeric', month:'short', day:'2-digit' }) : '';
-      return `
-        <a class="article-card" href="/blog/${escapeHtml(a.slug)}">
-          <div class="article-card__media"><img src="${escapeHtml(a.cover_url || '/assets/img/hero-illustration.svg')}" alt="${escapeHtml(a.title)}"/></div>
-          <div class="article-card__body">
-            ${a.pillar_short_name ? `<span class="article-card__pill">${escapeHtml(a.pillar_short_name)}</span>` : ''}
-            <h3>${escapeHtml(a.title)}</h3>
-            <p>${escapeHtml((a.excerpt || '').slice(0, 130))}</p>
-            <div class="article-card__meta">${date ? date + ' · ' : ''}${a.reading_minutes} min read</div>
-          </div>
-        </a>`;
-    }).join('');
-    document.querySelector('[data-article-grid]').innerHTML = html;
-  } catch (_) {}
-})();
+});
 </script>
 </body>
 </html>
