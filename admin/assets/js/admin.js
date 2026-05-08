@@ -10,6 +10,7 @@
       { label: 'Dashboard', href: '/admin/index.html', icon: '⌂' },
     ]},
     { group: 'Content', items: [
+      { label: 'Pages', href: '/admin/pages.html', icon: '☰' },
       { label: 'Pillar Pages', href: '/admin/pillars.html', icon: '◇' },
       { label: 'Products', href: '/admin/products.html', icon: '▣' },
       { label: 'Applications', href: '/admin/applications.html', icon: '◷' },

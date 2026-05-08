@@ -222,6 +222,26 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_logs(user_id);
 
+-- ----- pages (editable static-page content: hero, meta, body override, sections JSON) -----
+CREATE TABLE IF NOT EXISTS pages (
+  id               SERIAL PRIMARY KEY,
+  slug             VARCHAR(190) UNIQUE NOT NULL,        -- e.g. 'home', 'about/profile', 'products/standard'
+  nav              VARCHAR(60)  NOT NULL DEFAULT '',     -- which top-level nav to highlight
+  title            VARCHAR(255) NOT NULL DEFAULT '',
+  meta_title       VARCHAR(255) NOT NULL DEFAULT '',
+  meta_description TEXT         NOT NULL DEFAULT '',
+  hero_eyebrow     VARCHAR(120) NOT NULL DEFAULT '',
+  hero_title       VARCHAR(255) NOT NULL DEFAULT '',
+  hero_subtitle    TEXT         NOT NULL DEFAULT '',
+  hero_image       VARCHAR(500) NOT NULL DEFAULT '',
+  hero_breadcrumbs JSONB        NOT NULL DEFAULT '[]'::jsonb,   -- [{label, url}]
+  body_html        TEXT         NOT NULL DEFAULT '',     -- optional override for the post-hero body
+  sections         JSONB        NOT NULL DEFAULT '{}'::jsonb,   -- structured per-page data (e.g. home blocks)
+  status           VARCHAR(20)  NOT NULL DEFAULT 'published',
+  updated_at       TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_pages_status ON pages(status);
+
 -- ----- navigation -----
 CREATE TABLE IF NOT EXISTS navigation (
   id         SERIAL PRIMARY KEY,

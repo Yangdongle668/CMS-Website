@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body data-nav="blog">
+<body data-nav="blog" data-page="blog/index">
 <div id="header-mount"></div>
 
 <main>
@@ -88,6 +88,7 @@
 <div id="sidemenu-mount"></div>
 <script src="/partials.js?v=5"></script>
 <script src="/script.js?v=5"></script>
+<script src="/cms-page.js?v=5"></script>
 <script>
 // Replace the static "Latest" cards with CMS-managed articles when available.
 document.addEventListener('cms:ready', async () => {

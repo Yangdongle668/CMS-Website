@@ -86,6 +86,7 @@ app.use('/api/settings', require('./routes/settings'));
 app.use('/api/gdpr', require('./routes/gdpr'));
 app.use('/api/audit', require('./routes/audit'));
 app.use('/api/users', require('./routes/users'));
+app.use('/api/pages', require('./routes/pages'));
 
 // ----- SEO endpoints -----
 app.use('/', require('./routes/seo'));
