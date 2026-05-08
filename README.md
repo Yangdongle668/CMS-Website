@@ -45,7 +45,87 @@ Dashboard · Inquiries · Pillar Pages (9-section editor) · Products · Applica
 
 ---
 
-## 2. Getting started
+## 2. One-line Docker deployment
+
+The fastest way to run the entire stack — Node app + PostgreSQL — with one command:
+
+```bash
+git clone https://github.com/Yangdongle668/CMS-Website.git && \
+  cd CMS-Website && \
+  docker compose up -d
+```
+
+That's it. Open `http://localhost:3000`. Admin at `http://localhost:3000/admin/login.html` with the default credentials below.
+
+### What happens
+
+- A `postgres:16-alpine` container starts and is healthchecked with `pg_isready`.
+- The Node app waits for the DB to be healthy, then runs `db:init --seed` (idempotent: safe on every restart) and starts.
+- DB data is persisted in the `db-data` named volume.
+- Uploaded media is persisted in the `uploads` named volume.
+
+### Default credentials (change before going live)
+
+```
+Email     : admin@example.com
+Password  : ChangeMe!2026
+```
+
+### Customise via environment
+
+Override any value by creating a `.env` file in the project root before `docker compose up`:
+
+```bash
+# .env  (compose reads this automatically)
+APP_PORT=8080
+PUBLIC_URL=https://battery.example.com
+SITE_NAME=YourBrand Battery
+PGPASSWORD=a-strong-postgres-password
+
+JWT_SECRET=replace-with-64-chars-of-randomness
+COOKIE_SECRET=replace-with-another-64-chars
+ADMIN_DEFAULT_EMAIL=admin@yourdomain.com
+ADMIN_DEFAULT_PASSWORD=A-Strong-Password-Here
+
+SMTP_HOST=smtp.your-host.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=sales@yourdomain.com
+SMTP_PASS=your-smtp-password
+MAIL_FROM=YourBrand Sales <sales@yourdomain.com>
+INQUIRY_RECIPIENTS=sales@yourdomain.com,manager@yourdomain.com
+
+TURNSTILE_SITE_KEY=your-cloudflare-turnstile-site-key
+TURNSTILE_SECRET_KEY=your-cloudflare-turnstile-secret-key
+```
+
+### Operations cheatsheet
+
+```bash
+docker compose up -d                # start in background
+docker compose logs -f app          # follow app logs
+docker compose ps                   # status
+docker compose restart app          # restart only the app
+docker compose down                 # stop (data preserved)
+docker compose down -v              # stop + WIPE database & uploads
+docker compose exec app npm run retention   # GDPR purge job
+docker compose exec db psql -U postgres battery_cms   # open a psql shell
+```
+
+### Behind a reverse proxy
+
+In production put Nginx / Caddy / Cloudflare in front for HTTPS and set:
+
+```
+PUBLIC_URL=https://your-domain.com
+NODE_ENV=production
+```
+
+Then forward to `127.0.0.1:${APP_PORT:-3000}`.
+
+---
+
+## 3. Manual (non-Docker) setup
 
 ### Prerequisites
 
@@ -140,7 +220,7 @@ Visit:
 
 ---
 
-## 3. Daily operations
+## 4. Daily operations
 
 | Task | Where |
 |---|---|
@@ -169,7 +249,7 @@ Run it nightly via cron / systemd timer:
 
 ---
 
-## 4. Project layout
+## 5. Project layout
 
 ```
 server/
@@ -231,7 +311,7 @@ package.json
 
 ---
 
-## 5. Pillar / Cluster authoring workflow
+## 6. Pillar / Cluster authoring workflow
 
 To extend the SEO weight of a pillar:
 
@@ -249,7 +329,7 @@ The article will:
 
 ---
 
-## 6. Production checklist
+## 7. Production checklist
 
 - [ ] Set `NODE_ENV=production`
 - [ ] Replace `JWT_SECRET` and `COOKIE_SECRET` with long random strings
@@ -263,7 +343,7 @@ The article will:
 
 ---
 
-## 7. Default admin
+## 8. Default admin
 
 ```
 Email     : <ADMIN_DEFAULT_EMAIL>     (admin@example.com unless overridden)
@@ -274,6 +354,6 @@ Change immediately on first login via **Users → Edit → New password**.
 
 ---
 
-## 8. License
+## 9. License
 
 Proprietary. All rights reserved.

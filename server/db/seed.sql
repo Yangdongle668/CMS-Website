@@ -293,4 +293,4 @@ INSERT INTO settings (key, value) VALUES
  '{"reply_to":"sales@example.com","subject_prefix":"[Inquiry]","auto_reply_enabled":true}'),
 ('navigation',
  '{"header":[{"label":"Products","url":"#","children":[{"label":"Polymer Lithium Battery","url":"/products/polymer-lithium-battery"},{"label":"Custom-Shaped Li-Po","url":"/products/custom-shaped-polymer-lithium-battery"},{"label":"Cylindrical Li-Ion","url":"/products/cylindrical-steel-shell-lithium-battery"}]},{"label":"Applications","url":"/applications"},{"label":"Custom Solutions","url":"/custom-solutions"},{"label":"Quality","url":"/quality"},{"label":"Insights","url":"/blog"},{"label":"About","url":"/about"},{"label":"Contact","url":"/contact"}],"footer":[{"label":"Privacy Policy","url":"/privacy"},{"label":"Cookie Policy","url":"/cookies"},{"label":"Terms","url":"/terms"},{"label":"GDPR Requests","url":"/gdpr"}]}')
-ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now();
+ON CONFLICT (key) DO NOTHING;
