@@ -1,61 +1,99 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Products — Zufek</title>
-<meta name="description" content="Standard and custom lithium batteries for consumer electronics, medical and IoT.">
-<link rel="stylesheet" href="/styles.css">
+<title>Products | Acme Battery</title>
+<meta name="description" content="Three product lines under one factory: pouch Li-Po, custom-shaped Li-Po, and rechargeable coin steel-shell cells.">
+<link rel="stylesheet" href="/styles.css?v=7">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body data-nav="products" data-page="products/index">
+
 <div id="header-mount"></div>
 
 <main>
-  <section class="page-hero" style="background-image:url('https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=1920&q=80');">
+  <section class="page-hero" style="background-image:url('https://images.unsplash.com/photo-1612392987824-d63f57e9b1cf?w=1920&q=80');">
     <div class="breadcrumbs"><a href="/">Home</a><span>/</span><span>Products</span></div>
-    <h1>Two ways to power your product.</h1>
-    <p>Start from our standard catalog or co-engineer a cell that's unique to your device.</p>
+    <h1>Three product lines, one factory.</h1>
+    <p>Polymer Li-Po · Custom-Shaped Polymer · Coin Steel-Shell — pick the line that fits your enclosure and certification needs.</p>
   </section>
 
   <div data-page-body>
-
   <section class="section section-light">
     <div class="section-inner">
-      <div class="product-grid">
-        <a href="/products/standard.html" class="product-card">
-          <div class="product-tag">Standard</div>
-          <h3>Standard Batteries</h3>
-          <p>200+ ready-to-ship models across pouch, cylindrical, coin and prismatic formats. Samples in 3–5 days.</p>
-          <ul class="product-feat">
-            <li>Capacity 15 mAh – 20 Ah</li>
-            <li>IEC 62133 / UN 38.3 certified</li>
-            <li>MOQ from 500 pcs</li>
-          </ul>
-          <span class="news-link">Browse catalog →</span>
-        </a>
+      <span class="eyebrow">Product Lines</span>
+      <h2>One QC system, three formats.</h2>
+      <p class="lead">Each line targets a different combination of energy density, cycle life and form factor. Click through for the full spec table, certifications and FAQ.</p>
 
-        <a href="/products/custom.html" class="product-card featured">
-          <div class="product-tag tag-star">Custom ★</div>
-          <h3>Custom Batteries</h3>
-          <p>Tailored cell chemistry, shape, connector and BMS for your exact enclosure and power profile.</p>
+      <div class="product-grid product-grid--three" style="margin-top: 40px;">
+        <a href="/products/polymer-lithium-battery" class="product-card">
+          <div class="product-tag">Polymer Li-Po</div>
+          <h3>Polymer Lithium Battery</h3>
+          <p>Standard catalogue pouch Li-Po cells from 15 mAh to 20 Ah. Multiple thicknesses, multiple voltages, 3-5 day samples on stocked SKUs.</p>
           <ul class="product-feat">
-            <li>Ultra-thin down to 0.45 mm</li>
-            <li>Curved, stepped, irregular cells</li>
-            <li>Integrated BMS &amp; protection</li>
+            <li>Catalog &amp; semi-custom</li>
+            <li>3-5 day samples</li>
+            <li>UN 38.3 / IEC 62133 / CE</li>
           </ul>
-          <span class="news-link">See capabilities →</span>
+          <span class="news-link">Explore line &rarr;</span>
         </a>
+        <a href="/products/custom-shaped-polymer-lithium-battery" class="product-card featured">
+          <div class="product-tag tag-star">Custom-Shaped &#9733;</div>
+          <h3>Custom-Shaped Polymer</h3>
+          <p>Bespoke geometry, capacity, BMS, connectors and labelling — designed around your enclosure. Feasibility report in 5 working days.</p>
+          <ul class="product-feat">
+            <li>Round / curved / stepped / pin</li>
+            <li>5-day feasibility</li>
+            <li>NDA &amp; design-in service</li>
+          </ul>
+          <span class="news-link">See capabilities &rarr;</span>
+        </a>
+        <a href="/products/coin-steel-shell-lithium-battery" class="product-card">
+          <div class="product-tag">Coin Cell</div>
+          <h3>Coin Steel-Shell Lithium</h3>
+          <p>Rechargeable LIR (Li-ion 3.6 V) and ML (Li-MnO2 3.0 V) coin cells in hermetic stainless-steel cases. Reflow-compatible options for SMD-mounted RTC backup.</p>
+          <ul class="product-feat">
+            <li>LIR1620 / LIR2032 / LIR2450</li>
+            <li>ML2032 / ML2430 reflow-compatible</li>
+            <li>500-1,000+ cycles</li>
+          </ul>
+          <span class="news-link">Compare formats &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-grey">
+    <div class="section-inner">
+      <span class="eyebrow">How to choose</span>
+      <h2>A quick decision matrix.</h2>
+      <p class="lead">Different design constraints push you toward different lines. Here is how we usually steer customers.</p>
+      <div style="overflow-x:auto; margin-top: 40px;">
+        <table class="spec-table">
+          <thead>
+            <tr><th>Constraint</th><th>Polymer Li-Po</th><th>Custom-Shaped Li-Po</th><th>Coin Steel-Shell</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Capacity envelope</td><td>15 mAh - 20 Ah</td><td>Same, in non-rectangular form</td><td>10 - 180 mAh</td></tr>
+            <tr><td>Form factor</td><td>Rectangular pouch</td><td>Any 3D geometry</td><td>Round &Oslash; 10-25 mm</td></tr>
+            <tr><td>Cycle life</td><td>500+</td><td>500+</td><td>500 - 1,000+</td></tr>
+            <tr><td>SMD reflow capable</td><td>No</td><td>No</td><td>Yes (ML series)</td></tr>
+            <tr><td>Hermetic enclosure</td><td>No (laminate)</td><td>No (laminate)</td><td>Yes (steel can)</td></tr>
+            <tr><td>Lead time (samples)</td><td>3-5 days</td><td>25-35 days</td><td>5-10 days</td></tr>
+            <tr><td>Typical applications</td><td>Wearables, IoT, drones</td><td>AR/VR, hearables, medical</td><td>Hearing aids, RTC, sensors</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </section>
 
   <section class="section section-dark cta-band">
     <div class="section-inner">
-      <h2>Not sure which one fits?</h2>
-      <p class="lead">Send us your power profile and enclosure dimensions — we'll recommend the most cost-effective path.</p>
-      <a href="/contact.html" class="btn btn-accent">Talk to an Engineer</a>
+      <h2>Not sure which line fits?</h2>
+      <p class="lead">Send us a one-line summary of your device &mdash; we will recommend a line and suggest a starting SKU within one business day.</p>
+      <a href="/contact.html" class="btn btn-accent">Talk to engineering</a>
     </div>
   </section>
   </div>
@@ -63,8 +101,8 @@
 
 <div id="footer-mount"></div>
 <div id="sidemenu-mount"></div>
-<script src="/partials.js?v=5"></script>
-<script src="/script.js?v=5"></script>
-<script src="/cms-page.js?v=5"></script>
+<script src="/partials.js?v=7"></script>
+<script src="/script.js?v=7"></script>
+<script src="/cms-page.js?v=7"></script>
 </body>
 </html>

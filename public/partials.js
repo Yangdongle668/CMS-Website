@@ -24,8 +24,9 @@ const FALLBACK = {
     header: [
       { label: 'HOME', url: '/', nav: 'home' },
       { label: 'PRODUCTS', url: '/products/', nav: 'products', children: [
-        { label: 'Standard Batteries', url: '/products/standard.html' },
-        { label: 'Custom Batteries', url: '/products/custom.html' },
+        { label: 'Polymer Lithium Battery', url: '/products/polymer-lithium-battery' },
+        { label: 'Custom-Shaped Polymer (Li-Po)', url: '/products/custom-shaped-polymer-lithium-battery' },
+        { label: 'Coin Steel-Shell Lithium', url: '/products/coin-steel-shell-lithium-battery' },
       ]},
       { label: 'APPLICATIONS', url: '/applications/', nav: 'applications', children: [
         { label: 'AR / VR Glasses', url: '/applications/ar-vr.html' },
