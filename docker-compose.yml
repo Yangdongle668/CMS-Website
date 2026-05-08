@@ -40,6 +40,8 @@ services:
       PORT: 3000
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
       SITE_NAME: ${SITE_NAME:-Acme Battery Co., Ltd.}
+      # Only set FORCE_HTTPS=true when serving via a real TLS terminator.
+      FORCE_HTTPS: ${FORCE_HTTPS:-false}
 
       # Database (talk to the db service over the compose network)
       PGHOST: db
