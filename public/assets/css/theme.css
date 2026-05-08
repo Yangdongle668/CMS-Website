@@ -566,9 +566,13 @@ p { margin: 0 0 1em; color: var(--color-fg-soft); }
 .tsection--gradient { background: linear-gradient(180deg, #f8fafc 0%, #e0e7ff 100%); }
 
 /* Override the global `h1,h2,h3 { color: var(--color-fg) }` so the
-   hero / dark sections render headings in white. */
+   hero / dark sections render headings in their inherited (white) color.
+   `!important` because some users / proxies cache aggressively and we
+   want this to win even against any stale specificity surprise. */
 .tsection--hero h1, .tsection--hero h2, .tsection--hero h3,
-.tsection--dark h1, .tsection--dark h2, .tsection--dark h3,
+.tsection--dark h1, .tsection--dark h2, .tsection--dark h3 {
+  color: #f8fafc !important;
+}
 .tsection__title { color: inherit; }
 
 .tsection--hero {
@@ -578,20 +582,98 @@ p { margin: 0 0 1em; color: var(--color-fg-soft); }
      class added by site.js. */
   margin-top: calc(-1 * var(--header-h));
   padding-top: calc(var(--header-h) + 24px);
-  background: radial-gradient(circle at 30% 20%, rgba(11,58,130,0.25), transparent 60%),
-              radial-gradient(circle at 70% 80%, rgba(30,64,175,0.18), transparent 60%),
-              linear-gradient(180deg, #050a17 0%, #0b1120 60%, #0f172a 100%);
+  background: radial-gradient(circle at 30% 20%, rgba(11,58,130,0.35), transparent 55%),
+              radial-gradient(circle at 75% 75%, rgba(56,189,248,0.18), transparent 55%),
+              radial-gradient(circle at 90% 10%, rgba(147,197,253,0.12), transparent 50%),
+              linear-gradient(180deg, #050a17 0%, #0a1428 45%, #0b1120 100%);
   color: #f8fafc;
 }
 .tsection--hero::before {
   content: '';
   position: absolute; inset: 0;
   background-image:
-    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
-  background-size: 64px 64px;
+    linear-gradient(rgba(147,197,253,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(147,197,253,0.05) 1px, transparent 1px);
+  background-size: 56px 56px;
   pointer-events: none;
   mask-image: radial-gradient(ellipse at center, #000 30%, transparent 80%);
+}
+.tsection--hero::after {
+  /* Soft halo behind the title text */
+  content: '';
+  position: absolute;
+  width: 720px; height: 720px;
+  left: 50%; top: 48%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(59,130,246,0.18) 0%, transparent 60%);
+  pointer-events: none;
+  filter: blur(30px);
+  animation: heroBreath 8s ease-in-out infinite;
+}
+@keyframes heroBreath {
+  0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
+  50%      { opacity: 1;   transform: translate(-50%, -50%) scale(1.08); }
+}
+.tsection--hero .tsection__title {
+  font-size: clamp(2.6rem, 7vw, 5.6rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  text-shadow: 0 2px 40px rgba(0,0,0,0.35);
+}
+.tsection--hero .tsection__title em {
+  font-style: normal;
+  background: linear-gradient(120deg, #93c5fd 0%, #60a5fa 50%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Floating cell visuals */
+.hero-cells {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.hero-cells span {
+  position: absolute;
+  display: block;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(59,130,246,0.25), rgba(15,23,42,0.85));
+  border: 1px solid rgba(147,197,253,0.18);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+  backdrop-filter: blur(2px);
+  animation: floatY 9s ease-in-out infinite;
+}
+.hero-cells span:nth-child(1) { width: 88px; height: 56px; top: 22%; left: 8%;  animation-delay: 0s;   transform: rotate(-12deg); }
+.hero-cells span:nth-child(2) { width: 64px; height: 64px; top: 18%; right: 12%; animation-delay: 1.5s; border-radius: 50%; }
+.hero-cells span:nth-child(3) { width: 110px; height: 38px; bottom: 26%; left: 14%; animation-delay: 3s; border-radius: 999px; transform: rotate(8deg); }
+.hero-cells span:nth-child(4) { width: 72px; height: 110px; bottom: 18%; right: 9%; animation-delay: 4.2s; transform: rotate(6deg); }
+@keyframes floatY {
+  0%, 100% { transform: translateY(0) rotate(var(--r,0)); }
+  50%      { transform: translateY(-18px) rotate(var(--r,0)); }
+}
+
+/* Trust strip inside hero */
+.hero-trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 32px;
+  align-items: center;
+  justify-content: center;
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(203,213,225,0.7);
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(147,197,253,0.12);
+  max-width: 720px;
+}
+.hero-trust span { display: inline-flex; align-items: center; gap: 8px; }
+.hero-trust span::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: #93c5fd;
 }
 .tsection--hero .tsection__eyebrow { color: #93c5fd; }
 .tsection--hero .tsection__sub { color: #cbd5e1; }
