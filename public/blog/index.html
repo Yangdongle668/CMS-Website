@@ -1,119 +1,158 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Blog — Zufek</title>
-<meta name="description" content="Battery guides, industry articles and technical deep-dives from the Zufek engineering team.">
-<link rel="stylesheet" href="/styles.css">
+<title>Insights — Battery Engineering Blog</title>
+<meta name="description" content="Battery guides, industry analysis and technical deep-dives from our cell engineering team.">
+<link rel="stylesheet" href="/styles.css?v=8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body data-nav="blog" data-page="blog/index">
+
 <div id="header-mount"></div>
 
 <main>
-  <section class="page-hero" style="background-image:url('https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=1920&q=80');">
-    <div class="breadcrumbs"><a href="/">Home</a><span>/</span><span>Blog</span></div>
-    <h1>Battery knowledge, shared.</h1>
-    <p>Written by our engineers for the engineers building the next device.</p>
+  <section class="page-hero blog-hero" style="background-image:url('https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=1920&q=80');">
+    <div class="breadcrumbs"><a href="/">Home</a><span>/</span><span>Insights</span></div>
+    <h1>Insights</h1>
+    <p>Engineering deep-dives, industry analysis and the occasional opinion piece &mdash; written by our cell team for the engineers building the next device.</p>
   </section>
 
   <div data-page-body>
 
-  <section class="section section-light">
-    <div class="section-inner">
-      <div class="product-grid">
-        <a href="/blog/guides.html" class="product-card">
-          <div class="product-tag">Guides</div>
-          <h3>Battery Guides</h3>
-          <p>How-to articles on chemistry selection, cell sizing, BMS design, certification and thermal management.</p>
-          <span class="news-link">Read guides →</span>
-        </a>
-        <a href="/blog/industry.html" class="product-card">
-          <div class="product-tag">Industry</div>
-          <h3>Industry Articles</h3>
-          <p>Market analysis, supply chain trends, new-chemistry news and commentary on what moves the needle.</p>
-          <span class="news-link">Read industry →</span>
-        </a>
-      </div>
-    </div>
-  </section>
+    <!-- Featured article ------------------------------------------------- -->
+    <section class="blog-featured-section" data-featured-section style="display:none;">
+      <a class="blog-featured" data-featured-link href="#">
+        <div class="blog-featured__media" data-featured-media></div>
+        <div class="blog-featured__body">
+          <span class="blog-featured__pill" data-featured-pill>Featured</span>
+          <h2 class="blog-featured__title" data-featured-title></h2>
+          <p class="blog-featured__excerpt" data-featured-excerpt></p>
+          <div class="blog-byline" data-featured-byline></div>
+          <span class="news-link">Read article &rarr;</span>
+        </div>
+      </a>
+    </section>
 
-  <section class="section section-grey">
-    <div class="section-inner">
-      <span class="eyebrow">Latest</span>
-      <h2>Recent posts from both tracks.</h2>
-      <div class="news-grid" style="display:grid;">
-        <article class="news-card">
-          <div class="news-date">Guide · 8 min</div>
-          <h3>Choosing Between LiPo, Li-ion and LiFePO4 for Wearables</h3>
-          <p>Energy density, form factor, safety, cycle life — how to pick for a sub-10g device.</p>
-          <a href="/blog/wearable-chemistry.html" class="news-link">Read more →</a>
-        </article>
-        <article class="news-card">
-          <div class="news-date">Industry · 5 min</div>
-          <h3>The AR/VR Battery Market in 2026</h3>
-          <p>What the next generation of headsets means for pouch-cell suppliers.</p>
-          <a href="/blog/ar-vr-market-2026.html" class="news-link">Read more →</a>
-        </article>
-        <article class="news-card">
-          <div class="news-date">Guide · 12 min</div>
-          <h3>Designing an Ultra-Thin Battery for AR Glasses</h3>
-          <p>Thermal, mechanical and EMI trade-offs below 1 mm thickness.</p>
-          <a href="/blog/ar-thin-battery.html" class="news-link">Read more →</a>
-        </article>
-        <article class="news-card">
-          <div class="news-date">Industry · 7 min</div>
-          <h3>Solid-State: Hype vs. Reality for Consumer Electronics</h3>
-          <p>Where solid-state wins today — and where Li-polymer still outperforms on cost and density.</p>
-          <a href="/blog/solid-state-reality.html" class="news-link">Read more →</a>
-        </article>
-        <article class="news-card">
-          <div class="news-date">Guide · 6 min</div>
-          <h3>UN 38.3 &amp; IEC 62133: What OEMs Need to Know</h3>
-          <p>A plain-English walkthrough of the tests every lithium cell has to pass before shipping.</p>
-          <a href="/blog/un-iec-compliance.html" class="news-link">Read more →</a>
-        </article>
-        <article class="news-card">
-          <div class="news-date">Industry · 4 min</div>
-          <h3>Supply Chain Notes: Cobalt, Nickel, LFP Outlook</h3>
-          <p>Raw-material pricing and what OEMs should lock in for 2026–2027.</p>
-          <a href="/blog/cobalt-nickel-lfp.html" class="news-link">Read more →</a>
-        </article>
+    <!-- Filter chips ----------------------------------------------------- -->
+    <section class="blog-filters-section">
+      <div class="section-inner">
+        <div class="blog-filters" data-filters>
+          <button class="chip is-active" data-filter="">All articles</button>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
+
+    <!-- Article grid ----------------------------------------------------- -->
+    <section class="section section-light" style="padding: 80px 24px;">
+      <div class="section-inner" style="max-width: 1240px;">
+        <div class="blog-grid" data-grid></div>
+      </div>
+    </section>
+
+    <!-- CTA band --------------------------------------------------------- -->
+    <section class="section section-dark cta-band">
+      <div class="section-inner">
+        <h2>Have a project in mind?</h2>
+        <p class="lead">Send us your specs &mdash; engineering responds within one business day.</p>
+        <a href="/contact.html" class="btn btn-accent">Talk to engineering</a>
+      </div>
+    </section>
+
   </div>
 </main>
 
 <div id="footer-mount"></div>
 <div id="sidemenu-mount"></div>
-<script src="/partials.js?v=5"></script>
-<script src="/script.js?v=5"></script>
-<script src="/cms-page.js?v=5"></script>
+<script src="/partials.js?v=8"></script>
+<script src="/script.js?v=8"></script>
+<script src="/cms-page.js?v=8"></script>
 <script>
-// Replace the static "Latest" cards with CMS-managed articles when available.
-document.addEventListener('cms:ready', async () => {
-  const grid = document.querySelector('.news-grid');
-  if (!grid) return;
-  try {
-    const r = await fetch('/api/articles?limit=9');
-    const j = await r.json();
-    if (!j.items || !j.items.length) return; // keep static fallback
-    const escape = window.CMS.escapeHtml;
-    grid.innerHTML = j.items.map((a) => {
-      const date = a.published_at ? new Date(a.published_at).toLocaleDateString('en-GB', { year:'numeric', month:'short', day:'2-digit' }) : '';
-      const cat = a.category_name || a.pillar_short_name || 'Article';
-      return `<article class="news-card">
-        <div class="news-date">${escape(cat)} · ${a.reading_minutes || 5} min${date ? ' · ' + date : ''}</div>
-        <h3>${escape(a.title)}</h3>
-        <p>${escape((a.excerpt || '').slice(0, 160))}</p>
-        <a href="/blog/${escape(a.slug)}" class="news-link">Read more &rarr;</a>
-      </article>`;
-    }).join('');
-  } catch (_) { /* keep static fallback */ }
-});
+(async function () {
+  const escape = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: '2-digit' }) : '';
+
+  const grid = document.querySelector('[data-grid]');
+  const filtersEl = document.querySelector('[data-filters]');
+  let activeCategory = '';
+
+  function renderCard(a) {
+    const cover = a.cover_url || a.hero_image || '';
+    const cat = a.category_name || a.pillar_short_name || 'Article';
+    const date = fmtDate(a.published_at);
+    return `<a class="blog-card" href="/blog/${escape(a.slug)}">
+      <div class="blog-card__media"${cover ? ` style="background-image:url('${escape(cover)}');"` : ''}></div>
+      <div class="blog-card__body">
+        <span class="blog-card__pill">${escape(cat)}</span>
+        <h3 class="blog-card__title">${escape(a.title)}</h3>
+        <p class="blog-card__excerpt">${escape((a.excerpt || '').slice(0, 140))}</p>
+        <div class="blog-card__byline">${escape(a.author || 'Acme Engineering')} &middot; ${a.reading_minutes || 5} min${date ? ' &middot; ' + date : ''}</div>
+      </div>
+    </a>`;
+  }
+
+  function renderFeatured(a) {
+    if (!a) {
+      document.querySelector('[data-featured-section]').style.display = 'none';
+      return;
+    }
+    const sec = document.querySelector('[data-featured-section]');
+    sec.style.display = '';
+    document.querySelector('[data-featured-link]').setAttribute('href', '/blog/' + a.slug);
+    const media = document.querySelector('[data-featured-media]');
+    const cover = a.cover_url || a.hero_image || '';
+    if (cover) media.style.backgroundImage = `url('${cover.replace(/'/g, "\\'")}')`;
+    document.querySelector('[data-featured-pill]').textContent = a.category_name || a.pillar_short_name || 'Featured';
+    document.querySelector('[data-featured-title]').textContent = a.title;
+    document.querySelector('[data-featured-excerpt]').textContent = (a.excerpt || '').slice(0, 240);
+    const date = fmtDate(a.published_at);
+    document.querySelector('[data-featured-byline]').innerHTML =
+      `<strong>${escape(a.author || 'Acme Engineering')}</strong> &middot; ${a.reading_minutes || 5} min read${date ? ' &middot; ' + date : ''}`;
+  }
+
+  async function loadCategories() {
+    try {
+      const j = await (await fetch('/api/articles/categories/list')).json();
+      if (!j.items) return;
+      const html = j.items.map((c) =>
+        `<button class="chip" data-filter="${escape(c.slug)}">${escape(c.name)}</button>`
+      ).join('');
+      filtersEl.insertAdjacentHTML('beforeend', html);
+    } catch (_) {}
+    filtersEl.addEventListener('click', (ev) => {
+      const btn = ev.target.closest('.chip');
+      if (!btn) return;
+      filtersEl.querySelectorAll('.chip').forEach((c) => c.classList.toggle('is-active', c === btn));
+      activeCategory = btn.dataset.filter;
+      loadGrid();
+    });
+  }
+
+  async function loadGrid() {
+    grid.innerHTML = '<div class="blog-empty">Loading&hellip;</div>';
+    const url = '/api/articles?limit=18' + (activeCategory ? '&category=' + encodeURIComponent(activeCategory) : '');
+    let items = [];
+    try { items = (await (await fetch(url)).json()).items || []; } catch (_) {}
+
+    // First load only: pluck the most recent article into the featured slot.
+    if (!activeCategory && !window.__featuredRendered && items.length) {
+      window.__featuredRendered = true;
+      renderFeatured(items[0]);
+      items = items.slice(1);
+    }
+
+    if (!items.length) {
+      grid.innerHTML = '<div class="blog-empty">No articles in this category yet.</div>';
+      return;
+    }
+    grid.innerHTML = items.map(renderCard).join('');
+  }
+
+  await loadCategories();
+  await loadGrid();
+})();
 </script>
 </body>
 </html>
