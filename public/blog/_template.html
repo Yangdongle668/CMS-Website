@@ -11,105 +11,163 @@
 <meta property="og:image" data-og-image content="">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" data-canonical href="">
-<link rel="stylesheet" href="/styles.css?v=6">
+<link rel="stylesheet" href="/styles.css?v=8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script type="application/ld+json" data-jsonld></script>
 <style>
-  /* Article-template specific layouts */
+  /* ----- Guide template TOC ----- */
+  .layout-guide {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 64px;
+    max-width: 1080px;
+    margin: 0 auto;
+  }
   .article-toc {
-    position: sticky; top: 90px;
+    position: sticky; top: 100px;
     padding: 22px 24px;
     background: #fafafa;
     border-radius: 12px;
     font-size: 13px;
-    max-height: calc(100vh - 110px);
+    max-height: calc(100vh - 120px);
     overflow-y: auto;
   }
-  .article-toc h4 { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #5c5e62; margin-bottom: 12px; }
-  .article-toc ul { display: grid; gap: 8px; padding-left: 12px; border-left: 2px solid #e4e4e4; }
-  .article-toc a { display: block; color: #3c3e42; padding: 4px 0; line-height: 1.4; }
+  .article-toc h4 { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #5c5e62; margin-bottom: 14px; }
+  .article-toc ul { display: grid; gap: 10px; padding-left: 14px; border-left: 2px solid #e4e4e4; }
+  .article-toc a { display: block; color: #5c5e62; padding: 4px 0; line-height: 1.45; transition: color 0.15s ease; }
   .article-toc a:hover, .article-toc a.is-active { color: #f5a623; font-weight: 600; }
-  .layout-guide {
-    display: grid; grid-template-columns: 240px 1fr; gap: 60px;
-    max-width: 1100px; margin: 0 auto;
-  }
-  @media (max-width: 900px) {
+  @media (max-width: 1000px) {
     .layout-guide { grid-template-columns: 1fr; gap: 24px; }
     .article-toc { position: static; max-height: none; }
   }
-  /* Case study */
+  /* ----- Case study metrics callout ----- */
   .case-metrics {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;
-    margin: 32px 0 40px;
-    padding: 28px; background: linear-gradient(135deg, #0f1115 0%, #1d2028 100%);
-    border-radius: 16px; color: #f5f5f7;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin: 36px 0 44px;
+    padding: 32px;
+    background: linear-gradient(135deg, #0f1115 0%, #1d2028 100%);
+    border-radius: 16px;
+    color: #f5f5f7;
   }
-  .case-metric strong { display: block; font-size: 32px; font-weight: 300; color: #f5a623; line-height: 1; margin-bottom: 8px; letter-spacing: -1px; }
+  .case-metric strong { display: block; font-size: 36px; font-weight: 300; color: #f5a623; line-height: 1; margin-bottom: 8px; letter-spacing: -1px; }
   .case-metric em { font-style: normal; font-size: 12.5px; color: #c7c7cc; letter-spacing: 0.4px; }
   .case-pill {
-    display: inline-block; padding: 5px 12px; background: rgba(245,166,35,.15); color: #f5a623;
-    border-radius: 4px; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
-    margin-right: 8px;
+    display: inline-block;
+    padding: 5px 14px;
+    background: rgba(245,166,35,0.14);
+    color: #b67500;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
   }
 </style>
 </head>
 <body data-nav="blog">
 
+<!-- Reading progress bar -->
+<div class="read-progress"><div class="read-progress__bar" data-progress></div></div>
+
 <div id="header-mount"></div>
 
 <main>
-  <section class="page-hero" data-hero style="background-image:url('https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=1920&q=80');">
-    <div class="breadcrumbs">
-      <a href="/">Home</a><span>/</span><a href="/blog/">Blog</a><span>/</span><span data-art-title-crumb></span>
+  <!-- Hero with title overlaid on cover image -->
+  <section class="article-hero" data-hero>
+    <div class="breadcrumbs" style="opacity:0.85; margin-bottom: 22px;">
+      <a href="/" style="color:#fff;">Home</a><span>/</span>
+      <a href="/blog/" style="color:#fff;">Insights</a><span>/</span>
+      <span data-art-crumb></span>
     </div>
+    <span class="article-hero__pill" data-art-pill>Article</span>
     <h1 data-art-title>Article</h1>
-    <p data-art-subtitle></p>
+    <p class="article-hero__subtitle" data-art-subtitle></p>
+    <div class="article-hero__meta">
+      <strong data-art-author>Acme Engineering</strong>
+      <span class="dot">&middot;</span>
+      <span data-art-reading>5 min read</span>
+      <span class="dot">&middot;</span>
+      <span data-art-date></span>
+    </div>
   </section>
 
-  <section class="section section-light">
+  <!-- Article body -->
+  <section class="section section-light" style="padding: 90px 24px 60px;">
     <div class="section-inner">
-      <div class="article-meta">
-        <span data-art-category>Article</span><span class="dot">·</span>
-        <span data-art-reading>5 min read</span><span class="dot">·</span>
-        <span data-art-date></span>
-      </div>
-
       <div data-art-layout></div>
 
-      <div class="article-nav">
-        <a href="/blog/" class="news-link">&larr; All articles</a>
-        <a data-pillar-link style="display:none;" class="news-link"></a>
+      <!-- Pillar callout — appears under the body if pillar set -->
+      <div class="pillar-callout" data-pillar-callout style="display:none;">
+        <div class="pillar-callout__icon">★</div>
+        <div>
+          <strong data-pillar-callout-title></strong>
+          <a data-pillar-callout-link>Visit the pillar &rarr;</a>
+        </div>
+      </div>
+
+      <!-- Share row -->
+      <div class="article-share">
+        <span class="article-share__label">Share this article</span>
+        <div class="article-share__btns">
+          <button type="button" class="share-btn" data-share="linkedin" title="LinkedIn">in</button>
+          <button type="button" class="share-btn" data-share="twitter"  title="X / Twitter">X</button>
+          <button type="button" class="share-btn" data-share="email"    title="Email">@</button>
+          <button type="button" class="share-btn" data-share="copy"     title="Copy link">⎘</button>
+        </div>
+      </div>
+
+      <!-- Author block -->
+      <div class="article-author">
+        <div class="article-author__avatar" data-author-initial>A</div>
+        <div>
+          <div class="article-author__name" data-author-name>Acme Engineering</div>
+          <div class="article-author__role" data-author-role>Cell engineering team</div>
+        </div>
       </div>
     </div>
   </section>
 
-  <section class="section section-grey">
-    <div class="section-inner">
+  <!-- Related articles -->
+  <section class="section section-grey" data-related-section style="padding: 80px 24px;">
+    <div class="section-inner" style="max-width:1240px;">
       <span class="eyebrow">Continue reading</span>
       <h2>Related articles</h2>
-      <div class="news-grid" data-related style="display:grid;"></div>
+      <div class="blog-grid" data-related style="margin-top: 40px;"></div>
+    </div>
+  </section>
+
+  <!-- CTA band -->
+  <section class="section section-dark cta-band">
+    <div class="section-inner">
+      <h2>Have a project in mind?</h2>
+      <p class="lead">Send us your specs &mdash; engineering responds within one business day.</p>
+      <a href="/contact.html" class="btn btn-accent">Talk to engineering</a>
     </div>
   </section>
 </main>
 
 <div id="footer-mount"></div>
 <div id="sidemenu-mount"></div>
-<script src="/partials.js?v=6"></script>
-<script src="/script.js?v=6"></script>
+<script src="/partials.js?v=8"></script>
+<script src="/script.js?v=8"></script>
 <script>
 (async function () {
   const slug = location.pathname.replace(/^\/blog\//, '').replace(/\/$/, '');
   if (!slug) { location.href = '/blog/'; return; }
+  const escape = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: '2-digit' }) : '';
 
   let data;
   try { data = await (await fetch('/api/articles/' + encodeURIComponent(slug))).json(); }
   catch (_) { location.href = '/404.html'; return; }
   if (!data || !data.article) { location.href = '/blog/'; return; }
   const a = data.article;
-  const escape = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-  // ---- Meta + OG ----
+  // ------- Meta + OG + canonical -------
   const title = (a.meta_title || a.title) + ' | Acme Battery';
   document.title = title;
   document.querySelector('[data-meta-title]').textContent = title;
@@ -120,49 +178,59 @@
   document.querySelector('[data-og-image]').setAttribute('content', a.hero_image || a.cover_url || '');
   document.querySelector('[data-canonical]').setAttribute('href', '/blog/' + a.slug);
 
-  // ---- Hero ----
+  // ------- JSON-LD (Article + BreadcrumbList) -------
+  const ld = [
+    { "@context":"https://schema.org","@type":"Article",
+      "headline": a.title, "description": desc,
+      "image": a.hero_image || a.cover_url || '',
+      "author": {"@type":"Organization","name": a.author || 'Acme Battery'},
+      "publisher":{"@type":"Organization","name":"Acme Battery"},
+      "datePublished": a.published_at || a.created_at,
+      "dateModified": a.updated_at,
+      "mainEntityOfPage": "/blog/" + a.slug,
+      "articleSection": a.category_name || ''
+    },
+    { "@context":"https://schema.org","@type":"BreadcrumbList",
+      "itemListElement":[
+        {"@type":"ListItem","position":1,"name":"Home","item":"/"},
+        {"@type":"ListItem","position":2,"name":"Insights","item":"/blog/"},
+        {"@type":"ListItem","position":3,"name": a.title,"item":"/blog/" + a.slug}
+      ]
+    }
+  ];
+  document.querySelector('[data-jsonld]').textContent = JSON.stringify(ld);
+
+  // ------- Hero -------
   const hero = document.querySelector('[data-hero]');
   if (a.hero_image || a.cover_url) {
     hero.style.backgroundImage = `url('${(a.hero_image || a.cover_url).replace(/'/g, "\\'")}')`;
   }
-  document.querySelector('[data-art-title-crumb]').textContent = a.title;
+  document.querySelector('[data-art-crumb]').textContent = a.title;
+  document.querySelector('[data-art-pill]').textContent = a.category_name || a.pillar_short_name || 'Article';
   document.querySelector('[data-art-title]').textContent = a.title;
   document.querySelector('[data-art-subtitle]').textContent = a.excerpt || '';
-
-  // ---- Meta line ----
-  document.querySelector('[data-art-category]').textContent = a.category_name || a.pillar_short_name || 'Article';
+  document.querySelector('[data-art-author]').textContent = a.author || 'Acme Engineering';
   document.querySelector('[data-art-reading]').textContent = (a.reading_minutes || 5) + ' min read';
-  if (a.published_at) {
-    document.querySelector('[data-art-date]').textContent = new Date(a.published_at).toLocaleDateString('en-GB', { year:'numeric', month:'long', day:'2-digit' });
-  }
+  document.querySelector('[data-art-date]').textContent = fmtDate(a.published_at);
 
-  // ---- JSON-LD ----
-  const ld = {
-    "@context":"https://schema.org",
-    "@type":"Article",
-    "headline": a.title,
-    "description": desc,
-    "image": a.hero_image || a.cover_url || '',
-    "author": {"@type":"Organization","name": a.author || 'Acme Battery'},
-    "publisher":{"@type":"Organization","name":"Acme Battery"},
-    "datePublished": a.published_at || a.created_at,
-    "dateModified": a.updated_at,
-    "mainEntityOfPage": "/blog/" + a.slug,
-    "articleSection": a.category_name || ''
-  };
-  document.querySelector('[data-jsonld]').textContent = JSON.stringify(ld);
+  // ------- Author block -------
+  const authorName = a.author || 'Acme Engineering';
+  document.querySelector('[data-author-name]').textContent = authorName;
+  document.querySelector('[data-author-initial]').textContent = (authorName.charAt(0) || 'A').toUpperCase();
+  document.querySelector('[data-author-role]').textContent = a.pillar_name
+    ? `Cell engineering — ${a.pillar_short_name || a.pillar_name}`
+    : 'Cell engineering team';
 
-  // ---- Render layout per template ----
+  // ------- Body — branch by template -------
   const layoutEl = document.querySelector('[data-art-layout]');
   const tpl = a.template || 'standard';
   const content = a.content || '';
 
   if (tpl === 'guide') {
-    // Auto-build a TOC from the H2s in content
     const tmp = document.createElement('div'); tmp.innerHTML = content;
     const h2s = Array.from(tmp.querySelectorAll('h2'));
     h2s.forEach((h, i) => {
-      const id = 'sec-' + i + '-' + (h.textContent || '').toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0, 40);
+      const id = 'sec-' + i + '-' + (h.textContent || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40);
       h.setAttribute('id', id);
     });
     layoutEl.innerHTML = `
@@ -173,7 +241,6 @@
         </aside>
         <article class="article-body">${tmp.innerHTML}</article>
       </div>`;
-    // ScrollSpy for the TOC
     const links = layoutEl.querySelectorAll('.article-toc a');
     const sections = h2s.map((h) => layoutEl.querySelector('#' + CSS.escape(h.id)));
     const io = new IntersectionObserver((entries) => {
@@ -185,7 +252,6 @@
     }, { rootMargin: '-30% 0px -60% 0px', threshold: 0 });
     sections.forEach((s) => s && io.observe(s));
   } else if (tpl === 'case-study') {
-    // Render content with metrics callout extracted from the first <ul class="metrics"> if present
     const tmp = document.createElement('div'); tmp.innerHTML = content;
     const firstUl = tmp.querySelector('ul.metrics, ul[data-metrics]');
     let metricsHtml = '';
@@ -199,39 +265,75 @@
       firstUl.remove();
     }
     layoutEl.innerHTML = `
-      <div style="max-width:880px; margin:0 auto;">
+      <div style="max-width:840px; margin:0 auto;">
         <span class="case-pill">Case Study</span>
         ${metricsHtml}
         <article class="article-body">${tmp.innerHTML}</article>
       </div>`;
   } else {
-    // Standard
     layoutEl.innerHTML = `<article class="article-body">${content}</article>`;
   }
 
-  // ---- Pillar back-link ----
+  // ------- Pillar callout -------
   if (a.pillar_slug) {
-    const link = document.querySelector('[data-pillar-link]');
-    link.style.display = '';
-    link.textContent = '→ ' + (a.pillar_name || 'Visit pillar page');
-    link.setAttribute('href', '/products/' + a.pillar_slug);
+    const c = document.querySelector('[data-pillar-callout]');
+    c.style.display = '';
+    document.querySelector('[data-pillar-callout-title]').textContent = `This article is part of: ${a.pillar_name || a.pillar_short_name}`;
+    document.querySelector('[data-pillar-callout-link]').setAttribute('href', '/products/' + a.pillar_slug);
   }
 
-  // ---- Related ----
+  // ------- Share buttons -------
+  const url = location.origin + location.pathname;
+  const text = encodeURIComponent(a.title);
+  const u = encodeURIComponent(url);
+  document.querySelectorAll('[data-share]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const kind = btn.dataset.share;
+      if (kind === 'linkedin') window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${u}`, '_blank', 'noopener,width=720,height=620');
+      else if (kind === 'twitter') window.open(`https://twitter.com/intent/tweet?url=${u}&text=${text}`, '_blank', 'noopener,width=720,height=620');
+      else if (kind === 'email') window.location.href = `mailto:?subject=${text}&body=${u}`;
+      else if (kind === 'copy') {
+        navigator.clipboard.writeText(url).then(() => {
+          btn.classList.add('is-copied');
+          btn.textContent = '✓';
+          setTimeout(() => { btn.classList.remove('is-copied'); btn.textContent = '⎘'; }, 1800);
+        });
+      }
+    });
+  });
+
+  // ------- Related -------
   const relGrid = document.querySelector('[data-related]');
   if (data.related && data.related.length) {
     relGrid.innerHTML = data.related.map((r) => {
-      const d = r.published_at ? new Date(r.published_at).toLocaleDateString('en-GB', { year:'numeric', month:'short', day:'2-digit' }) : '';
-      return `<article class="news-card">
-        <div class="news-date">${escape(r.category_name || 'Article')} · ${r.reading_minutes || 5} min${d ? ' · ' + d : ''}</div>
-        <h3>${escape(r.title)}</h3>
-        <p>${escape((r.excerpt || '').slice(0, 130))}</p>
-        <a href="/blog/${escape(r.slug)}" class="news-link">Read more &rarr;</a>
-      </article>`;
+      const cover = r.cover_url || r.hero_image || '';
+      const cat = r.category_name || r.pillar_short_name || 'Article';
+      const date = fmtDate(r.published_at);
+      return `<a class="blog-card" href="/blog/${escape(r.slug)}">
+        <div class="blog-card__media"${cover ? ` style="background-image:url('${escape(cover)}');"` : ''}></div>
+        <div class="blog-card__body">
+          <span class="blog-card__pill">${escape(cat)}</span>
+          <h3 class="blog-card__title">${escape(r.title)}</h3>
+          <p class="blog-card__excerpt">${escape((r.excerpt || '').slice(0, 130))}</p>
+          <div class="blog-card__byline">${escape(r.author || 'Acme Engineering')} &middot; ${r.reading_minutes || 5} min${date ? ' &middot; ' + date : ''}</div>
+        </div>
+      </a>`;
     }).join('');
   } else {
-    relGrid.parentElement.parentElement.style.display = 'none';
+    document.querySelector('[data-related-section]').style.display = 'none';
   }
+
+  // ------- Reading progress bar -------
+  const bar = document.querySelector('[data-progress]');
+  function updateProgress() {
+    const h = document.documentElement;
+    const total = h.scrollHeight - h.clientHeight;
+    if (total <= 0) return;
+    const pct = Math.max(0, Math.min(100, (h.scrollTop / total) * 100));
+    bar.style.width = pct + '%';
+  }
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
 })();
 </script>
 </body>
