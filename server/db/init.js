@@ -20,19 +20,28 @@ async function run() {
     console.log('[db:init] seed applied.');
   }
 
-  // Always ensure a default admin exists
-  const email = (process.env.ADMIN_DEFAULT_EMAIL || 'admin@example.com').toLowerCase();
-  const password = process.env.ADMIN_DEFAULT_PASSWORD || 'ChangeMe!2026';
-  const existing = await query('SELECT id FROM users WHERE email = $1', [email]);
-  if (existing.rows.length === 0) {
-    const hash = await bcrypt.hash(password, 10);
-    await query(
-      'INSERT INTO users (email, password_hash, name, role, is_active) VALUES ($1, $2, $3, $4, TRUE)',
-      [email, hash, 'Administrator', 'admin']
-    );
-    console.log(`[db:init] default admin created: ${email}`);
+  // Optional: pre-create an admin from env. If ADMIN_DEFAULT_EMAIL is not
+  // set, we leave the user table empty and let the first POST to /api/auth/login
+  // bootstrap an admin with whatever credentials the operator submits.
+  const email = (process.env.ADMIN_DEFAULT_EMAIL || '').toLowerCase();
+  const password = process.env.ADMIN_DEFAULT_PASSWORD || '';
+  if (email && password && password.length >= 8) {
+    const existing = await query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existing.rows.length === 0) {
+      const hash = await bcrypt.hash(password, 10);
+      await query(
+        'INSERT INTO users (email, password_hash, name, role, is_active) VALUES ($1, $2, $3, $4, TRUE)',
+        [email, hash, 'Administrator', 'admin']
+      );
+      console.log(`[db:init] default admin created: ${email}`);
+    } else {
+      console.log(`[db:init] admin already exists: ${email}`);
+    }
   } else {
-    console.log(`[db:init] admin already exists: ${email}`);
+    const { rows } = await query('SELECT count(*)::int AS n FROM users');
+    if (rows[0].n === 0) {
+      console.log('[db:init] no admin configured. Visit /admin/login.html and submit the email + password you want to use as the first admin.');
+    }
   }
 
   await pool.end();

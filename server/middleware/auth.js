@@ -12,11 +12,14 @@ function signToken(user) {
 }
 
 function setAuthCookie(res, token) {
-  const isProd = process.env.NODE_ENV === 'production';
+  // Cookie is "Secure" only when the deployment is actually HTTPS.
+  // Setting Secure on a plain-HTTP origin causes browsers to silently
+  // drop the cookie, which looks like "login button does nothing".
+  const useSecure = String(process.env.FORCE_HTTPS || 'false') === 'true';
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: 'lax',
-    secure: isProd,
+    secure: useSecure,
     maxAge: 1000 * 60 * 60 * 12,
     path: '/',
   });
