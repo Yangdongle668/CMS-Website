@@ -337,14 +337,22 @@ function injectFloatingQuote() {
   a.setAttribute('aria-label', 'Get a quote');
   a.innerHTML = 'Get a Quote';
   document.body.appendChild(a);
-  let lastY = 0;
   const sync = () => {
     const y = window.scrollY;
-    // Show after scrolling 60% of the viewport height
-    a.classList.toggle('is-visible', y > Math.max(window.innerHeight * 0.6, 320));
-    lastY = y;
+    const docH = document.documentElement.scrollHeight;
+    const vpH  = window.innerHeight;
+    // 1. Wait until the user has scrolled past the hero
+    const pastHero = y > Math.max(vpH * 0.6, 320);
+    // 2. Hide once the footer is in view (within 240px of the page bottom)
+    //    so the floating pill never sits on top of the footer links.
+    const distanceFromBottom = docH - (y + vpH);
+    const nearFooter = distanceFromBottom < 240;
+    a.classList.toggle('is-visible', pastHero && !nearFooter);
   };
   window.addEventListener('scroll', sync, { passive: true });
+  window.addEventListener('resize', sync, { passive: true });
+  // Re-check after images / partials finish loading and shift layout
+  setTimeout(sync, 600);
   sync();
 }
 
