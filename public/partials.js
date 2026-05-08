@@ -125,28 +125,27 @@ function footerHtml(settings) {
 
   const year = new Date().getFullYear();
 
-  // Auto-derive a footer column for every top-level nav item that has children.
-  // This keeps Products / Applications / Custom Solutions / About in sync with the
-  // nav and surfaces every sub-page in the footer.
-  const navColumns = nav.filter((i) => i.children && i.children.length).map((item) => `
-      <div class="footer-col">
-        <h5>${escapeHtml(item.label)}</h5>
-        ${item.children.map((c) => `<a href="${escapeHtml(c.url)}">${escapeHtml(c.label)}</a>`).join('')}
-      </div>`).join('');
+  // Pull the three "list" columns directly from nav (Products / Applications / Solutions).
+  const findChildren = (slug) => {
+    const item = nav.find((i) => (i.nav || '').toLowerCase() === slug);
+    return item && item.children ? item.children : [];
+  };
+  const products    = findChildren('products');
+  const applications = findChildren('applications');
+  const solutions   = findChildren('solutions');
 
-  // Top-level nav items WITHOUT children that aren't HOME or CONTACT — these become
-  // a "Resources" column so blog / faq / etc. always show in the footer.
-  const flatLinks = nav
+  // Build the "Company" column — About sub-pages + Blog + FAQ + Contact.
+  const aboutChildren = findChildren('about');
+  const flatExtras = nav
     .filter((i) => !i.children && !['home', 'contact'].includes((i.nav || '').toLowerCase()))
-    .map((i) => `<a href="${escapeHtml(i.url)}">${escapeHtml(i.label)}</a>`)
-    .join('');
-  const resourcesCol = flatLinks
-    ? `<div class="footer-col">
-        <h5>Resources</h5>
-        ${flatLinks}
-        <a href="/contact.html">Contact</a>
-       </div>`
-    : '';
+    .map((i) => ({ label: i.label, url: i.url }));
+
+  // Render helper for a list column.
+  const listColumn = (heading, items) => `
+      <div class="footer-col">
+        <h5>${escapeHtml(heading)}</h5>
+        ${items.map((c) => `<a href="${escapeHtml(c.url)}">${escapeHtml(c.label)}</a>`).join('')}
+      </div>`;
 
   return `<footer>
     <div class="footer-cols">
@@ -161,8 +160,15 @@ function footerHtml(settings) {
         ${site.address ? `<p>${escapeHtml(site.address)}</p>` : ''}
         ${(linkedin || whatsapp) ? `<div class="footer-social">${linkedin}${whatsapp}</div>` : ''}
       </div>
-      ${navColumns}
-      ${resourcesCol}
+      ${listColumn('Products', products)}
+      ${listColumn('Applications', applications)}
+      ${listColumn('Solutions', solutions)}
+      <div class="footer-col">
+        <h5>Company</h5>
+        ${aboutChildren.map((c) => `<a href="${escapeHtml(c.url)}">${escapeHtml(c.label)}</a>`).join('')}
+        ${flatExtras.map((c) => `<a href="${escapeHtml(c.url)}">${escapeHtml(c.label)}</a>`).join('')}
+        <a href="/contact.html">Contact</a>
+      </div>
     </div>
     <div class="footer-bottom">
       <ul class="footer-links">

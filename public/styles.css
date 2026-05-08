@@ -1125,28 +1125,27 @@ footer {
   padding: 64px 32px 28px;
 }
 
+/* 5-column footer, fixed grid — never wraps on desktop. */
 .footer-cols {
   max-width: 1240px;
   margin: 0 auto 48px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 32px 40px;
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 1fr 1.2fr;
+  gap: 32px;
 }
-.footer-col {
-  flex: 1 1 160px;
-  min-width: 160px;
-}
-.footer-col--brand {
-  flex: 1.6 1 280px;
-  min-width: 240px;
-  max-width: 360px;
-}
+.footer-col { min-width: 0; }   /* allow long words to wrap inside the cell */
 .footer-col--brand p { margin-bottom: 8px; }
 .footer-col--brand .footer-contact a { color: #f5a623; }
 .footer-col--brand .footer-contact a:hover { color: #ffb944; }
-@media (max-width: 700px) {
-  .footer-cols { flex-direction: column; gap: 28px; }
-  .footer-col, .footer-col--brand { flex: 1 1 100%; max-width: 100%; }
+/* Tablet — collapse to 2 columns; brand spans the full width */
+@media (max-width: 900px) {
+  .footer-cols { grid-template-columns: 1fr 1fr; gap: 28px; }
+  .footer-col--brand { grid-column: 1 / -1; }
+}
+/* Phone — single column */
+@media (max-width: 520px) {
+  .footer-cols { grid-template-columns: 1fr; gap: 24px; }
+  .footer-col--brand { grid-column: auto; }
 }
 
 .footer-col h5 {
