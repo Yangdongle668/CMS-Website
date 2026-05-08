@@ -96,41 +96,51 @@ ul {
   background: rgba(255, 255, 255, 0.12);
 }
 
-/* Dropdown — left edge aligned to parent nav item */
-.has-dropdown {
-  position: relative;
-}
+/* Dropdown — left edge aligned to parent nav item.
+   Controlled by JS via .is-open (with grace delay on mouseleave) so
+   diagonal moves from the parent <a> to the items don't lose hover.
+   :hover / :focus-within remain as a no-JS fallback. */
+.has-dropdown { position: relative; }
 
 .dropdown {
   position: absolute;
-  top: calc(100% + 8px);
+  top: 100%;
   left: 0;
-  transform: translateY(-8px);
-  min-width: 220px;
+  transform: translateY(-6px);
+  min-width: 240px;
   background: #fff;
   border-radius: 10px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
   padding: 8px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.18s ease, transform 0.18s ease;
   color: #171a20;
 }
 
+/* Wide invisible hover bridge between the parent <a> and the dropdown.
+   Always rendered (positioned: absolute, height 14px) so the mouse can
+   travel through it without leaving the .has-dropdown ancestor's box. */
+.has-dropdown::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: -8px;
+  right: -8px;
+  height: 14px;
+  pointer-events: none;
+}
+/* Bridge becomes interactive while the dropdown is engaged. */
+.has-dropdown:hover::after,
+.has-dropdown:focus-within::after,
+.has-dropdown.is-open::after { pointer-events: auto; }
+
 .has-dropdown:hover .dropdown,
-.has-dropdown:focus-within .dropdown {
+.has-dropdown:focus-within .dropdown,
+.has-dropdown.is-open .dropdown {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
-}
-
-.dropdown::before {
-  content: '';
-  position: absolute;
-  top: -8px;
-  left: 0;
-  right: 0;
-  height: 8px;
 }
 
 .dropdown a {
@@ -1116,12 +1126,15 @@ footer {
 }
 
 .footer-cols {
-  max-width: 1200px;
+  max-width: 1240px;
   margin: 0 auto 48px;
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr 1fr 1.2fr;
+  grid-template-columns: 1.6fr repeat(auto-fit, minmax(160px, 1fr));
   gap: 40px;
 }
+.footer-col--brand p { margin-bottom: 8px; }
+.footer-col--brand .footer-contact a { color: #f5a623; }
+.footer-col--brand .footer-contact a:hover { color: #ffb944; }
 
 .footer-col h5 {
   font-size: 12px;

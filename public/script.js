@@ -28,10 +28,46 @@ function bindSideMenu() {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
 }
 
+// ===== Nav dropdowns with grace delay =====
+// Without this, moving the mouse from the parent nav item to the dropdown
+// items can lose :hover briefly and close the menu before the user picks
+// an option. This adds a 220ms close delay and re-uses an .is-open class
+// that the CSS opens identically to the :hover state.
+function bindDropdowns() {
+  document.querySelectorAll('.has-dropdown').forEach((li) => {
+    if (li.__ddBound) return;
+    li.__ddBound = true;
+    let timer = null;
+    const open = () => { clearTimeout(timer); li.classList.add('is-open'); };
+    const close = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => li.classList.remove('is-open'), 220);
+    };
+    li.addEventListener('mouseenter', open);
+    li.addEventListener('mouseleave', close);
+    li.addEventListener('focusin', open);
+    li.addEventListener('focusout', (ev) => {
+      // Close only when focus has actually left the whole dropdown subtree
+      if (!li.contains(ev.relatedTarget)) close();
+    });
+    // Tap-on-mobile: first tap opens, second navigates
+    const trigger = li.querySelector(':scope > a');
+    if (trigger) {
+      trigger.addEventListener('click', (ev) => {
+        if (window.matchMedia('(hover: hover)').matches) return;
+        if (!li.classList.contains('is-open')) {
+          ev.preventDefault();
+          li.classList.add('is-open');
+        }
+      });
+    }
+  });
+}
+
 // Re-bind after partials.js re-renders header/footer with live settings
-document.addEventListener('cms:ready', () => { bindHeader(); bindSideMenu(); });
+document.addEventListener('cms:ready', () => { bindHeader(); bindSideMenu(); bindDropdowns(); });
 // Initial bind on the fallback render
-bindHeader(); bindSideMenu();
+bindHeader(); bindSideMenu(); bindDropdowns();
 
 // ===== Blog tabs =====
 const blogTabs = document.querySelectorAll('.blog-tab');
