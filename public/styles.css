@@ -1768,21 +1768,21 @@ footer {
 .hero-bottom { animation-delay: 0.45s; }
 @keyframes heroIntro { to { opacity: 1; transform: translateY(0); } }
 
-/* Section reveal (slide-up, more refined than fade).
-   IMPORTANT: uses a CSS custom property for the offset so card-level
-   :hover transforms (translateY(-4px) etc.) keep winning the cascade.
-   Without this, .reveal.is-visible { transform: translateY(0) } sat
-   later in the file than .product-card:hover { transform: ... } and
-   killed the hover effect on every revealed card. */
-.reveal {
-  --reveal-y: 30px;
-  opacity: 0;
-  transform: translateY(var(--reveal-y));
-  transition: opacity 0.8s cubic-bezier(.2,.8,.2,1), transform 0.8s cubic-bezier(.2,.8,.2,1);
-}
+/* Section reveal (slide-up).
+   IMPORTANT: this MUST be a one-shot animation, not a transition on
+   transform. If we put transition: transform 0.8s on .reveal, every
+   subsequent :hover transform on the card animates over 0.8s — way
+   too slow, looks like the hover does nothing. Animations run once
+   on .is-visible and don't leave any sticky transform behind, so
+   each card's own :hover transition takes over cleanly. */
+.reveal { opacity: 0; }
 .reveal.is-visible {
-  --reveal-y: 0px;
   opacity: 1;
+  animation: revealSlide 0.7s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes revealSlide {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 .reveal[data-delay="1"] { transition-delay: 0.08s; }
 .reveal[data-delay="2"] { transition-delay: 0.16s; }
@@ -3122,4 +3122,112 @@ a:hover .news-link, .news-link:hover { color: #f5a623; }
 
 /* When inside .section the bleed should respect the section padding */
 .section .tesla-slider { margin-left: calc(-1 * 24px); margin-right: calc(-1 * 24px); }
+
+
+/* =============================================================
+   Hover audit (v12) — bulletproof, more pronounced feedback
+   Last in the file so these rules win the cascade for hover state.
+   ============================================================= */
+
+/* Cards: stronger lift + amber accent on hover */
+.product-card,
+.app-card,
+.step-card,
+.news-card,
+.feat-item,
+.contact-card,
+.blog-card,
+.pillar-card,
+.process-card,
+.faq-list details {
+  transition: transform 0.25s cubic-bezier(.2,.8,.2,1),
+              box-shadow 0.25s cubic-bezier(.2,.8,.2,1),
+              border-color 0.25s ease,
+              background 0.25s ease !important;
+}
+
+/* Override any earlier :hover so it always wins */
+.product-card:hover,
+.step-card:hover,
+.feat-item:hover,
+.news-card:hover,
+.blog-card:hover,
+.pillar-card:hover,
+.process-card:hover {
+  transform: translateY(-6px) !important;
+  box-shadow: 0 20px 48px rgba(0,0,0,0.10) !important;
+  border-color: #171a20 !important;
+}
+/* Featured (dark) cards keep dark theme on hover */
+.product-card.featured:hover {
+  border-color: transparent !important;
+  box-shadow: 0 20px 48px rgba(0,0,0,0.30), 0 0 0 1px rgba(245,166,35,0.5) !important;
+}
+/* App cards have full-bleed images — lift via scale instead */
+.app-card:hover {
+  transform: translateY(-4px) scale(1.012) !important;
+  box-shadow: 0 22px 52px rgba(0,0,0,0.20) !important;
+}
+/* Cert chip — light amber on hover */
+.cert-chip {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease !important;
+}
+.cert-chip:hover {
+  transform: translateY(-2px) !important;
+  border-color: #f5a623 !important;
+  background: #fffaf0 !important;
+  box-shadow: 0 10px 24px rgba(245,166,35,0.18) !important;
+}
+
+/* Footer links — color flip + tiny x-shift so the hover is undeniable */
+.footer-col a {
+  transition: color 0.18s ease, transform 0.18s ease, padding 0.18s ease !important;
+}
+.footer-col a:hover {
+  color: #f5f5f7 !important;
+  padding-left: 4px;
+}
+.footer-bottom .footer-links a {
+  transition: color 0.18s ease;
+}
+.footer-bottom .footer-links a:hover {
+  color: #f5a623 !important;
+}
+
+/* Nav top-level links — make hover background more obvious */
+.nav-main > li > a {
+  transition: background 0.18s ease, color 0.18s ease !important;
+}
+#site-header.scrolled .nav-main > li > a:hover {
+  background: rgba(0,0,0,0.06) !important;
+  color: #171a20 !important;
+}
+#site-header:not(.scrolled) .nav-main > li > a:hover {
+  background: rgba(255,255,255,0.16) !important;
+}
+
+/* Dropdown items — accent left bar on hover */
+.dropdown a {
+  position: relative;
+}
+.dropdown a:hover {
+  background: #fffaf0 !important;
+  color: #171a20 !important;
+}
+
+/* Buttons — all kinds */
+.btn { transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease !important; }
+.btn:hover { transform: translateY(-1px); }
+.btn-accent:hover { box-shadow: 0 10px 28px rgba(245,166,35,0.45); }
+
+/* News-link arrow shifts on hover */
+a:hover > .news-link::after,
+.news-link:hover::after { transform: translateX(3px); }
+.news-link::after { display: inline-block; transition: transform 0.18s ease; }
+
+/* All <a> in articles get a subtle color shift on hover */
+.article-body a:hover,
+.legal-doc a:hover {
+  color: #b67500;
+}
 
