@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Contact Acme Battery | Sales &amp; Engineering | B2B Lithium Battery Manufacturer</title>
+<meta name="description" content="Talk to Acme Battery's sales and engineering team. Multiple regional contacts, 1-business-day response, GDPR-compliant data handling."/>
+<link rel="canonical" href="/contact"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/css/theme.css"/>
+</head>
+<body>
+<div data-mount="header"></div>
+
+<section class="hero">
+  <div class="container">
+    <nav class="crumbs"><a href="/">Home</a><span>/</span>Contact</nav>
+    <div class="hero__inner">
+      <div class="hero__copy reveal">
+        <span class="eyebrow">Contact</span>
+        <h1>Talk to a battery engineer, not a sales script.</h1>
+        <p>Tell us your specs once. Our sales engineering team responds within one business day with a feasibility note, lead time and indicative pricing.</p>
+      </div>
+      <div class="hero__visual reveal" style="background:#fff; padding:32px;">
+        <div style="display:grid; gap:16px;">
+          <div>
+            <h4 style="font-size:13px; color:var(--color-fg-mute); text-transform:uppercase; letter-spacing:0.08em; margin:0;">Sales</h4>
+            <a href="mailto:sales@example.com" data-contact-email style="font-size:18px; font-weight:600;">sales@example.com</a>
+          </div>
+          <div>
+            <h4 style="font-size:13px; color:var(--color-fg-mute); text-transform:uppercase; letter-spacing:0.08em; margin:0;">Phone</h4>
+            <span data-contact-phone style="font-size:18px; font-weight:600;">+86 755 0000 0000</span>
+          </div>
+          <div>
+            <h4 style="font-size:13px; color:var(--color-fg-mute); text-transform:uppercase; letter-spacing:0.08em; margin:0;">Address</h4>
+            <span data-contact-address style="font-size:15px; color:var(--color-fg-soft);">Building A, Industrial Park, Shenzhen 518000, China</span>
+          </div>
+          <div>
+            <h4 style="font-size:13px; color:var(--color-fg-mute); text-transform:uppercase; letter-spacing:0.08em; margin:0;">Privacy</h4>
+            <a href="/gdpr" style="font-size:15px;">GDPR data subject requests →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="rfq rfq--light reveal">
+      <div>
+        <span class="eyebrow">Contact Form</span>
+        <h2>Send a detailed inquiry.</h2>
+        <p>Use this form for project inquiries, datasheet requests, NDAs and audit visits.</p>
+        <div class="rfq__perks">
+          <div class="rfq__perk"><span class="rfq__perk-icon">✓</span><div><strong>Reply within 1 business day</strong><small>From a real engineer.</small></div></div>
+          <div class="rfq__perk"><span class="rfq__perk-icon">✓</span><div><strong>Confidential</strong><small>NDA available before drawings exchange.</small></div></div>
+          <div class="rfq__perk"><span class="rfq__perk-icon">✓</span><div><strong>GDPR compliant</strong><small>Your data stays under your control.</small></div></div>
+        </div>
+      </div>
+      <div data-rfq-mount></div>
+    </div>
+  </div>
+</section>
+
+<div data-mount="footer"></div>
+<script src="/assets/js/site.js"></script>
+<script>
+document.addEventListener('site:ready', (ev) => {
+  const site = (ev.detail.settings || {}).site;
+  if (!site) return;
+  const e = document.querySelector('[data-contact-email]');
+  if (e && site.email) { e.textContent = site.email; e.href = 'mailto:' + site.email; }
+  const p = document.querySelector('[data-contact-phone]');
+  if (p && site.phone) p.textContent = site.phone;
+  const a = document.querySelector('[data-contact-address]');
+  if (a && site.address) a.textContent = site.address;
+});
+</script>
+</body>
+</html>

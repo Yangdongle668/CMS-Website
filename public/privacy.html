@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Privacy Policy | Acme Battery</title>
+<meta name="description" content="Privacy policy explaining how Acme Battery processes personal data of website visitors and inquiry submitters under EU GDPR."/>
+<link rel="canonical" href="/privacy"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/css/theme.css"/>
+</head>
+<body>
+<div data-mount="header"></div>
+
+<section class="hero" style="border-bottom:1px solid var(--color-line);">
+  <div class="container">
+    <nav class="crumbs"><a href="/">Home</a><span>/</span>Privacy Policy</nav>
+    <div class="hero__inner" style="grid-template-columns:1fr; padding:56px 0 24px;">
+      <div class="hero__copy reveal" style="max-width:760px;">
+        <span class="eyebrow">Legal</span>
+        <h1>Privacy Policy</h1>
+        <p>Effective: <span data-policy-version>1.0</span> · Last updated 2026</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container article-body">
+    <h2>1. Who we are (data controller)</h2>
+    <p><strong data-controller-name>Acme Battery Co., Ltd.</strong>, registered in Shenzhen, China, is the data controller for personal data collected through this website. For data protection enquiries please contact <a href="mailto:privacy@example.com" data-controller-email>privacy@example.com</a> or use our <a href="/gdpr">GDPR request page</a>.</p>
+
+    <h2>2. What data we collect</h2>
+    <p>We minimise the personal data we collect. Specifically:</p>
+    <ul>
+      <li><strong>Inquiry data:</strong> name, work email, company, phone (optional), country, product interest, project details, and any attachments you choose to share.</li>
+      <li><strong>Technical data:</strong> a hashed version of your IP address (for spam protection only), user agent, source page, referrer and UTM parameters.</li>
+      <li><strong>Cookie consent:</strong> a hash of your IP+UA paired with your consent decision.</li>
+    </ul>
+    <p>We do <strong>not</strong> collect special categories of data, financial information, or behavioural profiles.</p>
+
+    <h2>3. Legal basis (GDPR Article 6)</h2>
+    <ul>
+      <li><strong>Consent (Art. 6(1)(a)):</strong> for optional analytics and marketing cookies.</li>
+      <li><strong>Performance of a contract / pre-contractual steps (Art. 6(1)(b)):</strong> when you submit an inquiry, so we can respond.</li>
+      <li><strong>Legitimate interests (Art. 6(1)(f)):</strong> to operate the website securely, prevent spam and fraud, and maintain a basic audit trail. You may object at any time.</li>
+    </ul>
+
+    <h2>4. How we use your data</h2>
+    <ul>
+      <li>Reply to your inquiry and follow up with technical or commercial information.</li>
+      <li>Maintain a CRM record so we don't ask for the same information twice.</li>
+      <li>Comply with legal obligations including dangerous-goods documentation.</li>
+      <li>Improve the website (only if you consent to analytics cookies).</li>
+    </ul>
+
+    <h2>5. Who we share with</h2>
+    <p>We use a limited number of processors:</p>
+    <ul>
+      <li><strong>Cloudflare, Inc. (US/EU):</strong> Turnstile bot protection on submission forms (no personal data persisted).</li>
+      <li><strong>SMTP email provider:</strong> our corporate email host transmits inquiry confirmations.</li>
+      <li><strong>Hosting provider:</strong> stores the website and database.</li>
+    </ul>
+    <p>We do <strong>not</strong> sell or share data with advertising networks, data brokers or social platforms.</p>
+
+    <h2>6. International transfers</h2>
+    <p>If you submit an inquiry from the EU/EEA, your data may be transferred to our servers in the EU and to our office in China. Such transfers are governed by appropriate safeguards including the EU Standard Contractual Clauses (SCCs).</p>
+
+    <h2>7. Retention</h2>
+    <p>Inquiries are kept for up to <strong data-retention-days>365</strong> days from creation, then automatically marked for deletion. Deleted records are permanently removed within <strong data-soft-delete-days>30</strong> days. Cookie consent logs are kept for 12 months. Audit logs (admin actions) are kept for 24 months.</p>
+
+    <h2>8. Your rights (GDPR Articles 12-22)</h2>
+    <p>If you are in the EU/EEA or UK, you have the right to:</p>
+    <ul>
+      <li>Access the personal data we hold about you.</li>
+      <li>Rectify inaccurate data.</li>
+      <li>Erase your data ("right to be forgotten").</li>
+      <li>Restrict or object to processing.</li>
+      <li>Receive your data in a portable format.</li>
+      <li>Withdraw consent at any time without affecting prior processing.</li>
+      <li>Lodge a complaint with your national supervisory authority.</li>
+    </ul>
+    <p>To exercise any of these rights, please use our <a href="/gdpr">data subject request page</a>. We respond within 30 days as required by Article 12.</p>
+
+    <h2>9. Cookies</h2>
+    <p>See our <a href="/cookies">Cookie Policy</a> for the full list of cookies and your control options.</p>
+
+    <h2>10. Security</h2>
+    <p>Personal data is encrypted in transit (TLS 1.2+). Database backups are encrypted at rest. Access to admin tooling is protected by individual accounts, password hashing (bcrypt) and full audit logging. We honour the <code>DNT</code> (Do Not Track) header.</p>
+
+    <h2>11. Children</h2>
+    <p>This is a B2B website not intended for individuals under 16. We do not knowingly collect data from children.</p>
+
+    <h2>12. Changes</h2>
+    <p>We may update this policy. Material changes are announced via the cookie consent banner with a new policy version, and prior consent is re-requested.</p>
+  </div>
+</section>
+
+<div data-mount="footer"></div>
+<script src="/assets/js/site.js"></script>
+<script>
+document.addEventListener('site:ready', (ev) => {
+  const cfg = ev.detail.config;
+  const settings = ev.detail.settings || {};
+  const gdpr = settings.gdpr || {};
+  const site = settings.site || {};
+  const v = document.querySelector('[data-policy-version]');
+  if (v && cfg.privacyPolicyVersion) v.textContent = cfg.privacyPolicyVersion;
+  if (gdpr.controller) document.querySelector('[data-controller-name]').textContent = gdpr.controller;
+  if (gdpr.controller_email) {
+    const a = document.querySelector('[data-controller-email]');
+    a.textContent = gdpr.controller_email;
+    a.href = 'mailto:' + gdpr.controller_email;
+  }
+  if (gdpr.retention_days) document.querySelector('[data-retention-days]').textContent = gdpr.retention_days;
+  if (gdpr.soft_delete_days) document.querySelector('[data-soft-delete-days]').textContent = gdpr.soft_delete_days;
+});
+</script>
+</body>
+</html>

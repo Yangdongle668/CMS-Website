@@ -1,0 +1,142 @@
+require('dotenv').config();
+require('express-async-errors');
+const path = require('path');
+const fs = require('fs');
+const express = require('express');
+
+process.on('unhandledRejection', (err) => {
+  console.error('[unhandledRejection]', err);
+});
+const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
+const rateLimit = require('express-rate-limit');
+
+const app = express();
+const PORT = parseInt(process.env.PORT || '3000', 10);
+const ROOT = path.join(__dirname, '..');
+
+app.set('trust proxy', 1);
+
+// ----- Security headers (loose CSP for inline static admin/site) -----
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        'default-src': ["'self'"],
+        'script-src': ["'self'", "'unsafe-inline'", 'https://challenges.cloudflare.com'],
+        'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        'font-src': ["'self'", 'https://fonts.gstatic.com', 'data:'],
+        'img-src': ["'self'", 'data:', 'blob:', 'https:'],
+        'connect-src': ["'self'", 'https://challenges.cloudflare.com'],
+        'frame-src': ['https://challenges.cloudflare.com'],
+        'object-src': ["'none'"],
+        'base-uri': ["'self'"],
+        'form-action': ["'self'"],
+        'upgrade-insecure-requests': [],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+  })
+);
+
+app.use(cookieParser(process.env.COOKIE_SECRET || 'dev-cookie-secret'));
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+
+// Global gentle limiter for API
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/', apiLimiter);
+
+// ----- Public env (Turnstile site key for client) -----
+app.get('/api/public/config', (_req, res) => {
+  res.json({
+    siteName: process.env.SITE_NAME || 'Acme Battery',
+    publicUrl: process.env.PUBLIC_URL || '',
+    turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || '',
+    privacyPolicyVersion: process.env.PRIVACY_POLICY_VERSION || '1.0',
+  });
+});
+
+// ----- API routes -----
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/pillars', require('./routes/pillars'));
+app.use('/api/products', require('./routes/products'));
+app.use('/api/applications', require('./routes/applications'));
+app.use('/api/articles', require('./routes/articles'));
+app.use('/api/inquiries', require('./routes/inquiries'));
+app.use('/api/media', require('./routes/media'));
+app.use('/api/settings', require('./routes/settings'));
+app.use('/api/gdpr', require('./routes/gdpr'));
+app.use('/api/audit', require('./routes/audit'));
+app.use('/api/users', require('./routes/users'));
+
+// ----- SEO endpoints -----
+app.use('/', require('./routes/seo'));
+
+// ----- Static uploads -----
+app.use('/uploads', express.static(path.join(ROOT, 'uploads'), { maxAge: '7d', index: false }));
+
+// ----- Static admin -----
+app.use('/admin', express.static(path.join(ROOT, 'admin'), { extensions: ['html'] }));
+app.get('/admin/*', (req, res, next) => {
+  // Serve admin/index.html for client-side route fallback only when file doesn't exist
+  const filePath = path.join(ROOT, 'admin', req.path.replace(/^\/admin\//, ''));
+  if (fs.existsSync(filePath)) return next();
+  return res.sendFile(path.join(ROOT, 'admin', 'index.html'));
+});
+
+// ----- Static public site -----
+app.use(
+  express.static(path.join(ROOT, 'public'), {
+    extensions: ['html'],
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache');
+    },
+  })
+);
+
+// ----- Pretty URLs for products / blog / applications -----
+app.get(['/products/:slug', '/applications/:slug', '/blog/:slug'], (req, res, next) => {
+  const segments = req.path.split('/').filter(Boolean);
+  const dir = segments[0];
+  const slug = segments[1];
+  if (!slug) return next();
+  const candidates = [
+    path.join(ROOT, 'public', dir, `${slug}.html`),
+    path.join(ROOT, 'public', dir, slug, 'index.html'),
+  ];
+  for (const f of candidates) {
+    if (fs.existsSync(f)) return res.sendFile(f);
+  }
+  // Fallback to template that fetches via API
+  const tpl = path.join(ROOT, 'public', dir, '_template.html');
+  if (fs.existsSync(tpl)) return res.sendFile(tpl);
+  return next();
+});
+
+// ----- 404 -----
+app.use((req, res) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'not_found' });
+  }
+  const file = path.join(ROOT, 'public', '404.html');
+  if (fs.existsSync(file)) return res.status(404).sendFile(file);
+  res.status(404).send('Not found');
+});
+
+// ----- Error handler -----
+app.use((err, _req, res, _next) => {
+  console.error('[error]', err);
+  if (res.headersSent) return;
+  res.status(err.status || 500).json({ error: err.expose ? err.message : 'internal_error' });
+});
+
+app.listen(PORT, () => {
+  console.log(`[battery-cms] running on http://localhost:${PORT}`);
+});

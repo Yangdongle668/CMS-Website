@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>Inquiries | Acme CMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+</head>
+<body>
+<div data-admin-shell></div>
+<script src="/admin/assets/js/admin.js"></script>
+<script>
+(async function () {
+  const { api, escapeHtml, formatDate, toast, bootShell } = window.AdminAPI;
+  const shell = await bootShell({ title: 'Inquiries', crumbs: 'Inquiry inbox' });
+  if (!shell) return;
+
+  shell.actions.innerHTML = `<a href="/api/inquiries/export/csv" class="btn btn--ghost btn--sm">Export CSV</a>`;
+
+  shell.content.innerHTML = `
+    <div class="toolbar">
+      <div class="toolbar__filters">
+        <input type="search" id="q" placeholder="Search reference, email, company…"/>
+        <select id="status">
+          <option value="">All statuses</option>
+          <option value="new">New</option>
+          <option value="read">Read</option>
+          <option value="replied">Replied</option>
+          <option value="archived">Archived</option>
+          <option value="spam">Spam</option>
+        </select>
+      </div>
+    </div>
+    <div class="split">
+      <div class="panel" style="padding:0;">
+        <table class="table" id="inq-table">
+          <thead><tr><th>Reference</th><th>Company</th><th>Country</th><th>Status</th><th>Received</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="panel" id="detail-panel" style="display:none;"></div>
+    </div>
+  `;
+
+  const tbody = document.querySelector('#inq-table tbody');
+  const qInput = document.querySelector('#q');
+  const statusInput = document.querySelector('#status');
+
+  async function load() {
+    const params = new URLSearchParams();
+    if (qInput.value) params.set('q', qInput.value);
+    if (statusInput.value) params.set('status', statusInput.value);
+    params.set('limit', '50');
+    const { items } = await api('/api/inquiries?' + params.toString());
+    tbody.innerHTML = items.length ? items.map((i) => `
+      <tr class="${i.status === 'new' ? 'is-unread' : ''}" data-id="${i.id}" style="cursor:pointer;">
+        <td><span class="mono" style="font-weight:600;">${escapeHtml(i.reference)}</span></td>
+        <td>${escapeHtml(i.company || i.full_name)}<div style="font-size:11.5px; color:var(--a-mute2);">${escapeHtml(i.email)}</div></td>
+        <td>${escapeHtml(i.country || '-')}</td>
+        <td><span class="pill pill--${i.status}">${i.status}</span></td>
+        <td>${formatDate(i.created_at)}</td>
+      </tr>
+    `).join('') : '<tr><td colspan="5"><div class="empty">No inquiries.</div></td></tr>';
+
+    tbody.querySelectorAll('tr[data-id]').forEach((tr) => {
+      tr.addEventListener('click', () => openDetail(tr.dataset.id));
+    });
+
+    // If an id was passed in URL, open it
+    const wantId = new URLSearchParams(location.search).get('id');
+    if (wantId) openDetail(wantId);
+  }
+
+  async function openDetail(id) {
+    const { inquiry } = await api('/api/inquiries/' + id);
+    const cats = Array.isArray(inquiry.product_categories) ? inquiry.product_categories.join(', ') : '';
+    const panel = document.getElementById('detail-panel');
+    panel.style.display = '';
+    panel.innerHTML = `
+      <div class="panel__head">
+        <h2>${escapeHtml(inquiry.reference)} <span class="pill pill--${inquiry.status}" style="margin-left:8px;">${inquiry.status}</span></h2>
+        <button class="btn btn--ghost btn--sm" id="close-detail">Close</button>
+      </div>
+      <div style="display:grid; gap:10px; font-size:13.5px; margin-bottom:14px;">
+        <div><strong>${escapeHtml(inquiry.full_name)}</strong> at <strong>${escapeHtml(inquiry.company || '-')}</strong></div>
+        <div><a href="mailto:${escapeHtml(inquiry.email)}?subject=Re: ${escapeHtml(inquiry.reference)}">${escapeHtml(inquiry.email)}</a> · ${escapeHtml(inquiry.phone || '')} · ${escapeHtml(inquiry.country || '')}</div>
+        <div style="color:var(--a-mute2);">${formatDate(inquiry.created_at)} · from <span class="mono">${escapeHtml(inquiry.source_page || '-')}</span></div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:14px; background:var(--a-surface); border-radius:8px; font-size:13px;">
+        <div><span style="color:var(--a-mute2); display:block; font-size:11.5px; text-transform:uppercase; letter-spacing:.06em;">Categories</span>${escapeHtml(cats)}</div>
+        <div><span style="color:var(--a-mute2); display:block; font-size:11.5px; text-transform:uppercase; letter-spacing:.06em;">Capacity Need</span>${escapeHtml(inquiry.capacity_need || '-')}</div>
+        <div><span style="color:var(--a-mute2); display:block; font-size:11.5px; text-transform:uppercase; letter-spacing:.06em;">Annual Volume</span>${escapeHtml(inquiry.annual_volume || '-')}</div>
+        <div><span style="color:var(--a-mute2); display:block; font-size:11.5px; text-transform:uppercase; letter-spacing:.06em;">Application</span>${escapeHtml(inquiry.application || '-')}</div>
+      </div>
+      <h3 style="font-size:13px; margin-top:18px;">Message</h3>
+      <div style="background:#fff; border:1px solid var(--a-line); border-radius:8px; padding:14px; white-space:pre-wrap; font-size:13.5px;">${escapeHtml(inquiry.message)}</div>
+      <h3 style="font-size:13px; margin-top:18px;">Internal Notes</h3>
+      <textarea id="notes" style="width:100%; min-height:80px; border:1px solid var(--a-line); border-radius:8px; padding:10px; font-size:13.5px;">${escapeHtml(inquiry.notes || '')}</textarea>
+      <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn--sm" data-status="read">Mark Read</button>
+        <button class="btn btn--sm" data-status="replied">Mark Replied</button>
+        <button class="btn btn--sm btn--ghost" data-status="archived">Archive</button>
+        <button class="btn btn--sm btn--ghost" data-status="spam">Spam</button>
+        <button class="btn btn--sm btn--ghost" id="save-notes">Save Notes</button>
+        <button class="btn btn--sm btn--danger" data-delete style="margin-left:auto;">Delete</button>
+      </div>
+      <div style="margin-top:14px; padding:10px; background:var(--a-surface); border-radius:6px; font-size:12px; color:var(--a-mute2);">
+        Consent: ${inquiry.consent_given ? 'given on ' + formatDate(inquiry.consent_at) + ' (policy v' + escapeHtml(inquiry.policy_version || '-') + ')' : 'not recorded'}
+      </div>
+    `;
+    document.getElementById('close-detail').addEventListener('click', () => { panel.style.display = 'none'; });
+    panel.querySelectorAll('[data-status]').forEach((b) => b.addEventListener('click', async () => {
+      await api('/api/inquiries/' + id, { method: 'PATCH', body: JSON.stringify({ status: b.dataset.status }) });
+      toast('Status updated', 'success');
+      load();
+    }));
+    document.getElementById('save-notes').addEventListener('click', async () => {
+      await api('/api/inquiries/' + id, { method: 'PATCH', body: JSON.stringify({ notes: document.getElementById('notes').value }) });
+      toast('Notes saved', 'success');
+    });
+    panel.querySelector('[data-delete]').addEventListener('click', async () => {
+      if (!confirm('Delete this inquiry? Soft-deleted records are removed permanently after the retention window.')) return;
+      await api('/api/inquiries/' + id, { method: 'DELETE' });
+      toast('Inquiry deleted', 'success');
+      panel.style.display = 'none';
+      load();
+    });
+  }
+
+  qInput.addEventListener('input', () => { clearTimeout(window.__qt); window.__qt = setTimeout(load, 250); });
+  statusInput.addEventListener('change', load);
+  load();
+})();
+</script>
+</body>
+</html>

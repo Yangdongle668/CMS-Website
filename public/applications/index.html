@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Battery Applications &amp; Industries | Acme Battery</title>
+<meta name="description" content="Lithium battery solutions for medical devices, wearables, IoT, drones, power tools, e-mobility and energy storage. OEM/ODM with full certification."/>
+<link rel="canonical" href="/applications"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/css/theme.css"/>
+</head>
+<body>
+<div data-mount="header"></div>
+
+<section class="hero" style="border-bottom:1px solid var(--color-line);">
+  <div class="container">
+    <nav class="crumbs"><a href="/">Home</a><span>/</span>Applications</nav>
+    <div class="hero__inner" style="grid-template-columns:1fr; padding: 64px 0 32px;">
+      <div class="hero__copy reveal" style="max-width:760px;">
+        <span class="eyebrow">Applications &amp; Industries</span>
+        <h1>Battery solutions across regulated B2B industries.</h1>
+        <p>Each industry brings its own certifications, abuse profiles and lifecycle expectations. Browse the deployment areas where Acme cells and packs are already shipping.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="app-grid" data-app-grid></div>
+  </div>
+</section>
+
+<div data-mount="footer"></div>
+<script src="/assets/js/site.js"></script>
+<script>
+(async function () {
+  const { fetchJson, escapeHtml } = window.SiteAPI;
+  const { items } = await fetchJson('/api/applications');
+  document.querySelector('[data-app-grid]').innerHTML = items.map((a) => `
+    <a class="app-tile" href="/applications/${escapeHtml(a.slug)}">
+      <span class="app-tile__icon">${escapeHtml(a.name.charAt(0))}</span>
+      <h4>${escapeHtml(a.name)}</h4>
+      <p>${escapeHtml(a.summary || '')}</p>
+    </a>
+  `).join('');
+})();
+</script>
+</body>
+</html>

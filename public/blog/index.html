@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Engineering Insights &amp; Battery Industry Articles | Acme Battery</title>
+<meta name="description" content="Technical articles from Acme's cell engineers on polymer Li-Po, custom battery design, cylindrical Li-Ion chemistries and lithium battery industry insights."/>
+<link rel="canonical" href="/blog"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/css/theme.css"/>
+</head>
+<body>
+<div data-mount="header"></div>
+
+<section class="hero" style="border-bottom:1px solid var(--color-line);">
+  <div class="container">
+    <nav class="crumbs"><a href="/">Home</a><span>/</span>Insights</nav>
+    <div class="hero__inner" style="grid-template-columns:1fr; padding: 64px 0 32px;">
+      <div class="hero__copy reveal" style="max-width:760px;">
+        <span class="eyebrow">Engineering Insights</span>
+        <h1>Technical articles from our cell engineers.</h1>
+        <p>Deep-dives that help your hardware team specify the right cell, the first time. Filter by product line below.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:32px;" data-filters>
+      <button class="btn btn--ghost btn--sm is-active" data-pillar="">All topics</button>
+    </div>
+    <div class="article-grid" data-articles></div>
+    <div class="text-center" style="margin-top:32px;" data-pagination></div>
+  </div>
+</section>
+
+<div data-mount="footer"></div>
+<script src="/assets/js/site.js"></script>
+<script>
+(async function () {
+  const { fetchJson, escapeHtml } = window.SiteAPI;
+  const filtersEl = document.querySelector('[data-filters]');
+  const articlesEl = document.querySelector('[data-articles]');
+  let activeSlug = '';
+
+  // Pillars filter
+  try {
+    const { items } = await fetchJson('/api/pillars');
+    items.forEach((p) => {
+      const b = document.createElement('button');
+      b.className = 'btn btn--ghost btn--sm';
+      b.dataset.pillar = p.slug;
+      b.textContent = p.short_name || p.name;
+      filtersEl.appendChild(b);
+    });
+  } catch (_) {}
+  filtersEl.addEventListener('click', (ev) => {
+    const btn = ev.target.closest('button');
+    if (!btn) return;
+    activeSlug = btn.dataset.pillar || '';
+    filtersEl.querySelectorAll('button').forEach((b) => b.classList.toggle('is-active', b === btn));
+    filtersEl.querySelectorAll('button.is-active').forEach((b) => b.classList.add('btn--primary'));
+    filtersEl.querySelectorAll('button:not(.is-active)').forEach((b) => b.classList.remove('btn--primary'));
+    load();
+  });
+
+  async function load() {
+    const url = '/api/articles?limit=18' + (activeSlug ? '&pillar=' + encodeURIComponent(activeSlug) : '');
+    const { items } = await fetchJson(url);
+    if (!items.length) {
+      articlesEl.innerHTML = '<p class="muted text-center" style="grid-column:1/-1;">No articles in this topic yet.</p>';
+      return;
+    }
+    articlesEl.innerHTML = items.map((a) => {
+      const date = a.published_at ? new Date(a.published_at).toLocaleDateString('en-GB', { year:'numeric', month:'short', day:'2-digit' }) : '';
+      return `<a class="article-card" href="/blog/${escapeHtml(a.slug)}">
+        <div class="article-card__media"><img src="${escapeHtml(a.cover_url || '/assets/img/hero-illustration.svg')}" alt=""/></div>
+        <div class="article-card__body">
+          ${a.pillar_short_name ? `<span class="article-card__pill">${escapeHtml(a.pillar_short_name)}</span>` : ''}
+          <h3>${escapeHtml(a.title)}</h3>
+          <p>${escapeHtml((a.excerpt || '').slice(0, 130))}</p>
+          <div class="article-card__meta">${date ? date + ' · ' : ''}${a.reading_minutes} min read</div>
+        </div>
+      </a>`;
+    }).join('');
+  }
+  load();
+})();
+</script>
+</body>
+</html>

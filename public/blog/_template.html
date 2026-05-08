@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title data-meta="title">Article | Acme Battery</title>
+<meta name="description" data-meta="description" content=""/>
+<link rel="canonical" data-canonical href=""/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/css/theme.css"/>
+<script type="application/ld+json" data-jsonld></script>
+</head>
+<body>
+<div data-mount="header"></div>
+
+<article>
+  <section class="article-hero">
+    <div class="container" style="max-width:820px;">
+      <nav class="crumbs"><a href="/">Home</a><span>/</span><a href="/blog">Insights</a><span>/</span><span data-art-title-crumb></span></nav>
+      <span class="article-card__pill" data-art-pillar style="display:none;"></span>
+      <h1 data-art-title style="margin: 16px 0 14px;"></h1>
+      <div class="article-hero__meta" data-art-meta></div>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:32px;">
+    <div class="container article-body">
+      <div class="article-pillar-callout" data-art-callout style="display:none;">
+        <span>📚</span>
+        <div>This article is part of: <strong data-art-callout-name></strong>. <a data-art-callout-link>Visit the pillar →</a></div>
+      </div>
+      <div data-art-content></div>
+    </div>
+  </section>
+</article>
+
+<section class="section section--alt">
+  <div class="container">
+    <div class="section__head reveal">
+      <span class="eyebrow">Related Insights</span>
+      <h2>More from this topic.</h2>
+    </div>
+    <div class="article-grid" data-related></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="rfq reveal">
+      <div>
+        <span class="eyebrow" style="background:rgba(147,197,253,.15); color:#93c5fd;">Get a Quote</span>
+        <h2>Have a project in this area?</h2>
+        <p>Talk to one of our cell engineers — we will respond within 1 business day.</p>
+      </div>
+      <div data-rfq-mount></div>
+    </div>
+  </div>
+</section>
+
+<div data-mount="footer"></div>
+<script src="/assets/js/site.js"></script>
+<script>
+(async function () {
+  const { fetchJson, escapeHtml, bindRfqForm } = window.SiteAPI;
+  const slug = location.pathname.replace(/^\/blog\//, '').replace(/\/$/, '');
+  if (!slug) { location.href = '/blog'; return; }
+  let data;
+  try { data = await fetchJson('/api/articles/' + encodeURIComponent(slug)); }
+  catch (_) { location.href = '/404.html'; return; }
+  const a = data.article;
+
+  const title = (a.meta_title || a.title) + ' | Acme Battery';
+  document.title = title;
+  document.querySelector('[data-meta="description"]').setAttribute('content', a.meta_description || a.excerpt);
+  document.querySelector('[data-canonical]').setAttribute('href', '/blog/' + a.slug);
+
+  const ld = {
+    "@context":"https://schema.org",
+    "@type":"Article",
+    "headline": a.title,
+    "description": a.excerpt,
+    "image": a.cover_url || '/assets/img/og-default.svg',
+    "author": {"@type":"Organization","name":"Acme Battery"},
+    "publisher": {"@type":"Organization","name":"Acme Battery"},
+    "datePublished": a.published_at,
+    "dateModified": a.updated_at,
+    "mainEntityOfPage": "/blog/" + a.slug
+  };
+  document.querySelector('[data-jsonld]').textContent = JSON.stringify(ld);
+
+  document.querySelector('[data-art-title-crumb]').textContent = a.title;
+  document.querySelector('[data-art-title]').textContent = a.title;
+  if (a.pillar_short_name) {
+    const pill = document.querySelector('[data-art-pillar]');
+    pill.style.display = '';
+    pill.textContent = a.pillar_short_name;
+  }
+  const date = a.published_at ? new Date(a.published_at).toLocaleDateString('en-GB', { year:'numeric', month:'long', day:'2-digit' }) : '';
+  document.querySelector('[data-art-meta]').textContent =
+    [a.author, date, a.reading_minutes + ' min read'].filter(Boolean).join(' · ');
+
+  if (a.pillar_slug) {
+    const c = document.querySelector('[data-art-callout]');
+    c.style.display = '';
+    document.querySelector('[data-art-callout-name]').textContent = a.pillar_name;
+    document.querySelector('[data-art-callout-link]').setAttribute('href', '/products/' + a.pillar_slug);
+  }
+  document.querySelector('[data-art-content]').innerHTML = a.content || '';
+
+  document.querySelector('[data-related]').innerHTML = (data.related || []).map((r) => {
+    const d = r.published_at ? new Date(r.published_at).toLocaleDateString('en-GB', { year:'numeric', month:'short', day:'2-digit' }) : '';
+    return `<a class="article-card" href="/blog/${escapeHtml(r.slug)}">
+      <div class="article-card__media"><img src="${escapeHtml(r.cover_url || '/assets/img/hero-illustration.svg')}" alt=""/></div>
+      <div class="article-card__body">
+        <h3>${escapeHtml(r.title)}</h3>
+        <p>${escapeHtml((r.excerpt || '').slice(0, 130))}</p>
+        <div class="article-card__meta">${d ? d + ' · ' : ''}${r.reading_minutes} min read</div>
+      </div>
+    </a>`;
+  }).join('') || '<p class="muted text-center" style="grid-column:1/-1;">More coming soon.</p>';
+
+  // RFQ form is auto-injected by site.js
+})();
+</script>
+</body>
+</html>

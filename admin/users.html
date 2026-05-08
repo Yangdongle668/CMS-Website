@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>Users | Acme CMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+</head>
+<body>
+<div data-admin-shell></div>
+<script src="/admin/assets/js/admin.js"></script>
+<script>
+(async function () {
+  const { api, escapeHtml, formatDate, toast, bootShell } = window.AdminAPI;
+  const shell = await bootShell({ title: 'Users', crumbs: 'Settings / Users' });
+  if (!shell) return;
+  shell.actions.innerHTML = `<button class="btn btn--sm" id="new">+ New user</button>`;
+
+  async function refresh() {
+    const { items } = await api('/api/users');
+    shell.content.innerHTML = `
+      <div class="panel">
+        <table class="table">
+          <thead><tr><th>Email</th><th>Name</th><th>Role</th><th>Active</th><th>Last login</th><th></th></tr></thead>
+          <tbody>
+            ${items.map((u) => `
+              <tr>
+                <td><strong>${escapeHtml(u.email)}</strong></td>
+                <td>${escapeHtml(u.name || '-')}</td>
+                <td><span class="pill pill--read">${escapeHtml(u.role)}</span></td>
+                <td>${u.is_active ? '<span class="pill pill--published">Active</span>' : '<span class="pill pill--archived">Disabled</span>'}</td>
+                <td>${u.last_login_at ? formatDate(u.last_login_at) : '<span style="color:var(--a-mute2);">Never</span>'}</td>
+                <td>
+                  <button class="btn btn--ghost btn--sm" data-edit='${escapeHtml(JSON.stringify(u))}'>Edit</button>
+                  <button class="btn btn--ghost btn--sm" data-toggle="${u.id}" data-active="${u.is_active}">${u.is_active ? 'Disable' : 'Enable'}</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div id="edit-panel"></div>
+    `;
+    document.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => {
+      try { renderEditor(JSON.parse(b.getAttribute('data-edit'))); } catch (_) {}
+    }));
+    document.querySelectorAll('[data-toggle]').forEach((b) => b.addEventListener('click', async () => {
+      await api('/api/users/' + b.dataset.toggle, { method: 'PATCH', body: JSON.stringify({ is_active: !(b.dataset.active === 'true') }) });
+      toast('User updated', 'success');
+      refresh();
+    }));
+  }
+
+  function renderEditor(u) {
+    u = u || { role: 'admin' };
+    const isNew = !u.id;
+    const panel = document.getElementById('edit-panel');
+    panel.innerHTML = `
+      <div class="panel">
+        <div class="panel__head"><h2>${isNew ? 'New user' : 'Edit user'}</h2></div>
+        <div class="field-row">
+          <div class="field"><label>Email</label><input id="f-email" value="${escapeHtml(u.email || '')}" ${isNew ? '' : 'readonly'}/></div>
+          <div class="field"><label>Name</label><input id="f-name" value="${escapeHtml(u.name || '')}"/></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Role</label><select id="f-role"><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option><option value="editor" ${u.role === 'editor' ? 'selected' : ''}>Editor</option></select></div>
+          <div class="field"><label>${isNew ? 'Password' : 'New password (leave blank to keep)'}</label><input id="f-pw" type="password" autocomplete="new-password"/></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn" id="save">Save</button>
+          <button class="btn btn--ghost" id="cancel">Cancel</button>
+        </div>
+      </div>
+    `;
+    panel.querySelector('#cancel').addEventListener('click', () => { panel.innerHTML = ''; });
+    panel.querySelector('#save').addEventListener('click', async () => {
+      const payload = {
+        email: panel.querySelector('#f-email').value,
+        name: panel.querySelector('#f-name').value,
+        role: panel.querySelector('#f-role').value,
+      };
+      const pw = panel.querySelector('#f-pw').value;
+      if (pw) payload.password = pw;
+      try {
+        if (isNew) {
+          if (!pw) return toast('Password is required for new users', 'error');
+          await api('/api/users', { method: 'POST', body: JSON.stringify(payload) });
+        } else {
+          await api('/api/users/' + u.id, { method: 'PATCH', body: JSON.stringify(payload) });
+        }
+        toast('Saved', 'success');
+        panel.innerHTML = '';
+        refresh();
+      } catch (err) { toast('Save failed: ' + err.message, 'error'); }
+    });
+  }
+
+  document.addEventListener('click', (ev) => {
+    if (ev.target.id === 'new') renderEditor();
+  });
+  refresh();
+})();
+</script>
+</body>
+</html>
