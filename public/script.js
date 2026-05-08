@@ -165,19 +165,61 @@ window.handleContactSubmit = handleContactSubmit;
   });
 })();
 
-// ===== Fade-in on scroll =====
+// ===== Reveal-on-scroll (refined slide-up) =====
 const fadeTargets = document.querySelectorAll(
-  '.product-card, .app-card, .step-card, .news-card, .about-tab, .about-stats > div, .contact-card, .faq-list details, .feat-item'
+  '.product-card, .app-card, .step-card, .news-card, .about-tab, .about-stats > div, .contact-card, .faq-list details, .feat-item, [data-reveal]'
 );
-fadeTargets.forEach((el) => el.classList.add('fade-in'));
+fadeTargets.forEach((el) => el.classList.add('reveal'));
 
 const io = new IntersectionObserver((entries) => {
   entries.forEach((entry) => {
     if (entry.isIntersecting) {
+      entry.target.classList.add('is-visible');
+      // also keep the legacy .visible class for fade-in fallback
       entry.target.classList.add('visible');
       io.unobserve(entry.target);
     }
   });
-}, { threshold: 0.15 });
+}, { threshold: 0.12 });
 
 fadeTargets.forEach((el) => io.observe(el));
+
+// ===== Hero parallax =====
+const heroEl = document.querySelector('.hero');
+if (heroEl && !window.matchMedia('(max-width: 900px)').matches) {
+  let ticking = false;
+  const onScroll = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      const y = Math.min(window.scrollY, window.innerHeight);
+      heroEl.style.backgroundPosition = `center calc(50% + ${y * 0.18}px)`;
+      ticking = false;
+    });
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+}
+
+// ===== Smooth section scroll for in-page anchors =====
+document.querySelectorAll('a[href^="#"]').forEach((a) => {
+  a.addEventListener('click', (ev) => {
+    const id = a.getAttribute('href').slice(1);
+    if (!id) return;
+    const target = document.getElementById(id);
+    if (!target) return;
+    ev.preventDefault();
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+
+// ===== Header hide-on-scroll-down (mobile-friendly nicety) =====
+let lastScroll = 0;
+const headerEl = document.getElementById('site-header');
+if (headerEl) {
+  window.addEventListener('scroll', () => {
+    const y = window.scrollY;
+    if (y > lastScroll + 8 && y > 200) headerEl.classList.add('is-hidden');
+    else if (y < lastScroll - 4) headerEl.classList.remove('is-hidden');
+    lastScroll = y;
+  }, { passive: true });
+}

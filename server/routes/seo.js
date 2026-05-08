@@ -23,21 +23,29 @@ router.get('/robots.txt', (_req, res) => {
 
 router.get('/sitemap.xml', async (_req, res) => {
   const base = publicUrl();
+  // Always-on baseline routes — keep these even if pages table is empty.
   const staticPaths = [
-    { loc: '/', priority: 1.0, changefreq: 'weekly' },
-    { loc: '/applications', priority: 0.8, changefreq: 'monthly' },
-    { loc: '/custom-solutions', priority: 0.8, changefreq: 'monthly' },
-    { loc: '/quality', priority: 0.7, changefreq: 'monthly' },
-    { loc: '/about', priority: 0.6, changefreq: 'monthly' },
-    { loc: '/factory', priority: 0.6, changefreq: 'monthly' },
-    { loc: '/contact', priority: 0.6, changefreq: 'monthly' },
-    { loc: '/blog', priority: 0.7, changefreq: 'weekly' },
-    { loc: '/quote', priority: 0.7, changefreq: 'monthly' },
-    { loc: '/privacy', priority: 0.3, changefreq: 'yearly' },
-    { loc: '/cookies', priority: 0.3, changefreq: 'yearly' },
-    { loc: '/terms', priority: 0.3, changefreq: 'yearly' },
-    { loc: '/gdpr', priority: 0.3, changefreq: 'yearly' },
+    { loc: '/',                priority: 1.0, changefreq: 'weekly' },
+    { loc: '/blog/',           priority: 0.7, changefreq: 'weekly' },
+    { loc: '/contact.html',    priority: 0.7, changefreq: 'monthly' },
   ];
+
+  // Editable pages from /api/pages
+  const pageRows = await many(
+    `SELECT slug, updated_at FROM pages WHERE status = 'published'`
+  );
+  function pageSlugToUrl(slug) {
+    if (slug === 'home') return '/';
+    if (['contact', 'faq', 'privacy', 'terms', 'legal', 'gdpr'].includes(slug)) return '/' + slug + '.html';
+    if (slug.endsWith('/index')) return '/' + slug.replace(/\/index$/, '/');
+    return '/' + slug + '.html';
+  }
+  const pagePaths = pageRows.map((p) => ({
+    loc: pageSlugToUrl(p.slug),
+    priority: p.slug === 'home' ? 1.0 : (p.slug.includes('/index') ? 0.7 : 0.6),
+    changefreq: 'monthly',
+    lastmod: p.updated_at,
+  }));
   const pillars = await many(
     `SELECT slug, updated_at FROM pillar_pages WHERE status='published' ORDER BY sort_order`
   );
@@ -50,11 +58,14 @@ router.get('/sitemap.xml', async (_req, res) => {
   const articles = await many(
     `SELECT slug, COALESCE(published_at, updated_at) AS lastmod FROM articles WHERE status='published'`
   );
+  // Deduplicate: pages table may already include /, /contact.html etc.
+  const seen = new Set(pagePaths.map((p) => p.loc));
   const items = [
-    ...staticPaths.map((p) => ({ ...p, lastmod: null })),
+    ...pagePaths,
+    ...staticPaths.filter((p) => !seen.has(p.loc)).map((p) => ({ ...p, lastmod: null })),
     ...pillars.map((p) => ({ loc: `/products/${p.slug}`, priority: 1.0, changefreq: 'weekly', lastmod: p.updated_at })),
     ...products.map((p) => ({ loc: `/products/${p.slug}`, priority: 0.7, changefreq: 'monthly', lastmod: p.updated_at })),
-    ...apps.map((p) => ({ loc: `/applications/${p.slug}`, priority: 0.7, changefreq: 'monthly', lastmod: p.updated_at })),
+    ...apps.map((p) => ({ loc: `/applications/${p.slug}.html`, priority: 0.7, changefreq: 'monthly', lastmod: p.updated_at })),
     ...articles.map((a) => ({ loc: `/blog/${a.slug}`, priority: 0.7, changefreq: 'monthly', lastmod: a.lastmod })),
   ];
   const xml =

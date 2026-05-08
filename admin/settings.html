@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="robots" content="noindex"/>
-<title>Site Settings | Acme CMS</title>
+<title>站点设置 | 后台管理</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/admin/assets/css/admin.css"/>
 </head>
@@ -14,7 +14,7 @@
 <script>
 (async function () {
   const { api, escapeHtml, toast, bootShell } = window.AdminAPI;
-  const shell = await bootShell({ title: 'Site Settings', crumbs: 'Settings' });
+  const shell = await bootShell({ title: '站点设置', crumbs: '设置' });
   if (!shell) return;
 
   const { settings } = await api('/api/settings');
@@ -22,53 +22,53 @@
 
   shell.content.innerHTML = `
     <div class="tabs">
-      <button class="tabs__btn is-active" data-tab="site">Site</button>
+      <button class="tabs__btn is-active" data-tab="site">站点</button>
       <button class="tabs__btn" data-tab="seo">SEO</button>
-      <button class="tabs__btn" data-tab="navigation">Navigation</button>
-      <button class="tabs__btn" data-tab="social">Social</button>
+      <button class="tabs__btn" data-tab="navigation">导航</button>
+      <button class="tabs__btn" data-tab="social">社交</button>
       <button class="tabs__btn" data-tab="gdpr">GDPR</button>
-      <button class="tabs__btn" data-tab="mail">Mail</button>
+      <button class="tabs__btn" data-tab="mail">邮件</button>
     </div>
 
     <div data-pane="site">
       <div class="panel">
-        <h2 style="margin-top:0;">Site information</h2>
+        <h2 style="margin-top:0;">站点信息</h2>
         <div class="field-row">
-          <div class="field"><label>Company name</label><input data-key="site.name" value="${escapeHtml(s('site').name || '')}"/></div>
-          <div class="field"><label>Tagline</label><input data-key="site.tagline" value="${escapeHtml(s('site').tagline || '')}"/></div>
+          <div class="field"><label>公司名称</label><input data-key="site.name" value="${escapeHtml(s('site').name || '')}"/></div>
+          <div class="field"><label>标语</label><input data-key="site.tagline" value="${escapeHtml(s('site').tagline || '')}"/></div>
         </div>
         <div class="field-row">
-          <div class="field"><label>Sales email</label><input data-key="site.email" value="${escapeHtml(s('site').email || '')}"/></div>
-          <div class="field"><label>Phone</label><input data-key="site.phone" value="${escapeHtml(s('site').phone || '')}"/></div>
+          <div class="field"><label>销售邮箱</label><input data-key="site.email" value="${escapeHtml(s('site').email || '')}"/></div>
+          <div class="field"><label>电话</label><input data-key="site.phone" value="${escapeHtml(s('site').phone || '')}"/></div>
         </div>
-        <div class="field"><label>Address</label><input data-key="site.address" value="${escapeHtml(s('site').address || '')}"/></div>
+        <div class="field"><label>地址</label><input data-key="site.address" value="${escapeHtml(s('site').address || '')}"/></div>
         <div class="field-row">
-          <div class="field"><label>Founded year</label><input type="number" data-key="site.founded_year" value="${s('site').founded_year || ''}"/></div>
-          <div class="field"><label>Factory size (m²)</label><input type="number" data-key="site.factory_size_sqm" value="${s('site').factory_size_sqm || ''}"/></div>
+          <div class="field"><label>成立年份</label><input type="number" data-key="site.founded_year" value="${s('site').founded_year || ''}"/></div>
+          <div class="field"><label>工厂面积（m²）</label><input type="number" data-key="site.factory_size_sqm" value="${s('site').factory_size_sqm || ''}"/></div>
         </div>
       </div>
     </div>
 
     <div data-pane="seo" style="display:none;">
       <div class="panel">
-        <h2 style="margin-top:0;">SEO defaults</h2>
-        <div class="field"><label>Default meta description</label><textarea data-key="seo.default_meta_description" rows="3">${escapeHtml(s('seo').default_meta_description || '')}</textarea></div>
-        <div class="field"><label>Default OG image URL</label><input data-key="seo.default_meta_image" value="${escapeHtml(s('seo').default_meta_image || '')}"/></div>
+        <h2 style="margin-top:0;">SEO 默认值</h2>
+        <div class="field"><label>默认 Meta 描述</label><textarea data-key="seo.default_meta_description" rows="3">${escapeHtml(s('seo').default_meta_description || '')}</textarea></div>
+        <div class="field"><label>默认 OG 图 URL</label><input data-key="seo.default_meta_image" value="${escapeHtml(s('seo').default_meta_image || '')}"/></div>
       </div>
     </div>
 
     <div data-pane="navigation" style="display:none;">
       <div class="panel">
-        <h2 style="margin-top:0;">Navigation</h2>
-        <p style="font-size:13px; color:var(--a-mute2); margin-top:0;">Edit as JSON. Header items support nested children.</p>
-        <div class="field"><label>Header (JSON)</label><textarea class="mono" data-key="navigation.header" rows="14">${escapeHtml(JSON.stringify(s('navigation').header || [], null, 2))}</textarea></div>
-        <div class="field"><label>Footer (JSON)</label><textarea class="mono" data-key="navigation.footer" rows="6">${escapeHtml(JSON.stringify(s('navigation').footer || [], null, 2))}</textarea></div>
+        <h2 style="margin-top:0;">导航</h2>
+        <p style="font-size:13px; color:var(--a-mute2); margin-top:0;">编辑 as JSON. Header items support nested children.</p>
+        <div class="field"><label>顶部导航 (JSON)</label><textarea class="mono" data-key="navigation.header" rows="14">${escapeHtml(JSON.stringify(s('navigation').header || [], null, 2))}</textarea></div>
+        <div class="field"><label>页脚导航 (JSON)</label><textarea class="mono" data-key="navigation.footer" rows="6">${escapeHtml(JSON.stringify(s('navigation').footer || [], null, 2))}</textarea></div>
       </div>
     </div>
 
     <div data-pane="social" style="display:none;">
       <div class="panel">
-        <h2 style="margin-top:0;">Social links</h2>
+        <h2 style="margin-top:0;">社交链接</h2>
         <div class="field"><label>LinkedIn</label><input data-key="social.linkedin" value="${escapeHtml(s('social').linkedin || '')}"/></div>
         <div class="field"><label>YouTube</label><input data-key="social.youtube" value="${escapeHtml(s('social').youtube || '')}"/></div>
         <div class="field"><label>X / Twitter</label><input data-key="social.x" value="${escapeHtml(s('social').x || '')}"/></div>
@@ -77,32 +77,32 @@
 
     <div data-pane="gdpr" style="display:none;">
       <div class="panel">
-        <h2 style="margin-top:0;">GDPR Configuration</h2>
+        <h2 style="margin-top:0;">GDPR 配置</h2>
         <div class="field-row">
-          <div class="field"><label>Data controller name</label><input data-key="gdpr.controller" value="${escapeHtml(s('gdpr').controller || '')}"/></div>
-          <div class="field"><label>Privacy contact email</label><input data-key="gdpr.controller_email" value="${escapeHtml(s('gdpr').controller_email || '')}"/></div>
+          <div class="field"><label>数据控制者名称</label><input data-key="gdpr.controller" value="${escapeHtml(s('gdpr').controller || '')}"/></div>
+          <div class="field"><label>隐私联系邮箱</label><input data-key="gdpr.controller_email" value="${escapeHtml(s('gdpr').controller_email || '')}"/></div>
         </div>
         <div class="field-row">
-          <div class="field"><label>Inquiry retention (days)</label><input type="number" data-key="gdpr.retention_days" value="${s('gdpr').retention_days || 365}"/></div>
-          <div class="field"><label>Soft-delete period (days)</label><input type="number" data-key="gdpr.soft_delete_days" value="${s('gdpr').soft_delete_days || 30}"/></div>
+          <div class="field"><label>询盘留存天数</label><input type="number" data-key="gdpr.retention_days" value="${s('gdpr').retention_days || 365}"/></div>
+          <div class="field"><label>软删除保留天数</label><input type="number" data-key="gdpr.soft_delete_days" value="${s('gdpr').soft_delete_days || 30}"/></div>
         </div>
-        <div class="field"><label>Privacy policy version</label><input data-key="gdpr.policy_version" value="${escapeHtml(s('gdpr').policy_version || '1.0')}"/></div>
-        <div class="field"><label>Cookie categories (JSON)</label><textarea class="mono" data-key="gdpr.cookie_categories" rows="10">${escapeHtml(JSON.stringify(s('gdpr').cookie_categories || {}, null, 2))}</textarea></div>
+        <div class="field"><label>隐私政策版本</label><input data-key="gdpr.policy_version" value="${escapeHtml(s('gdpr').policy_version || '1.0')}"/></div>
+        <div class="field"><label>Cookie 分类 (JSON)</label><textarea class="mono" data-key="gdpr.cookie_categories" rows="10">${escapeHtml(JSON.stringify(s('gdpr').cookie_categories || {}, null, 2))}</textarea></div>
       </div>
     </div>
 
     <div data-pane="mail" style="display:none;">
       <div class="panel">
-        <h2 style="margin-top:0;">Mail</h2>
-        <p style="font-size:13px; color:var(--a-mute2); margin-top:0;">SMTP host/user/password are configured via <code>.env</code>. Use the fields below for behaviour and recipient settings.</p>
-        <div class="field"><label>Reply-to address</label><input data-key="mail.reply_to" value="${escapeHtml(s('mail').reply_to || '')}"/></div>
-        <div class="field"><label>Subject prefix</label><input data-key="mail.subject_prefix" value="${escapeHtml(s('mail').subject_prefix || '[Inquiry]')}"/></div>
-        <div class="field field--check"><input type="checkbox" id="auto-reply" ${s('mail').auto_reply_enabled !== false ? 'checked' : ''}/><label for="auto-reply">Send auto-reply confirmation to inquiry submitter</label></div>
+        <h2 style="margin-top:0;">邮件</h2>
+        <p style="font-size:13px; color:var(--a-mute2); margin-top:0;">SMTP 主机/用户/密码通过 <code>.env</code> 配置。下面的字段用于行为和收件人。</p>
+        <div class="field"><label>回复地址</label><input data-key="mail.reply_to" value="${escapeHtml(s('mail').reply_to || '')}"/></div>
+        <div class="field"><label>邮件主题前缀</label><input data-key="mail.subject_prefix" value="${escapeHtml(s('mail').subject_prefix || '[Inquiry]')}"/></div>
+        <div class="field field--check"><input type="checkbox" id="auto-reply" ${s('mail').auto_reply_enabled !== false ? 'checked' : ''}/><label for="auto-reply">给询盘提交者发送自动回复</label></div>
       </div>
     </div>
 
     <div class="form-actions" style="position:sticky; bottom:0; background:#fff; border-top:1px solid var(--a-line);">
-      <button class="btn" id="save-all">Save all settings</button>
+      <button class="btn" id="save-all">保存全部设置</button>
     </div>
   `;
 
@@ -118,9 +118,9 @@
       const [group, field] = el.dataset.key.split('.');
       if (!groups[group]) groups[group] = JSON.parse(JSON.stringify(s(group)));
       let val = el.value;
-      if (el.tagName === 'TEXTAREA' && el.classList.contains('mono')) {
+      if (el.tag名称 === 'TEXTAREA' && el.classList.contains('mono')) {
         try { val = JSON.parse(val); }
-        catch (_) { return toast('Invalid JSON in ' + el.dataset.key, 'error'); }
+        catch (_) { return toast('JSON 格式错误：' + el.dataset.key, 'error'); }
       }
       if (el.type === 'number') val = parseInt(val, 10) || 0;
       groups[group][field] = val;
@@ -133,8 +133,8 @@
       for (const [k, v] of Object.entries(groups)) {
         await api('/api/settings/' + k, { method: 'PUT', body: JSON.stringify({ value: v }) });
       }
-      toast('Settings saved', 'success');
-    } catch (err) { toast('Save failed: ' + err.message, 'error'); }
+      toast('设置已保存', 'success');
+    } catch (err) { toast('保存 failed: ' + err.message, 'error'); }
   });
 })();
 </script>

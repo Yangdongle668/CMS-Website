@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="robots" content="noindex"/>
-<title>Applications | Acme CMS</title>
+<title>应用行业 | 后台管理</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/admin/assets/css/admin.css"/>
 </head>
@@ -14,9 +14,9 @@
 <script>
 (async function () {
   const { api, escapeHtml, toast, bootShell } = window.AdminAPI;
-  const shell = await bootShell({ title: 'Applications', crumbs: 'Content / Applications' });
+  const shell = await bootShell({ title: '应用行业', crumbs: '内容 / 应用行业' });
   if (!shell) return;
-  shell.actions.innerHTML = `<button class="btn btn--sm" id="new">+ New application</button>`;
+  shell.actions.innerHTML = `<button class="btn btn--sm" id="new">+ 新建应用</button>`;
 
   async function refresh() {
     const { items } = await api('/api/applications');
@@ -24,7 +24,7 @@
     shell.content.innerHTML = `
       <div class="panel" id="list-panel">
         <table class="table">
-          <thead><tr><th>Name</th><th>Slug</th><th>Sort</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>名称</th><th>Slug</th><th>排序</th><th>状态</th><th></th></tr></thead>
           <tbody>
             ${items.length ? items.map((a) => `
               <tr>
@@ -32,9 +32,9 @@
                 <td><span class="mono">${escapeHtml(a.slug)}</span></td>
                 <td>${a.sort_order}</td>
                 <td><span class="pill pill--${a.status}">${a.status}</span></td>
-                <td><a class="btn btn--ghost btn--sm" href="?id=${a.id}">Edit</a></td>
+                <td><a class="btn btn--ghost btn--sm" href="?id=${a.id}">编辑</a></td>
               </tr>
-            `).join('') : '<tr><td colspan="5"><div class="empty">No applications yet.</div></td></tr>'}
+            `).join('') : '<tr><td colspan="5"><div class="empty">还没有应用行业。</div></td></tr>'}
           </tbody>
         </table>
       </div>
@@ -54,32 +54,32 @@
     panel.innerHTML = `
       <div class="panel">
         <div class="panel__head">
-          <h2>${isNew ? 'New application' : 'Edit: ' + escapeHtml(a.name)}</h2>
+          <h2>${isNew ? '新建应用' : '编辑: ' + escapeHtml(a.name)}</h2>
           <div style="display:flex; gap:8px;">
-            ${!isNew ? `<a target="_blank" class="btn btn--ghost btn--sm" href="/applications/${escapeHtml(a.slug)}">Preview ↗</a>` : ''}
-            <a href="/admin/applications.html" class="btn btn--ghost btn--sm">Back</a>
+            ${!isNew ? `<a target="_blank" class="btn btn--ghost btn--sm" href="/applications/${escapeHtml(a.slug)}">预览 ↗</a>` : ''}
+            <a href="/admin/applications.html" class="btn btn--ghost btn--sm">返回</a>
           </div>
         </div>
         <div class="field-row">
-          <div class="field"><label>Name</label><input id="f-name" value="${escapeHtml(a.name || '')}"/></div>
+          <div class="field"><label>名称</label><input id="f-name" value="${escapeHtml(a.name || '')}"/></div>
           <div class="field"><label>Slug</label><input id="f-slug" value="${escapeHtml(a.slug || '')}" ${isNew ? '' : 'readonly'}/></div>
         </div>
-        <div class="field"><label>Icon <span class="hint">(short letter or emoji)</span></label><input id="f-icon" value="${escapeHtml(a.icon || '')}"/></div>
-        <div class="field"><label>Cover image URL</label><input id="f-cover" value="${escapeHtml(a.cover_url || '')}"/></div>
-        <div class="field"><label>Summary <span class="hint">(1-2 sentences for cards)</span></label><textarea id="f-summary" rows="3">${escapeHtml(a.summary || '')}</textarea></div>
-        <div class="field"><label>Body <span class="hint">(HTML allowed)</span></label><textarea id="f-body" rows="10">${escapeHtml(a.body || '')}</textarea></div>
+        <div class="field"><label>图标 <span class="hint">（一个字符或 emoji）</span></label><input id="f-icon" value="${escapeHtml(a.icon || '')}"/></div>
+        <div class="field"><label>封面图 URL</label><input id="f-cover" value="${escapeHtml(a.cover_url || '')}"/></div>
+        <div class="field"><label>摘要 <span class="hint">（1-2 句，列表卡片用）</span></label><textarea id="f-summary" rows="3">${escapeHtml(a.summary || '')}</textarea></div>
+        <div class="field"><label>正文 <span class="hint">（支持 HTML）</span></label><textarea id="f-body" rows="10">${escapeHtml(a.body || '')}</textarea></div>
         <div class="field-row">
-          <div class="field"><label>Meta title</label><input id="f-mt" value="${escapeHtml(a.meta_title || '')}"/></div>
-          <div class="field"><label>Meta description</label><textarea id="f-md" rows="2">${escapeHtml(a.meta_description || '')}</textarea></div>
+          <div class="field"><label>Meta 标题</label><input id="f-mt" value="${escapeHtml(a.meta_title || '')}"/></div>
+          <div class="field"><label>Meta 描述</label><textarea id="f-md" rows="2">${escapeHtml(a.meta_description || '')}</textarea></div>
         </div>
         <div class="field-row">
-          <div class="field"><label>Sort order</label><input id="f-sort" type="number" value="${a.sort_order || 0}"/></div>
-          <div class="field"><label>Status</label><select id="f-status"><option value="published" ${a.status === 'published' ? 'selected' : ''}>Published</option><option value="draft" ${a.status === 'draft' ? 'selected' : ''}>Draft</option></select></div>
+          <div class="field"><label>排序</label><input id="f-sort" type="number" value="${a.sort_order || 0}"/></div>
+          <div class="field"><label>状态</label><select id="f-status"><option value="published" ${a.status === 'published' ? 'selected' : ''}>已发布</option><option value="draft" ${a.status === 'draft' ? 'selected' : ''}>草稿</option></select></div>
         </div>
         <div class="form-actions">
-          <button class="btn" id="save">Save</button>
-          ${!isNew ? '<button class="btn btn--danger" id="delete">Delete</button>' : ''}
-          <a href="/admin/applications.html" class="btn btn--ghost">Cancel</a>
+          <button class="btn" id="save">保存</button>
+          ${!isNew ? '<button class="btn btn--danger" id="delete">删除</button>' : ''}
+          <a href="/admin/applications.html" class="btn btn--ghost">取消</a>
         </div>
       </div>
     `;
@@ -100,15 +100,15 @@
       try {
         if (isNew) await api('/api/applications', { method: 'POST', body: JSON.stringify(payload) });
         else await api('/api/applications/' + a.id, { method: 'PUT', body: JSON.stringify(payload) });
-        toast('Saved', 'success');
+        toast('保存d', 'success');
         setTimeout(() => location.href = '/admin/applications.html', 500);
-      } catch (err) { toast('Save failed: ' + err.message, 'error'); }
+      } catch (err) { toast('保存 failed: ' + err.message, 'error'); }
     });
     if (!isNew) {
       panel.querySelector('#delete').addEventListener('click', async () => {
-        if (!confirm('Delete this application?')) return;
+        if (!confirm('删除 this application?')) return;
         await api('/api/applications/' + a.id, { method: 'DELETE' });
-        toast('Deleted', 'success');
+        toast('删除d', 'success');
         setTimeout(() => location.href = '/admin/applications.html', 500);
       });
     }

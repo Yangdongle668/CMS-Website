@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body data-nav="home">
+<body data-nav="home" data-page="home">
 
 <div id="header-mount"></div>
 
@@ -22,8 +22,8 @@
     </div>
     <div class="hero-bottom">
       <div class="cta-group">
-        <a href="/contact.html" class="btn btn-primary">Request a Quote</a>
-        <a href="/products/custom.html" class="btn btn-secondary">Custom Capabilities</a>
+        <a href="/contact.html" class="btn btn-primary" data-section="hero_cta_primary">Request a Quote</a>
+        <a href="/products/custom.html" class="btn btn-secondary" data-section="hero_cta_secondary">Custom Capabilities</a>
       </div>
     </div>
   </section>
@@ -31,11 +31,11 @@
   <!-- Product categories -->
   <section class="section section-light">
     <div class="section-inner">
-      <span class="eyebrow">Products</span>
-      <h2>A battery for every form factor.</h2>
-      <p class="lead">From off-the-shelf cells to fully custom packs — capacities 15 mAh to 20,000 mAh in pouch, cylindrical, coin and prismatic formats.</p>
+      <span class="eyebrow" data-section="products_eyebrow">Products</span>
+      <h2 data-section="products_title">A battery for every form factor.</h2>
+      <p class="lead" data-section="products_lead">From off-the-shelf cells to fully custom packs — capacities 15 mAh to 20,000 mAh in pouch, cylindrical, coin and prismatic formats.</p>
 
-      <div class="product-grid">
+      <div class="product-grid" data-product-grid>
         <a href="/products/standard.html" class="product-card">
           <div class="product-tag">Standard</div>
           <h3>Standard Batteries</h3>
@@ -55,8 +55,8 @@
   <!-- Applications grid -->
   <section class="section section-grey">
     <div class="section-inner">
-      <span class="eyebrow">Applications</span>
-      <h2>Powering the next generation of devices.</h2>
+      <span class="eyebrow" data-section="apps_eyebrow">Applications</span>
+      <h2 data-section="apps_title">Powering the next generation of devices.</h2>
       <div class="app-grid">
         <a href="/applications/ar-vr.html" class="app-card" style="background-image:url('https://images.unsplash.com/photo-1592478411213-6153e4ebc07d?w=1200&q=80');">
           <div class="app-overlay"><h3>AR / VR Glasses</h3><p>Ultra-thin cells that fit inside slim temples and headsets.</p></div>
@@ -77,9 +77,9 @@
   <!-- Why us -->
   <section class="section section-light">
     <div class="section-inner">
-      <span class="eyebrow">Why Zufek</span>
-      <h2>A battery partner, not just a supplier.</h2>
-      <div class="about-stats">
+      <span class="eyebrow" data-section="why_eyebrow">Why us</span>
+      <h2 data-section="why_title">A battery partner, not just a supplier.</h2>
+      <div class="about-stats" data-stats-grid>
         <div><strong>8<span>yrs</span></strong><em>since 2018</em></div>
         <div><strong>100<span>+</span></strong><em>team members</em></div>
         <div><strong>3<span></span></strong><em>tier-1 OEM programs</em></div>
@@ -91,9 +91,9 @@
   <!-- CTA band -->
   <section class="section section-dark cta-band">
     <div class="section-inner">
-      <h2>Have a project in mind?</h2>
-      <p class="lead">Share your device specs — we'll respond with a feasibility assessment within one business day.</p>
-      <a href="/contact.html" class="btn btn-accent">Start a Conversation</a>
+      <h2 data-section="cta_title">Have a project in mind?</h2>
+      <p class="lead" data-section="cta_lead">Share your device specs — we'll respond with a feasibility assessment within one business day.</p>
+      <a href="/contact.html" class="btn btn-accent" data-section="cta_button">Start a Conversation</a>
     </div>
   </section>
 
@@ -104,18 +104,21 @@
 
 <script src="/partials.js?v=5"></script>
 <script src="/script.js?v=5"></script>
+<script src="/cms-page.js?v=5"></script>
 <script>
-// Wire dynamic Applications grid (and articles strip if added) from CMS APIs.
+const escape = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// Wire applications grid from /api/applications (overrides static cards)
 document.addEventListener('cms:ready', async () => {
-  const escape = window.CMS.escapeHtml;
-  // Replace applications with live data if available
   const grid = document.querySelector('.app-grid');
   if (grid) {
     try {
       const r = await fetch('/api/applications');
       const j = await r.json();
       if (j.items && j.items.length) {
-        grid.innerHTML = j.items.slice(0, 4).map((a) => {
+        const withImg = j.items.filter((a) => a.cover_url);
+        const list = (withImg.length >= 4 ? withImg : j.items).slice(0, 4);
+        grid.innerHTML = list.map((a) => {
           const bg = a.cover_url || '';
           return `<a href="/applications/${escape(a.slug)}" class="app-card"${bg ? ` style="background-image:url('${escape(bg)}');"` : ''}>
             <div class="app-overlay"><h3>${escape(a.name)}</h3><p>${escape((a.summary || '').slice(0, 130))}</p></div>
@@ -123,6 +126,55 @@ document.addEventListener('cms:ready', async () => {
         }).join('');
       }
     } catch (_) { /* keep static fallback */ }
+  }
+});
+
+// Apply CMS sections JSON to homepage product cards + stats grid
+document.addEventListener('page:sections', (ev) => {
+  const sections = ev.detail || {};
+
+  // Hero CTAs (text + link)
+  ['hero_cta_primary','hero_cta_secondary'].forEach((key) => {
+    const a = document.querySelector(`a[data-section="${key}"]`);
+    const v = sections[key];
+    if (a && v && typeof v === 'object') {
+      if (v.text) a.textContent = v.text;
+      if (v.link) a.setAttribute('href', v.link);
+    }
+  });
+
+  // Product cards (the two intro cards on the homepage)
+  if (Array.isArray(sections.products_cards) && sections.products_cards.length) {
+    const grid = document.querySelector('[data-product-grid]');
+    if (grid) {
+      grid.innerHTML = sections.products_cards.map((c) => `
+        <a href="${escape(c.link || '#')}" class="product-card${c.featured ? ' featured' : ''}">
+          <div class="product-tag${c.featured ? ' tag-star' : ''}">${escape(c.tag || '')}</div>
+          <h3>${escape(c.title || '')}</h3>
+          <p>${escape(c.desc || '')}</p>
+          <span class="news-link">${escape(c.cta || 'Learn more')} &rarr;</span>
+        </a>
+      `).join('');
+    }
+  }
+
+  // Stats grid
+  if (Array.isArray(sections.stats) && sections.stats.length) {
+    const grid = document.querySelector('[data-stats-grid]');
+    if (grid) {
+      grid.innerHTML = sections.stats.map((s) => `
+        <div><strong>${escape(s.value || '')}<span>${escape(s.unit || '')}</span></strong><em>${escape(s.label || '')}</em></div>
+      `).join('');
+    }
+  }
+
+  // CTA button
+  if (sections.cta_button_text || sections.cta_button_link) {
+    const btn = document.querySelector('a[data-section="cta_button"]');
+    if (btn) {
+      if (sections.cta_button_text) btn.textContent = sections.cta_button_text;
+      if (sections.cta_button_link) btn.setAttribute('href', sections.cta_button_link);
+    }
   }
 });
 </script>

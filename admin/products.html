@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="robots" content="noindex"/>
-<title>Products | Acme CMS</title>
+<title>产品 | 后台管理</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/admin/assets/css/admin.css"/>
 </head>
@@ -14,9 +14,9 @@
 <script>
 (async function () {
   const { api, escapeHtml, toast, bootShell } = window.AdminAPI;
-  const shell = await bootShell({ title: 'Products', crumbs: 'Content / Products' });
+  const shell = await bootShell({ title: '产品', crumbs: '内容 / 产品' });
   if (!shell) return;
-  shell.actions.innerHTML = `<button class="btn btn--sm" id="new">+ New product</button>`;
+  shell.actions.innerHTML = `<button class="btn btn--sm" id="new">+ 新建产品</button>`;
 
   const pillars = (await api('/api/pillars?status=all')).items;
   const wantId = new URLSearchParams(location.search).get('id');
@@ -26,18 +26,18 @@
     shell.content.innerHTML = `
       <div class="panel" id="list-panel">
         <table class="table">
-          <thead><tr><th>Name</th><th>Slug</th><th>Pillar</th><th>Custom</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>名称</th><th>Slug</th><th>支柱</th><th>定制</th><th>状态</th><th></th></tr></thead>
           <tbody>
             ${items.length ? items.map((p) => `
               <tr>
                 <td><strong>${escapeHtml(p.name)}</strong><div style="font-size:11.5px; color:var(--a-mute2);">${escapeHtml(p.model_no || '')}</div></td>
                 <td><span class="mono">${escapeHtml(p.slug)}</span></td>
                 <td>${escapeHtml(p.pillar_slug || '-')}</td>
-                <td>${p.is_custom ? '<span class="pill pill--verified">Custom</span>' : '<span class="pill pill--read">Standard</span>'}</td>
+                <td>${p.is_custom ? '<span class="pill pill--verified">定制</span>' : '<span class="pill pill--read">标准</span>'}</td>
                 <td><span class="pill pill--${p.status}">${p.status}</span></td>
-                <td><a class="btn btn--ghost btn--sm" href="?id=${p.id}">Edit</a></td>
+                <td><a class="btn btn--ghost btn--sm" href="?id=${p.id}">编辑</a></td>
               </tr>
-            `).join('') : '<tr><td colspan="6"><div class="empty">No products yet.</div></td></tr>'}
+            `).join('') : '<tr><td colspan="6"><div class="empty">还没有产品。</div></td></tr>'}
           </tbody>
         </table>
       </div>
@@ -57,40 +57,40 @@
     panel.innerHTML = `
       <div class="panel">
         <div class="panel__head">
-          <h2>${isNew ? 'New product' : 'Edit: ' + escapeHtml(p.name)}</h2>
+          <h2>${isNew ? '新建产品' : '编辑: ' + escapeHtml(p.name)}</h2>
           <div style="display:flex; gap:8px;">
-            ${!isNew ? `<a target="_blank" class="btn btn--ghost btn--sm" href="/products/${escapeHtml(p.slug)}">Preview ↗</a>` : ''}
-            <a href="/admin/products.html" class="btn btn--ghost btn--sm">Back</a>
+            ${!isNew ? `<a target="_blank" class="btn btn--ghost btn--sm" href="/products/${escapeHtml(p.slug)}">预览 ↗</a>` : ''}
+            <a href="/admin/products.html" class="btn btn--ghost btn--sm">返回</a>
           </div>
         </div>
         <div class="field-row">
-          <div class="field"><label>Name</label><input id="f-name" value="${escapeHtml(p.name || '')}"/></div>
-          <div class="field"><label>Model #</label><input id="f-model" value="${escapeHtml(p.model_no || '')}"/></div>
+          <div class="field"><label>名称</label><input id="f-name" value="${escapeHtml(p.name || '')}"/></div>
+          <div class="field"><label>型号</label><input id="f-model" value="${escapeHtml(p.model_no || '')}"/></div>
         </div>
         <div class="field-row">
           <div class="field"><label>Slug</label><input id="f-slug" value="${escapeHtml(p.slug || '')}" ${isNew ? '' : 'readonly'}/></div>
           <div class="field"><label>Pillar</label>
             <select id="f-pillar">
-              <option value="">— No pillar —</option>
+              <option value="">— 不绑定支柱 —</option>
               ${pillars.map((x) => `<option value="${x.id}" ${x.id === p.pillar_id ? 'selected' : ''}>${escapeHtml(x.name)}</option>`).join('')}
             </select>
           </div>
         </div>
-        <div class="field"><label>Tagline</label><input id="f-tagline" value="${escapeHtml(p.tagline || '')}"/></div>
-        <div class="field"><label>Cover image URL</label><input id="f-cover" value="${escapeHtml(p.cover_url || '')}"/></div>
+        <div class="field"><label>标语</label><input id="f-tagline" value="${escapeHtml(p.tagline || '')}"/></div>
+        <div class="field"><label>封面图 URL</label><input id="f-cover" value="${escapeHtml(p.cover_url || '')}"/></div>
         <div class="field"><label>Datasheet URL</label><input id="f-datasheet" value="${escapeHtml(p.datasheet_url || '')}"/></div>
-        <div class="field"><label>Description</label><textarea id="f-desc" rows="5">${escapeHtml(p.description || '')}</textarea></div>
-        <div class="field"><label>Specs JSON <span class="hint">(key/value object)</span></label><textarea id="f-specs" rows="6" class="mono">${escapeHtml(JSON.stringify(p.specs || {}, null, 2))}</textarea></div>
-        <div class="field"><label>Features <span class="hint">(one per line)</span></label><textarea id="f-features" rows="5">${escapeHtml((p.features || []).join('\n'))}</textarea></div>
+        <div class="field"><label>描述</label><textarea id="f-desc" rows="5">${escapeHtml(p.description || '')}</textarea></div>
+        <div class="field"><label>规格 JSON <span class="hint">（key/value 对象）</span></label><textarea id="f-specs" rows="6" class="mono">${escapeHtml(JSON.stringify(p.specs || {}, null, 2))}</textarea></div>
+        <div class="field"><label>特性 <span class="hint">（每行一个）</span></label><textarea id="f-features" rows="5">${escapeHtml((p.features || []).join('\n'))}</textarea></div>
         <div class="field-row">
-          <div class="field"><label>Sort order</label><input id="f-sort" type="number" value="${p.sort_order || 0}"/></div>
-          <div class="field"><label>Status</label><select id="f-status"><option value="published" ${p.status === 'published' ? 'selected' : ''}>Published</option><option value="draft" ${p.status === 'draft' ? 'selected' : ''}>Draft</option></select></div>
+          <div class="field"><label>排序</label><input id="f-sort" type="number" value="${p.sort_order || 0}"/></div>
+          <div class="field"><label>状态</label><select id="f-status"><option value="published" ${p.status === 'published' ? 'selected' : ''}>已发布</option><option value="draft" ${p.status === 'draft' ? 'selected' : ''}>草稿</option></select></div>
         </div>
-        <div class="field field--check"><input type="checkbox" id="f-custom" ${p.is_custom ? 'checked' : ''}/><label for="f-custom">Custom-engineered product (vs. standard catalogue)</label></div>
+        <div class="field field--check"><input type="checkbox" id="f-custom" ${p.is_custom ? 'checked' : ''}/><label for="f-custom">定制类产品（区别于标准目录）</label></div>
         <div class="form-actions">
-          <button class="btn" id="save">Save</button>
-          ${!isNew ? '<button class="btn btn--danger" id="delete">Delete</button>' : ''}
-          <a href="/admin/products.html" class="btn btn--ghost">Cancel</a>
+          <button class="btn" id="save">保存</button>
+          ${!isNew ? '<button class="btn btn--danger" id="delete">删除</button>' : ''}
+          <a href="/admin/products.html" class="btn btn--ghost">取消</a>
         </div>
       </div>
     `;
@@ -98,7 +98,7 @@
     panel.querySelector('#save').addEventListener('click', async () => {
       let specs;
       try { specs = JSON.parse(panel.querySelector('#f-specs').value); }
-      catch (_) { return toast('Specs JSON is invalid', 'error'); }
+      catch (_) { return toast('规格 JSON 格式错误', 'error'); }
       const payload = {
         slug: panel.querySelector('#f-slug').value,
         name: panel.querySelector('#f-name').value,
@@ -117,15 +117,15 @@
       try {
         if (isNew) await api('/api/products', { method: 'POST', body: JSON.stringify(payload) });
         else await api('/api/products/' + p.id, { method: 'PUT', body: JSON.stringify(payload) });
-        toast('Saved', 'success');
+        toast('保存d', 'success');
         setTimeout(() => location.href = '/admin/products.html', 500);
-      } catch (err) { toast('Save failed: ' + err.message, 'error'); }
+      } catch (err) { toast('保存 failed: ' + err.message, 'error'); }
     });
     if (!isNew) {
       panel.querySelector('#delete').addEventListener('click', async () => {
-        if (!confirm('Delete this product?')) return;
+        if (!confirm('删除 this product?')) return;
         await api('/api/products/' + p.id, { method: 'DELETE' });
-        toast('Deleted', 'success');
+        toast('删除d', 'success');
         setTimeout(() => location.href = '/admin/products.html', 500);
       });
     }

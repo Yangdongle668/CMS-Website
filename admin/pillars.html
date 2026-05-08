@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="robots" content="noindex"/>
-<title>Pillar Pages | Acme CMS</title>
+<title>支柱页 | 后台管理</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/admin/assets/css/admin.css"/>
 </head>
@@ -14,7 +14,7 @@
 <script>
 (async function () {
   const { api, escapeHtml, toast, bootShell } = window.AdminAPI;
-  const shell = await bootShell({ title: 'Pillar Pages', crumbs: 'Content / Pillar pages' });
+  const shell = await bootShell({ title: '支柱页', crumbs: '内容 / 支柱页' });
   if (!shell) return;
 
   const wantSlug = new URLSearchParams(location.search).get('slug');
@@ -24,11 +24,11 @@
   shell.content.innerHTML = `
     <div class="panel" id="list-panel">
       <div class="panel__head">
-        <h2>Pillar Pages</h2>
-        <p class="muted" style="font-size:12.5px; margin:0; color:var(--a-mute2);">Edit each pillar's hero, variants, spec table, FAQ and customisation block.</p>
+        <h2>支柱页</h2>
+        <p class="muted" style="font-size:12.5px; margin:0; color:var(--a-mute2);">编辑 each pillar's hero, variants, spec table, FAQ and customisation block.</p>
       </div>
       <table class="table">
-        <thead><tr><th>Name</th><th>Slug</th><th>Sort</th><th>Status</th><th>Updated</th><th></th></tr></thead>
+        <thead><tr><th>名称</th><th>Slug</th><th>排序</th><th>状态</th><th>更新于</th><th></th></tr></thead>
         <tbody>
           ${items.map((p) => `
             <tr>
@@ -37,7 +37,7 @@
               <td>${p.sort_order}</td>
               <td><span class="pill pill--${p.status}">${p.status}</span></td>
               <td>${new Date(p.updated_at).toLocaleDateString()}</td>
-              <td><a class="btn btn--ghost btn--sm" href="?slug=${encodeURIComponent(p.slug)}">Edit</a> <a class="btn btn--ghost btn--sm" href="/products/${encodeURIComponent(p.slug)}" target="_blank">View ↗</a></td>
+              <td><a class="btn btn--ghost btn--sm" href="?slug=${encodeURIComponent(p.slug)}">编辑</a> <a class="btn btn--ghost btn--sm" href="/products/${encodeURIComponent(p.slug)}" target="_blank">View ↗</a></td>
             </tr>
           `).join('')}
         </tbody>
@@ -57,101 +57,101 @@
     panel.innerHTML = `
       <div class="panel">
         <div class="panel__head">
-          <h2>Editing: ${escapeHtml(p.name)}</h2>
+          <h2>正在编辑： ${escapeHtml(p.name)}</h2>
           <div style="display:flex; gap:8px;">
-            <a href="/products/${encodeURIComponent(p.slug)}" target="_blank" class="btn btn--ghost btn--sm">Preview ↗</a>
-            <a href="/admin/pillars.html" class="btn btn--ghost btn--sm">Back to list</a>
+            <a href="/products/${encodeURIComponent(p.slug)}" target="_blank" class="btn btn--ghost btn--sm">预览 ↗</a>
+            <a href="/admin/pillars.html" class="btn btn--ghost btn--sm">返回列表</a>
           </div>
         </div>
         <div class="tabs" id="tabs">
-          <button class="tabs__btn is-active" data-tab="general">General</button>
+          <button class="tabs__btn is-active" data-tab="general">基本</button>
           <button class="tabs__btn" data-tab="hero">Hero</button>
-          <button class="tabs__btn" data-tab="overview">Overview</button>
-          <button class="tabs__btn" data-tab="variants">Variants</button>
-          <button class="tabs__btn" data-tab="specs">Spec Table</button>
-          <button class="tabs__btn" data-tab="custom">Customisation</button>
-          <button class="tabs__btn" data-tab="mfg">Manufacturing</button>
-          <button class="tabs__btn" data-tab="certs">Certifications</button>
-          <button class="tabs__btn" data-tab="apps">Applications</button>
+          <button class="tabs__btn" data-tab="overview">概述</button>
+          <button class="tabs__btn" data-tab="variants">变体</button>
+          <button class="tabs__btn" data-tab="specs">规格表</button>
+          <button class="tabs__btn" data-tab="custom">定制项</button>
+          <button class="tabs__btn" data-tab="mfg">制造</button>
+          <button class="tabs__btn" data-tab="certs">认证</button>
+          <button class="tabs__btn" data-tab="apps">应用</button>
           <button class="tabs__btn" data-tab="faq">FAQ</button>
           <button class="tabs__btn" data-tab="seo">SEO</button>
         </div>
 
         <div data-pane="general">
-          <div class="field"><label>Name</label><input id="f-name" value="${escapeHtml(p.name)}"/></div>
-          <div class="field"><label>Short name <span class="hint">(used in nav & breadcrumbs)</span></label><input id="f-short" value="${escapeHtml(p.short_name)}"/></div>
+          <div class="field"><label>名称</label><input id="f-name" value="${escapeHtml(p.name)}"/></div>
+          <div class="field"><label>短名称 <span class="hint">（用于导航和面包屑）</span></label><input id="f-short" value="${escapeHtml(p.short_name)}"/></div>
           <div class="field-row">
-            <div class="field"><label>Sort order</label><input id="f-sort" type="number" value="${p.sort_order}"/></div>
-            <div class="field"><label>Status</label><select id="f-status"><option value="published" ${p.status === 'published' ? 'selected' : ''}>Published</option><option value="draft" ${p.status === 'draft' ? 'selected' : ''}>Draft</option></select></div>
+            <div class="field"><label>排序</label><input id="f-sort" type="number" value="${p.sort_order}"/></div>
+            <div class="field"><label>状态</label><select id="f-status"><option value="published" ${p.status === 'published' ? 'selected' : ''}>已发布</option><option value="draft" ${p.status === 'draft' ? 'selected' : ''}>草稿</option></select></div>
           </div>
         </div>
 
         <div data-pane="hero" style="display:none;">
-          <div class="field"><label>Eyebrow</label><input id="f-eyebrow" value="${escapeHtml(p.hero_eyebrow)}"/></div>
-          <div class="field"><label>Title (H1)</label><input id="f-htitle" value="${escapeHtml(p.hero_title)}"/></div>
-          <div class="field"><label>Subtitle</label><textarea id="f-hsub">${escapeHtml(p.hero_subtitle)}</textarea></div>
-          <div class="field"><label>Hero image URL</label><input id="f-himg" value="${escapeHtml(p.hero_image)}"/></div>
+          <div class="field"><label>Eyebrow（标题前小字）</label><input id="f-eyebrow" value="${escapeHtml(p.hero_eyebrow)}"/></div>
+          <div class="field"><label>标题 (H1)</label><input id="f-htitle" value="${escapeHtml(p.hero_title)}"/></div>
+          <div class="field"><label>副标题</label><textarea id="f-hsub">${escapeHtml(p.hero_subtitle)}</textarea></div>
+          <div class="field"><label>Hero 大图 URL</label><input id="f-himg" value="${escapeHtml(p.hero_image)}"/></div>
           <div class="field-row">
-            <div class="field"><label>Primary CTA text</label><input id="f-cta1t" value="${escapeHtml(p.primary_cta_text)}"/></div>
-            <div class="field"><label>Primary CTA link</label><input id="f-cta1l" value="${escapeHtml(p.primary_cta_link)}"/></div>
+            <div class="field"><label>主 CTA 文字</label><input id="f-cta1t" value="${escapeHtml(p.primary_cta_text)}"/></div>
+            <div class="field"><label>主 CTA 链接</label><input id="f-cta1l" value="${escapeHtml(p.primary_cta_link)}"/></div>
           </div>
           <div class="field-row">
-            <div class="field"><label>Secondary CTA text</label><input id="f-cta2t" value="${escapeHtml(p.secondary_cta_text)}"/></div>
-            <div class="field"><label>Secondary CTA link</label><input id="f-cta2l" value="${escapeHtml(p.secondary_cta_link)}"/></div>
+            <div class="field"><label>次 CTA 文字</label><input id="f-cta2t" value="${escapeHtml(p.secondary_cta_text)}"/></div>
+            <div class="field"><label>次 CTA 链接</label><input id="f-cta2l" value="${escapeHtml(p.secondary_cta_link)}"/></div>
           </div>
         </div>
 
         <div data-pane="overview" style="display:none;">
-          <div class="field"><label>Section title</label><input id="f-ovt" value="${escapeHtml((p.overview && p.overview.title) || '')}"/></div>
-          <div class="field"><label>Body</label><textarea id="f-ovb" rows="6">${escapeHtml((p.overview && p.overview.body) || '')}</textarea></div>
+          <div class="field"><label>区块标题</label><input id="f-ovt" value="${escapeHtml((p.overview && p.overview.title) || '')}"/></div>
+          <div class="field"><label>正文</label><textarea id="f-ovb" rows="6">${escapeHtml((p.overview && p.overview.body) || '')}</textarea></div>
         </div>
 
         <div data-pane="variants" style="display:none;">
           <div class="repeat-list" data-repeat="variants"></div>
-          <button class="repeat-add" data-repeat-add="variants">+ Add variant</button>
+          <button class="repeat-add" data-repeat-add="variants">+ 添加变体</button>
         </div>
 
         <div data-pane="specs" style="display:none;">
-          <div class="field"><label>Headers (comma separated)</label><input id="f-spec-headers" value="${escapeHtml((p.spec_table && p.spec_table.headers || []).join(', '))}"/></div>
-          <div class="field"><label>Rows <span class="hint">(one row per line, columns separated by | )</span></label>
+          <div class="field"><label>表头（逗号分隔）</label><input id="f-spec-headers" value="${escapeHtml((p.spec_table && p.spec_table.headers || []).join(', '))}"/></div>
+          <div class="field"><label>Rows <span class="hint">（每行一条，列用 | 分隔）</span></label>
             <textarea id="f-spec-rows" rows="12">${escapeHtml((p.spec_table && p.spec_table.rows || []).map((r) => r.join(' | ')).join('\n'))}</textarea>
           </div>
         </div>
 
         <div data-pane="custom" style="display:none;">
-          <div class="field field--check"><input type="checkbox" id="f-cust-on" ${(p.customization && p.customization.enabled) ? 'checked' : ''}/><label for="f-cust-on">Show customisation section on this pillar</label></div>
+          <div class="field field--check"><input type="checkbox" id="f-cust-on" ${(p.customization && p.customization.enabled) ? 'checked' : ''}/><label for="f-cust-on">在此支柱页显示定制项区块</label></div>
           <div class="repeat-list" data-repeat="customization"></div>
-          <button class="repeat-add" data-repeat-add="customization">+ Add customisation item</button>
+          <button class="repeat-add" data-repeat-add="customization">+ 添加定制项</button>
         </div>
 
         <div data-pane="mfg" style="display:none;">
           <div class="field"><label>Title</label><input id="f-mfgt" value="${escapeHtml((p.manufacturing && p.manufacturing.title) || '')}"/></div>
-          <div class="field"><label>Body</label><textarea id="f-mfgb" rows="5">${escapeHtml((p.manufacturing && p.manufacturing.body) || '')}</textarea></div>
+          <div class="field"><label>正文</label><textarea id="f-mfgb" rows="5">${escapeHtml((p.manufacturing && p.manufacturing.body) || '')}</textarea></div>
         </div>
 
         <div data-pane="certs" style="display:none;">
           <div class="repeat-list" data-repeat="certifications"></div>
-          <button class="repeat-add" data-repeat-add="certifications">+ Add certification</button>
+          <button class="repeat-add" data-repeat-add="certifications">+ 添加认证</button>
         </div>
 
         <div data-pane="apps" style="display:none;">
-          <div class="field"><label>Application slugs <span class="hint">(comma separated; must match /admin/applications)</span></label><input id="f-apps" value="${escapeHtml((p.applications || []).join(', '))}"/></div>
+          <div class="field"><label>应用 slug 列表 <span class="hint">（逗号分隔，需与应用行业模块的 slug 一致）</span></label><input id="f-apps" value="${escapeHtml((p.applications || []).join(', '))}"/></div>
         </div>
 
         <div data-pane="faq" style="display:none;">
           <div class="repeat-list" data-repeat="faq"></div>
-          <button class="repeat-add" data-repeat-add="faq">+ Add FAQ</button>
+          <button class="repeat-add" data-repeat-add="faq">+ 添加 FAQ</button>
         </div>
 
         <div data-pane="seo" style="display:none;">
-          <div class="field"><label>Meta title</label><input id="f-mt" value="${escapeHtml(p.meta_title)}"/></div>
-          <div class="field"><label>Meta description</label><textarea id="f-md" rows="3">${escapeHtml(p.meta_description)}</textarea></div>
-          <div class="field"><label>Anchor text variants <span class="hint">(comma separated)</span></label><input id="f-anchors" value="${escapeHtml((p.anchor_variants || []).join(', '))}"/></div>
+          <div class="field"><label>Meta 标题</label><input id="f-mt" value="${escapeHtml(p.meta_title)}"/></div>
+          <div class="field"><label>Meta 描述</label><textarea id="f-md" rows="3">${escapeHtml(p.meta_description)}</textarea></div>
+          <div class="field"><label>锚文本变体 <span class="hint">（逗号分隔）</span></label><input id="f-anchors" value="${escapeHtml((p.anchor_variants || []).join(', '))}"/></div>
         </div>
 
         <div class="form-actions">
-          <button class="btn" id="save">Save changes</button>
-          <a href="/admin/pillars.html" class="btn btn--ghost">Cancel</a>
+          <button class="btn" id="save">保存修改</button>
+          <a href="/admin/pillars.html" class="btn btn--ghost">取消</a>
         </div>
       </div>
     `;
@@ -187,12 +187,12 @@
     const customList = Array.isArray(p.customization && p.customization.items) ? p.customization.items.slice() : [];
     const certList = Array.isArray(p.certifications) ? p.certifications.slice() : [];
     const faqList = Array.isArray(p.faq) ? p.faq.slice() : [];
-    renderRepeater('variants', variantsList, [{ key: 'name', label: 'Name' }, { key: 'summary', label: 'Summary' }, { key: 'image', label: 'Image URL' }]);
-    renderRepeater('customization', customList, [{ key: 'label', label: 'Label' }, { key: 'value', label: 'Value' }]);
-    renderRepeater('certifications', certList, [{ key: 'name', label: 'Name' }, { key: 'image', label: 'Image URL' }]);
-    renderRepeater('faq', faqList, [{ key: 'q', label: 'Question' }, { key: 'a', label: 'Answer' }]);
+    renderRepeater('variants', variantsList, [{ key: 'name', label: '名称' }, { key: 'summary', label: '摘要' }, { key: 'image', label: '图片 URL' }]);
+    renderRepeater('customization', customList, [{ key: 'label', label: '标签' }, { key: 'value', label: '值' }]);
+    renderRepeater('certifications', certList, [{ key: 'name', label: '名称' }, { key: 'image', label: '图片 URL' }]);
+    renderRepeater('faq', faqList, [{ key: 'q', label: '问题' }, { key: 'a', label: '答案' }]);
 
-    // Save
+    // 保存
     panel.querySelector('#save').addEventListener('click', async () => {
       const collect = (selector) => Array.from(panel.querySelectorAll(`[data-repeat="${selector}"] .repeat-item`)).map((row) => {
         const obj = {};
@@ -231,10 +231,10 @@
       };
       try {
         await api('/api/pillars/' + p.id, { method: 'PUT', body: JSON.stringify(payload) });
-        toast('Pillar saved', 'success');
+        toast('支柱页已保存', 'success');
         setTimeout(() => location.href = '/admin/pillars.html', 600);
       } catch (err) {
-        toast('Save failed: ' + err.message, 'error');
+        toast('保存 failed: ' + err.message, 'error');
       }
     });
   }
