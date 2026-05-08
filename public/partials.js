@@ -111,8 +111,6 @@ function footerHtml(settings) {
   const site = settings.site || FALLBACK.site;
   const social = settings.social || FALLBACK.social;
   const nav = (settings.navigation && settings.navigation.header) || FALLBACK.navigation.header;
-  const products = (nav.find((i) => i.nav === 'products') || {}).children || [];
-  const apps = (nav.find((i) => i.nav === 'applications') || {}).children || [];
 
   const linkedin = social.linkedin
     ? `<a href="${escapeHtml(social.linkedin)}" target="_blank" rel="noopener" class="social-btn" aria-label="LinkedIn">
@@ -126,36 +124,45 @@ function footerHtml(settings) {
        </svg></a>` : '';
 
   const year = new Date().getFullYear();
-  const emailLines = [site.email, site.engineering_email].filter(Boolean).map((e) => escapeHtml(e)).join('<br>');
+
+  // Auto-derive a footer column for every top-level nav item that has children.
+  // This keeps Products / Applications / Custom Solutions / About in sync with the
+  // nav and surfaces every sub-page in the footer.
+  const navColumns = nav.filter((i) => i.children && i.children.length).map((item) => `
+      <div class="footer-col">
+        <h5>${escapeHtml(item.label)}</h5>
+        ${item.children.map((c) => `<a href="${escapeHtml(c.url)}">${escapeHtml(c.label)}</a>`).join('')}
+      </div>`).join('');
+
+  // Top-level nav items WITHOUT children that aren't HOME or CONTACT — these become
+  // a "Resources" column so blog / faq / etc. always show in the footer.
+  const flatLinks = nav
+    .filter((i) => !i.children && !['home', 'contact'].includes((i.nav || '').toLowerCase()))
+    .map((i) => `<a href="${escapeHtml(i.url)}">${escapeHtml(i.label)}</a>`)
+    .join('');
+  const resourcesCol = flatLinks
+    ? `<div class="footer-col">
+        <h5>Resources</h5>
+        ${flatLinks}
+        <a href="/contact.html">Contact</a>
+       </div>`
+    : '';
 
   return `<footer>
     <div class="footer-cols">
-      <div class="footer-col">
+      <div class="footer-col footer-col--brand">
         <h5>${escapeHtml(site.name || 'Acme Battery')}</h5>
         <p>${escapeHtml(site.tagline || '')}</p>
-      </div>
-      <div class="footer-col">
-        <h5>Products</h5>
-        ${products.map((p) => `<a href="${escapeHtml(p.url)}">${escapeHtml(p.label)}</a>`).join('')}
-      </div>
-      <div class="footer-col">
-        <h5>Applications</h5>
-        ${apps.map((p) => `<a href="${escapeHtml(p.url)}">${escapeHtml(p.label)}</a>`).join('')}
-      </div>
-      <div class="footer-col">
-        <h5>Company</h5>
-        <a href="/about/profile.html">About</a>
-        <a href="/blog/">Blog</a>
-        <a href="/faq.html">FAQ</a>
-        <a href="/contact.html">Contact</a>
-      </div>
-      <div class="footer-col">
-        <h5>Contact</h5>
-        ${emailLines ? `<p>${emailLines}</p>` : ''}
+        ${(site.email || site.engineering_email) ? `<p class="footer-contact">
+          ${site.email ? `<a href="mailto:${escapeHtml(site.email)}">${escapeHtml(site.email)}</a><br>` : ''}
+          ${site.engineering_email ? `<a href="mailto:${escapeHtml(site.engineering_email)}">${escapeHtml(site.engineering_email)}</a>` : ''}
+        </p>` : ''}
         ${site.phone ? `<p>${escapeHtml(site.phone)}</p>` : ''}
         ${site.address ? `<p>${escapeHtml(site.address)}</p>` : ''}
         ${(linkedin || whatsapp) ? `<div class="footer-social">${linkedin}${whatsapp}</div>` : ''}
       </div>
+      ${navColumns}
+      ${resourcesCol}
     </div>
     <div class="footer-bottom">
       <ul class="footer-links">
@@ -163,6 +170,7 @@ function footerHtml(settings) {
         <li><a href="/terms.html">Terms of Use</a></li>
         <li><a href="/legal.html">Legal</a></li>
         <li><a href="/gdpr.html">GDPR Requests</a></li>
+        <li><a href="/sitemap.xml">Sitemap</a></li>
         <li><a href="#" id="cookie-settings-link">Cookie Settings</a></li>
       </ul>
       <p class="copyright">&copy; ${year} ${escapeHtml(site.name || 'Acme Battery')}. All rights reserved.</p>
