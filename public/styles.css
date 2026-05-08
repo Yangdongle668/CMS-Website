@@ -102,38 +102,38 @@ ul {
    :hover / :focus-within remain as a no-JS fallback. */
 .has-dropdown { position: relative; }
 
+/* The dropdown's hit area is glued to the <li>'s bottom edge (top: 100%,
+   no margin, no transform offset). The visual gap between the nav item
+   and the visible white card is created INSIDE the dropdown using
+   padding-top + a ::before pseudo that paints the actual card 14px down.
+   This means the cursor can travel from <a> straight into the dropdown
+   without ever leaving the .has-dropdown subtree, so :hover / mouseover
+   stay continuous and no item loses tracking. */
 .dropdown {
   position: absolute;
   top: 100%;
   left: 0;
-  transform: translateY(-6px);
   min-width: 240px;
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
-  padding: 8px;
+  padding: 14px 0 8px;
+  background: transparent;
   opacity: 0;
   pointer-events: none;
+  transform: translateY(-4px);
   transition: opacity 0.18s ease, transform 0.18s ease;
   color: #171a20;
 }
-
-/* Wide invisible hover bridge between the parent <a> and the dropdown.
-   Always rendered (positioned: absolute, height 14px) so the mouse can
-   travel through it without leaving the .has-dropdown ancestor's box. */
-.has-dropdown::after {
+.dropdown::before {
   content: '';
   position: absolute;
-  top: 100%;
-  left: -8px;
-  right: -8px;
-  height: 14px;
-  pointer-events: none;
+  top: 14px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
+  z-index: -1;
 }
-/* Bridge becomes interactive while the dropdown is engaged. */
-.has-dropdown:hover::after,
-.has-dropdown:focus-within::after,
-.has-dropdown.is-open::after { pointer-events: auto; }
 
 .has-dropdown:hover .dropdown,
 .has-dropdown:focus-within .dropdown,
@@ -145,6 +145,9 @@ ul {
 
 .dropdown a {
   display: block;
+  position: relative;
+  z-index: 1;
+  margin: 0 8px;
   padding: 10px 14px;
   font-size: 14px;
   font-weight: 500;
@@ -152,10 +155,7 @@ ul {
   color: #171a20;
   transition: background 0.15s ease;
 }
-
-.dropdown a:hover {
-  background: #f4f4f4;
-}
+.dropdown a:hover { background: #f4f4f4; }
 
 .menu-btn {
   display: none;
