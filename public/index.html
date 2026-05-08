@@ -167,12 +167,8 @@
 (async function () {
   const { fetchJson, escapeHtml } = window.SiteAPI;
 
-  // Make header transparent over the hero
-  const header = document.querySelector('.site-header');
-  if (header) {
-    const sync = () => header.classList.toggle('is-overlay', window.scrollY < 60);
-    sync(); window.addEventListener('scroll', sync, { passive: true });
-  }
+  // (Header overlay-on-hero behaviour is wired up in site.js so it runs
+  // after the header has actually been rendered into the DOM.)
 
   // Pillars — Tesla-style full-screen sections
   try {

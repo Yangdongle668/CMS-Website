@@ -564,7 +564,20 @@ p { margin: 0 0 1em; color: var(--color-fg-soft); }
 .tsection--dark .tsection__sub { color: #cbd5e1; }
 .tsection--dark .tsection__eyebrow { color: #93c5fd; }
 .tsection--gradient { background: linear-gradient(180deg, #f8fafc 0%, #e0e7ff 100%); }
+
+/* Override the global `h1,h2,h3 { color: var(--color-fg) }` so the
+   hero / dark sections render headings in white. */
+.tsection--hero h1, .tsection--hero h2, .tsection--hero h3,
+.tsection--dark h1, .tsection--dark h2, .tsection--dark h3,
+.tsection__title { color: inherit; }
+
 .tsection--hero {
+  min-height: 100vh;
+  /* Pull the hero up under the sticky header so it visually fills the
+     viewport. The header sits transparently on top via the .is-overlay
+     class added by site.js. */
+  margin-top: calc(-1 * var(--header-h));
+  padding-top: calc(var(--header-h) + 24px);
   background: radial-gradient(circle at 30% 20%, rgba(11,58,130,0.25), transparent 60%),
               radial-gradient(circle at 70% 80%, rgba(30,64,175,0.18), transparent 60%),
               linear-gradient(180deg, #050a17 0%, #0b1120 60%, #0f172a 100%);
