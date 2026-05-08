@@ -48,103 +48,122 @@
 
   <div data-page-body>
 
-    <!-- ========== PILLAR LINES — Tesla-style horizontal slider ========== -->
+    <!-- ========== PILLAR LINES (3-card grid — reverted from Tesla slider) ========== -->
     <section class="section section-light">
       <div class="section-inner">
         <span class="eyebrow">Product Lines</span>
         <h2>Three pillar lines, one quality system.</h2>
-        <p class="lead">Swipe through our SEO pillar pages &mdash; polymer pouch, custom-shaped polymer, and cylindrical steel-shell, all manufactured under one ISO 9001 roof.</p>
+        <p class="lead">Polymer pouch for thin form factors, custom-shaped polymer for non-standard envelopes, and cylindrical steel-shell for high-cycle applications &mdash; all manufactured under one ISO 9001 roof.</p>
+
+        <div class="pillar-grid">
+          <a class="pillar-card" href="/products/polymer-lithium-battery">
+            <div class="pillar-card__media" style="background-image:url('https://images.unsplash.com/photo-1620455243023-2c80b3a02ee3?w=1200&q=80');"></div>
+            <div class="pillar-card__body">
+              <span class="pillar-card__pill">Polymer Li-Po</span>
+              <h3>Polymer Lithium Battery</h3>
+              <p>Pouch cells from 30 mAh to 20 Ah. Standard catalogue and full custom &mdash; thin profiles, JST/Molex/FPC connectors, integrated PCM.</p>
+              <div class="pillar-card__specs">
+                <span><strong>30 - 20,000</strong>mAh</span>
+                <span><strong>≥ 500</strong>cycles</span>
+                <span><strong>0.4 mm</strong>min thick</span>
+              </div>
+              <span class="news-link">Explore the line &rarr;</span>
+            </div>
+          </a>
+          <a class="pillar-card" href="/products/custom-shaped-polymer-lithium-battery">
+            <div class="pillar-card__media" style="background-image:url('https://images.unsplash.com/photo-1592478411213-6153e4ebc07d?w=1200&q=80');"></div>
+            <div class="pillar-card__body">
+              <span class="pillar-card__pill">Custom-Shape</span>
+              <h3>Custom-Shaped Polymer</h3>
+              <p>Round, curved, stepped and ultra-thin polymer cells. Send a STEP model &mdash; we deliver a feasibility study in 5 working days.</p>
+              <div class="pillar-card__specs">
+                <span><strong>20 - 8,000</strong>mAh</span>
+                <span><strong>R 25 mm</strong>min radius</span>
+                <span><strong>3.7 / 3.85</strong>V</span>
+              </div>
+              <span class="news-link">Start a custom project &rarr;</span>
+            </div>
+          </a>
+          <a class="pillar-card" href="/products/cylindrical-steel-shell-lithium-battery">
+            <div class="pillar-card__media" style="background-image:url('https://images.unsplash.com/photo-1569466896818-335b1bedfcce?w=1200&q=80');"></div>
+            <div class="pillar-card__body">
+              <span class="pillar-card__pill">Cylindrical</span>
+              <h3>Cylindrical Steel-Shell</h3>
+              <p>14500, 18650, 21700, 26650, 32700 in INR (NMC) and IFR (LFP). Cells, welded packs and BMS-integrated modules.</p>
+              <div class="pillar-card__specs">
+                <span><strong>1,500 - 6,500</strong>mAh</span>
+                <span><strong>≥ 3,000</strong>LFP cycles</span>
+                <span><strong>30 A</strong>peak</span>
+              </div>
+              <span class="news-link">Compare formats &rarr;</span>
+            </div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== APPLICATIONS — Tesla-style horizontal slider ========== -->
+    <section class="section section-grey">
+      <div class="section-inner">
+        <span class="eyebrow" data-section="apps_eyebrow">Applications</span>
+        <h2 data-section="apps_title">Powering the next generation of devices.</h2>
+        <p class="lead">Each industry brings its own certifications, abuse profiles and lifecycle expectations &mdash; we engineer the cell around them. Swipe through to see where our cells live today.</p>
       </div>
 
       <div class="tesla-slider" data-slider>
         <button type="button" class="tesla-slider__arrow tesla-slider__arrow--prev" aria-label="Previous">‹</button>
         <button type="button" class="tesla-slider__arrow tesla-slider__arrow--next" aria-label="Next">›</button>
-
         <div class="tesla-slider__track" data-slider-track>
-          <a class="tesla-slide" href="/products/polymer-lithium-battery"
-             style="background-image:url('https://images.unsplash.com/photo-1620455243023-2c80b3a02ee3?w=1600&q=80');">
-            <div class="tesla-slide__label">Pillar Line 01 · Polymer Li-Po</div>
+          <a class="tesla-slide" href="/applications/ar-vr.html"
+             style="background-image:url('https://images.unsplash.com/photo-1592478411213-6153e4ebc07d?w=1600&q=80');">
+            <div class="tesla-slide__label">Application 01 · AR / VR Glasses</div>
             <div class="tesla-slide__bottom">
-              <h3 class="tesla-slide__title">Polymer Lithium</h3>
-              <span class="tesla-slide__sub">From 30 mAh to 20,000 mAh · ≥ 500 cycles</span>
+              <h3 class="tesla-slide__title">AR / VR</h3>
+              <span class="tesla-slide__sub">Ultra-thin cells for slim temples and headsets · 320 mAh @ 0.4 mm</span>
               <div class="tesla-slide__ctas">
-                <span class="tesla-slide__cta tesla-slide__cta--primary">Explore the line</span>
+                <span class="tesla-slide__cta tesla-slide__cta--primary">Explore Application</span>
+                <span class="tesla-slide__cta tesla-slide__cta--secondary">Request a Quote</span>
+              </div>
+            </div>
+          </a>
+
+          <a class="tesla-slide" href="/applications/medical.html"
+             style="background-image:url('https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=1600&q=80');">
+            <div class="tesla-slide__label">Application 02 · Medical Devices</div>
+            <div class="tesla-slide__bottom">
+              <h3 class="tesla-slide__title">Medical</h3>
+              <span class="tesla-slide__sub">ISO 13485-aligned · IEC 60601 leakage · 5-yr shelf life</span>
+              <div class="tesla-slide__ctas">
+                <span class="tesla-slide__cta tesla-slide__cta--primary">Explore Application</span>
+                <span class="tesla-slide__cta tesla-slide__cta--secondary">Start a Medical Project</span>
+              </div>
+            </div>
+          </a>
+
+          <a class="tesla-slide" href="/applications/wearables.html"
+             style="background-image:url('https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1600&q=80');">
+            <div class="tesla-slide__label">Application 03 · Wearables</div>
+            <div class="tesla-slide__bottom">
+              <h3 class="tesla-slide__title">Wearables</h3>
+              <span class="tesla-slide__sub">Curved &amp; shaped cells for watches, earbuds, rings · 25 - 600 mAh</span>
+              <div class="tesla-slide__ctas">
+                <span class="tesla-slide__cta tesla-slide__cta--primary">Explore Application</span>
                 <span class="tesla-slide__cta tesla-slide__cta--secondary">Get a Quote</span>
               </div>
             </div>
           </a>
 
-          <a class="tesla-slide" href="/products/custom-shaped-polymer-lithium-battery"
-             style="background-image:url('https://images.unsplash.com/photo-1592478411213-6153e4ebc07d?w=1600&q=80');">
-            <div class="tesla-slide__label">Pillar Line 02 · Custom-Shape</div>
+          <a class="tesla-slide" href="/applications/iot.html"
+             style="background-image:url('https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=1600&q=80');">
+            <div class="tesla-slide__label">Application 04 · IoT Devices</div>
             <div class="tesla-slide__bottom">
-              <h3 class="tesla-slide__title">Custom-Shaped Polymer</h3>
-              <span class="tesla-slide__sub">Round, curved, stepped, ultra-thin · 5-day feasibility</span>
+              <h3 class="tesla-slide__title">IoT</h3>
+              <span class="tesla-slide__sub">Long-life cells for sensors, trackers, gateways · 5-yr shelf, &lt;2% SD/mo</span>
               <div class="tesla-slide__ctas">
-                <span class="tesla-slide__cta tesla-slide__cta--primary">Start a Project</span>
-                <span class="tesla-slide__cta tesla-slide__cta--secondary">See Capabilities</span>
+                <span class="tesla-slide__cta tesla-slide__cta--primary">Explore Application</span>
+                <span class="tesla-slide__cta tesla-slide__cta--secondary">Get a Quote</span>
               </div>
             </div>
-          </a>
-
-          <a class="tesla-slide" href="/products/cylindrical-steel-shell-lithium-battery"
-             style="background-image:url('https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=1600&q=80');">
-            <div class="tesla-slide__label">Pillar Line 03 · Cylindrical</div>
-            <div class="tesla-slide__bottom">
-              <h3 class="tesla-slide__title">Cylindrical Steel-Shell</h3>
-              <span class="tesla-slide__sub">14500 / 18650 / 21700 / 26650 · NMC + LFP · ≥ 3,000 cycles</span>
-              <div class="tesla-slide__ctas">
-                <span class="tesla-slide__cta tesla-slide__cta--primary">Compare Formats</span>
-                <span class="tesla-slide__cta tesla-slide__cta--secondary">Request Bulk Quote</span>
-              </div>
-            </div>
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <!-- ========== STANDARD vs CUSTOM ========== -->
-    <section class="section section-grey">
-      <div class="section-inner">
-        <span class="eyebrow" data-section="products_eyebrow">Buying Path</span>
-        <h2 data-section="products_title">Order from catalogue or co-design from scratch.</h2>
-        <p class="lead" data-section="products_lead">Capacities 15 mAh to 20,000 mAh in pouch, cylindrical, coin and prismatic formats &mdash; sample in 3-5 days for catalogue items, 25-35 days for custom tooling.</p>
-
-        <div class="product-grid" data-product-grid>
-          <a href="/products/standard.html" class="product-card">
-            <div class="product-tag">Standard</div>
-            <h3>Standard Batteries</h3>
-            <p>200+ catalogue models. LiPo pouches, 18650/21700 cylindrical, coin cells &mdash; sample in 3-5 days.</p>
-            <span class="news-link">Browse catalog &rarr;</span>
-          </a>
-          <a href="/products/custom.html" class="product-card featured">
-            <div class="product-tag tag-star">Custom ★</div>
-            <h3>Custom Batteries</h3>
-            <p>Tailored chemistry, shape, connector and BMS for your exact enclosure and power profile.</p>
-            <span class="news-link">See capabilities &rarr;</span>
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <!-- ========== APPLICATIONS ========== -->
-    <section class="section section-light">
-      <div class="section-inner">
-        <span class="eyebrow" data-section="apps_eyebrow">Applications</span>
-        <h2 data-section="apps_title">Powering the next generation of devices.</h2>
-        <p class="lead">Each industry brings its own certifications, abuse profiles and lifecycle expectations &mdash; we engineer the cell around them.</p>
-        <div class="app-grid">
-          <a href="/applications/ar-vr.html" class="app-card" style="background-image:url('https://images.unsplash.com/photo-1592478411213-6153e4ebc07d?w=1200&q=80');">
-            <div class="app-overlay"><h3>AR / VR Glasses</h3><p>Ultra-thin cells that fit inside slim temples and headsets.</p></div>
-          </a>
-          <a href="/applications/medical.html" class="app-card" style="background-image:url('https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=1200&q=80');">
-            <div class="app-overlay"><h3>Medical Devices</h3><p>ISO 13485-aligned production for life-critical equipment.</p></div>
-          </a>
-          <a href="/applications/wearables.html" class="app-card" style="background-image:url('https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1200&q=80');">
-            <div class="app-overlay"><h3>Wearables</h3><p>Curved and shaped cells for watches, earbuds and rings.</p></div>
-          </a>
-          <a href="/applications/iot.html" class="app-card" style="background-image:url('https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=1200&q=80');">
-            <div class="app-overlay"><h3>IoT Devices</h3><p>Long-life cells for sensors, trackers and edge devices.</p></div>
           </a>
         </div>
       </div>
