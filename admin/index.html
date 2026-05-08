@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>Dashboard | Acme CMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+</head>
+<body>
+<div data-admin-shell></div>
+<script src="/admin/assets/js/admin.js"></script>
+<script>
+(async function () {
+  const { api, el, escapeHtml, formatDate, bootShell } = window.AdminAPI;
+  const shell = await bootShell({ title: 'Dashboard', crumbs: 'Overview' });
+  if (!shell) return;
+
+  const { items, stats } = await api('/api/inquiries?limit=8');
+  const audit = await api('/api/audit?limit=10').catch(() => ({ items: [] }));
+
+  shell.content.innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi__label">Total Inquiries</div><div class="kpi__value">${stats.total}</div></div>
+      <div class="kpi"><div class="kpi__label">Unread</div><div class="kpi__value" style="color:var(--a-warning);">${stats.unread}</div></div>
+      <div class="kpi"><div class="kpi__label">Last 7 days</div><div class="kpi__value">${stats.week}</div></div>
+      <div class="kpi"><div class="kpi__label">Conversion focus</div><div class="kpi__value" style="font-size:18px; padding-top:6px;">Reply within 24h</div></div>
+    </div>
+
+    <div class="split">
+      <div class="panel">
+        <div class="panel__head">
+          <h2>Recent Inquiries</h2>
+          <a href="/admin/inquiries.html" class="btn btn--ghost btn--sm">View all →</a>
+        </div>
+        <table class="table">
+          <thead><tr><th>Reference</th><th>Company</th><th>Country</th><th>Status</th><th>Received</th></tr></thead>
+          <tbody>
+            ${items.length ? items.map((i) => `
+              <tr class="${i.status === 'new' ? 'is-unread' : ''}">
+                <td><a href="/admin/inquiries.html?id=${i.id}" class="mono" style="font-weight:600;">${escapeHtml(i.reference)}</a></td>
+                <td>${escapeHtml(i.company || i.full_name)}</td>
+                <td>${escapeHtml(i.country || '-')}</td>
+                <td><span class="pill pill--${i.status}">${i.status}</span></td>
+                <td>${formatDate(i.created_at)}</td>
+              </tr>
+            `).join('') : '<tr><td colspan="5"><div class="empty">No inquiries yet. Share your site and they will start landing here.</div></td></tr>'}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel">
+        <div class="panel__head"><h2>Recent Activity</h2><a href="/admin/audit.html" class="btn btn--ghost btn--sm">Audit log →</a></div>
+        <div style="display:grid; gap: 10px;">
+          ${audit.items.length ? audit.items.map((a) => `
+            <div style="display:flex; gap:8px; align-items:flex-start; font-size:13px;">
+              <span class="pill pill--read" style="text-transform:none; padding:2px 8px;">${escapeHtml(a.action)}</span>
+              <div>
+                <div><strong>${escapeHtml(a.user_email || 'system')}</strong> · ${escapeHtml(a.entity)}${a.entity_id ? ' #' + escapeHtml(a.entity_id) : ''}</div>
+                <div style="color:var(--a-mute2); font-size:12px;">${formatDate(a.created_at)}</div>
+              </div>
+            </div>
+          `).join('') : '<div class="empty" style="padding:24px;">No activity yet.</div>'}
+        </div>
+      </div>
+    </div>
+  `;
+})();
+</script>
+</body>
+</html>

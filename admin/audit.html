@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>Audit Log | Acme CMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+</head>
+<body>
+<div data-admin-shell></div>
+<script src="/admin/assets/js/admin.js"></script>
+<script>
+(async function () {
+  const { api, escapeHtml, formatDate, bootShell } = window.AdminAPI;
+  const shell = await bootShell({ title: 'Audit Log', crumbs: 'Compliance / Audit' });
+  if (!shell) return;
+  const { items } = await api('/api/audit?limit=200');
+  shell.content.innerHTML = `
+    <div class="panel">
+      <p style="margin:0 0 16px; color:var(--a-mute2); font-size:13px;">Last 200 admin actions. Logs are retained for 24 months and cannot be edited.</p>
+      <table class="table">
+        <thead><tr><th>When</th><th>User</th><th>Action</th><th>Entity</th><th>Detail</th></tr></thead>
+        <tbody>
+          ${items.length ? items.map((a) => `
+            <tr>
+              <td>${formatDate(a.created_at)}</td>
+              <td>${escapeHtml(a.user_email || 'system')}</td>
+              <td><span class="pill pill--read">${escapeHtml(a.action)}</span></td>
+              <td>${escapeHtml(a.entity)}${a.entity_id ? ' #' + escapeHtml(a.entity_id) : ''}</td>
+              <td><code style="font-size:11.5px;">${escapeHtml(JSON.stringify(a.detail || {}))}</code></td>
+            </tr>
+          `).join('') : '<tr><td colspan="5"><div class="empty">No activity yet.</div></td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  `;
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>Applications | Acme CMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+</head>
+<body>
+<div data-admin-shell></div>
+<script src="/admin/assets/js/admin.js"></script>
+<script>
+(async function () {
+  const { api, escapeHtml, toast, bootShell } = window.AdminAPI;
+  const shell = await bootShell({ title: 'Applications', crumbs: 'Content / Applications' });
+  if (!shell) return;
+  shell.actions.innerHTML = `<button class="btn btn--sm" id="new">+ New application</button>`;
+
+  async function refresh() {
+    const { items } = await api('/api/applications');
+    const wantId = new URLSearchParams(location.search).get('id');
+    shell.content.innerHTML = `
+      <div class="panel" id="list-panel">
+        <table class="table">
+          <thead><tr><th>Name</th><th>Slug</th><th>Sort</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            ${items.length ? items.map((a) => `
+              <tr>
+                <td><strong>${escapeHtml(a.name)}</strong></td>
+                <td><span class="mono">${escapeHtml(a.slug)}</span></td>
+                <td>${a.sort_order}</td>
+                <td><span class="pill pill--${a.status}">${a.status}</span></td>
+                <td><a class="btn btn--ghost btn--sm" href="?id=${a.id}">Edit</a></td>
+              </tr>
+            `).join('') : '<tr><td colspan="5"><div class="empty">No applications yet.</div></td></tr>'}
+          </tbody>
+        </table>
+      </div>
+      <div id="edit-panel"></div>
+    `;
+    if (wantId) {
+      const a = items.find((x) => String(x.id) === wantId);
+      if (a) renderEditor(a);
+    }
+  }
+
+  function renderEditor(a) {
+    a = a || { sort_order: 0, status: 'published' };
+    const isNew = !a.id;
+    document.getElementById('list-panel').style.display = 'none';
+    const panel = document.getElementById('edit-panel');
+    panel.innerHTML = `
+      <div class="panel">
+        <div class="panel__head">
+          <h2>${isNew ? 'New application' : 'Edit: ' + escapeHtml(a.name)}</h2>
+          <div style="display:flex; gap:8px;">
+            ${!isNew ? `<a target="_blank" class="btn btn--ghost btn--sm" href="/applications/${escapeHtml(a.slug)}">Preview ↗</a>` : ''}
+            <a href="/admin/applications.html" class="btn btn--ghost btn--sm">Back</a>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Name</label><input id="f-name" value="${escapeHtml(a.name || '')}"/></div>
+          <div class="field"><label>Slug</label><input id="f-slug" value="${escapeHtml(a.slug || '')}" ${isNew ? '' : 'readonly'}/></div>
+        </div>
+        <div class="field"><label>Icon <span class="hint">(short letter or emoji)</span></label><input id="f-icon" value="${escapeHtml(a.icon || '')}"/></div>
+        <div class="field"><label>Cover image URL</label><input id="f-cover" value="${escapeHtml(a.cover_url || '')}"/></div>
+        <div class="field"><label>Summary <span class="hint">(1-2 sentences for cards)</span></label><textarea id="f-summary" rows="3">${escapeHtml(a.summary || '')}</textarea></div>
+        <div class="field"><label>Body <span class="hint">(HTML allowed)</span></label><textarea id="f-body" rows="10">${escapeHtml(a.body || '')}</textarea></div>
+        <div class="field-row">
+          <div class="field"><label>Meta title</label><input id="f-mt" value="${escapeHtml(a.meta_title || '')}"/></div>
+          <div class="field"><label>Meta description</label><textarea id="f-md" rows="2">${escapeHtml(a.meta_description || '')}</textarea></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Sort order</label><input id="f-sort" type="number" value="${a.sort_order || 0}"/></div>
+          <div class="field"><label>Status</label><select id="f-status"><option value="published" ${a.status === 'published' ? 'selected' : ''}>Published</option><option value="draft" ${a.status === 'draft' ? 'selected' : ''}>Draft</option></select></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn" id="save">Save</button>
+          ${!isNew ? '<button class="btn btn--danger" id="delete">Delete</button>' : ''}
+          <a href="/admin/applications.html" class="btn btn--ghost">Cancel</a>
+        </div>
+      </div>
+    `;
+
+    panel.querySelector('#save').addEventListener('click', async () => {
+      const payload = {
+        slug: panel.querySelector('#f-slug').value,
+        name: panel.querySelector('#f-name').value,
+        icon: panel.querySelector('#f-icon').value,
+        cover_url: panel.querySelector('#f-cover').value,
+        summary: panel.querySelector('#f-summary').value,
+        body: panel.querySelector('#f-body').value,
+        meta_title: panel.querySelector('#f-mt').value,
+        meta_description: panel.querySelector('#f-md').value,
+        sort_order: parseInt(panel.querySelector('#f-sort').value, 10) || 0,
+        status: panel.querySelector('#f-status').value,
+      };
+      try {
+        if (isNew) await api('/api/applications', { method: 'POST', body: JSON.stringify(payload) });
+        else await api('/api/applications/' + a.id, { method: 'PUT', body: JSON.stringify(payload) });
+        toast('Saved', 'success');
+        setTimeout(() => location.href = '/admin/applications.html', 500);
+      } catch (err) { toast('Save failed: ' + err.message, 'error'); }
+    });
+    if (!isNew) {
+      panel.querySelector('#delete').addEventListener('click', async () => {
+        if (!confirm('Delete this application?')) return;
+        await api('/api/applications/' + a.id, { method: 'DELETE' });
+        toast('Deleted', 'success');
+        setTimeout(() => location.href = '/admin/applications.html', 500);
+      });
+    }
+  }
+
+  document.addEventListener('click', (ev) => {
+    if (ev.target.id === 'new') renderEditor();
+  });
+  refresh();
+})();
+</script>
+</body>
+</html>

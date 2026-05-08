@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>GDPR Data Subject Request | Acme Battery</title>
+<meta name="description" content="Submit a GDPR data subject access, rectification or erasure request. Verified by email and processed within 30 days."/>
+<link rel="canonical" href="/gdpr"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/css/theme.css"/>
+</head>
+<body>
+<div data-mount="header"></div>
+
+<section class="hero" style="border-bottom:1px solid var(--color-line);">
+  <div class="container">
+    <nav class="crumbs"><a href="/">Home</a><span>/</span>GDPR Request</nav>
+    <div class="hero__inner" style="grid-template-columns:1fr; padding:56px 0 24px;">
+      <div class="hero__copy reveal" style="max-width:760px;">
+        <span class="eyebrow">Your Rights</span>
+        <h1>Submit a GDPR data request.</h1>
+        <p>Under EU GDPR Articles 15-22, you can ask us to access, rectify or delete the personal data we hold about you. We will verify your identity by email and respond within 30 days.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container" style="max-width:720px;">
+    <div class="rfq rfq--light reveal" style="grid-template-columns:1fr; padding:40px;">
+      <form class="form-grid" id="dsar-form">
+        <div class="form-field">
+          <label>Request type<span class="req">*</span></label>
+          <select name="request_type" required>
+            <option value="">Select…</option>
+            <option value="access">Access — give me a copy of my data</option>
+            <option value="rectify">Rectify — correct inaccurate data</option>
+            <option value="delete">Delete — erase all data linked to my email</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Email<span class="req">*</span></label>
+          <input name="email" type="email" required maxlength="190" placeholder="The email address used in your inquiry"/>
+        </div>
+        <div class="form-field">
+          <label>Additional details</label>
+          <textarea name="details" maxlength="2000" placeholder="Any context that helps us locate your records (optional)"></textarea>
+        </div>
+        <button type="submit" class="btn btn--primary btn--lg">Submit Request</button>
+        <p class="form-status" data-status></p>
+      </form>
+      <p class="muted" style="font-size:13px; margin-top:16px;">After submission, we will email a verification link to the address above. Click it to confirm the request. We will respond within 30 days as required by GDPR Article 12. You may also email <a href="mailto:privacy@example.com" data-controller-email>privacy@example.com</a> directly.</p>
+    </div>
+  </div>
+</section>
+
+<div data-mount="footer"></div>
+<script src="/assets/js/site.js"></script>
+<script>
+document.addEventListener('site:ready', (ev) => {
+  const gdpr = (ev.detail.settings || {}).gdpr || {};
+  if (gdpr.controller_email) {
+    const a = document.querySelector('[data-controller-email]');
+    a.textContent = gdpr.controller_email;
+    a.href = 'mailto:' + gdpr.controller_email;
+  }
+});
+
+const form = document.getElementById('dsar-form');
+const status = form.querySelector('[data-status]');
+form.addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  status.textContent = '';
+  status.className = 'form-status';
+  const data = Object.fromEntries(new FormData(form).entries());
+  const submit = form.querySelector('[type="submit"]');
+  submit.disabled = true;
+  submit.textContent = 'Sending…';
+  try {
+    const res = await fetch('/api/gdpr/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'failed');
+    status.className = 'form-status is-success';
+    status.textContent = `Request submitted. Reference ${json.reference}. Please check ${data.email} for the verification email (valid 48 hours).`;
+    form.reset();
+  } catch (err) {
+    status.className = 'form-status is-error';
+    status.textContent = 'Submission failed. Please email privacy@example.com directly.';
+  } finally {
+    submit.disabled = false;
+    submit.textContent = 'Submit Request';
+  }
+});
+</script>
+</body>
+</html>

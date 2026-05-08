@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>Products | Acme CMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+</head>
+<body>
+<div data-admin-shell></div>
+<script src="/admin/assets/js/admin.js"></script>
+<script>
+(async function () {
+  const { api, escapeHtml, toast, bootShell } = window.AdminAPI;
+  const shell = await bootShell({ title: 'Products', crumbs: 'Content / Products' });
+  if (!shell) return;
+  shell.actions.innerHTML = `<button class="btn btn--sm" id="new">+ New product</button>`;
+
+  const pillars = (await api('/api/pillars?status=all')).items;
+  const wantId = new URLSearchParams(location.search).get('id');
+
+  async function refresh() {
+    const { items } = await api('/api/products/admin/list');
+    shell.content.innerHTML = `
+      <div class="panel" id="list-panel">
+        <table class="table">
+          <thead><tr><th>Name</th><th>Slug</th><th>Pillar</th><th>Custom</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            ${items.length ? items.map((p) => `
+              <tr>
+                <td><strong>${escapeHtml(p.name)}</strong><div style="font-size:11.5px; color:var(--a-mute2);">${escapeHtml(p.model_no || '')}</div></td>
+                <td><span class="mono">${escapeHtml(p.slug)}</span></td>
+                <td>${escapeHtml(p.pillar_slug || '-')}</td>
+                <td>${p.is_custom ? '<span class="pill pill--verified">Custom</span>' : '<span class="pill pill--read">Standard</span>'}</td>
+                <td><span class="pill pill--${p.status}">${p.status}</span></td>
+                <td><a class="btn btn--ghost btn--sm" href="?id=${p.id}">Edit</a></td>
+              </tr>
+            `).join('') : '<tr><td colspan="6"><div class="empty">No products yet.</div></td></tr>'}
+          </tbody>
+        </table>
+      </div>
+      <div id="edit-panel"></div>
+    `;
+    if (wantId) {
+      const p = items.find((x) => String(x.id) === wantId);
+      if (p) renderEditor(p);
+    }
+  }
+
+  function renderEditor(p) {
+    p = p || { specs: {}, features: [], gallery: [], status: 'published', sort_order: 0 };
+    const isNew = !p.id;
+    document.getElementById('list-panel').style.display = 'none';
+    const panel = document.getElementById('edit-panel');
+    panel.innerHTML = `
+      <div class="panel">
+        <div class="panel__head">
+          <h2>${isNew ? 'New product' : 'Edit: ' + escapeHtml(p.name)}</h2>
+          <div style="display:flex; gap:8px;">
+            ${!isNew ? `<a target="_blank" class="btn btn--ghost btn--sm" href="/products/${escapeHtml(p.slug)}">Preview ↗</a>` : ''}
+            <a href="/admin/products.html" class="btn btn--ghost btn--sm">Back</a>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Name</label><input id="f-name" value="${escapeHtml(p.name || '')}"/></div>
+          <div class="field"><label>Model #</label><input id="f-model" value="${escapeHtml(p.model_no || '')}"/></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Slug</label><input id="f-slug" value="${escapeHtml(p.slug || '')}" ${isNew ? '' : 'readonly'}/></div>
+          <div class="field"><label>Pillar</label>
+            <select id="f-pillar">
+              <option value="">— No pillar —</option>
+              ${pillars.map((x) => `<option value="${x.id}" ${x.id === p.pillar_id ? 'selected' : ''}>${escapeHtml(x.name)}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="field"><label>Tagline</label><input id="f-tagline" value="${escapeHtml(p.tagline || '')}"/></div>
+        <div class="field"><label>Cover image URL</label><input id="f-cover" value="${escapeHtml(p.cover_url || '')}"/></div>
+        <div class="field"><label>Datasheet URL</label><input id="f-datasheet" value="${escapeHtml(p.datasheet_url || '')}"/></div>
+        <div class="field"><label>Description</label><textarea id="f-desc" rows="5">${escapeHtml(p.description || '')}</textarea></div>
+        <div class="field"><label>Specs JSON <span class="hint">(key/value object)</span></label><textarea id="f-specs" rows="6" class="mono">${escapeHtml(JSON.stringify(p.specs || {}, null, 2))}</textarea></div>
+        <div class="field"><label>Features <span class="hint">(one per line)</span></label><textarea id="f-features" rows="5">${escapeHtml((p.features || []).join('\n'))}</textarea></div>
+        <div class="field-row">
+          <div class="field"><label>Sort order</label><input id="f-sort" type="number" value="${p.sort_order || 0}"/></div>
+          <div class="field"><label>Status</label><select id="f-status"><option value="published" ${p.status === 'published' ? 'selected' : ''}>Published</option><option value="draft" ${p.status === 'draft' ? 'selected' : ''}>Draft</option></select></div>
+        </div>
+        <div class="field field--check"><input type="checkbox" id="f-custom" ${p.is_custom ? 'checked' : ''}/><label for="f-custom">Custom-engineered product (vs. standard catalogue)</label></div>
+        <div class="form-actions">
+          <button class="btn" id="save">Save</button>
+          ${!isNew ? '<button class="btn btn--danger" id="delete">Delete</button>' : ''}
+          <a href="/admin/products.html" class="btn btn--ghost">Cancel</a>
+        </div>
+      </div>
+    `;
+
+    panel.querySelector('#save').addEventListener('click', async () => {
+      let specs;
+      try { specs = JSON.parse(panel.querySelector('#f-specs').value); }
+      catch (_) { return toast('Specs JSON is invalid', 'error'); }
+      const payload = {
+        slug: panel.querySelector('#f-slug').value,
+        name: panel.querySelector('#f-name').value,
+        model_no: panel.querySelector('#f-model').value,
+        pillar_id: panel.querySelector('#f-pillar').value || null,
+        tagline: panel.querySelector('#f-tagline').value,
+        cover_url: panel.querySelector('#f-cover').value,
+        datasheet_url: panel.querySelector('#f-datasheet').value,
+        description: panel.querySelector('#f-desc').value,
+        specs,
+        features: panel.querySelector('#f-features').value.split('\n').map((s) => s.trim()).filter(Boolean),
+        sort_order: parseInt(panel.querySelector('#f-sort').value, 10) || 0,
+        status: panel.querySelector('#f-status').value,
+        is_custom: panel.querySelector('#f-custom').checked,
+      };
+      try {
+        if (isNew) await api('/api/products', { method: 'POST', body: JSON.stringify(payload) });
+        else await api('/api/products/' + p.id, { method: 'PUT', body: JSON.stringify(payload) });
+        toast('Saved', 'success');
+        setTimeout(() => location.href = '/admin/products.html', 500);
+      } catch (err) { toast('Save failed: ' + err.message, 'error'); }
+    });
+    if (!isNew) {
+      panel.querySelector('#delete').addEventListener('click', async () => {
+        if (!confirm('Delete this product?')) return;
+        await api('/api/products/' + p.id, { method: 'DELETE' });
+        toast('Deleted', 'success');
+        setTimeout(() => location.href = '/admin/products.html', 500);
+      });
+    }
+  }
+
+  document.addEventListener('click', (ev) => {
+    if (ev.target.id === 'new') renderEditor();
+  });
+  refresh();
+})();
+</script>
+</body>
+</html>

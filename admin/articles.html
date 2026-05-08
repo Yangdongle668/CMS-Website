@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>Articles | Acme CMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+</head>
+<body>
+<div data-admin-shell></div>
+<script src="/admin/assets/js/admin.js"></script>
+<script>
+(async function () {
+  const { api, escapeHtml, formatDate, toast, bootShell } = window.AdminAPI;
+  const shell = await bootShell({ title: 'Articles', crumbs: 'Content / Articles' });
+  if (!shell) return;
+  shell.actions.innerHTML = `<button class="btn btn--sm" id="new">+ New article</button>`;
+
+  const pillars = (await api('/api/pillars?status=all')).items;
+  const cats = (await api('/api/articles/categories/list')).items;
+
+  async function refresh() {
+    const wantId = new URLSearchParams(location.search).get('id');
+    const { items } = await api('/api/articles/admin/list');
+    shell.content.innerHTML = `
+      <div class="panel" id="list-panel">
+        <table class="table">
+          <thead><tr><th>Title</th><th>Pillar</th><th>Status</th><th>Updated</th><th></th></tr></thead>
+          <tbody>
+            ${items.length ? items.map((a) => `
+              <tr>
+                <td><strong>${escapeHtml(a.title)}</strong><div style="font-size:11.5px; color:var(--a-mute2);">${escapeHtml(a.slug)}</div></td>
+                <td>${escapeHtml(a.pillar_short_name || '-')}</td>
+                <td><span class="pill pill--${a.status}">${a.status}</span></td>
+                <td>${formatDate(a.updated_at)}</td>
+                <td><a class="btn btn--ghost btn--sm" href="?id=${a.id}">Edit</a></td>
+              </tr>
+            `).join('') : '<tr><td colspan="5"><div class="empty">No articles yet.</div></td></tr>'}
+          </tbody>
+        </table>
+      </div>
+      <div id="edit-panel"></div>
+    `;
+    if (wantId) {
+      const a = items.find((x) => String(x.id) === wantId);
+      if (a) renderEditor(a);
+    }
+  }
+
+  function renderEditor(a) {
+    a = a || { reading_minutes: 5, status: 'draft' };
+    const isNew = !a.id;
+    document.getElementById('list-panel').style.display = 'none';
+    const panel = document.getElementById('edit-panel');
+    panel.innerHTML = `
+      <div class="panel">
+        <div class="panel__head">
+          <h2>${isNew ? 'New article' : 'Edit: ' + escapeHtml(a.title)}</h2>
+          <div style="display:flex; gap:8px;">
+            ${!isNew ? `<a target="_blank" class="btn btn--ghost btn--sm" href="/blog/${escapeHtml(a.slug)}">Preview ↗</a>` : ''}
+            <a href="/admin/articles.html" class="btn btn--ghost btn--sm">Back</a>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Title</label><input id="f-title" value="${escapeHtml(a.title || '')}"/></div>
+          <div class="field"><label>Slug</label><input id="f-slug" value="${escapeHtml(a.slug || '')}" ${isNew ? '' : 'readonly'}/></div>
+        </div>
+        <div class="field"><label>Excerpt</label><textarea id="f-excerpt" rows="2">${escapeHtml(a.excerpt || '')}</textarea></div>
+        <div class="field"><label>Cover image URL</label><input id="f-cover" value="${escapeHtml(a.cover_url || '')}"/></div>
+
+        <div class="field-row">
+          <div class="field"><label>Topic Cluster (Pillar) <span class="hint">— this links the article up to the pillar for SEO</span></label>
+            <select id="f-pillar">
+              <option value="">— No pillar —</option>
+              ${pillars.map((x) => `<option value="${x.id}" ${x.id === a.pillar_id ? 'selected' : ''}>${escapeHtml(x.name)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field"><label>Category</label>
+            <select id="f-cat">
+              <option value="">— None —</option>
+              ${cats.map((c) => `<option value="${c.id}" ${c.id === a.category_id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+
+        <div class="field"><label>Content <span class="hint">(HTML allowed)</span></label><textarea id="f-content" rows="14">${escapeHtml(a.content || '')}</textarea></div>
+
+        <div class="field-row">
+          <div class="field"><label>Author</label><input id="f-author" value="${escapeHtml(a.author || 'Acme Engineering')}"/></div>
+          <div class="field"><label>Reading minutes</label><input id="f-min" type="number" value="${a.reading_minutes || 5}"/></div>
+        </div>
+
+        <div class="field-row">
+          <div class="field"><label>Meta title</label><input id="f-mt" value="${escapeHtml(a.meta_title || '')}"/></div>
+          <div class="field"><label>Status</label><select id="f-status"><option value="draft" ${a.status === 'draft' ? 'selected' : ''}>Draft</option><option value="published" ${a.status === 'published' ? 'selected' : ''}>Published</option></select></div>
+        </div>
+        <div class="field"><label>Meta description</label><textarea id="f-md" rows="2">${escapeHtml(a.meta_description || '')}</textarea></div>
+
+        <div class="form-actions">
+          <button class="btn" id="save">Save</button>
+          ${!isNew ? '<button class="btn btn--danger" id="delete">Delete</button>' : ''}
+          <a href="/admin/articles.html" class="btn btn--ghost">Cancel</a>
+        </div>
+      </div>
+    `;
+
+    panel.querySelector('#save').addEventListener('click', async () => {
+      const payload = {
+        slug: panel.querySelector('#f-slug').value,
+        title: panel.querySelector('#f-title').value,
+        excerpt: panel.querySelector('#f-excerpt').value,
+        cover_url: panel.querySelector('#f-cover').value,
+        pillar_id: panel.querySelector('#f-pillar').value || null,
+        category_id: panel.querySelector('#f-cat').value || null,
+        content: panel.querySelector('#f-content').value,
+        author: panel.querySelector('#f-author').value,
+        reading_minutes: parseInt(panel.querySelector('#f-min').value, 10) || 5,
+        meta_title: panel.querySelector('#f-mt').value,
+        meta_description: panel.querySelector('#f-md').value,
+        status: panel.querySelector('#f-status').value,
+      };
+      try {
+        if (isNew) await api('/api/articles', { method: 'POST', body: JSON.stringify(payload) });
+        else await api('/api/articles/' + a.id, { method: 'PUT', body: JSON.stringify(payload) });
+        toast('Saved', 'success');
+        setTimeout(() => location.href = '/admin/articles.html', 500);
+      } catch (err) { toast('Save failed: ' + err.message, 'error'); }
+    });
+    if (!isNew) {
+      panel.querySelector('#delete').addEventListener('click', async () => {
+        if (!confirm('Delete this article?')) return;
+        await api('/api/articles/' + a.id, { method: 'DELETE' });
+        toast('Deleted', 'success');
+        setTimeout(() => location.href = '/admin/articles.html', 500);
+      });
+    }
+  }
+
+  document.addEventListener('click', (ev) => {
+    if (ev.target.id === 'new') renderEditor();
+  });
+  refresh();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>Site Settings | Acme CMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+</head>
+<body>
+<div data-admin-shell></div>
+<script src="/admin/assets/js/admin.js"></script>
+<script>
+(async function () {
+  const { api, escapeHtml, toast, bootShell } = window.AdminAPI;
+  const shell = await bootShell({ title: 'Site Settings', crumbs: 'Settings' });
+  if (!shell) return;
+
+  const { settings } = await api('/api/settings');
+  const s = (k) => settings[k] || {};
+
+  shell.content.innerHTML = `
+    <div class="tabs">
+      <button class="tabs__btn is-active" data-tab="site">Site</button>
+      <button class="tabs__btn" data-tab="seo">SEO</button>
+      <button class="tabs__btn" data-tab="navigation">Navigation</button>
+      <button class="tabs__btn" data-tab="social">Social</button>
+      <button class="tabs__btn" data-tab="gdpr">GDPR</button>
+      <button class="tabs__btn" data-tab="mail">Mail</button>
+    </div>
+
+    <div data-pane="site">
+      <div class="panel">
+        <h2 style="margin-top:0;">Site information</h2>
+        <div class="field-row">
+          <div class="field"><label>Company name</label><input data-key="site.name" value="${escapeHtml(s('site').name || '')}"/></div>
+          <div class="field"><label>Tagline</label><input data-key="site.tagline" value="${escapeHtml(s('site').tagline || '')}"/></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Sales email</label><input data-key="site.email" value="${escapeHtml(s('site').email || '')}"/></div>
+          <div class="field"><label>Phone</label><input data-key="site.phone" value="${escapeHtml(s('site').phone || '')}"/></div>
+        </div>
+        <div class="field"><label>Address</label><input data-key="site.address" value="${escapeHtml(s('site').address || '')}"/></div>
+        <div class="field-row">
+          <div class="field"><label>Founded year</label><input type="number" data-key="site.founded_year" value="${s('site').founded_year || ''}"/></div>
+          <div class="field"><label>Factory size (m²)</label><input type="number" data-key="site.factory_size_sqm" value="${s('site').factory_size_sqm || ''}"/></div>
+        </div>
+      </div>
+    </div>
+
+    <div data-pane="seo" style="display:none;">
+      <div class="panel">
+        <h2 style="margin-top:0;">SEO defaults</h2>
+        <div class="field"><label>Default meta description</label><textarea data-key="seo.default_meta_description" rows="3">${escapeHtml(s('seo').default_meta_description || '')}</textarea></div>
+        <div class="field"><label>Default OG image URL</label><input data-key="seo.default_meta_image" value="${escapeHtml(s('seo').default_meta_image || '')}"/></div>
+      </div>
+    </div>
+
+    <div data-pane="navigation" style="display:none;">
+      <div class="panel">
+        <h2 style="margin-top:0;">Navigation</h2>
+        <p style="font-size:13px; color:var(--a-mute2); margin-top:0;">Edit as JSON. Header items support nested children.</p>
+        <div class="field"><label>Header (JSON)</label><textarea class="mono" data-key="navigation.header" rows="14">${escapeHtml(JSON.stringify(s('navigation').header || [], null, 2))}</textarea></div>
+        <div class="field"><label>Footer (JSON)</label><textarea class="mono" data-key="navigation.footer" rows="6">${escapeHtml(JSON.stringify(s('navigation').footer || [], null, 2))}</textarea></div>
+      </div>
+    </div>
+
+    <div data-pane="social" style="display:none;">
+      <div class="panel">
+        <h2 style="margin-top:0;">Social links</h2>
+        <div class="field"><label>LinkedIn</label><input data-key="social.linkedin" value="${escapeHtml(s('social').linkedin || '')}"/></div>
+        <div class="field"><label>YouTube</label><input data-key="social.youtube" value="${escapeHtml(s('social').youtube || '')}"/></div>
+        <div class="field"><label>X / Twitter</label><input data-key="social.x" value="${escapeHtml(s('social').x || '')}"/></div>
+      </div>
+    </div>
+
+    <div data-pane="gdpr" style="display:none;">
+      <div class="panel">
+        <h2 style="margin-top:0;">GDPR Configuration</h2>
+        <div class="field-row">
+          <div class="field"><label>Data controller name</label><input data-key="gdpr.controller" value="${escapeHtml(s('gdpr').controller || '')}"/></div>
+          <div class="field"><label>Privacy contact email</label><input data-key="gdpr.controller_email" value="${escapeHtml(s('gdpr').controller_email || '')}"/></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Inquiry retention (days)</label><input type="number" data-key="gdpr.retention_days" value="${s('gdpr').retention_days || 365}"/></div>
+          <div class="field"><label>Soft-delete period (days)</label><input type="number" data-key="gdpr.soft_delete_days" value="${s('gdpr').soft_delete_days || 30}"/></div>
+        </div>
+        <div class="field"><label>Privacy policy version</label><input data-key="gdpr.policy_version" value="${escapeHtml(s('gdpr').policy_version || '1.0')}"/></div>
+        <div class="field"><label>Cookie categories (JSON)</label><textarea class="mono" data-key="gdpr.cookie_categories" rows="10">${escapeHtml(JSON.stringify(s('gdpr').cookie_categories || {}, null, 2))}</textarea></div>
+      </div>
+    </div>
+
+    <div data-pane="mail" style="display:none;">
+      <div class="panel">
+        <h2 style="margin-top:0;">Mail</h2>
+        <p style="font-size:13px; color:var(--a-mute2); margin-top:0;">SMTP host/user/password are configured via <code>.env</code>. Use the fields below for behaviour and recipient settings.</p>
+        <div class="field"><label>Reply-to address</label><input data-key="mail.reply_to" value="${escapeHtml(s('mail').reply_to || '')}"/></div>
+        <div class="field"><label>Subject prefix</label><input data-key="mail.subject_prefix" value="${escapeHtml(s('mail').subject_prefix || '[Inquiry]')}"/></div>
+        <div class="field field--check"><input type="checkbox" id="auto-reply" ${s('mail').auto_reply_enabled !== false ? 'checked' : ''}/><label for="auto-reply">Send auto-reply confirmation to inquiry submitter</label></div>
+      </div>
+    </div>
+
+    <div class="form-actions" style="position:sticky; bottom:0; background:#fff; border-top:1px solid var(--a-line);">
+      <button class="btn" id="save-all">Save all settings</button>
+    </div>
+  `;
+
+  document.querySelectorAll('.tabs__btn').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('.tabs__btn').forEach((x) => x.classList.toggle('is-active', x === b));
+    document.querySelectorAll('[data-pane]').forEach((x) => x.style.display = x.dataset.pane === b.dataset.tab ? '' : 'none');
+  }));
+
+  document.getElementById('save-all').addEventListener('click', async () => {
+    // Group inputs by top-level key (e.g., site.*)
+    const groups = {};
+    document.querySelectorAll('[data-key]').forEach((el) => {
+      const [group, field] = el.dataset.key.split('.');
+      if (!groups[group]) groups[group] = JSON.parse(JSON.stringify(s(group)));
+      let val = el.value;
+      if (el.tagName === 'TEXTAREA' && el.classList.contains('mono')) {
+        try { val = JSON.parse(val); }
+        catch (_) { return toast('Invalid JSON in ' + el.dataset.key, 'error'); }
+      }
+      if (el.type === 'number') val = parseInt(val, 10) || 0;
+      groups[group][field] = val;
+    });
+    // Auto-reply checkbox
+    if (groups.mail) {
+      groups.mail.auto_reply_enabled = document.getElementById('auto-reply').checked;
+    }
+    try {
+      for (const [k, v] of Object.entries(groups)) {
+        await api('/api/settings/' + k, { method: 'PUT', body: JSON.stringify({ value: v }) });
+      }
+      toast('Settings saved', 'success');
+    } catch (err) { toast('Save failed: ' + err.message, 'error'); }
+  });
+})();
+</script>
+</body>
+</html>

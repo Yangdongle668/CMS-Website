@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title data-meta="title">Application | Acme Battery</title>
+<meta name="description" data-meta="description" content=""/>
+<link rel="canonical" data-canonical href=""/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/css/theme.css"/>
+</head>
+<body>
+<div data-mount="header"></div>
+
+<section class="hero" style="border-bottom:1px solid var(--color-line);">
+  <div class="container">
+    <nav class="crumbs"><a href="/">Home</a><span>/</span><a href="/applications">Applications</a><span>/</span><span data-app-name></span></nav>
+    <div class="hero__inner" style="grid-template-columns:1fr; padding: 64px 0 32px;">
+      <div class="hero__copy reveal" style="max-width:760px;">
+        <span class="eyebrow">Application</span>
+        <h1 data-app-title></h1>
+        <p data-app-summary></p>
+        <div class="hero__actions"><a href="/quote" class="btn btn--primary btn--lg">Request a Quote</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container" style="max-width:820px;">
+    <div data-app-body class="article-body"></div>
+  </div>
+</section>
+
+<section class="section section--alt">
+  <div class="container">
+    <div class="section__head reveal">
+      <span class="eyebrow">Recommended Product Lines</span>
+      <h2>Battery formats commonly used in this application.</h2>
+    </div>
+    <div class="pillar-grid" data-pillars></div>
+  </div>
+</section>
+
+<div data-mount="footer"></div>
+<script src="/assets/js/site.js"></script>
+<script>
+(async function () {
+  const { fetchJson, escapeHtml } = window.SiteAPI;
+  const slug = location.pathname.replace(/^\/applications\//, '').replace(/\/$/, '');
+  if (!slug) { location.href = '/applications'; return; }
+  let data;
+  try { data = await fetchJson('/api/applications/' + encodeURIComponent(slug)); }
+  catch (_) { location.href = '/404.html'; return; }
+  const a = data.application;
+  document.title = (a.meta_title || a.name) + ' | Acme Battery';
+  document.querySelector('[data-meta="description"]').setAttribute('content', a.meta_description || a.summary);
+  document.querySelector('[data-canonical]').setAttribute('href', '/applications/' + a.slug);
+  document.querySelector('[data-app-name]').textContent = a.name;
+  document.querySelector('[data-app-title]').textContent = a.name;
+  document.querySelector('[data-app-summary]').textContent = a.summary || '';
+  document.querySelector('[data-app-body]').innerHTML = a.body || '<p>' + escapeHtml(a.summary || '') + '</p>';
+  document.querySelector('[data-pillars]').innerHTML = (data.pillars || []).map((p) => `
+    <a class="pillar-card" href="/products/${escapeHtml(p.slug)}">
+      <div class="pillar-card__media"></div>
+      <div class="pillar-card__body">
+        <span class="tag">${escapeHtml(p.short_name)}</span>
+        <h3 style="margin-top:10px;">${escapeHtml(p.name)}</h3>
+        <span class="pillar-card__cta">Explore →</span>
+      </div>
+    </a>
+  `).join('');
+})();
+</script>
+</body>
+</html>

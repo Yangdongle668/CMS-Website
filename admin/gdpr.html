@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>GDPR Requests | Acme CMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+</head>
+<body>
+<div data-admin-shell></div>
+<script src="/admin/assets/js/admin.js"></script>
+<script>
+(async function () {
+  const { api, escapeHtml, formatDate, toast, bootShell } = window.AdminAPI;
+  const shell = await bootShell({ title: 'GDPR Requests', crumbs: 'Compliance / GDPR' });
+  if (!shell) return;
+
+  async function refresh() {
+    const { items } = await api('/api/gdpr');
+    shell.content.innerHTML = `
+      <div class="panel">
+        <p style="margin:0 0 16px; color:var(--a-mute2); font-size:13px;">Data subject access, rectification and erasure requests under GDPR Articles 15-22. We are required to respond within 30 days.</p>
+        <table class="table">
+          <thead><tr><th>Reference</th><th>Type</th><th>Email</th><th>Status</th><th>Verified</th><th>Submitted</th><th></th></tr></thead>
+          <tbody>
+            ${items.length ? items.map((g) => `
+              <tr>
+                <td><span class="mono" style="font-weight:600;">${escapeHtml(g.reference)}</span></td>
+                <td><span class="pill pill--read">${escapeHtml(g.request_type)}</span></td>
+                <td>${escapeHtml(g.email)}</td>
+                <td><span class="pill pill--${g.status}">${g.status}</span></td>
+                <td>${g.verified_at ? formatDate(g.verified_at) : '<span style="color:var(--a-mute2);">Not verified</span>'}</td>
+                <td>${formatDate(g.created_at)}</td>
+                <td>
+                  ${g.status !== 'completed' && g.verified_at ? `
+                    <a class="btn btn--ghost btn--sm" href="/api/gdpr/${g.id}/export" target="_blank">Export</a>
+                    <button class="btn btn--sm" data-complete="${g.id}" data-type="${g.request_type}">Mark complete</button>
+                  ` : ''}
+                </td>
+              </tr>
+            `).join('') : '<tr><td colspan="7"><div class="empty">No GDPR requests yet.</div></td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    `;
+    document.querySelectorAll('[data-complete]').forEach((b) => b.addEventListener('click', async () => {
+      const t = b.dataset.type;
+      const msg = t === 'delete' ? 'Mark this delete request as completed? This will soft-delete all inquiries with the requester\'s email address.' : 'Mark this request as completed?';
+      if (!confirm(msg)) return;
+      await api('/api/gdpr/' + b.dataset.complete + '/complete', { method: 'POST' });
+      toast('Request completed', 'success');
+      refresh();
+    }));
+  }
+  refresh();
+})();
+</script>
+</body>
+</html>
