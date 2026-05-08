@@ -143,12 +143,55 @@ app.use((req, res) => {
 });
 
 // ----- Error handler -----
-app.use((err, _req, res, _next) => {
-  console.error('[error]', err);
+app.use((err, req, res, _next) => {
+  // Log full error details to stdout so `docker compose logs app` shows
+  // the SQL message / stack. Useful for diagnosing 500s in admin.
+  console.error('[error] %s %s', req.method, req.originalUrl);
+  console.error(err && err.stack ? err.stack : err);
   if (res.headersSent) return;
-  res.status(err.status || 500).json({ error: err.expose ? err.message : 'internal_error' });
+  // Surface the actual error code to admin clients so the toast is helpful.
+  const isApi = req.originalUrl.startsWith('/api/');
+  const detail = err && err.code ? ` (${err.code})` : '';
+  res.status(err.status || 500).json({
+    error: err.expose ? err.message : 'internal_error',
+    detail: isApi && err && err.message ? err.message + detail : undefined,
+  });
 });
+
+// ----- Self-healing schema migrations -----
+// Idempotent ALTER TABLEs that bring an older deployment's database
+// up to the current schema. Runs once at boot — safe to re-run.
+async function autoMigrate() {
+  const { query } = require('./db/client');
+  const stmts = [
+    `ALTER TABLE articles ADD COLUMN IF NOT EXISTS template VARCHAR(40) NOT NULL DEFAULT 'standard'`,
+    `ALTER TABLE articles ADD COLUMN IF NOT EXISTS hero_image VARCHAR(500) NOT NULL DEFAULT ''`,
+    `CREATE TABLE IF NOT EXISTS pages (
+       id SERIAL PRIMARY KEY,
+       slug VARCHAR(190) UNIQUE NOT NULL,
+       nav VARCHAR(60) NOT NULL DEFAULT '',
+       title VARCHAR(255) NOT NULL DEFAULT '',
+       meta_title VARCHAR(255) NOT NULL DEFAULT '',
+       meta_description TEXT NOT NULL DEFAULT '',
+       hero_eyebrow VARCHAR(120) NOT NULL DEFAULT '',
+       hero_title VARCHAR(255) NOT NULL DEFAULT '',
+       hero_subtitle TEXT NOT NULL DEFAULT '',
+       hero_image VARCHAR(500) NOT NULL DEFAULT '',
+       hero_breadcrumbs JSONB NOT NULL DEFAULT '[]'::jsonb,
+       body_html TEXT NOT NULL DEFAULT '',
+       sections JSONB NOT NULL DEFAULT '{}'::jsonb,
+       status VARCHAR(20) NOT NULL DEFAULT 'published',
+       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+     )`,
+  ];
+  for (const sql of stmts) {
+    try { await query(sql); }
+    catch (err) { console.error('[migrate] statement failed:', err.message); }
+  }
+  console.log('[migrate] schema check complete');
+}
 
 app.listen(PORT, () => {
   console.log(`[battery-cms] running on http://localhost:${PORT}`);
+  autoMigrate().catch((err) => console.error('[migrate] error:', err));
 });

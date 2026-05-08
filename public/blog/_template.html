@@ -95,48 +95,80 @@
     </div>
   </section>
 
-  <!-- Article body -->
-  <section class="section section-light" style="padding: 90px 24px 60px;">
-    <div class="section-inner">
-      <div data-art-layout></div>
+  <!-- Article body in 2-col shell -->
+  <section class="section section-light" style="padding: 90px 0 60px;">
+    <div class="article-shell">
+      <!-- LEFT: article content -->
+      <div class="article-shell__main">
+        <div data-art-layout></div>
 
-      <!-- Pillar callout — appears under the body if pillar set -->
-      <div class="pillar-callout" data-pillar-callout style="display:none;">
-        <div class="pillar-callout__icon">★</div>
-        <div>
-          <strong data-pillar-callout-title></strong>
-          <a data-pillar-callout-link>Visit the pillar &rarr;</a>
+        <!-- Share row -->
+        <div class="article-share">
+          <span class="article-share__label">Share this article</span>
+          <div class="article-share__btns">
+            <button type="button" class="share-btn" data-share="linkedin" title="LinkedIn">in</button>
+            <button type="button" class="share-btn" data-share="twitter"  title="X / Twitter">X</button>
+            <button type="button" class="share-btn" data-share="email"    title="Email">@</button>
+            <button type="button" class="share-btn" data-share="copy"     title="Copy link">⎘</button>
+          </div>
+        </div>
+
+        <!-- Author block -->
+        <div class="article-author">
+          <div class="article-author__avatar" data-author-initial>A</div>
+          <div>
+            <div class="article-author__name" data-author-name>Acme Engineering</div>
+            <div class="article-author__role" data-author-role>Cell engineering team</div>
+          </div>
         </div>
       </div>
 
-      <!-- Share row -->
-      <div class="article-share">
-        <span class="article-share__label">Share this article</span>
-        <div class="article-share__btns">
-          <button type="button" class="share-btn" data-share="linkedin" title="LinkedIn">in</button>
-          <button type="button" class="share-btn" data-share="twitter"  title="X / Twitter">X</button>
-          <button type="button" class="share-btn" data-share="email"    title="Email">@</button>
-          <button type="button" class="share-btn" data-share="copy"     title="Copy link">⎘</button>
-        </div>
-      </div>
+      <!-- RIGHT: sidebar -->
+      <aside class="article-shell__side">
+        <div class="article-side-stack">
 
-      <!-- Author block -->
-      <div class="article-author">
-        <div class="article-author__avatar" data-author-initial>A</div>
-        <div>
-          <div class="article-author__name" data-author-name>Acme Engineering</div>
-          <div class="article-author__role" data-author-role>Cell engineering team</div>
-        </div>
-      </div>
-    </div>
-  </section>
+          <!-- Guide TOC (only for template=guide) -->
+          <div class="article-side-toc" data-side-toc style="display:none;">
+            <h5>On this page</h5>
+            <ul></ul>
+          </div>
 
-  <!-- Related articles -->
-  <section class="section section-grey" data-related-section style="padding: 80px 24px;">
-    <div class="section-inner" style="max-width:1240px;">
-      <span class="eyebrow">Continue reading</span>
-      <h2>Related articles</h2>
-      <div class="blog-grid" data-related style="margin-top: 40px;"></div>
+          <!-- Sticky CTA mini-form -->
+          <div class="article-side-cta">
+            <h4>Get a quote</h4>
+            <p class="lede">Send your specs &mdash; engineering responds within one business day.</p>
+            <form id="side-rfq" autocomplete="on">
+              <div class="article-side-cta__hp" aria-hidden="true">
+                <label>Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+              </div>
+              <input type="email" name="email" required placeholder="Work email" autocomplete="email"/>
+              <textarea name="message" required minlength="10" placeholder="What are you trying to build?"></textarea>
+              <label class="consent">
+                <input type="checkbox" name="consent" required>
+                <span>I have read the <a href="/privacy.html" target="_blank">Privacy Policy</a> and consent to be contacted about my inquiry.</span>
+              </label>
+              <button type="submit">Send Inquiry</button>
+              <div class="article-side-cta__status" data-side-status></div>
+              <div class="article-side-cta__small">
+                Or use the <a href="/contact.html">full inquiry form &rarr;</a>
+              </div>
+            </form>
+          </div>
+
+          <!-- Pillar callout (compact) -->
+          <div class="article-side-pillar" data-side-pillar style="display:none;">
+            <strong>This article is part of</strong>
+            <a data-side-pillar-link></a>
+          </div>
+
+          <!-- Related articles -->
+          <div class="article-side-related" data-side-related style="display:none;">
+            <h5>Continue reading</h5>
+            <div data-side-related-list></div>
+          </div>
+
+        </div>
+      </aside>
     </div>
   </section>
 
@@ -233,24 +265,26 @@
       const id = 'sec-' + i + '-' + (h.textContent || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40);
       h.setAttribute('id', id);
     });
-    layoutEl.innerHTML = `
-      <div class="layout-guide">
-        <aside class="article-toc">
-          <h4>On this page</h4>
-          <ul>${h2s.map((h) => `<li><a href="#${h.id}">${escape(h.textContent)}</a></li>`).join('')}</ul>
-        </aside>
-        <article class="article-body">${tmp.innerHTML}</article>
-      </div>`;
-    const links = layoutEl.querySelectorAll('.article-toc a');
-    const sections = h2s.map((h) => layoutEl.querySelector('#' + CSS.escape(h.id)));
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => {
-        if (!e.isIntersecting) return;
-        const idx = sections.indexOf(e.target);
-        links.forEach((l, i) => l.classList.toggle('is-active', i === idx));
-      });
-    }, { rootMargin: '-30% 0px -60% 0px', threshold: 0 });
-    sections.forEach((s) => s && io.observe(s));
+    layoutEl.innerHTML = `<article class="article-body">${tmp.innerHTML}</article>`;
+
+    // Populate the sidebar TOC
+    if (h2s.length) {
+      const tocEl = document.querySelector('[data-side-toc]');
+      tocEl.style.display = '';
+      tocEl.querySelector('ul').innerHTML = h2s.map((h) =>
+        `<li><a href="#${h.id}">${escape(h.textContent)}</a></li>`
+      ).join('');
+      const links = tocEl.querySelectorAll('a');
+      const sections = h2s.map((h) => layoutEl.querySelector('#' + CSS.escape(h.id)));
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((e) => {
+          if (!e.isIntersecting) return;
+          const idx = sections.indexOf(e.target);
+          links.forEach((l, i) => l.classList.toggle('is-active', i === idx));
+        });
+      }, { rootMargin: '-30% 0px -60% 0px', threshold: 0 });
+      sections.forEach((s) => s && io.observe(s));
+    }
   } else if (tpl === 'case-study') {
     const tmp = document.createElement('div'); tmp.innerHTML = content;
     const firstUl = tmp.querySelector('ul.metrics, ul[data-metrics]');
@@ -274,12 +308,13 @@
     layoutEl.innerHTML = `<article class="article-body">${content}</article>`;
   }
 
-  // ------- Pillar callout -------
+  // ------- Sidebar pillar callout -------
   if (a.pillar_slug) {
-    const c = document.querySelector('[data-pillar-callout]');
+    const c = document.querySelector('[data-side-pillar]');
     c.style.display = '';
-    document.querySelector('[data-pillar-callout-title]').textContent = `This article is part of: ${a.pillar_name || a.pillar_short_name}`;
-    document.querySelector('[data-pillar-callout-link]').setAttribute('href', '/products/' + a.pillar_slug);
+    const link = document.querySelector('[data-side-pillar-link]');
+    link.textContent = (a.pillar_name || a.pillar_short_name) + ' →';
+    link.setAttribute('href', '/products/' + a.pillar_slug);
   }
 
   // ------- Share buttons -------
@@ -302,25 +337,71 @@
     });
   });
 
-  // ------- Related -------
-  const relGrid = document.querySelector('[data-related]');
+  // ------- Sidebar related list (mini, no images) -------
   if (data.related && data.related.length) {
-    relGrid.innerHTML = data.related.map((r) => {
-      const cover = r.cover_url || r.hero_image || '';
+    const wrap = document.querySelector('[data-side-related]');
+    wrap.style.display = '';
+    const list = document.querySelector('[data-side-related-list]');
+    list.innerHTML = data.related.slice(0, 4).map((r) => {
       const cat = r.category_name || r.pillar_short_name || 'Article';
-      const date = fmtDate(r.published_at);
-      return `<a class="blog-card" href="/blog/${escape(r.slug)}">
-        <div class="blog-card__media"${cover ? ` style="background-image:url('${escape(cover)}');"` : ''}></div>
-        <div class="blog-card__body">
-          <span class="blog-card__pill">${escape(cat)}</span>
-          <h3 class="blog-card__title">${escape(r.title)}</h3>
-          <p class="blog-card__excerpt">${escape((r.excerpt || '').slice(0, 130))}</p>
-          <div class="blog-card__byline">${escape(r.author || 'Acme Engineering')} &middot; ${r.reading_minutes || 5} min${date ? ' &middot; ' + date : ''}</div>
-        </div>
+      return `<a href="/blog/${escape(r.slug)}">
+        <strong>${escape(r.title)}</strong>
+        <span class="meta">${escape(cat)} &middot; ${r.reading_minutes || 5} min read</span>
       </a>`;
     }).join('');
-  } else {
-    document.querySelector('[data-related-section]').style.display = 'none';
+  }
+
+  // ------- Sidebar mini RFQ form -> /api/inquiries -------
+  const sideForm = document.getElementById('side-rfq');
+  if (sideForm) {
+    const status = document.querySelector('[data-side-status]');
+    sideForm.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      status.textContent = '';
+      status.className = 'article-side-cta__status';
+      const fd = new FormData(sideForm);
+      const btn = sideForm.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.textContent = 'Sending…';
+      const payload = {
+        full_name: (fd.get('email') || '').toString().split('@')[0] || 'Visitor',
+        email: fd.get('email') || '',
+        company: '',
+        message: fd.get('message') || '',
+        consent_given: !!sideForm.querySelector('[name="consent"]').checked,
+        'cf-turnstile-response': 'dev-bypass',
+        website: fd.get('website') || '',
+        source_page: location.pathname,
+        product_categories: a.pillar_slug ? [a.pillar_slug] : [],
+      };
+      try {
+        const res = await fetch('/api/inquiries', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const json = await res.json();
+        if (res.ok && json.ok) {
+          status.classList.add('ok');
+          status.textContent = `Thanks — reference ${json.reference}. We will reply within one business day.`;
+          sideForm.reset();
+          btn.textContent = '✓ Inquiry Received';
+          setTimeout(() => { btn.disabled = false; btn.textContent = 'Send Inquiry'; }, 4000);
+        } else {
+          throw new Error(json.error || 'failed');
+        }
+      } catch (err) {
+        status.classList.add('err');
+        const m = String(err.message || '');
+        status.textContent = m === 'consent_required' ? 'Please tick the consent box.'
+          : m === 'invalid_email' ? 'Please enter a valid email.'
+          : m === 'message_too_short' ? 'Please share a bit more detail.'
+          : m === 'too_many_inquiries' ? 'Too many submissions. Email us instead.'
+          : 'Submission failed. Please use the full inquiry form.';
+        btn.disabled = false;
+        btn.textContent = 'Send Inquiry';
+      }
+    });
   }
 
   // ------- Reading progress bar -------
