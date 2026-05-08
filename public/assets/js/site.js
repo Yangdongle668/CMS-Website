@@ -313,6 +313,23 @@
     if (Object.keys(utm).length) localStorage.setItem('cms_utm', JSON.stringify(utm));
   }
 
+  // ---------- Hero overlay header ----------
+  function bindHeroOverlay() {
+    const hero = document.querySelector('.tsection--hero');
+    const header = document.querySelector('.site-header');
+    if (!hero || !header) return;
+    const sync = () => {
+      const r = hero.getBoundingClientRect();
+      // Header is "overlay" (transparent + white text) while any of the
+      // hero is still visible above the header's bottom edge.
+      const headerH = header.offsetHeight || 72;
+      header.classList.toggle('is-overlay', r.bottom > headerH + 4);
+    };
+    sync();
+    window.addEventListener('scroll', sync, { passive: true });
+    window.addEventListener('resize', sync, { passive: true });
+  }
+
   // ---------- Boot ----------
   async function boot() {
     captureUtm();
@@ -332,6 +349,11 @@
     renderHeader(state.settings.navigation || {}, state.settings.site || {});
     renderFooter(state.settings.navigation || {}, state.settings.site || {}, state.settings.social || {});
     renderCookieBanner(state.settings.gdpr || {});
+
+    // Tesla-style hero: header overlays the hero (transparent) until the
+    // user scrolls past it. We bind the listener AFTER renderHeader so the
+    // header element actually exists in the DOM.
+    bindHeroOverlay();
 
     // Auto-fetch RFQ snippet into any [data-rfq-mount]
     const mounts = Array.from(document.querySelectorAll('[data-rfq-mount]'));

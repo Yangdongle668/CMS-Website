@@ -15,9 +15,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/assets/css/theme.css"/>
+<link rel="stylesheet" href="/assets/css/theme.css?v=4"/>
 <style>
-  body.home { background:#0b1120; }
+  body.home { background:#050a17; }
 </style>
 <script type="application/ld+json">
 {
@@ -37,32 +37,33 @@
 
 <!-- ============= HERO (full-screen) ============= -->
 <section class="tsection tsection--hero">
-  <div class="tsection__inner">
-    <div class="tsection__top" style="margin-top: 8vh;">
+  <!-- Decorative floating cells -->
+  <div class="hero-cells" aria-hidden="true">
+    <span></span><span></span><span></span><span></span>
+  </div>
+
+  <div class="tsection__inner" style="justify-content: center; gap: 32px;">
+    <div class="tsection__top" style="margin-top: 0;">
       <div class="tsection__eyebrow">Engineered for Industry · Since 2008</div>
-      <h1 class="tsection__title">Lithium energy,<br/>built for the next product.</h1>
+      <h1 class="tsection__title">
+        Lithium energy,<br/>
+        built for the <em>next product</em>.
+      </h1>
       <p class="tsection__sub">OEM/ODM lithium cells in three pillar lines — polymer, custom-shaped and cylindrical — designed and manufactured under one ISO 9001 roof.</p>
     </div>
-    <div class="tsection__visual" aria-hidden="true">
-      <!-- subtle floating SVG -->
-      <svg viewBox="0 0 600 300" style="max-height:42vh;">
-        <defs>
-          <linearGradient id="hg" x1="0" x2="1" y1="0" y2="1">
-            <stop offset="0" stop-color="#3b82f6" stop-opacity="0.55"/>
-            <stop offset="1" stop-color="#1e40af" stop-opacity="0.15"/>
-          </linearGradient>
-        </defs>
-        <g transform="translate(300 150)">
-          <rect x="-220" y="-80" width="440" height="160" rx="20" fill="url(#hg)" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
-          <rect x="-200" y="-60" width="400" height="120" rx="10" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)"/>
-          <text x="0" y="6" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="32" font-weight="800" letter-spacing="14" fill="rgba(255,255,255,0.7)">3.7 V · Li-Po</text>
-        </g>
-      </svg>
-    </div>
+
     <div class="tsection__bottom">
       <div class="tsection__ctas">
         <a class="btn btn--primary btn--lg" href="/quote">Request a Quote</a>
         <a class="btn btn--ghost btn--lg" href="#pillars">Explore Products</a>
+      </div>
+      <div class="hero-trust">
+        <span>ISO 9001</span>
+        <span>UN 38.3</span>
+        <span>IEC 62133</span>
+        <span>CE</span>
+        <span>UL 1642</span>
+        <span>RoHS</span>
       </div>
       <span class="scroll-cue" style="margin-top:24px;">Scroll</span>
     </div>
@@ -162,17 +163,13 @@
 
 <div data-mount="footer"></div>
 
-<script src="/assets/js/site.js"></script>
+<script src="/assets/js/site.js?v=4"></script>
 <script>
 (async function () {
   const { fetchJson, escapeHtml } = window.SiteAPI;
 
-  // Make header transparent over the hero
-  const header = document.querySelector('.site-header');
-  if (header) {
-    const sync = () => header.classList.toggle('is-overlay', window.scrollY < 60);
-    sync(); window.addEventListener('scroll', sync, { passive: true });
-  }
+  // (Header overlay-on-hero behaviour is wired up in site.js so it runs
+  // after the header has actually been rendered into the DOM.)
 
   // Pillars — Tesla-style full-screen sections
   try {
