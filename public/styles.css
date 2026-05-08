@@ -1128,13 +1128,26 @@ footer {
 .footer-cols {
   max-width: 1240px;
   margin: 0 auto 48px;
-  display: grid;
-  grid-template-columns: 1.6fr repeat(auto-fit, minmax(160px, 1fr));
-  gap: 40px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px 40px;
+}
+.footer-col {
+  flex: 1 1 160px;
+  min-width: 160px;
+}
+.footer-col--brand {
+  flex: 1.6 1 280px;
+  min-width: 240px;
+  max-width: 360px;
 }
 .footer-col--brand p { margin-bottom: 8px; }
 .footer-col--brand .footer-contact a { color: #f5a623; }
 .footer-col--brand .footer-contact a:hover { color: #ffb944; }
+@media (max-width: 700px) {
+  .footer-cols { flex-direction: column; gap: 28px; }
+  .footer-col, .footer-col--brand { flex: 1 1 100%; max-width: 100%; }
+}
 
 .footer-col h5 {
   font-size: 12px;
@@ -2319,22 +2332,29 @@ a:hover .news-link, .news-link:hover { color: #f5a623; }
   grid-template-columns: minmax(0, 1fr) 320px;
   gap: 60px;
   padding: 0 24px;
-  align-items: start;
+  /* IMPORTANT: do not set align-items: start here — sticky needs the
+     side column to stretch to the row height so the sticky child has
+     scroll room until the end of the article body. */
 }
-.article-shell__main { width: 100%; min-width: 0; }
+.article-shell__main {
+  width: 100%;
+  min-width: 0;
+  align-self: start;          /* main col content starts at top */
+}
 .article-shell__main > .article-body { max-width: 720px; margin: 0 auto; }
 .article-shell__main > .pillar-callout { max-width: 720px; }
 .article-shell__main > .article-share { max-width: 720px; }
 .article-shell__main > .article-author { max-width: 720px; }
 
 .article-shell__side {
-  display: grid;
-  gap: 24px;
   position: relative;
+  /* Default align-self: stretch lets the column take the row height,
+     which gives the sticky child enough scroll room to stay pinned
+     until the article body ends. */
 }
 .article-side-stack {
   position: sticky;
-  top: 100px;
+  top: 90px;
   display: grid;
   gap: 24px;
 }
@@ -2915,4 +2935,179 @@ a:hover .news-link, .news-link:hover { color: #f5a623; }
   width: 6px; height: 6px; margin: 0 4px;
   border-radius: 50%; background: #d4d4d4;
 }
+
+
+/* =============================================================
+   Tesla-style horizontal slider (v10)
+   Big rounded cards with bg image + label + title + CTAs.
+   Peeks at the next card on the right edge so the user knows to scroll.
+   ============================================================= */
+
+.tesla-slider {
+  position: relative;
+  margin: 32px -24px 0;        /* bleed slightly past the section padding */
+  padding: 0;
+}
+
+.tesla-slider__track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(min(880px, 86vw), min(880px, 86vw));
+  gap: 20px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-left: 24px;
+  padding: 8px 24px 24px;
+  scrollbar-width: none;
+}
+.tesla-slider__track::-webkit-scrollbar { display: none; }
+
+.tesla-slide {
+  scroll-snap-align: start;
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #1d2028;
+  background-size: cover;
+  background-position: center;
+  aspect-ratio: 16 / 10;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 36px 40px 32px;
+  text-decoration: none;
+  transition: transform 0.3s ease;
+}
+.tesla-slide:hover { transform: scale(1.005); }
+.tesla-slide::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.18) 0%, transparent 30%, transparent 60%, rgba(0,0,0,0.55) 100%);
+  pointer-events: none;
+}
+.tesla-slide > * { position: relative; z-index: 2; }
+
+.tesla-slide__label {
+  align-self: flex-start;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
+.tesla-slide__bottom { display: flex; flex-direction: column; gap: 10px; }
+.tesla-slide__title {
+  font-size: clamp(36px, 5vw, 64px);
+  font-weight: 600;
+  letter-spacing: -1.2px;
+  line-height: 1.0;
+  margin: 0;
+  color: #fff;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.35);
+}
+.tesla-slide__sub {
+  font-size: 15px;
+  margin-bottom: 18px;
+  color: #fff;
+  display: inline-block;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.tesla-slide__ctas {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 8px;
+}
+.tesla-slide__cta {
+  flex: 1 1 200px;
+  max-width: 320px;
+  padding: 14px 28px;
+  border-radius: 100px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 0.2s ease, transform 0.15s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.tesla-slide__cta:active { transform: scale(0.98); }
+.tesla-slide__cta--primary {
+  background: rgba(23, 26, 32, 0.78);
+  color: #fff;
+}
+.tesla-slide__cta--primary:hover { background: #171a20; color: #fff; }
+.tesla-slide__cta--secondary {
+  background: rgba(244, 244, 244, 0.78);
+  color: #171a20;
+}
+.tesla-slide__cta--secondary:hover { background: rgba(244, 244, 244, 0.96); color: #171a20; }
+
+/* Arrow buttons */
+.tesla-slider__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.18);
+  cursor: pointer;
+  font-size: 24px;
+  font-weight: 300;
+  line-height: 1;
+  color: #171a20;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  transition: opacity 0.2s ease, transform 0.18s ease, background 0.2s ease;
+  font-family: inherit;
+}
+.tesla-slider__arrow:hover {
+  background: #fff;
+  transform: translateY(-50%) scale(1.06);
+}
+.tesla-slider__arrow:disabled,
+.tesla-slider__arrow[aria-disabled="true"] {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+.tesla-slider__arrow--prev { left: 16px; }
+.tesla-slider__arrow--next { right: 16px; }
+
+/* Insights variant — shorter cards (more articles fit) */
+.tesla-slider--insights .tesla-slider__track {
+  grid-auto-columns: minmax(min(420px, 80vw), min(420px, 80vw));
+}
+.tesla-slider--insights .tesla-slide {
+  aspect-ratio: 4 / 5;
+  padding: 28px 30px 26px;
+}
+.tesla-slider--insights .tesla-slide__title {
+  font-size: clamp(22px, 2.4vw, 28px);
+  line-height: 1.15;
+  letter-spacing: -0.4px;
+}
+.tesla-slider--insights .tesla-slide__sub { font-size: 13.5px; text-decoration: none; opacity: 0.92; }
+
+@media (max-width: 700px) {
+  .tesla-slider__track { grid-auto-columns: minmax(88vw, 88vw); padding: 8px 16px 24px; }
+  .tesla-slide { padding: 24px 26px 22px; aspect-ratio: 3 / 4; }
+  .tesla-slide__title { font-size: 36px; }
+  .tesla-slider__arrow { width: 44px; height: 44px; font-size: 20px; }
+  .tesla-slider__arrow--prev { left: 8px; }
+  .tesla-slider__arrow--next { right: 8px; }
+}
+
+/* When inside .section the bleed should respect the section padding */
+.section .tesla-slider { margin-left: calc(-1 * 24px); margin-right: calc(-1 * 24px); }
 
