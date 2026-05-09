@@ -328,12 +328,70 @@ async function autoMigrate() {
        VALUES ('zufek-engineering', 'Zufek Engineering', 'Cell engineering team',
                'Collective byline for the Zufek cell engineering team. Articles authored under this name are reviewed by our four founder-engineers (Chen Li, et al.) and the lead PM on the relevant pillar program.')
        ON CONFLICT (slug) DO NOTHING`,
+    // ----- 2026 Q2 SEO migration: RankMath-style per-entity SEO fields -----
+    // Universal columns added to all 5 content tables. Idempotent.
+    ...['pages','pillar_pages','products','applications','articles'].flatMap((t) => [
+      `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS focus_keyword VARCHAR(190) NOT NULL DEFAULT ''`,
+      `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS secondary_keywords JSONB NOT NULL DEFAULT '[]'::jsonb`,
+      `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS canonical_override VARCHAR(500) NOT NULL DEFAULT ''`,
+      `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS robots VARCHAR(80) NOT NULL DEFAULT ''`,
+      `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS og_title VARCHAR(255) NOT NULL DEFAULT ''`,
+      `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS og_description TEXT NOT NULL DEFAULT ''`,
+      `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS og_image_url VARCHAR(500) NOT NULL DEFAULT ''`,
+      `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS twitter_title VARCHAR(255) NOT NULL DEFAULT ''`,
+      `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS twitter_description TEXT NOT NULL DEFAULT ''`,
+      `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS twitter_image_url VARCHAR(500) NOT NULL DEFAULT ''`,
+      `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS schema_type VARCHAR(80) NOT NULL DEFAULT ''`,
+      `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS schema_extra JSONB NOT NULL DEFAULT '{}'::jsonb`,
+      `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS seo_score INT NOT NULL DEFAULT 0`,
+      `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS seo_checks JSONB NOT NULL DEFAULT '[]'::jsonb`,
+    ]),
+    // ----- Acme → Zufek cleanup (legacy seed data) -----
+    `UPDATE articles SET author = 'Zufek Engineering' WHERE author ILIKE '%acme%' OR author = '' OR author IS NULL`,
+    `UPDATE articles SET content = REPLACE(content, 'Acme Engineering', 'Zufek Engineering') WHERE content LIKE '%Acme%'`,
+    `UPDATE articles SET content = REPLACE(content, 'Acme', 'Zufek') WHERE content LIKE '%Acme%'`,
+    `UPDATE pages SET hero_subtitle = REPLACE(hero_subtitle, 'Acme', 'Zufek'), body_html = REPLACE(body_html, 'Acme', 'Zufek'), meta_title = REPLACE(meta_title, 'Acme', 'Zufek'), meta_description = REPLACE(meta_description, 'Acme', 'Zufek') WHERE hero_subtitle LIKE '%Acme%' OR body_html LIKE '%Acme%' OR meta_title LIKE '%Acme%' OR meta_description LIKE '%Acme%'`,
+    `UPDATE pillar_pages SET hero_subtitle = REPLACE(hero_subtitle, 'Acme', 'Zufek'), meta_title = REPLACE(meta_title, 'Acme', 'Zufek'), meta_description = REPLACE(meta_description, 'Acme', 'Zufek') WHERE hero_subtitle LIKE '%Acme%' OR meta_title LIKE '%Acme%' OR meta_description LIKE '%Acme%'`,
+    `UPDATE products SET description = REPLACE(description, 'Acme', 'Zufek'), tagline = REPLACE(tagline, 'Acme', 'Zufek'), meta_title = REPLACE(meta_title, 'Acme', 'Zufek'), meta_description = REPLACE(meta_description, 'Acme', 'Zufek') WHERE description LIKE '%Acme%' OR tagline LIKE '%Acme%' OR meta_title LIKE '%Acme%' OR meta_description LIKE '%Acme%'`,
+    `UPDATE applications SET summary = REPLACE(summary, 'Acme', 'Zufek'), body = REPLACE(body, 'Acme', 'Zufek'), meta_title = REPLACE(meta_title, 'Acme', 'Zufek'), meta_description = REPLACE(meta_description, 'Acme', 'Zufek') WHERE summary LIKE '%Acme%' OR body LIKE '%Acme%' OR meta_title LIKE '%Acme%' OR meta_description LIKE '%Acme%'`,
+    // ----- Round-robin author binding for any article still missing one -----
+    `WITH ranked AS (
+       SELECT a.id, row_number() OVER (ORDER BY a.published_at DESC NULLS LAST, a.id) AS rn
+         FROM articles a WHERE a.author_id IS NULL
+     ),
+     authors_arr AS (SELECT array_agg(id ORDER BY id) AS ids FROM authors WHERE is_active AND slug <> 'zufek-engineering')
+     UPDATE articles a
+        SET author_id = (SELECT ids FROM authors_arr)[ ((r.rn - 1) % NULLIF(array_length((SELECT ids FROM authors_arr), 1), 0)) + 1 ]
+       FROM ranked r
+      WHERE a.id = r.id AND (SELECT array_length(ids, 1) FROM authors_arr) > 0`,
   ];
   for (const sql of stmts) {
     try { await query(sql); }
     catch (err) { console.error('[migrate] statement failed:', err.message); }
   }
   console.log('[migrate] schema check complete');
+
+  // ----- Apply long SQL migration files (idempotent) -----
+  // These are kept as standalone .sql files so an operator can also run
+  // them manually with psql. Loading them here makes a fresh deployment
+  // self-healing without anyone having to remember to run them.
+  const fs = require('fs');
+  const path = require('path');
+  const sqlMigrations = [
+    'migrate-2026-q2-seo.sql',          // adds RankMath-style SEO columns + cleans Acme strings
+    'migrate-2026-q2-seo-content.sql',  // pre-fills focus_keyword + meta on every entity
+  ];
+  for (const fname of sqlMigrations) {
+    const fpath = path.join(__dirname, 'db', fname);
+    if (!fs.existsSync(fpath)) continue;
+    try {
+      const sql = fs.readFileSync(fpath, 'utf8');
+      await query(sql);
+      console.log(`[migrate] applied ${fname}`);
+    } catch (err) {
+      console.error(`[migrate] ${fname} failed:`, err.message);
+    }
+  }
 }
 
 app.listen(PORT, () => {

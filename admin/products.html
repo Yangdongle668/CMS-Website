@@ -11,6 +11,7 @@
 <body>
 <div data-admin-shell></div>
 <script src="/admin/assets/js/admin.js"></script>
+<script src="/admin/assets/js/seo-panel.js"></script>
 <script>
 (async function () {
   const { api, escapeHtml, toast, bootShell } = window.AdminAPI;
@@ -87,6 +88,14 @@
           <div class="field"><label>状态</label><select id="f-status"><option value="published" ${p.status === 'published' ? 'selected' : ''}>已发布</option><option value="draft" ${p.status === 'draft' ? 'selected' : ''}>草稿</option></select></div>
         </div>
         <div class="field field--check"><input type="checkbox" id="f-custom" ${p.is_custom ? 'checked' : ''}/><label for="f-custom">定制类产品（区别于标准目录）</label></div>
+
+        <div class="field-row">
+          <div class="field"><label>Meta 标题</label><input id="f-mt" value="${escapeHtml(p.meta_title || '')}"/></div>
+          <div class="field"><label>Meta 描述</label><textarea id="f-md" rows="2">${escapeHtml(p.meta_description || '')}</textarea></div>
+        </div>
+
+        <div id="f-seo-mount"></div>
+
         <div class="form-actions">
           <button class="btn" id="save">保存</button>
           ${!isNew ? '<button class="btn btn--danger" id="delete">删除</button>' : ''}
@@ -95,11 +104,34 @@
       </div>
     `;
 
+    let seoPanel = null;
+    try {
+      seoPanel = window.SEOPanel.mount('f-seo-mount', {
+        entity: 'product',
+        siteHost: location.host,
+        initial: p,
+        getContext: () => ({
+          title: (panel.querySelector('#f-mt') || {}).value
+                 || (panel.querySelector('#f-name') || {}).value || '',
+          description: (panel.querySelector('#f-md') || {}).value
+                       || (panel.querySelector('#f-tagline') || {}).value || '',
+          slug: 'products/' + ((panel.querySelector('#f-slug') || {}).value || ''),
+          body: (panel.querySelector('#f-desc') || {}).value || '',
+          coverUrl: (panel.querySelector('#f-cover') || {}).value || '',
+        }),
+      });
+    } catch (err) {
+      const host = document.getElementById('f-seo-mount');
+      if (host) host.innerHTML = '<p style="color:var(--a-mute2); font-size:12px;">SEO 面板加载失败：' + escapeHtml(err.message) + '</p>';
+    }
+    panel.addEventListener('input', () => seoPanel && seoPanel.repaint());
+
     panel.querySelector('#save').addEventListener('click', async () => {
       let specs;
       try { specs = JSON.parse(panel.querySelector('#f-specs').value); }
       catch (_) { return toast('规格 JSON 格式错误', 'error'); }
-      const payload = {
+      const seoVals = seoPanel ? seoPanel.getValues() : {};
+      const payload = Object.assign({
         slug: panel.querySelector('#f-slug').value,
         name: panel.querySelector('#f-name').value,
         model_no: panel.querySelector('#f-model').value,
@@ -113,7 +145,9 @@
         sort_order: parseInt(panel.querySelector('#f-sort').value, 10) || 0,
         status: panel.querySelector('#f-status').value,
         is_custom: panel.querySelector('#f-custom').checked,
-      };
+        meta_title: (panel.querySelector('#f-mt') || {}).value || '',
+        meta_description: (panel.querySelector('#f-md') || {}).value || '',
+      }, seoVals);
       try {
         if (isNew) await api('/api/products', { method: 'POST', body: JSON.stringify(payload) });
         else await api('/api/products/' + p.id, { method: 'PUT', body: JSON.stringify(payload) });

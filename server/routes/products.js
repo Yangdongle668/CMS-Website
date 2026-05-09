@@ -3,13 +3,15 @@ const { many, one, query } = require('../db/client');
 const { requireAuth } = require('../middleware/auth');
 const { recordAudit } = require('../middleware/audit');
 const { isSlug, trimStr, asJson, asBool, clamp } = require('../utils/validate');
+const { SEO_SELECT } = require('../utils/seo-fields');
 
 const router = express.Router();
 
 const PRODUCT_FIELDS = `
   id, pillar_id, slug, name, model_no, tagline, cover_url, gallery,
   specs, features, description, datasheet_url, is_custom,
-  meta_title, meta_description, sort_order, status, created_at, updated_at
+  meta_title, meta_description, sort_order, status, created_at, updated_at,
+  ${SEO_SELECT}
 `;
 
 router.get('/', async (req, res) => {
@@ -74,8 +76,13 @@ router.post('/', requireAuth, async (req, res) => {
   const result = await query(
     `INSERT INTO products (
        pillar_id, slug, name, model_no, tagline, cover_url, gallery, specs, features,
-       description, datasheet_url, is_custom, meta_title, meta_description, sort_order, status
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING id`,
+       description, datasheet_url, is_custom, meta_title, meta_description, sort_order, status,
+       focus_keyword, secondary_keywords, canonical_override, robots,
+       og_title, og_description, og_image_url,
+       twitter_title, twitter_description, twitter_image_url,
+       schema_type, schema_extra, seo_score, seo_checks
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,
+              $17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30) RETURNING id`,
     [
       b.pillar_id || null,
       slug,
@@ -93,6 +100,20 @@ router.post('/', requireAuth, async (req, res) => {
       trimStr(b.meta_description, 500),
       clamp(b.sort_order, 0, 999, 0),
       b.status === 'draft' ? 'draft' : 'published',
+      trimStr(b.focus_keyword, 190),
+      asJson(b.secondary_keywords, []),
+      trimStr(b.canonical_override, 500),
+      trimStr(b.robots, 80),
+      trimStr(b.og_title, 255),
+      trimStr(b.og_description, 1000),
+      trimStr(b.og_image_url, 500),
+      trimStr(b.twitter_title, 255),
+      trimStr(b.twitter_description, 1000),
+      trimStr(b.twitter_image_url, 500),
+      trimStr(b.schema_type, 80),
+      asJson(b.schema_extra, {}),
+      clamp(b.seo_score, 0, 100, 0),
+      asJson(b.seo_checks, []),
     ]
   );
   await recordAudit({ req, action: 'create', entity: 'product', entityId: result.rows[0].id, detail: { slug } });
@@ -119,6 +140,21 @@ router.put('/:id', requireAuth, async (req, res) => {
     meta_description: trimStr(b.meta_description, 500),
     sort_order: clamp(b.sort_order, 0, 999, 0),
     status: b.status === 'draft' ? 'draft' : 'published',
+    // RankMath-style per-entity SEO overrides.
+    focus_keyword: trimStr(b.focus_keyword, 190),
+    secondary_keywords: asJson(b.secondary_keywords, []),
+    canonical_override: trimStr(b.canonical_override, 500),
+    robots: trimStr(b.robots, 80),
+    og_title: trimStr(b.og_title, 255),
+    og_description: trimStr(b.og_description, 1000),
+    og_image_url: trimStr(b.og_image_url, 500),
+    twitter_title: trimStr(b.twitter_title, 255),
+    twitter_description: trimStr(b.twitter_description, 1000),
+    twitter_image_url: trimStr(b.twitter_image_url, 500),
+    schema_type: trimStr(b.schema_type, 80),
+    schema_extra: asJson(b.schema_extra, {}),
+    seo_score: clamp(b.seo_score, 0, 100, 0),
+    seo_checks: asJson(b.seo_checks, []),
   };
   const keys = Object.keys(fields);
   const sets = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');

@@ -12,6 +12,7 @@
 <div data-admin-shell></div>
 <script src="/admin/assets/js/admin.js"></script>
 <script src="/admin/assets/js/quill-editor.js"></script>
+<script src="/admin/assets/js/seo-panel.js"></script>
 <script>
 (async function () {
   const { api, escapeHtml, formatDate, toast, bootShell } = window.AdminAPI;
@@ -122,6 +123,8 @@
         </div>
         <div class="field"><label>Meta 描述</label><textarea id="f-md" rows="2">${escapeHtml(a.meta_description || '')}</textarea></div>
 
+        <div id="f-seo-mount"></div>
+
         <div class="form-actions">
           <button class="btn" id="save">保存</button>
           ${!isNew ? '<button class="btn btn--danger" id="delete">删除</button>' : ''}
@@ -146,11 +149,38 @@
       }
     })();
 
+    // SEO panel — RankMath-style focus keyword + SERP preview + 14 checks
+    let seoPanel = null;
+    try {
+      seoPanel = window.SEOPanel.mount('f-seo-mount', {
+        entity: 'article',
+        siteHost: location.host,
+        initial: a,
+        getContext: () => ({
+          title: (panel.querySelector('#f-mt') || {}).value
+                 || (panel.querySelector('#f-title') || {}).value
+                 || '',
+          description: (panel.querySelector('#f-md') || {}).value
+                       || (panel.querySelector('#f-excerpt') || {}).value
+                       || '',
+          slug: 'blog/' + ((panel.querySelector('#f-slug') || {}).value || ''),
+          body: contentEditor ? contentEditor.getHtml() : (a.content || ''),
+          coverUrl: (panel.querySelector('#f-cover') || {}).value || '',
+        }),
+      });
+    } catch (err) {
+      const host = document.getElementById('f-seo-mount');
+      if (host) host.innerHTML =
+        '<p style="color:var(--a-mute2); font-size:12px;">SEO 面板加载失败：' + escapeHtml(err.message) + '</p>';
+    }
+    panel.addEventListener('input', () => seoPanel && seoPanel.repaint());
+
     panel.querySelector('#save').addEventListener('click', async () => {
       const fallback = panel.querySelector('#f-content-fallback');
       const content = contentEditor ? contentEditor.getHtml()
         : (fallback ? fallback.value : '');
-      const payload = {
+      const seoVals = seoPanel ? seoPanel.getValues() : {};
+      const payload = Object.assign({
         slug: panel.querySelector('#f-slug').value,
         title: panel.querySelector('#f-title').value,
         excerpt: panel.querySelector('#f-excerpt').value,
@@ -166,7 +196,7 @@
         meta_title: panel.querySelector('#f-mt').value,
         meta_description: panel.querySelector('#f-md').value,
         status: panel.querySelector('#f-status').value,
-      };
+      }, seoVals);
       try {
         if (isNew) await api('/api/articles', { method: 'POST', body: JSON.stringify(payload) });
         else await api('/api/articles/' + a.id, { method: 'PUT', body: JSON.stringify(payload) });

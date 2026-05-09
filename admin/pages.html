@@ -14,6 +14,7 @@
 <script src="/admin/assets/js/quill-editor.js"></script>
 <script src="/admin/assets/js/image-picker.js"></script>
 <script src="/admin/assets/js/iframe-text-editor.js"></script>
+<script src="/admin/assets/js/seo-panel.js"></script>
 <script>
 (async function () {
   const { api, escapeHtml, formatDate, toast, bootShell } = window.AdminAPI;
@@ -97,6 +98,7 @@
             <div class="tabs">
               <button class="tabs__btn is-active" data-tab="hero">Hero &amp; Meta</button>
               <button class="tabs__btn" data-tab="body">正文内容</button>
+              <button class="tabs__btn" data-tab="seo">SEO</button>
               <button class="tabs__btn" data-tab="sections">结构化区块 (JSON)</button>
               <button class="tabs__btn" data-tab="advanced">高级</button>
             </div>
@@ -125,6 +127,10 @@
               <p style="font-size:13px; color:var(--a-mute2);">用可视化编辑器替换 <strong>Hero 之后的正文区</strong>。留空保留页面默认内容。需要直接编辑 HTML 时点编辑器底部"查看 HTML 源代码"。</p>
               <p style="font-size:13px; color:var(--a-warning);"><strong>注意：</strong>静态 HTML 中必须包含 <code>&lt;div data-page-body&gt;...&lt;/div&gt;</code> 包裹层才会生效。没有该层的页面只会更新 Hero 和 Meta。</p>
               <div class="field"><div id="f-body"></div></div>
+            </div>
+
+            <div data-pane="seo" style="display:none;">
+              <div id="f-seo-mount"></div>
             </div>
 
             <div data-pane="sections" style="display:none;">
@@ -179,6 +185,32 @@
       document.getElementById('f-himg-mount').innerHTML =
         `<input id="f-himg-fallback" value="${escapeHtml(p.hero_image || '')}" placeholder="/uploads/hero.webp"/>`;
     }
+
+    /* SEO panel — RankMath-style focus keyword + SERP preview + checks */
+    let seoPanel = null;
+    try {
+      seoPanel = window.SEOPanel.mount('f-seo-mount', {
+        entity: 'page',
+        siteHost: location.host,
+        initial: p,
+        getContext: () => ({
+          title: (panel.querySelector('#f-mtitle') || {}).value
+                 || (panel.querySelector('#f-title') || {}).value
+                 || (panel.querySelector('#f-htitle') || {}).value
+                 || '',
+          description: (panel.querySelector('#f-mdesc') || {}).value || '',
+          slug: (panel.querySelector('#f-slug') || {}).value || '',
+          body: bodyEditor ? bodyEditor.getHtml() : (p.body_html || ''),
+          coverUrl: heroPicker ? heroPicker.getValue() : (p.hero_image || ''),
+        }),
+      });
+    } catch (err) {
+      document.getElementById('f-seo-mount').innerHTML =
+        '<p style="color:var(--a-mute2); font-size:12px;">SEO 面板加载失败：' + escapeHtml(err.message) + '</p>';
+    }
+    // Re-paint the SEO score whenever the operator edits any field that
+    // feeds into the checks (title, description, slug, body).
+    panel.addEventListener('input', () => seoPanel && seoPanel.repaint());
 
     /* Body Quill editor */
     bodyEditor = null;
@@ -242,7 +274,8 @@
       const fallbackHero = panel.querySelector('#f-himg-fallback');
       const heroImage = heroPicker ? heroPicker.getValue()
         : (fallbackHero ? fallbackHero.value : '');
-      const payload = {
+      const seoVals = seoPanel ? seoPanel.getValues() : {};
+      const payload = Object.assign({
         slug: panel.querySelector('#f-slug').value,
         nav: panel.querySelector('#f-nav').value,
         title: panel.querySelector('#f-title').value,
@@ -256,7 +289,7 @@
         body_html: bodyHtml,
         sections,
         status: panel.querySelector('#f-status').value,
-      };
+      }, seoVals);
       try {
         if (isNew) {
           await api('/api/pages', { method: 'POST', body: JSON.stringify(payload) });

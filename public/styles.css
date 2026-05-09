@@ -2189,6 +2189,33 @@ a:hover .news-link, .news-link:hover { color: #f5a623; }
 @media (max-width: 1100px) { .blog-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 700px)  { .blog-grid { grid-template-columns: 1fr; gap: 22px; } }
 
+/* Last-page asymmetry handling: when a 3-col blog grid ends with 1 or 2
+   cards in the final row, shift them so they appear centered instead
+   of sitting in the leftmost column with an empty trailing slot.
+   - Works via CSS Grid `grid-column-start` (no transform; preserves
+     hover lift on the cards).
+   - Only applies on viewports >=1101px (3-col layout). At 2-col and
+     1-col widths the grid auto-fills with no gap problem.
+   - Card-count cases handled (last child position):
+       1 alone   → center it at col 2.
+       2 alone   → first at col 2, second auto-flows to col 3.
+       4 (=3+1)  → 4th card centered at col 2.
+       5 (=3+2)  → 4th card at col 2, 5th auto at col 3.
+       7 (=3+3+1)→ 7th centered at col 2.
+       8 (=3+3+2)→ 7th at col 2, 8th auto at col 3. */
+@media (min-width: 1101px) {
+  .blog-grid:has(> .blog-card:nth-child(1):last-child) > .blog-card:nth-child(1),
+  .blog-grid:has(> .blog-card:nth-child(4):last-child) > .blog-card:nth-child(4),
+  .blog-grid:has(> .blog-card:nth-child(7):last-child) > .blog-card:nth-child(7) {
+    grid-column-start: 2;
+  }
+  .blog-grid:has(> .blog-card:nth-child(2):last-child) > .blog-card:nth-child(1),
+  .blog-grid:has(> .blog-card:nth-child(5):last-child) > .blog-card:nth-child(4),
+  .blog-grid:has(> .blog-card:nth-child(8):last-child) > .blog-card:nth-child(7) {
+    grid-column-start: 2;
+  }
+}
+
 .blog-empty {
   grid-column: 1 / -1;
   text-align: center;
