@@ -47,28 +47,24 @@
           </div>
         </div>
         <div class="mo-help">
-          <strong>它是怎么工作的？</strong><br>
-          下面列的是当前所有公共 HTML 页面里出现的外部图片（多数是 Unsplash 占位图）。把它替换成 <code>/uploads/...</code> 后，访客访问的每个页面会被服务端实时替换为新图，不需要改任何 HTML。<br>
-          上传新图：先到 <a href="/admin/media.html">媒体库</a> 上传 → 复制返回的 <code>/uploads/xxx.webp</code> URL → 粘贴到下表的右栏 → 点保存。<br>
-          推荐尺寸：hero 图 1920×1080；卡片图 1200×800；缩略图 600×400。建议 WebP/AVIF 格式，质量 80。
+          <strong>怎么用？</strong>每条对应站点上的一张外部图片（多数是 Unsplash 占位）。点 <strong>"上传替换"</strong> → 选本地文件 → 自动上传 + 自动保存映射。所有页面下次刷新即可看到新图，无需改任何 HTML 或重启服务。<br>
+          <span style="color:var(--a-mute2);">推荐尺寸：hero 1920×1080；卡片 1200×800；缩略图 600×400。建议 WebP/AVIF 质量 80。</span>
         </div>
         <div id="mo-list">
           ${sources.length ? sources.map((s) => `
             <div class="mo-row${s.overrideTo ? ' is-mapped' : ''}" data-src="${escapeHtml(s.url)}">
               <div style="display:flex; gap:12px; align-items:center;">
-                <img class="mo-thumb" src="${escapeHtml(s.url)}" alt="" loading="lazy" onerror="this.style.display='none'"/>
+                <img class="mo-thumb" data-current-thumb src="${escapeHtml(s.overrideTo || s.url)}" alt="" loading="lazy" onerror="this.style.display='none'"/>
                 <div class="mo-src">
-                  <strong>外部 URL</strong>
-                  <a href="${escapeHtml(s.url)}" target="_blank" style="color:var(--a-mute2);">${escapeHtml(s.url.length > 70 ? s.url.slice(0, 67) + '...' : s.url)}</a>
+                  <strong>${s.overrideTo ? '当前已替换为' : '外部 URL'}</strong>
+                  <a href="${escapeHtml(s.overrideTo || s.url)}" target="_blank" style="color:var(--a-mute2);">${escapeHtml((s.overrideTo || s.url).length > 70 ? (s.overrideTo || s.url).slice(0, 67) + '...' : (s.overrideTo || s.url))}</a>
                   <div class="mo-pages">${s.count} 处引用 · ${s.files.slice(0, 3).map((f) => escapeHtml(f)).join(', ')}${s.files.length > 3 ? ` 等 ${s.files.length} 个页面` : ''}</div>
                 </div>
               </div>
               <div>
-                <input class="mo-input" data-target value="${escapeHtml(s.overrideTo || '')}" placeholder="/uploads/your-photo.webp"/>
-                ${s.overrideTo ? `<div style="margin-top:6px; display:flex; gap:8px; align-items:center;">
-                  <img class="mo-thumb" style="width:48px; height:32px;" src="${escapeHtml(s.overrideTo)}" alt="" loading="lazy" onerror="this.style.display='none'"/>
-                  <span style="font-size:11.5px; color:var(--a-mute2);">已替换 →</span>
-                </div>` : ''}
+                <button type="button" class="btn btn--primary btn--sm" data-upload>📤 上传替换</button>
+                <span class="mo-input-toggle" style="font-size:11.5px; color:var(--a-mute2); display:block; margin-top:8px; cursor:pointer;" data-toggle-input>或直接粘贴 URL ↓</span>
+                <input class="mo-input" data-target value="${escapeHtml(s.overrideTo || '')}" placeholder="/uploads/your-photo.webp" style="display:none; margin-top:6px;"/>
               </div>
               <div style="text-align:right;">
                 ${s.overrideTo ? '<button class="btn btn--ghost btn--sm" data-clear>清除</button>' : ''}
@@ -77,19 +73,91 @@
           `).join('') : '<div class="empty">扫描没有发现外部图片。</div>'}
         </div>
         <div class="form-actions" style="position:sticky; bottom:0; background:#fff; border-top:1px solid var(--a-line); padding-top:16px; z-index:10;">
-          <button class="btn btn--primary" id="save">保存全部映射</button>
-          <span style="font-size:12.5px; color:var(--a-mute2); margin-left:12px;">保存后立即生效，无需重启。访客刷新页面即可看到新图。</span>
+          <span style="font-size:12.5px; color:var(--a-mute2);">点 <strong>上传替换</strong> 即时生效，无需点保存。批量编辑 URL 后可点这里：</span>
+          <button class="btn btn--ghost" id="save">仅保存 URL 改动</button>
         </div>
       </div>
     `;
 
-    document.querySelectorAll('[data-clear]').forEach((b) => {
-      b.addEventListener('click', () => {
-        const row = b.closest('.mo-row');
-        row.querySelector('[data-target]').value = '';
-        row.classList.remove('is-mapped');
-        b.remove();
+    // Per-row "upload to replace" button: opens file picker, uploads to
+    // /api/media, immediately saves the mapping for that one URL pair,
+    // and updates the thumbnail in place. No URL pasting required.
+    document.querySelectorAll('[data-upload]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const row = btn.closest('.mo-row');
+        const sourceUrl = row.dataset.src;
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.style.display = 'none';
+        document.body.appendChild(fileInput);
+        fileInput.addEventListener('change', async () => {
+          const file = fileInput.files && fileInput.files[0];
+          fileInput.remove();
+          if (!file) return;
+          btn.disabled = true; btn.textContent = '上传中…';
+          try {
+            // 1) upload the file
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('alt_text', file.name.replace(/\.[a-z0-9]+$/i, '').replace(/[-_]+/g, ' '));
+            const up = await fetch('/api/media', { method: 'POST', credentials: 'include', body: fd });
+            const upJson = await up.json();
+            if (!up.ok || !upJson.url) throw new Error(upJson.error || ('HTTP ' + up.status));
+            // 2) merge into the existing override map and save (one PUT
+            //    so we don't lose any other rows the operator has edited)
+            const cur = await api('/api/media/overrides');
+            const map = Object.assign({}, cur.overrides || {});
+            map[sourceUrl] = upJson.url;
+            const save = await api('/api/media/overrides', { method: 'PUT', body: JSON.stringify({ overrides: map }) });
+            // 3) reflect new state in this row without a full reload
+            row.classList.add('is-mapped');
+            const thumb = row.querySelector('[data-current-thumb]');
+            if (thumb) { thumb.src = upJson.url; thumb.style.display = ''; }
+            const inputEl = row.querySelector('[data-target]');
+            if (inputEl) inputEl.value = upJson.url;
+            const srcLink = row.querySelector('.mo-src strong');
+            if (srcLink) srcLink.textContent = '当前已替换为';
+            const link = row.querySelector('.mo-src a');
+            if (link) { link.href = upJson.url; link.textContent = upJson.url; }
+            // ensure a "清除" button exists
+            const cell = row.querySelectorAll('div')[row.querySelectorAll('div').length - 1];
+            if (cell && !cell.querySelector('[data-clear]')) {
+              cell.innerHTML = '<button class="btn btn--ghost btn--sm" data-clear>清除</button>';
+              cell.querySelector('[data-clear]').addEventListener('click', () => clearRow(row));
+            }
+            toast(`已替换：${file.name}（${(file.size/1024).toFixed(0)} KB）`, 'success');
+          } catch (err) { toast('上传失败：' + err.message, 'error'); }
+          finally { btn.disabled = false; btn.textContent = '📤 上传替换'; }
+        });
+        fileInput.click();
       });
+    });
+
+    document.querySelectorAll('[data-toggle-input]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const inp = el.parentElement.querySelector('[data-target]');
+        if (!inp) return;
+        const showing = inp.style.display !== 'none';
+        inp.style.display = showing ? 'none' : '';
+        el.textContent = showing ? '或直接粘贴 URL ↓' : '收起 URL 输入 ↑';
+        if (!showing) inp.focus();
+      });
+    });
+
+    function clearRow(row) {
+      row.classList.remove('is-mapped');
+      const inp = row.querySelector('[data-target]');
+      if (inp) inp.value = '';
+      const thumb = row.querySelector('[data-current-thumb]');
+      if (thumb) thumb.src = row.dataset.src;
+      const lbl = row.querySelector('.mo-src strong');
+      if (lbl) lbl.textContent = '外部 URL';
+      const link = row.querySelector('.mo-src a');
+      if (link) { link.href = row.dataset.src; link.textContent = row.dataset.src; }
+    }
+    document.querySelectorAll('[data-clear]').forEach((b) => {
+      b.addEventListener('click', () => { clearRow(b.closest('.mo-row')); b.remove(); });
     });
 
     document.getElementById('rescan').addEventListener('click', async () => {

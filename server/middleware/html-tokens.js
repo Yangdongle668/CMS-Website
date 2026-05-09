@@ -32,6 +32,7 @@ const settingsCache = {
   site: {},
   organization: {},
   media_overrides: {},
+  text_overrides: {},
   loadedAt: 0,
 };
 
@@ -39,7 +40,7 @@ async function loadSettingsCache() {
   try {
     const { many } = require('../db/client');
     const rows = await many(
-      `SELECT key, value FROM settings WHERE key IN ('seo','site','organization','media_overrides')`
+      `SELECT key, value FROM settings WHERE key IN ('seo','site','organization','media_overrides','text_overrides')`
     );
     for (const r of rows) settingsCache[r.key] = r.value || {};
     settingsCache.loadedAt = Date.now();
@@ -169,7 +170,68 @@ function replaceTokens(html, ctx) {
       out = out.split(src).join(dst);
     }
   }
+  // Apply text overrides — admin-edited per-text replacements made via
+  // the click-to-edit iframe editor in /admin/pages.html. We must only
+  // touch real text nodes, never code inside <script> or <style>, so
+  // the safe pattern is to:
+  //   1. Split the doc into segments around <script>...</script> and
+  //      <style>...</style> blocks (which we leave untouched).
+  //   2. Within each non-script/style segment, find runs of >...<
+  //      (raw text between tags) and replace exact matches there.
+  //   3. Re-join.
+  // This avoids the brittle whole-document string-replace that would
+  // corrupt JSON-LD bodies, JS string literals or CSS selectors.
+  const textOverrides = settingsCache.text_overrides || {};
+  if (Object.keys(textOverrides).length) {
+    out = applyTextOverrides(out, textOverrides);
+  }
   return out;
+}
+
+function applyTextOverrides(html, map) {
+  // Split-preserve regex: matches <script>...</script>, <style>...</style>,
+  // or HTML comments. Anything outside these blocks is fair game.
+  const protectRe = /<(script|style)\b[^>]*>[\s\S]*?<\/\1>|<!--[\s\S]*?-->/gi;
+  const parts = [];
+  let last = 0;
+  let m;
+  while ((m = protectRe.exec(html)) !== null) {
+    parts.push({ kind: 'text', body: html.slice(last, m.index) });
+    parts.push({ kind: 'protected', body: m[0] });
+    last = m.index + m[0].length;
+  }
+  parts.push({ kind: 'text', body: html.slice(last) });
+
+  return parts.map((p) => {
+    if (p.kind !== 'text') return p.body;
+    let s = p.body;
+    for (const [rawFrom, to] of Object.entries(map)) {
+      if (!rawFrom || rawFrom === to) continue;
+      // Two reasons to encode the FROM key before searching:
+      //   1. HTML serialisation turns `&` into `&amp;`, `<` into `&lt;`,
+      //      so a literal "Custom-Shape & Coin Cell" in textContent
+      //      lives in source as "Custom-Shape &amp; Coin Cell".
+      //   2. Operators paste original text from the iframe's textContent
+      //      (i.e. unescaped form), so we have to encode here, not on save.
+      const from = encodeHtmlEntities(rawFrom);
+      const escFrom = from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // Match the text between > and < (or start/end of segment) only.
+      // The pattern: optional whitespace + EXACT from + optional whitespace,
+      // bookended by a > or start-of-segment on the left and a < or
+      // end-of-segment on the right.
+      const re = new RegExp(`(>|^)(\\s*)${escFrom}(\\s*)(<|$)`, 'g');
+      s = s.replace(re, (_match, openBoundary, leading, trailing, closeBoundary) =>
+        openBoundary + leading + escapeAttr(to) + trailing + closeBoundary
+      );
+    }
+    return s;
+  }).join('');
+}
+
+function encodeHtmlEntities(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[c]);
 }
 
 function buildContext(req, canonicalPathOverride) {
