@@ -13,6 +13,7 @@
 <script src="/admin/assets/js/admin.js"></script>
 <script src="/admin/assets/js/quill-editor.js"></script>
 <script src="/admin/assets/js/image-picker.js"></script>
+<script src="/admin/assets/js/iframe-text-editor.js"></script>
 <script>
 (async function () {
   const { api, escapeHtml, formatDate, toast, bootShell } = window.AdminAPI;
@@ -193,10 +194,26 @@
       }
     })();
 
-    /* Live iframe preview & per-page image scan */
+    /* Live iframe preview: scan for images + enable click-to-edit text */
     previewIframe = panel.querySelector('#preview-frame');
     if (previewIframe) {
-      previewIframe.addEventListener('load', scanIframeImages);
+      previewIframe.addEventListener('load', async () => {
+        await scanIframeImages();
+        // Enable inline text editing inside the iframe. Pulls the current
+        // text_overrides map so already-edited blocks render with a green
+        // outline + "已替换" treatment.
+        try {
+          let overrides = {};
+          try {
+            const r = await fetch('/api/text-overrides', { credentials: 'include' });
+            if (r.ok) overrides = (await r.json()).overrides || {};
+          } catch (_) {}
+          window.IframeTextEditor.enable(previewIframe, {
+            overrides,
+            onSave: () => { /* iframe reload handled by editor itself */ },
+          });
+        } catch (err) { /* non-fatal — image grid still works */ }
+      });
       panel.querySelector('#reload-frame').addEventListener('click', () => {
         previewIframe.contentWindow.location.reload();
       });
