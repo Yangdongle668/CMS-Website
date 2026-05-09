@@ -82,14 +82,29 @@
   function geomToPath(geometry, w, h) {
     if (!geometry) return '';
     const out = [];
+    /* Walk a single ring (Polygon outer / hole / MultiPolygon piece).
+       Antimeridian-aware: when two consecutive points jump > 180° in
+       longitude (e.g. Russia's east edge at +179° followed by a point
+       at -179°), naive projection draws a straight line across the
+       whole map, producing a black horizontal stripe through Africa.
+       We detect that jump and start a new M sub-path so the line
+       breaks at the dateline instead of leaping across the world. */
     function ring(pts) {
-      if (!pts || !pts.length) return;
-      out.push('M');
-      pts.forEach((p, i) => {
-        const [x, y] = project(p[0], p[1], w, h);
-        out.push(x.toFixed(1) + ',' + y.toFixed(1));
-        if (i < pts.length - 1) out.push('L');
-      });
+      if (!pts || pts.length < 2) return;
+      let prevLng = null;
+      for (let i = 0; i < pts.length; i++) {
+        const lng = pts[i][0];
+        const lat = pts[i][1];
+        const [x, y] = project(lng, lat, w, h);
+        const xy = x.toFixed(1) + ',' + y.toFixed(1);
+        const crossesDateline = (prevLng !== null && Math.abs(lng - prevLng) > 180);
+        if (i === 0 || crossesDateline) {
+          out.push('M' + xy);
+        } else {
+          out.push('L' + xy);
+        }
+        prevLng = lng;
+      }
       out.push('Z');
     }
     if (geometry.type === 'Polygon') {
