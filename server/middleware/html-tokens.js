@@ -386,6 +386,46 @@ async function applyPageOverrides(html) {
     }
   }
 
+  // ----- sections override: rewrite every [data-section="<key>"] node -----
+  // Mirrors the client-side logic in cms-page.js so visitors see the
+  // operator's edits in the initial HTML — no static-then-DB flash on the
+  // homepage hero CTAs / why-us / cta-band labels etc.
+  //   string value          → replace textContent
+  //   { text, link } object  → replace textContent; if the element is an
+  //                            <a>, also rewrite its href
+  if (page.sections && typeof page.sections === 'object' && !Array.isArray(page.sections)) {
+    for (const [key, value] of Object.entries(page.sections)) {
+      if (!key) continue;
+      // Escape regex specials in the key (slug-ish keys typically only have
+      // [a-z0-9_-], but defend against the general case).
+      const safeKey = key.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const re = new RegExp(
+        `(<([a-z0-9]+)\\b[^>]*\\sdata-section=["']${safeKey}["'][^>]*>)([\\s\\S]*?)(</\\2>)`,
+        'i'
+      );
+      if (typeof value === 'string') {
+        html = html.replace(re, (_m, open, _tag, _inner, close) =>
+          open + escapeAttr(value) + close
+        );
+      } else if (value && typeof value === 'object' && (value.text != null || value.link != null)) {
+        html = html.replace(re, (_m, open, _tag, _inner, close) => {
+          // If this is an anchor and value.link is set, swap the href.
+          if (value.link && /^<a\b/i.test(open)) {
+            if (/href="[^"]*"/i.test(open)) {
+              open = open.replace(/href="[^"]*"/i, `href="${escapeAttr(value.link)}"`);
+            } else {
+              open = open.replace(/^(<a\b)/i, `$1 href="${escapeAttr(value.link)}"`);
+            }
+          }
+          const text = value.text != null ? escapeAttr(value.text) : _inner;
+          return open + text + close;
+        });
+      }
+      // Array / nested-object values are still left for cms-page.js to
+      // dispatch as page:section events (e.g. products_cards arrays).
+    }
+  }
+
   return html;
 }
 
@@ -450,6 +490,7 @@ module.exports = {
   tryServeHtml,
   buildContext,
   replaceTokens,
+  applyPageOverrides,
   invalidateSettingsCache,
   loadSettingsCache,
 };

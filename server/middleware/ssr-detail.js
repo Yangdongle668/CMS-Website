@@ -16,7 +16,7 @@
 const fs = require('fs');
 const path = require('path');
 const { one, many } = require('../db/client');
-const { replaceTokens, buildContext } = require('./html-tokens');
+const { replaceTokens, buildContext, applyPageOverrides } = require('./html-tokens');
 
 const PUBLIC_DIR = path.resolve(__dirname, '..', '..', 'public');
 
@@ -767,6 +767,13 @@ async function renderHomepage(req, res) {
     html = injectIntoBody(html, [{ kind: 'html', attr: 'insights-grid', value: cardsHtml }]);
   }
 
+  // Apply pages-table overrides AFTER token replacement + insights so the
+  // operator's edits to hero / hero_cta_primary / why_title / cta_button
+  // etc. (saved via /admin/pages.html → home) ship in the initial HTML.
+  // Without this, cms-page.js was re-applying them in the browser and the
+  // visitor saw the static fallback flash to the DB value on every load.
+  html = await applyPageOverrides(html);
+
   res.type('html').send(html);
   return true;
 }
@@ -1017,6 +1024,9 @@ async function renderBlogIndex(req, res) {
       html = html.replace(/<\/head>/i, `${linkTags.join('\n')}\n</head>`);
     }
   }
+
+  // Apply pages-table overrides for the blog index too (data-page="blog/index").
+  html = await applyPageOverrides(html);
 
   res.type('html').send(html);
   return true;
