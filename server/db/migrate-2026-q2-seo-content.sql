@@ -517,6 +517,62 @@ UPDATE articles SET focus_keyword = 'custom shaped battery reliability testing',
  WHERE slug = 'custom-battery-reliability-testing';
 
 -- ---------------------------------------------------------------
+-- ARTICLES (BATCH 3) — hand-tuned SEO meta for the 7 new
+-- coin-pillar cluster articles added post-product-line audit.
+-- Same pattern as batch 2: focus_keyword always set; meta_title +
+-- meta_description only filled if blank, so operator edits stick.
+-- ---------------------------------------------------------------
+
+UPDATE articles SET focus_keyword = 'CR2032 vs LIR2032 vs ML2032',
+       meta_title = COALESCE(NULLIF(meta_title, ''),
+         'CR2032 vs LIR2032 vs ML2032: Coin Cell Comparison Guide'),
+       meta_description = COALESCE(NULLIF(meta_description, ''),
+         'Head-to-head comparison of three 20 mm coin cell families: voltage, capacity, cycle life, reflow tolerance and cost. Decision guide for hardware engineers.')
+ WHERE slug = 'cr-vs-lir-vs-ml-coin-cell-comparison';
+
+UPDATE articles SET focus_keyword = 'rechargeable coin cell cycle life',
+       meta_title = COALESCE(NULLIF(meta_title, ''),
+         'Rechargeable Coin Cell Cycle Life: 500 / 1,000 / 2,000 Cycle Reality'),
+       meta_description = COALESCE(NULLIF(meta_description, ''),
+         'A 1,000-cycle datasheet rating depends on four hidden conditions. How to translate it into expected service life in your product, plus the four design knobs that extend it.')
+ WHERE slug = 'coin-cell-cycle-life-curves';
+
+UPDATE articles SET focus_keyword = 'coin cell self-discharge shelf life',
+       meta_title = COALESCE(NULLIF(meta_title, ''),
+         'Coin Cell Self-Discharge: 5-Year Shelf Life Math'),
+       meta_description = COALESCE(NULLIF(meta_description, ''),
+         'Self-discharge rates for LIR and ML coin cells, the Arrhenius temperature dependence, and a worked 5-year shelf-life example with inventory rotation thresholds.')
+ WHERE slug = 'coin-cell-self-discharge-shelf-life';
+
+UPDATE articles SET focus_keyword = 'coin cell charging IC',
+       meta_title = COALESCE(NULLIF(meta_title, ''),
+         'Coin Cell Charging IC Design: MCP73831, BQ24210 Trade-Offs'),
+       meta_description = COALESCE(NULLIF(meta_description, ''),
+         'Selecting and configuring a charging IC for a 40-200 mAh rechargeable coin cell. ISET resistor sizing, NTC integration, quiescent draw, common mistakes.')
+ WHERE slug = 'coin-cell-charging-ic-design';
+
+UPDATE articles SET focus_keyword = 'coin cell mounting design',
+       meta_title = COALESCE(NULLIF(meta_title, ''),
+         'Coin Cell Mounting: Holder vs Solder Tab vs SMD Reflow'),
+       meta_description = COALESCE(NULLIF(meta_description, ''),
+         'Three ways to attach a coin cell to a PCB: snap-in holder, pre-welded solder tab, or SMD reflow. Cost, reliability, serviceability — full decision matrix.')
+ WHERE slug = 'coin-cell-mounting-holder-tab-smd';
+
+UPDATE articles SET focus_keyword = 'coin cell safety abuse',
+       meta_title = COALESCE(NULLIF(meta_title, ''),
+         'Coin Cell Safety: Short-Circuit, Crush and Vent Behaviour'),
+       meta_description = COALESCE(NULLIF(meta_description, ''),
+         'How rechargeable coin cells fail under abuse, why the hermetic stainless-steel shell matters, and what we test on every production lot for medical and aerospace customers.')
+ WHERE slug = 'coin-cell-safety-abuse-behavior';
+
+UPDATE articles SET focus_keyword = 'BLE beacon ML2032 design',
+       meta_title = COALESCE(NULLIF(meta_title, ''),
+         'Designing a 5-Year BLE Beacon with an ML2032 Coin Cell'),
+       meta_description = COALESCE(NULLIF(meta_description, ''),
+         'Worked design hitting 1 µA average draw on a 65 mAh ML2032: advertising interval, MCU sleep modes, RTC choice, TX power. Full energy budget table.')
+ WHERE slug = 'ble-beacon-ml-coin-cell-design';
+
+-- ---------------------------------------------------------------
 -- NAVIGATION setting — refresh on existing deployments. Restricted
 -- to the 6 applications that match Zufek's product line (polymer
 -- pouch + coin steel-shell): AR/VR, Medical, Wearables, IoT, Smart
