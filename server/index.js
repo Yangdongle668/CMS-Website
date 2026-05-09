@@ -134,6 +134,7 @@ app.use('/api/media/overrides', require('./routes/media-overrides'));
 app.use('/api/text-overrides', require('./routes/text-overrides'));
 app.use('/api/seo-check', require('./routes/seo-check'));
 app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/ai-generate', require('./routes/ai-generate'));
 
 // ----- SEO endpoints -----
 app.use('/', require('./routes/seo'));

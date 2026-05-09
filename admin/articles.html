@@ -19,7 +19,10 @@
   let contentEditor = null;
   const shell = await bootShell({ title: '博客文章', crumbs: '内容 / 博客文章' });
   if (!shell) return;
-  shell.actions.innerHTML = `<button class="btn btn--sm" id="new">+ 新建文章</button>`;
+  shell.actions.innerHTML = `
+    <a href="/admin/ai-generate.html" class="btn btn--ghost btn--sm">✦ AI 生成新文章</a>
+    <button class="btn btn--sm" id="new">+ 新建文章</button>
+  `;
 
   const pillars = (await api('/api/pillars?status=all')).items;
   const cats = (await api('/api/articles/categories/list')).items;

@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>AI 文章生成 | 后台管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+<style>
+  /* AI Generate page — local styles. Keeps admin.css free of one-page rules. */
+  .ai-grid { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 1100px) { .ai-grid { grid-template-columns: 1fr; } }
+
+  .prompt-card {
+    border: 1px solid var(--a-line); border-radius: 10px;
+    padding: 14px; background: #fff; cursor: pointer;
+    transition: border-color .15s, transform .15s;
+  }
+  .prompt-card:hover { border-color: var(--a-brand); transform: translateY(-1px); }
+  .prompt-card.is-active {
+    border-color: var(--a-brand); background: var(--a-brand-soft);
+    box-shadow: 0 0 0 3px rgba(8, 44, 99, 0.08);
+  }
+  .prompt-card h3 { margin: 0 0 6px; font-size: 14.5px; }
+  .prompt-card p  { margin: 0; font-size: 12.5px; color: var(--a-mute2); line-height: 1.5; }
+  .prompt-card .icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 6px;
+    background: var(--a-brand); color: #fff; margin-right: 8px;
+    font-size: 14px; vertical-align: middle;
+  }
+
+  .ai-output {
+    border: 1px solid var(--a-line); border-radius: 10px;
+    padding: 18px 20px; background: #fff;
+    max-height: 520px; overflow: auto;
+    font-size: 14px; line-height: 1.65;
+  }
+  .ai-output h1 { font-size: 22px; margin: 0 0 12px; }
+  .ai-output h2 { font-size: 17px; margin: 24px 0 10px; }
+  .ai-output h3 { font-size: 15px; margin: 18px 0 8px; }
+  .ai-output p, .ai-output li { font-size: 14px; }
+  .ai-output table {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+    margin: 14px 0;
+  }
+  .ai-output th, .ai-output td {
+    border: 1px solid var(--a-line); padding: 8px 10px; text-align: left;
+  }
+  .ai-output th { background: var(--a-surface); }
+  .ai-output details {
+    border: 1px solid var(--a-line); border-radius: 6px;
+    padding: 10px 14px; margin: 8px 0; background: var(--a-surface);
+  }
+  .ai-output details summary { cursor: pointer; font-weight: 600; }
+
+  .score-card {
+    display: grid; grid-template-columns: auto 1fr; gap: 14px;
+    align-items: center; padding: 14px 16px;
+    border: 1px solid var(--a-line); border-radius: 10px;
+    background: #fff;
+  }
+  .score-bubble {
+    width: 70px; height: 70px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 800; color: #fff;
+  }
+  .score-bubble.is-low  { background: #16a34a; }
+  .score-bubble.is-mid  { background: #d97706; }
+  .score-bubble.is-high { background: #dc2626; }
+  .score-meta { font-size: 12.5px; color: var(--a-mute2); }
+  .score-meta strong { color: var(--a-fg); font-size: 14px; display: block; margin-bottom: 4px; }
+
+  .signal-list { margin: 10px 0 0; padding-left: 18px; }
+  .signal-list li { font-size: 12.5px; color: var(--a-mute2); margin-bottom: 4px; }
+
+  .progress-rail {
+    display: flex; gap: 0; margin-bottom: 22px;
+    border: 1px solid var(--a-line); border-radius: 10px; overflow: hidden;
+    font-size: 12.5px; background: #fff;
+  }
+  .progress-step {
+    flex: 1; padding: 10px 12px; text-align: center; color: var(--a-mute2);
+    border-right: 1px solid var(--a-line); position: relative;
+  }
+  .progress-step:last-child { border-right: 0; }
+  .progress-step.is-done   { background: var(--a-brand-soft); color: var(--a-brand); font-weight: 600; }
+  .progress-step.is-active { background: var(--a-brand); color: #fff; font-weight: 700; }
+
+  .var-form { display: grid; gap: 10px; }
+  .var-form label { font-size: 12px; color: var(--a-muted); margin-bottom: 4px; display: block; }
+  .var-form input, .var-form textarea {
+    width: 100%; padding: 8px 10px; font-size: 13px;
+    border: 1px solid var(--a-line); border-radius: 6px;
+    background: #fff;
+  }
+
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 600; background: var(--a-brand-soft);
+    color: var(--a-brand); margin-left: 6px;
+  }
+  .badge.is-warn { background: #fef3c7; color: #92400e; }
+
+  .spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff;
+    border-radius: 50%; animation: sp 0.6s linear infinite;
+    vertical-align: middle; margin-right: 6px;
+  }
+  @keyframes sp { to { transform: rotate(360deg); } }
+
+  .config-banner {
+    background: #fef3c7; border: 1px solid #fcd34d;
+    border-radius: 8px; padding: 12px 16px; margin-bottom: 16px;
+    font-size: 13px; color: #92400e;
+  }
+</style>
+</head>
+<body>
+<div data-admin-shell></div>
+<script src="/admin/assets/js/admin.js"></script>
+<script>
+(async function () {
+  const { api, escapeHtml, toast, bootShell } = window.AdminAPI;
+
+  const shell = await bootShell({ title: 'AI 文章生成', crumbs: '内容 / AI 文章生成' });
+  if (!shell) return;
+
+  // --- App state -----------------------------------------------------
+  const state = {
+    mode: 'generate',     // 'generate' | 'translate'
+    promptKey: null,
+    vars: {},
+    html: '',             // current article HTML
+    detection: null,      // last detection result
+    history: [],          // past versions for "撤销"
+    busy: false,
+    provider: '',         // currently selected LLM provider id
+    model: '',            // optional model override
+  };
+
+  // --- Boot ----------------------------------------------------------
+  const [statusRes, promptsRes, pillarsRes, catsRes, authorsRes] = await Promise.all([
+    api('/api/ai-generate/status'),
+    api('/api/ai-generate/prompts'),
+    api('/api/pillars?status=all').catch(() => ({ items: [] })),
+    api('/api/articles/categories/list').catch(() => ({ items: [] })),
+    api('/api/authors?all=1').catch(() => ({ items: [] })),
+  ]);
+  const PROMPTS = promptsRes.items;
+  const PILLARS = pillarsRes.items || [];
+  const CATS = catsRes.items || [];
+  const AUTHORS = authorsRes.items || [];
+  const STATUS = statusRes;
+  const PROVIDERS = STATUS.providers || [];
+  // Default to the server-reported default provider (first configured one).
+  state.provider = STATUS.defaultProvider || (PROVIDERS.find((p) => p.configured) || {}).id || '';
+  state.model = '';
+  const configuredCount = PROVIDERS.filter((p) => p.configured).length;
+
+  shell.actions.innerHTML = `
+    <a href="/admin/articles.html" class="btn btn--ghost btn--sm">← 返回文章列表</a>
+  `;
+
+  function render() {
+    const banner = STATUS.configured ? '' : `
+      <div class="config-banner">
+        <strong>未配置任何 LLM Provider API Key</strong> —
+        请在服务器 .env 中设置以下任意一个并重启：
+        <code>ANTHROPIC_API_KEY</code> · <code>OPENAI_API_KEY</code> ·
+        <code>DEEPSEEK_API_KEY</code> · <code>MOONSHOT_API_KEY</code> ·
+        <code>ZHIPU_API_KEY</code> · <code>QWEN_API_KEY</code>。
+        当前查重提供方：<code>${escapeHtml(STATUS.detectProvider)}</code>。
+      </div>
+    `;
+    const providerSelector = `
+      <div class="panel" style="padding: 12px 14px; margin-bottom: 16px;">
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+          <strong style="font-size: 13px;">LLM Provider</strong>
+          <select id="provider-sel" style="padding: 6px 10px; font-size: 13px; border: 1px solid var(--a-line); border-radius: 6px;">
+            ${PROVIDERS.map((p) => `
+              <option value="${p.id}" ${state.provider === p.id ? 'selected' : ''} ${p.configured ? '' : 'disabled'}>
+                ${escapeHtml(p.label)}${p.configured ? '' : ' (未配置)'}
+              </option>
+            `).join('')}
+          </select>
+          <input id="model-sel" placeholder="模型名 (留空使用默认 ${escapeHtml((PROVIDERS.find((p) => p.id === state.provider) || {}).defaultModel || '-')})"
+            value="${escapeHtml(state.model || '')}"
+            style="flex: 1; min-width: 220px; padding: 6px 10px; font-size: 13px; border: 1px solid var(--a-line); border-radius: 6px; font-family: 'JetBrains Mono', monospace;"/>
+          <span style="font-size: 12px; color: var(--a-mute2);">
+            已配置 ${configuredCount}/${PROVIDERS.length} 家 · 查重: ${escapeHtml(STATUS.detectProvider)}
+          </span>
+        </div>
+      </div>
+    `;
+
+    const stepRail = `
+      <div class="progress-rail">
+        <div class="progress-step ${state.html ? 'is-done' : 'is-active'}">1. ${state.mode === 'translate' ? '提供原文' : '选 Prompt + 生成'}</div>
+        <div class="progress-step ${state.detection ? 'is-done' : (state.html ? 'is-active' : '')}">2. AI 查重</div>
+        <div class="progress-step ${state.history.length > 0 ? 'is-done' : (state.detection ? 'is-active' : '')}">3. 微调降AI</div>
+        <div class="progress-step">4. 保存为草稿</div>
+      </div>
+    `;
+
+    const tabs = `
+      <div class="tabs">
+        <button class="tabs__btn ${state.mode === 'generate' ? 'is-active' : ''}" data-mode="generate">使用 Prompt 生成</button>
+        <button class="tabs__btn ${state.mode === 'translate' ? 'is-active' : ''}" data-mode="translate">翻译已有文章</button>
+      </div>
+    `;
+
+    shell.content.innerHTML = `
+      ${banner}
+      ${providerSelector}
+      ${stepRail}
+      ${tabs}
+      <div class="ai-grid">
+        <div class="panel">
+          ${state.mode === 'generate' ? renderGeneratePane() : renderTranslatePane()}
+        </div>
+        <div class="panel">
+          ${renderOutputPane()}
+        </div>
+      </div>
+    `;
+
+    bind();
+  }
+
+  // --- Pane: Generate ------------------------------------------------
+  function renderGeneratePane() {
+    const cards = PROMPTS.map((p) => `
+      <div class="prompt-card ${state.promptKey === p.key ? 'is-active' : ''}" data-key="${p.key}">
+        <h3><span class="icon">${escapeHtml(p.icon || '✎')}</span>${escapeHtml(p.label)}</h3>
+        <p>${escapeHtml(p.description)}</p>
+      </div>
+    `).join('');
+
+    let varForm = '<p style="color:var(--a-mute2); font-size:12.5px;">← 先在左侧选择一个 Prompt 模板</p>';
+    const def = PROMPTS.find((p) => p.key === state.promptKey);
+    if (def) {
+      varForm = `
+        <div class="var-form">
+          ${def.vars.map((v) => `
+            <div>
+              <label>${escapeHtml(v.label)}</label>
+              ${v.label.length > 18 || (v.placeholder && v.placeholder.length > 50)
+                ? `<textarea rows="2" data-var="${v.key}" placeholder="${escapeHtml(v.placeholder || '')}">${escapeHtml(state.vars[v.key] || v.default || '')}</textarea>`
+                : `<input data-var="${v.key}" placeholder="${escapeHtml(v.placeholder || '')}" value="${escapeHtml(state.vars[v.key] || v.default || '')}"/>`
+              }
+            </div>
+          `).join('')}
+          <button class="btn" id="btn-generate" ${!STATUS.configured || state.busy ? 'disabled' : ''}>
+            ${state.busy ? '<span class="spinner"></span>生成中…' : '✨ 调用 Claude 生成文章'}
+          </button>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="panel__head"><h2>1. 选择 Prompt 模板 <span class="badge">${PROMPTS.length} 个预设</span></h2></div>
+      <div style="display:grid; gap:10px; margin-bottom: 18px;">${cards}</div>
+      <div class="panel__head" style="margin-top:8px;"><h2>2. 填充变量</h2></div>
+      ${varForm}
+    `;
+  }
+
+  // --- Pane: Translate -----------------------------------------------
+  function renderTranslatePane() {
+    return `
+      <div class="panel__head"><h2>翻译已有文章</h2></div>
+      <p style="font-size:12.5px; color:var(--a-mute2); margin-top:0;">
+        粘贴一篇外文 HTML 或纯文本，AI 会保留 HTML 结构、保留产品名 / 数字 / 单位，输出目标语言版本。然后走相同的 AI 查重 + 降AI 流程。
+      </p>
+      <div class="var-form">
+        <div>
+          <label>目标语言</label>
+          <input id="t-target" value="${escapeHtml(state.targetLang || 'Simplified Chinese')}" placeholder="例：Simplified Chinese / English / German"/>
+        </div>
+        <div>
+          <label>源语言（可选，留空则自动识别）</label>
+          <input id="t-source" value="${escapeHtml(state.sourceLang || '')}" placeholder="例：English"/>
+        </div>
+        <div>
+          <label>原文 HTML 或纯文本</label>
+          <textarea id="t-src" rows="14" placeholder="粘贴需要翻译的文章…">${escapeHtml(state.srcHtml || '')}</textarea>
+        </div>
+        <button class="btn" id="btn-translate" ${!STATUS.configured || state.busy ? 'disabled' : ''}>
+          ${state.busy ? '<span class="spinner"></span>翻译中…' : '✦ 调用 Claude 翻译'}
+        </button>
+      </div>
+    `;
+  }
+
+  // --- Pane: Output --------------------------------------------------
+  function renderOutputPane() {
+    if (!state.html) {
+      return `
+        <div class="panel__head"><h2>预览 & 工作流</h2></div>
+        <div class="empty" style="padding:40px 20px;">
+          ${state.mode === 'translate' ? '翻译完成后将显示在这里。' : '生成的文章将显示在这里。'}
+          <br/>之后可以一键查重、降AI、保存为草稿。
+        </div>
+      `;
+    }
+
+    const det = state.detection;
+    const detBlock = det ? `
+      <div class="score-card" style="margin: 12px 0;">
+        <div class="score-bubble is-${det.level}">${det.score}</div>
+        <div>
+          <div class="score-meta"><strong>AI 风险等级: ${det.level === 'high' ? '高' : det.level === 'medium' ? '中' : '低'}</strong>
+            提供方: ${escapeHtml(det.provider)}${det.score >= STATUS.detectThreshold ? ' · 建议执行降AI' : ' · 风险可接受'}
+          </div>
+          <ul class="signal-list">
+            ${det.signals.map((s) => `<li>${escapeHtml(s)}</li>`).join('')}
+          </ul>
+        </div>
+      </div>
+    ` : '<p style="font-size:12.5px; color:var(--a-mute2);">未运行查重。点击下方"运行 AI 查重"。</p>';
+
+    return `
+      <div class="panel__head">
+        <h2>预览 ${state.history.length > 0 ? '<span class="badge">已修订 ' + state.history.length + ' 次</span>' : ''}</h2>
+        <div style="display:flex; gap:6px;">
+          ${state.history.length > 0 ? '<button class="btn btn--ghost btn--sm" id="btn-undo">↶ 撤销上一次</button>' : ''}
+          <button class="btn btn--ghost btn--sm" id="btn-edit-html">编辑 HTML</button>
+        </div>
+      </div>
+      ${detBlock}
+      <div class="ai-output" id="output-render">${state.html}</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top: 14px;">
+        <button class="btn" id="btn-detect" ${state.busy ? 'disabled' : ''}>
+          ${state.busy && state.busyKind === 'detect' ? '<span class="spinner"></span>' : '◌ '}运行 AI 查重
+        </button>
+        <button class="btn" id="btn-humanize" ${(!det || state.busy) ? 'disabled' : ''} title="${!det ? '请先运行查重' : ''}">
+          ${state.busy && state.busyKind === 'humanize' ? '<span class="spinner"></span>' : '⚒ '}降AI 微调
+        </button>
+        <button class="btn btn--ghost" id="btn-save" ${state.busy ? 'disabled' : ''}>💾 保存为草稿</button>
+      </div>
+    `;
+  }
+
+  // --- Bind events ---------------------------------------------------
+  function bind() {
+    const provSel = document.getElementById('provider-sel');
+    if (provSel) provSel.addEventListener('change', () => {
+      state.provider = provSel.value;
+      state.model = '';
+      render();
+    });
+    const modelSel = document.getElementById('model-sel');
+    if (modelSel) modelSel.addEventListener('input', () => {
+      state.model = modelSel.value.trim();
+    });
+
+    document.querySelectorAll('.tabs__btn').forEach((b) => {
+      b.addEventListener('click', () => {
+        state.mode = b.dataset.mode;
+        state.html = '';
+        state.detection = null;
+        state.history = [];
+        render();
+      });
+    });
+
+    document.querySelectorAll('.prompt-card').forEach((c) => {
+      c.addEventListener('click', () => {
+        state.promptKey = c.dataset.key;
+        state.vars = {};
+        render();
+      });
+    });
+
+    document.querySelectorAll('[data-var]').forEach((el) => {
+      el.addEventListener('input', () => {
+        state.vars[el.dataset.var] = el.value;
+      });
+    });
+
+    bindBtn('btn-generate', generateFromPrompt);
+    bindBtn('btn-translate', translateFromSrc);
+    bindBtn('btn-detect', detectAi);
+    bindBtn('btn-humanize', humanize);
+    bindBtn('btn-save', saveDraft);
+    bindBtn('btn-undo', undo);
+    bindBtn('btn-edit-html', editHtml);
+
+    const tSrc = document.getElementById('t-src');
+    if (tSrc) tSrc.addEventListener('input', () => state.srcHtml = tSrc.value);
+    const tTarget = document.getElementById('t-target');
+    if (tTarget) tTarget.addEventListener('input', () => state.targetLang = tTarget.value);
+    const tSource = document.getElementById('t-source');
+    if (tSource) tSource.addEventListener('input', () => state.sourceLang = tSource.value);
+  }
+
+  function bindBtn(id, fn) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('click', fn);
+  }
+
+  // --- Actions -------------------------------------------------------
+  function setBusy(kind) {
+    state.busy = !!kind;
+    state.busyKind = kind || null;
+    render();
+  }
+
+  function providerPayload() {
+    const out = {};
+    if (state.provider) out.provider = state.provider;
+    if (state.model)    out.model    = state.model;
+    return out;
+  }
+
+  async function generateFromPrompt() {
+    if (!state.promptKey) return toast('请先选择一个 Prompt 模板', 'error');
+    setBusy('generate');
+    try {
+      const out = await api('/api/ai-generate/generate', {
+        method: 'POST',
+        body: JSON.stringify(Object.assign({
+          promptKey: state.promptKey,
+          vars: state.vars,
+        }, providerPayload())),
+      });
+      state.html = out.html;
+      state.detection = null;
+      state.history = [];
+      toast('文章已生成（' + out.provider + ' / ' + out.model + '）', 'success');
+    } catch (err) { toast('生成失败：' + err.message, 'error'); }
+    setBusy(null);
+  }
+
+  async function translateFromSrc() {
+    if (!state.srcHtml || !state.srcHtml.trim()) return toast('请粘贴需要翻译的内容', 'error');
+    setBusy('translate');
+    try {
+      const out = await api('/api/ai-generate/translate', {
+        method: 'POST',
+        body: JSON.stringify(Object.assign({
+          html: state.srcHtml,
+          targetLang: state.targetLang || 'Simplified Chinese',
+          sourceLang: state.sourceLang || '',
+        }, providerPayload())),
+      });
+      state.html = out.html;
+      state.detection = null;
+      state.history = [];
+      toast('翻译完成（' + out.provider + ' / ' + out.model + '）', 'success');
+    } catch (err) { toast('翻译失败：' + err.message, 'error'); }
+    setBusy(null);
+  }
+
+  async function detectAi() {
+    if (!state.html) return;
+    setBusy('detect');
+    try {
+      const out = await api('/api/ai-generate/detect', {
+        method: 'POST',
+        body: JSON.stringify({ text: state.html }),
+      });
+      state.detection = out;
+      const tip = out.score >= STATUS.detectThreshold
+        ? `AI 风险 ${out.score}/100，建议执行降AI`
+        : `AI 风险 ${out.score}/100，可以发布`;
+      toast(tip, out.score >= STATUS.detectThreshold ? 'error' : 'success');
+    } catch (err) { toast('查重失败：' + err.message, 'error'); }
+    setBusy(null);
+  }
+
+  async function humanize() {
+    if (!state.html) return;
+    if (!state.detection) return toast('请先运行 AI 查重', 'error');
+    setBusy('humanize');
+    try {
+      // Snapshot current state into history so we can undo a regression.
+      state.history.push({ html: state.html, detection: state.detection });
+      const out = await api('/api/ai-generate/humanize', {
+        method: 'POST',
+        body: JSON.stringify(Object.assign({
+          html: state.html,
+          detection: state.detection,
+        }, providerPayload())),
+      });
+      state.html = out.html;
+      state.detection = null;
+      toast('已完成降AI 微调（' + out.provider + ' / ' + out.model + '），建议再次运行查重', 'success');
+    } catch (err) {
+      // If humanize failed, pop the snapshot we never used.
+      state.history.pop();
+      toast('降AI 失败：' + err.message, 'error');
+    }
+    setBusy(null);
+  }
+
+  function undo() {
+    const prev = state.history.pop();
+    if (!prev) return;
+    state.html = prev.html;
+    state.detection = prev.detection;
+    toast('已撤销到上一版', 'success');
+    render();
+  }
+
+  function editHtml() {
+    const cur = state.html;
+    const next = prompt('编辑 HTML（保留 <h1> <h2> <p> <table> 等结构）:', cur);
+    if (next != null && next !== cur) {
+      state.history.push({ html: state.html, detection: state.detection });
+      state.html = next;
+      state.detection = null;
+      render();
+    }
+  }
+
+  async function saveDraft() {
+    if (!state.html) return;
+    // Extract a title — first <h1> if present, else prompt the user.
+    let title = '';
+    const m = state.html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+    if (m) title = m[1].replace(/<[^>]+>/g, '').trim();
+    title = prompt('文章标题（用于显示和 SEO）:', title) || title;
+    if (!title) return toast('标题不能为空', 'error');
+
+    const slugSeed = title.toLowerCase()
+      .replace(/[^\w一-龥]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+    const slug = prompt('URL slug（仅小写字母 / 数字 / 短横线）:', slugSeed) || '';
+    if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) {
+      return toast('slug 格式不合法（仅 a-z 0-9 -）', 'error');
+    }
+
+    // Pull a meta description from the first <p>.
+    const pm = state.html.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
+    const metaDesc = pm ? pm[1].replace(/<[^>]+>/g, '').trim().slice(0, 200) : '';
+
+    setBusy('save');
+    try {
+      const out = await api('/api/ai-generate/save-draft', {
+        method: 'POST',
+        body: JSON.stringify({
+          slug,
+          title,
+          excerpt: metaDesc,
+          content: state.html,
+          meta_title: title,
+          meta_description: metaDesc,
+          focus_keyword: (state.vars && state.vars.focus_keyword) || '',
+          source: state.mode === 'translate' ? 'ai-translate' : 'ai-generate',
+        }),
+      });
+      toast('草稿已保存，跳转到编辑页…', 'success');
+      setTimeout(() => location.href = '/admin/articles.html?id=' + out.id, 800);
+    } catch (err) {
+      toast('保存失败：' + err.message, 'error');
+      setBusy(null);
+    }
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

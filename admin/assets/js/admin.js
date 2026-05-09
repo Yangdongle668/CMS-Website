@@ -16,6 +16,7 @@
       { label: '产品', href: '/admin/products.html', icon: '▣' },
       { label: '应用行业', href: '/admin/applications.html', icon: '◷' },
       { label: '博客文章', href: '/admin/articles.html', icon: '✎' },
+      { label: 'AI 文章生成', href: '/admin/ai-generate.html', icon: '✦' },
       { label: '作者档案', href: '/admin/authors.html', icon: '☺' },
       { label: '媒体库', href: '/admin/media.html', icon: '◫' },
       { label: '图片替换', href: '/admin/media-overrides.html', icon: '⇄' },
