@@ -148,6 +148,24 @@ app.use(trackerMiddleware);
 // Mounted BEFORE express.static so .html files flow through replaceTokens.
 // Static assets (CSS/JS/images) are short-circuited inside the middleware.
 const { htmlTokenMiddleware, tryServeHtml } = require('./middleware/html-tokens');
+
+// ----- SSR for top-level static pages with dynamic widgets -----
+// Homepage's "Latest Insights" grid and the blog index featured/grid
+// were JS-fetched, which produced a visible empty-then-populate flash.
+// Mounted BEFORE htmlTokenMiddleware so we replace the token-only
+// service for these specific URLs with our own DB-aware renderer.
+const ssrDetail = require('./middleware/ssr-detail');
+app.get(['/', '/index.html'], async (req, res, next) => {
+  try { if (await ssrDetail.renderHomepage(req, res)) return; }
+  catch (err) { console.error('[ssr] / failed:', err && err.message); }
+  return next();
+});
+app.get(['/blog/', '/blog/index.html'], async (req, res, next) => {
+  try { if (await ssrDetail.renderBlogIndex(req, res)) return; }
+  catch (err) { console.error('[ssr] /blog/ failed:', err && err.message); }
+  return next();
+});
+
 app.use(htmlTokenMiddleware);
 
 // ----- Static uploads -----
@@ -182,7 +200,6 @@ app.use(
 //      initial HTML.
 //   3. Final fallback: ship _template.html with token replacement only
 //      (JS will hydrate body, but head is already populated by tokens).
-const ssrDetail = require('./middleware/ssr-detail');
 app.get(['/products/:slug', '/applications/:slug', '/blog/:slug'], async (req, res, next) => {
   const segments = req.path.split('/').filter(Boolean);
   const dir = segments[0];
