@@ -241,8 +241,97 @@ INSERT INTO applications (slug, name, icon, cover_url, summary, body, sort_order
  'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=1200&q=80',
  'LFP cylindrical and prismatic systems for residential, telecom and commercial ESS.',
  'Cycle-optimised LiFePO4 cells (3,000-6,000 cycles) configured into 48V telecom modules, 5kWh wall-mount residential batteries, and 100kWh+ commercial cabinets.',
- 8)
+ 8),
+-- ----- Three new application landing pages — sitemap registration only.
+-- ----- The actual rich landing pages live as static .html files at:
+-- -----   /applications/smart-home.html
+-- -----   /applications/industrial-handhelds.html
+-- -----   /applications/defence-aerospace.html
+-- ----- These DB rows exist so /api/sitemap.xml emits them and the
+-- ----- /api/applications endpoint can enumerate the full set.
+('smart-home', 'Smart Home', 'smart-home',
+ 'https://images.unsplash.com/photo-1558002038-1055907df827?w=1200&q=80',
+ 'Long-life Li-Po and primary lithium cells for smart locks, sensors, cameras, robot vacuums and connected home devices.',
+ 'Smart-home batteries have to last 12-24 months between charges, survive -20C winters and 5-year retail shelf life. We ship custom Li-Po pouches for high-event devices and primary lithium coin/AA cells for low-event sensors.',
+ 9),
+('industrial-handhelds', 'Industrial Handhelds', 'industrial-handhelds',
+ 'https://images.unsplash.com/photo-1580674684081-7617fbf3d745?w=1200&q=80',
+ 'Smart battery packs with SMBus, hot-swap and authentication for barcode scanners, mobile computers, payment terminals and rugged handhelds.',
+ 'Industrial handhelds run 8-10 hour shifts, get dropped on concrete, survive -25C freezer aisles and authenticate against host devices. We ship smart packs with TI bq40z fuel-gauging, SMBus telemetry, SHA-256 challenge-response auth and hot-swap support.',
+ 10),
+('defence-aerospace', 'Defence & Aerospace', 'defence-aerospace',
+ 'https://images.unsplash.com/photo-1559131397-f94da358f7ca?w=1200&q=80',
+ 'Selectively-engaged defence and aerospace battery programs. ITAR-free BOM where required, MIL-PRF-32383 abuse compliance, AS9100D-aligned production.',
+ 'We engage selectively on dual-use defence: man-portable comms, dismounted soldier electronics, surveillance UAV / ground-robot batteries, ISR sensor packs. We do not engage on weapon-system primary batteries or USML / EU CML-listed programs.',
+ 11)
 ON CONFLICT (slug) DO NOTHING;
+
+-- ----- Backfill rich body, meta_title, meta_description, focus_keyword -----
+-- The first batch of inserts above used minimal body fields. The static
+-- landing pages live in /public/applications/*.html and provide the
+-- visible content. These UPDATEs make sure the DB entries also carry
+-- the SEO meta the sitemap reads (and the SSR fallback path uses).
+UPDATE applications SET
+  meta_title = 'Drone & UAV Battery Manufacturer — High-Discharge LiPo & 21700 Packs | Zufek',
+  meta_description = 'High C-rate Li-Po and 21700 packs for commercial drones, UAVs, robotics and AGVs. 5C–80C continuous discharge, CAN-bus BMS, IP-rated enclosures. ISO 9001 + UN 38.3 certified.',
+  focus_keyword = 'high-discharge LiPo drone battery'
+WHERE slug = 'drones';
+
+UPDATE applications SET
+  meta_title = 'Cordless Power Tool Battery Manufacturer — 21700 NMC Packs | Zufek',
+  meta_description = 'High-power 21700 NMC and LFP battery packs for cordless tools and garden equipment. 35A pulse, 18V to 60V configurations. UL 2271 + UN 38.3 certified.',
+  focus_keyword = '21700 power tool battery pack'
+WHERE slug = 'power-tools';
+
+UPDATE applications SET
+  meta_title = 'E-Mobility Battery Manufacturer — E-Bike, E-Scooter & LEV Packs | Zufek',
+  meta_description = '36V to 96V NMC and LFP packs for e-bikes, e-scooters, AGVs and last-mile delivery vehicles. CAN-bus BMS, IP67 housings, EN 15194 + UL 2271 certified.',
+  focus_keyword = 'e-bike battery pack manufacturer'
+WHERE slug = 'e-mobility';
+
+UPDATE applications SET
+  meta_title = 'Smart Home Battery Manufacturer — Long-Life Cells for Locks, Sensors & Cameras | Zufek',
+  meta_description = 'Long-life Li-Po and primary lithium cells for smart locks, door sensors, cameras, robot vacuums. 5+ year shelf life, low self-discharge, UL 2054 certified.',
+  focus_keyword = 'long-life smart home battery'
+WHERE slug = 'smart-home';
+
+UPDATE applications SET
+  meta_title = 'Industrial Handheld Battery Manufacturer — Smart Packs for Scanners & Terminals | Zufek',
+  meta_description = 'Smart battery packs with SMBus, hot-swap and authentication for barcode scanners, mobile computers and rugged handhelds. SMBus 1.1, 8-hour shift runtime.',
+  focus_keyword = 'smart battery pack scanner SMBus'
+WHERE slug = 'industrial-handhelds';
+
+UPDATE applications SET
+  meta_title = 'Defence & Aerospace Battery Manufacturer — ITAR-Free BOM | Zufek',
+  meta_description = 'Selectively-engaged defence and aerospace battery programs. ITAR-free BOM where required, MIL-PRF-32383 abuse compliance, AS9100D-aligned, 10-year traceability.',
+  focus_keyword = 'ITAR-free defence battery'
+WHERE slug = 'defence-aerospace';
+
+-- Also backfill SEO meta for the original 4 industries so every entity
+-- has a populated meta_title / meta_description / focus_keyword.
+UPDATE applications SET
+  meta_title = 'AR / VR Glasses Battery Manufacturer — Ultra-Thin Li-Po Cells | Zufek',
+  meta_description = 'Ultra-thin Li-Po cells for AR / VR glasses and headsets. 0.5-5 mm thickness, 30-5,000 mAh, 500-800 cycle life. ISO 9001 + UN 38.3 certified.',
+  focus_keyword = 'AR VR glasses battery manufacturer'
+WHERE slug = 'ar-vr';
+
+UPDATE applications SET
+  meta_title = 'Medical Device Battery Manufacturer — ISO 13485-Aligned Cells | Zufek',
+  meta_description = 'ISO 13485-aligned lithium cells for wearable monitors, hearing aids, insulin pumps and portable diagnostic tools. 5-year shelf life, biocompatible casings.',
+  focus_keyword = 'medical device battery manufacturer'
+WHERE slug = 'medical';
+
+UPDATE applications SET
+  meta_title = 'Wearable Device Battery Manufacturer — Curved & Round Li-Po Cells | Zufek',
+  meta_description = 'Custom curved, round and shaped Li-Po cells for smartwatches, TWS earbuds, fitness trackers and rings. From 25 mAh discoid to 410 mAh curved pouch.',
+  focus_keyword = 'wearable battery manufacturer'
+WHERE slug = 'wearables';
+
+UPDATE applications SET
+  meta_title = 'IoT Device Battery Manufacturer — Long-Shelf-Life Lithium Cells | Zufek',
+  meta_description = 'Long shelf-life lithium cells for IoT trackers, gateways, smart meters and LoRaWAN sensors. -20°C to +60°C operating, 5-year shelf life, low self-discharge.',
+  focus_keyword = 'IoT battery long shelf life'
+WHERE slug = 'iot';
 
 -- ----- Sample Products under each pillar -----
 INSERT INTO products (pillar_id, slug, name, model_no, tagline, specs, features, description, is_custom, sort_order, status) VALUES
