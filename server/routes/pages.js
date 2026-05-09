@@ -3,13 +3,15 @@ const { many, one, query } = require('../db/client');
 const { requireAuth } = require('../middleware/auth');
 const { recordAudit } = require('../middleware/audit');
 const { trimStr, asJson, clamp } = require('../utils/validate');
+const { SEO_SELECT, extractSeoValues, seoValuesPlaceholders, seoSetClause } = require('../utils/seo-fields');
 
 const router = express.Router();
 
 const FIELDS = `
   id, slug, nav, title, meta_title, meta_description,
   hero_eyebrow, hero_title, hero_subtitle, hero_image, hero_breadcrumbs,
-  body_html, sections, status, updated_at
+  body_html, sections, status, updated_at,
+  ${SEO_SELECT}
 `;
 
 // Public list
@@ -47,12 +49,17 @@ router.post('/', requireAuth, async (req, res) => {
   const b = req.body || {};
   const slug = trimStr(b.slug, 190).toLowerCase();
   if (!slug) return res.status(400).json({ error: 'slug_required' });
+  const seoVals = extractSeoValues(b);
   const result = await query(
     `INSERT INTO pages (
        slug, nav, title, meta_title, meta_description,
        hero_eyebrow, hero_title, hero_subtitle, hero_image, hero_breadcrumbs,
-       body_html, sections, status
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id`,
+       body_html, sections, status,
+       focus_keyword, secondary_keywords, canonical_override, robots,
+       og_title, og_description, og_image_url,
+       twitter_title, twitter_description, twitter_image_url,
+       schema_type, schema_extra, seo_score, seo_checks
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13, ${seoValuesPlaceholders(14)}) RETURNING id`,
     [
       slug,
       trimStr(b.nav, 60),
@@ -67,6 +74,7 @@ router.post('/', requireAuth, async (req, res) => {
       String(b.body_html || '').slice(0, 200000),
       JSON.stringify(asJson(b.sections, {})),
       b.status === 'draft' ? 'draft' : 'published',
+      ...seoVals,
     ]
   );
   await recordAudit({ req, action: 'create', entity: 'page', entityId: result.rows[0].id, detail: { slug } });
@@ -78,12 +86,16 @@ router.put('/:id', requireAuth, async (req, res) => {
   const id = clamp(req.params.id, 1, 1e9, 0);
   if (!id) return res.status(400).json({ error: 'invalid_id' });
   const b = req.body || {};
+  const seoVals = extractSeoValues(b);
+  // SEO columns sit at $13..$26, the WHERE id parameter sits at $27.
   await query(
     `UPDATE pages SET
        nav = $1, title = $2, meta_title = $3, meta_description = $4,
        hero_eyebrow = $5, hero_title = $6, hero_subtitle = $7, hero_image = $8, hero_breadcrumbs = $9,
-       body_html = $10, sections = $11, status = $12, updated_at = now()
-     WHERE id = $13`,
+       body_html = $10, sections = $11, status = $12,
+       ${seoSetClause(13)},
+       updated_at = now()
+     WHERE id = $${13 + seoVals.length}`,
     [
       trimStr(b.nav, 60),
       trimStr(b.title, 255),
@@ -97,6 +109,7 @@ router.put('/:id', requireAuth, async (req, res) => {
       String(b.body_html || '').slice(0, 200000),
       JSON.stringify(asJson(b.sections, {})),
       b.status === 'draft' ? 'draft' : 'published',
+      ...seoVals,
       id,
     ]
   );

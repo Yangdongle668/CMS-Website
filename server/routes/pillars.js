@@ -3,6 +3,7 @@ const { many, one, query } = require('../db/client');
 const { requireAuth } = require('../middleware/auth');
 const { recordAudit } = require('../middleware/audit');
 const { isSlug, trimStr, asJson, clamp } = require('../utils/validate');
+const { SEO_SELECT } = require('../utils/seo-fields');
 
 const router = express.Router();
 
@@ -12,7 +13,8 @@ const PILLAR_FIELDS = `
   primary_cta_text, primary_cta_link, secondary_cta_text, secondary_cta_link,
   overview, variants, spec_table, applications, customization,
   manufacturing, certifications, faq, anchor_variants,
-  sort_order, status, created_at, updated_at
+  sort_order, status, created_at, updated_at,
+  ${SEO_SELECT}
 `;
 
 router.get('/', async (req, res) => {
@@ -97,6 +99,21 @@ router.put('/:id', requireAuth, async (req, res) => {
     anchor_variants: asJson(b.anchor_variants, []),
     sort_order: clamp(b.sort_order, 0, 999, 0),
     status: b.status === 'draft' ? 'draft' : 'published',
+    // RankMath-style per-entity SEO overrides.
+    focus_keyword: trimStr(b.focus_keyword, 190),
+    secondary_keywords: asJson(b.secondary_keywords, []),
+    canonical_override: trimStr(b.canonical_override, 500),
+    robots: trimStr(b.robots, 80),
+    og_title: trimStr(b.og_title, 255),
+    og_description: trimStr(b.og_description, 1000),
+    og_image_url: trimStr(b.og_image_url, 500),
+    twitter_title: trimStr(b.twitter_title, 255),
+    twitter_description: trimStr(b.twitter_description, 1000),
+    twitter_image_url: trimStr(b.twitter_image_url, 500),
+    schema_type: trimStr(b.schema_type, 80),
+    schema_extra: asJson(b.schema_extra, {}),
+    seo_score: clamp(b.seo_score, 0, 100, 0),
+    seo_checks: asJson(b.seo_checks, []),
   };
   const keys = Object.keys(fields);
   const sets = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');

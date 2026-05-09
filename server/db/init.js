@@ -14,6 +14,13 @@ async function run() {
   await query(fs.readFileSync(schemaPath, 'utf8'));
   console.log('[db:init] schema applied.');
 
+  const seoMigPath = path.join(__dirname, 'migrate-2026-q2-seo.sql');
+  if (fs.existsSync(seoMigPath)) {
+    console.log('[db:init] applying 2026-q2-seo migration (idempotent)...');
+    await query(fs.readFileSync(seoMigPath, 'utf8'));
+    console.log('[db:init] 2026-q2-seo migration applied.');
+  }
+
   if (wantSeed) {
     console.log('[db:init] applying seed data...');
     await query(fs.readFileSync(seedPath, 'utf8'));

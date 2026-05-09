@@ -13,6 +13,7 @@
 <script src="/admin/assets/js/admin.js"></script>
 <script src="/admin/assets/js/image-picker.js"></script>
 <script src="/admin/assets/js/iframe-text-editor.js"></script>
+<script src="/admin/assets/js/seo-panel.js"></script>
 <script>
 (async function () {
   const { api, escapeHtml, toast, bootShell } = window.AdminAPI;
@@ -156,6 +157,7 @@
           <div class="field"><label>Meta 标题</label><input id="f-mt" value="${escapeHtml(p.meta_title)}"/></div>
           <div class="field"><label>Meta 描述</label><textarea id="f-md" rows="3">${escapeHtml(p.meta_description)}</textarea></div>
           <div class="field"><label>锚文本变体 <span class="hint">（逗号分隔）</span></label><input id="f-anchors" value="${escapeHtml((p.anchor_variants || []).join(', '))}"/></div>
+          <div id="f-seo-mount"></div>
         </div>
 
         <div class="form-actions">
@@ -215,6 +217,34 @@
       panel.querySelectorAll('[data-pane]').forEach((x) => x.style.display = x.dataset.pane === b.dataset.tab ? '' : 'none');
     }));
 
+    // SEO panel — RankMath-style
+    let seoPanel = null;
+    try {
+      seoPanel = window.SEOPanel.mount('f-seo-mount', {
+        entity: 'pillar',
+        siteHost: location.host,
+        initial: p,
+        getContext: () => ({
+          title: (panel.querySelector('#f-mt') || {}).value
+                 || (panel.querySelector('#f-htitle') || {}).value
+                 || p.name || '',
+          description: (panel.querySelector('#f-md') || {}).value
+                       || (panel.querySelector('#f-hsub') || {}).value || '',
+          slug: 'products/' + p.slug,
+          // Pillar pages don't have a single body field — concat overview
+          // body + manufacturing body + each FAQ answer for word-count check.
+          body: [(panel.querySelector('#f-ovb') || {}).value, (panel.querySelector('#f-mfgb') || {}).value,
+                 ...Array.from(panel.querySelectorAll('[data-repeat="faq"] [data-field="a"]')).map((i) => i.value)]
+                .join(' '),
+          coverUrl: heroPicker ? heroPicker.getValue() : (p.hero_image || ''),
+        }),
+      });
+    } catch (err) {
+      const host = document.getElementById('f-seo-mount');
+      if (host) host.innerHTML = '<p style="color:var(--a-mute2); font-size:12px;">SEO 面板加载失败：' + escapeHtml(err.message) + '</p>';
+    }
+    panel.addEventListener('input', () => seoPanel && seoPanel.repaint());
+
     // Repeaters
     function renderRepeater(name, list, fields) {
       const wrap = panel.querySelector(`[data-repeat="${name}"]`);
@@ -257,7 +287,8 @@
       const apps = panel.querySelector('#f-apps').value.split(',').map((s) => s.trim()).filter(Boolean);
       const anchors = panel.querySelector('#f-anchors').value.split(',').map((s) => s.trim()).filter(Boolean);
 
-      const payload = {
+      const seoVals = seoPanel ? seoPanel.getValues() : {};
+      const payload = Object.assign({
         name: panel.querySelector('#f-name').value,
         short_name: panel.querySelector('#f-short').value,
         sort_order: parseInt(panel.querySelector('#f-sort').value, 10) || 0,
@@ -281,7 +312,7 @@
         anchor_variants: anchors,
         meta_title: panel.querySelector('#f-mt').value,
         meta_description: panel.querySelector('#f-md').value,
-      };
+      }, seoVals);
       try {
         await api('/api/pillars/' + p.id, { method: 'PUT', body: JSON.stringify(payload) });
         toast('支柱页已保存', 'success');

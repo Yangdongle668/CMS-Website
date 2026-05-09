@@ -83,6 +83,18 @@ function urlOnly(rawUrl) {
 // (the placeholders are inert text), but server-rendered responses get
 // fully resolved meta.
 function injectIntoHead(html, head) {
+  // Apply RankMath-style per-entity SEO overrides when present. Each
+  // override is a plain truthy string from the DB; falls back to the
+  // computed default.
+  const ogTitle = head.ogTitle || head.title;
+  const ogDesc = head.ogDescription || head.description;
+  const ogImg = head.ogImageUrl || head.ogImage;
+  const twTitle = head.twitterTitle || head.ogTitle || head.title;
+  const twDesc = head.twitterDescription || head.ogDescription || head.description;
+  const twImg = head.twitterImageUrl || head.ogImageUrl || head.ogImage;
+  const canonical = head.canonicalOverride || head.canonicalUrl;
+  const robots = (head.robots || '').trim();
+
   // Replace the template's <title> and <meta description> with rendered text.
   html = html.replace(/<title[^>]*>[\s\S]*?<\/title>/i, `<title>${escapeHtml(head.title)}</title>`);
   html = html.replace(
@@ -91,26 +103,29 @@ function injectIntoHead(html, head) {
   );
   // Replace OG/Twitter/canonical that the template ships with empty strings.
   const replacements = [
-    [/<meta\s+property=["']og:title["'][^>]*>/i, `<meta property="og:title" content="${escapeHtml(head.title)}">`],
-    [/<meta\s+property=["']og:description["'][^>]*>/i, `<meta property="og:description" content="${escapeHtml(head.description)}">`],
-    [/<meta\s+property=["']og:image["'][^>]*>/i, `<meta property="og:image" content="${escapeHtml(head.ogImage)}">`],
+    [/<meta\s+property=["']og:title["'][^>]*>/i, `<meta property="og:title" content="${escapeHtml(ogTitle)}">`],
+    [/<meta\s+property=["']og:description["'][^>]*>/i, `<meta property="og:description" content="${escapeHtml(ogDesc)}">`],
+    [/<meta\s+property=["']og:image["'][^>]*>/i, `<meta property="og:image" content="${escapeHtml(ogImg)}">`],
     [/<meta\s+property=["']og:type["'][^>]*>/i, `<meta property="og:type" content="${head.ogType}">`],
-    [/<link\s+rel=["']canonical["'][^>]*>/i, `<link rel="canonical" href="${escapeHtml(head.canonicalUrl)}">`],
+    [/<link\s+rel=["']canonical["'][^>]*>/i, `<link rel="canonical" href="${escapeHtml(canonical)}">`],
   ];
   for (const [re, sub] of replacements) {
     if (re.test(html)) html = html.replace(re, sub);
   }
-  // Inject site_name/url + twitter cards if not present.
+  // Inject site_name/url + twitter cards + (optional) robots if not present.
   const extras = [
     `<meta property="og:site_name" content="${escapeHtml(head.siteName)}">`,
-    `<meta property="og:url" content="${escapeHtml(head.canonicalUrl)}">`,
+    `<meta property="og:url" content="${escapeHtml(canonical)}">`,
     `<meta property="og:locale" content="en_US">`,
     `<meta name="twitter:card" content="summary_large_image">`,
-    `<meta name="twitter:title" content="${escapeHtml(head.title)}">`,
-    `<meta name="twitter:description" content="${escapeHtml(head.description)}">`,
-    `<meta name="twitter:image" content="${escapeHtml(head.ogImage)}">`,
+    `<meta name="twitter:title" content="${escapeHtml(twTitle)}">`,
+    `<meta name="twitter:description" content="${escapeHtml(twDesc)}">`,
+    `<meta name="twitter:image" content="${escapeHtml(twImg)}">`,
     `<meta name="theme-color" content="#0b3a82">`,
   ];
+  if (robots && robots !== 'index,follow') {
+    extras.push(`<meta name="robots" content="${escapeHtml(robots)}">`);
+  }
   // Insert after canonical if present, else after the description meta.
   const anchor = /<link\s+rel=["']canonical["'][^>]*>/i;
   if (anchor.test(html)) {
@@ -291,6 +306,16 @@ async function renderPillar(req, res, slug) {
     ogType: 'product',
     siteName: ctx.siteName,
     jsonLd: JSON.stringify(ld),
+    // Per-entity SEO overrides (RankMath-style); blank fields fall back
+    // to the computed defaults above.
+    ogTitle: pillar.og_title,
+    ogDescription: pillar.og_description,
+    ogImageUrl: pillar.og_image_url ? abs(urlOnly(pillar.og_image_url), ctx.canonicalBase) : '',
+    twitterTitle: pillar.twitter_title,
+    twitterDescription: pillar.twitter_description,
+    twitterImageUrl: pillar.twitter_image_url ? abs(urlOnly(pillar.twitter_image_url), ctx.canonicalBase) : '',
+    canonicalOverride: pillar.canonical_override,
+    robots: pillar.robots,
   });
 
   // Pre-render every below-the-fold section that the client-side script
@@ -467,6 +492,14 @@ async function renderProduct(req, res, slug) {
     ogType: 'product',
     siteName: ctx.siteName,
     jsonLd: JSON.stringify(ld),
+    ogTitle: row.og_title,
+    ogDescription: row.og_description,
+    ogImageUrl: row.og_image_url ? abs(urlOnly(row.og_image_url), ctx.canonicalBase) : '',
+    twitterTitle: row.twitter_title,
+    twitterDescription: row.twitter_description,
+    twitterImageUrl: row.twitter_image_url ? abs(urlOnly(row.twitter_image_url), ctx.canonicalBase) : '',
+    canonicalOverride: row.canonical_override,
+    robots: row.robots,
   });
   html = injectIntoBody(html, [
     { kind: 'text', attr: 'hero-title', value: row.name },
@@ -566,6 +599,14 @@ async function renderArticle(req, res, slug) {
     ogType: 'article',
     siteName: ctx.siteName,
     jsonLd: JSON.stringify(ld),
+    ogTitle: article.og_title,
+    ogDescription: article.og_description,
+    ogImageUrl: article.og_image_url ? abs(urlOnly(article.og_image_url), ctx.canonicalBase) : '',
+    twitterTitle: article.twitter_title,
+    twitterDescription: article.twitter_description,
+    twitterImageUrl: article.twitter_image_url ? abs(urlOnly(article.twitter_image_url), ctx.canonicalBase) : '',
+    canonicalOverride: article.canonical_override,
+    robots: article.robots,
   });
 
   // Pre-fill article hero body placeholders (title / subtitle / pill / meta).
@@ -732,6 +773,14 @@ async function renderApplication(req, res, slug) {
     ogType: 'website',
     siteName: ctx.siteName,
     jsonLd: JSON.stringify(ld),
+    ogTitle: app.og_title,
+    ogDescription: app.og_description,
+    ogImageUrl: app.og_image_url ? abs(urlOnly(app.og_image_url), ctx.canonicalBase) : '',
+    twitterTitle: app.twitter_title,
+    twitterDescription: app.twitter_description,
+    twitterImageUrl: app.twitter_image_url ? abs(urlOnly(app.twitter_image_url), ctx.canonicalBase) : '',
+    canonicalOverride: app.canonical_override,
+    robots: app.robots,
   });
 
   // Pre-fill the application page hero AND the body / pillar grid so
@@ -785,10 +834,12 @@ async function renderHomepage(req, res) {
   try { items = await many(
     `SELECT a.slug, a.title, a.excerpt, a.cover_url, a.hero_image, a.author,
             a.reading_minutes, a.published_at,
-            c.name AS category_name, p.short_name AS pillar_short_name
+            c.name AS category_name, p.short_name AS pillar_short_name,
+            au.name AS author_name
        FROM articles a
        LEFT JOIN categories c ON c.id = a.category_id
        LEFT JOIN pillar_pages p ON p.id = a.pillar_id
+       LEFT JOIN authors au ON au.id = a.author_id
       WHERE a.status='published'
       ORDER BY a.published_at DESC NULLS LAST
       LIMIT 3`
@@ -800,7 +851,7 @@ async function renderHomepage(req, res) {
       const cover = a.cover_url || a.hero_image || '';
       const cat = a.category_name || a.pillar_short_name || 'Article';
       const date = fmtD(a.published_at);
-      const author = a.author || `${ctx.siteName} Engineering`;
+      const author = a.author_name || a.author || `${ctx.siteName} Engineering`;
       return `<a class="blog-card" href="/blog/${escapeHtml(a.slug)}">
         <div class="blog-card__media"${cover ? ` style="${backgroundStyle(cover)}"` : ''}></div>
         <div class="blog-card__body">
@@ -833,13 +884,18 @@ async function renderBlogIndex(req, res) {
   html = replaceTokens(html, ctx);
 
   // ----- Parse query params -----
-  // Pagination: 9 articles per page. On page 1 with no category filter,
-  // the newest article is shown as a "featured" card at the top, leaving
-  // 8 in the grid (still 9 articles surfaced on page 1). Pages 2+ show
-  // 9 cards in the grid with no featured. Same logic for category-
-  // filtered views — the FIRST page of a filtered view also pulls the
-  // newest article into the featured slot.
-  const PER_PAGE = 9;
+  // Pagination model:
+  //   * Page 1 (no filter or with filter): 1 featured card at the top
+  //     + a perfect 3x3 grid (9 cards) below it. So page 1 surfaces 10
+  //     articles. The featured is article #1 by published_at; the grid
+  //     starts at article #2.
+  //   * Pages 2+: pure 3x3 grid (9 cards), starting at article #11.
+  // This avoids the page-1 asymmetry (8 cards rendered as 3+3+2 with an
+  // empty trailing slot) — see GitHub issue / user report 2026-05-09.
+  // Last-page leftover (e.g. 8 of 9, or 5 of 9) is centered visually by
+  // the .blog-grid:has(...) CSS rules in styles.css instead.
+  const PER_PAGE = 9;          // grid cards per page on pages 2+
+  const FEATURED_GRID = 9;     // grid cards under the featured on page 1
   const rawPage = parseInt(String(req.query.page || '1'), 10);
   const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
   const category = String(req.query.category || '').trim().toLowerCase();
@@ -868,12 +924,15 @@ async function renderBlogIndex(req, res) {
     total = (totalRow && totalRow.n) || 0;
   } catch (_) {}
 
-  const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
-  // Featured exists only on page 1; offset the grid by 1 in that case so
-  // the featured article isn't duplicated in the card grid.
-  const featuredOffset = (page === 1 && total > 0) ? 1 : 0;
-  const gridLimit = page === 1 ? PER_PAGE - 1 : PER_PAGE;
-  const gridOffset = (page === 1) ? 1 : (page - 1) * PER_PAGE;
+  // Page 1 covers (1 featured + FEATURED_GRID grid) = 10 articles; pages
+  // 2+ cover PER_PAGE each. Compute totalPages accordingly so the pager
+  // matches the visible card distribution.
+  const PAGE_1_COUNT = 1 + FEATURED_GRID;
+  const totalPages = total <= PAGE_1_COUNT
+    ? 1
+    : 1 + Math.max(1, Math.ceil((total - PAGE_1_COUNT) / PER_PAGE));
+  const gridLimit = page === 1 ? FEATURED_GRID : PER_PAGE;
+  const gridOffset = page === 1 ? 1 : PAGE_1_COUNT + (page - 2) * PER_PAGE;
 
   // Fetch the newest article (for featured) + the grid slice.
   let featured = null;
@@ -886,10 +945,12 @@ async function renderBlogIndex(req, res) {
         featured = await one(
           `SELECT a.slug, a.title, a.excerpt, a.cover_url, a.hero_image, a.author,
                   a.reading_minutes, a.published_at,
-                  c.name AS category_name, p.short_name AS pillar_short_name
+                  c.name AS category_name, p.short_name AS pillar_short_name,
+                  au.name AS author_name
              FROM articles a
              LEFT JOIN categories c ON c.id = a.category_id
              LEFT JOIN pillar_pages p ON p.id = a.pillar_id
+             LEFT JOIN authors au ON au.id = a.author_id
             WHERE a.status='published'
               ${isFiltered ? 'AND c.slug = $1' : ''}
             ORDER BY a.published_at DESC NULLS LAST
@@ -902,10 +963,12 @@ async function renderBlogIndex(req, res) {
       gridItems = await many(
         `SELECT a.slug, a.title, a.excerpt, a.cover_url, a.hero_image, a.author,
                 a.reading_minutes, a.published_at,
-                c.name AS category_name, p.short_name AS pillar_short_name
+                c.name AS category_name, p.short_name AS pillar_short_name,
+                au.name AS author_name
            FROM articles a
            LEFT JOIN categories c ON c.id = a.category_id
            LEFT JOIN pillar_pages p ON p.id = a.pillar_id
+           LEFT JOIN authors au ON au.id = a.author_id
           WHERE a.status='published'
             ${isFiltered ? `AND c.slug = $1` : ''}
           ORDER BY a.published_at DESC NULLS LAST
@@ -921,7 +984,10 @@ async function renderBlogIndex(req, res) {
     const cover = a.cover_url || a.hero_image || '';
     const cat = a.category_name || a.pillar_short_name || 'Article';
     const date = fmtD(a.published_at);
-    const author = a.author || `${ctx.siteName} Engineering`;
+    // Prefer the named author (from the authors table) over the legacy
+    // free-text author column. Falls back to "{site} Engineering" only
+    // when neither is set.
+    const author = a.author_name || a.author || `${ctx.siteName} Engineering`;
     return `<a class="blog-card" href="/blog/${escapeHtml(a.slug)}">
       <div class="blog-card__media"${cover ? ` style="${backgroundStyle(cover)}"` : ''}></div>
       <div class="blog-card__body">
@@ -938,7 +1004,7 @@ async function renderBlogIndex(req, res) {
     const cover = featured.cover_url || featured.hero_image || '';
     const cat = featured.category_name || featured.pillar_short_name || 'Featured';
     const date = fmtD(featured.published_at);
-    const author = featured.author || `${ctx.siteName} Engineering`;
+    const author = featured.author_name || featured.author || `${ctx.siteName} Engineering`;
     html = html.replace(
       /<section class="blog-featured-section" data-featured-section style="display:none;">/i,
       '<section class="blog-featured-section" data-featured-section>'

@@ -266,7 +266,10 @@ async function applyPageOverrides(html) {
     page = await one(
       `SELECT slug, nav, title, meta_title, meta_description,
               hero_eyebrow, hero_title, hero_subtitle, hero_image,
-              hero_breadcrumbs, body_html, sections, status
+              hero_breadcrumbs, body_html, sections, status,
+              focus_keyword, canonical_override, robots,
+              og_title, og_description, og_image_url,
+              twitter_title, twitter_description, twitter_image_url
          FROM pages WHERE slug = $1 AND status = 'published'`,
       [slug]
     );
@@ -317,6 +320,74 @@ async function applyPageOverrides(html) {
       /<meta\s+name=["']twitter:image["']\s+content=["'][^"']*["']/i,
       `<meta name="twitter:image" content="${escapeAttr(u)}"`
     );
+  }
+
+  // ----- RankMath-style overrides (per-page) -----
+  // Each override is applied LAST so it wins over the meta_title /
+  // meta_description / hero_image-derived values above. Empty strings
+  // are skipped (fall back to upstream value).
+  if (page.og_title) {
+    html = html.replace(
+      /<meta\s+property=["']og:title["']\s+content=["'][^"']*["']/i,
+      `<meta property="og:title" content="${escapeAttr(page.og_title)}"`
+    );
+  }
+  if (page.og_description) {
+    html = html.replace(
+      /<meta\s+property=["']og:description["']\s+content=["'][^"']*["']/i,
+      `<meta property="og:description" content="${escapeAttr(page.og_description)}"`
+    );
+  }
+  if (page.og_image_url) {
+    const u = /^https?:\/\//.test(page.og_image_url)
+      ? page.og_image_url
+      : ((settingsCache.seo && settingsCache.seo.public_url) || '') + page.og_image_url;
+    html = html.replace(
+      /<meta\s+property=["']og:image["']\s+content=["'][^"']*["']/i,
+      `<meta property="og:image" content="${escapeAttr(u)}"`
+    );
+  }
+  if (page.twitter_title) {
+    html = html.replace(
+      /<meta\s+name=["']twitter:title["']\s+content=["'][^"']*["']/i,
+      `<meta name="twitter:title" content="${escapeAttr(page.twitter_title)}"`
+    );
+  }
+  if (page.twitter_description) {
+    html = html.replace(
+      /<meta\s+name=["']twitter:description["']\s+content=["'][^"']*["']/i,
+      `<meta name="twitter:description" content="${escapeAttr(page.twitter_description)}"`
+    );
+  }
+  if (page.twitter_image_url) {
+    const u = /^https?:\/\//.test(page.twitter_image_url)
+      ? page.twitter_image_url
+      : ((settingsCache.seo && settingsCache.seo.public_url) || '') + page.twitter_image_url;
+    html = html.replace(
+      /<meta\s+name=["']twitter:image["']\s+content=["'][^"']*["']/i,
+      `<meta name="twitter:image" content="${escapeAttr(u)}"`
+    );
+  }
+  if (page.canonical_override) {
+    html = html.replace(
+      /<link\s+rel=["']canonical["']\s+href=["'][^"']*["']/i,
+      `<link rel="canonical" href="${escapeAttr(page.canonical_override)}"`
+    );
+    html = html.replace(
+      /<meta\s+property=["']og:url["']\s+content=["'][^"']*["']/i,
+      `<meta property="og:url" content="${escapeAttr(page.canonical_override)}"`
+    );
+  }
+  if (page.robots && page.robots.trim() && page.robots.trim() !== 'index,follow') {
+    const robotsTag = `<meta name="robots" content="${escapeAttr(page.robots.trim())}">`;
+    if (/<meta\s+name=["']robots["'][^>]*>/i.test(html)) {
+      html = html.replace(/<meta\s+name=["']robots["'][^>]*>/i, robotsTag);
+    } else {
+      html = html.replace(
+        /(<meta\s+name=["']description["'][^>]*>)/i,
+        `$1\n${robotsTag}`
+      );
+    }
   }
 
   // ----- hero block: background image + h1 + first <p> + breadcrumbs -----

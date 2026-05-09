@@ -3,6 +3,7 @@ const { many, one, query } = require('../db/client');
 const { requireAuth } = require('../middleware/auth');
 const { recordAudit } = require('../middleware/audit');
 const { isSlug, trimStr, clamp } = require('../utils/validate');
+const { SEO_FIELDS, extractSeoValues, seoValuesPlaceholders, seoSetClause } = require('../utils/seo-fields');
 
 const router = express.Router();
 const FIELDS = `
@@ -10,6 +11,7 @@ const FIELDS = `
   a.content, a.author, a.meta_title, a.meta_description, a.reading_minutes,
   a.template, a.hero_image,
   a.published_at, a.status, a.created_at, a.updated_at,
+  ${SEO_FIELDS.map((f) => 'a.' + f).join(', ')},
   c.name AS category_name, c.slug AS category_slug,
   p.slug AS pillar_slug, p.short_name AS pillar_short_name, p.name AS pillar_name,
   au.slug AS author_slug, au.name AS author_name, au.job_title AS author_job_title,
@@ -94,11 +96,16 @@ router.post('/', requireAuth, async (req, res) => {
   if (!title) return res.status(400).json({ error: 'title_required' });
   const status = b.status === 'published' ? 'published' : 'draft';
   const tpl = ['standard','guide','case-study'].includes(b.template) ? b.template : 'standard';
+  const seoVals = extractSeoValues(b);
   const r = await query(
     `INSERT INTO articles (
        pillar_id, category_id, author_id, slug, title, excerpt, cover_url, content, author,
-       meta_title, meta_description, reading_minutes, template, hero_image, published_at, status
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING id`,
+       meta_title, meta_description, reading_minutes, template, hero_image, published_at, status,
+       focus_keyword, secondary_keywords, canonical_override, robots,
+       og_title, og_description, og_image_url,
+       twitter_title, twitter_description, twitter_image_url,
+       schema_type, schema_extra, seo_score, seo_checks
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16, ${seoValuesPlaceholders(17)}) RETURNING id`,
     [
       b.pillar_id || null,
       b.category_id || null,
@@ -116,6 +123,7 @@ router.post('/', requireAuth, async (req, res) => {
       trimStr(b.hero_image, 500),
       status === 'published' ? new Date() : null,
       status,
+      ...seoVals,
     ]
   );
   await recordAudit({ req, action: 'create', entity: 'article', entityId: r.rows[0].id, detail: { slug } });
@@ -128,12 +136,16 @@ router.put('/:id', requireAuth, async (req, res) => {
   const b = req.body || {};
   const status = b.status === 'published' ? 'published' : 'draft';
   const tpl = ['standard','guide','case-study'].includes(b.template) ? b.template : 'standard';
+  const seoVals = extractSeoValues(b);
+  // SEO columns sit at $15..$28; status at $14 (referenced twice via $14);
+  // WHERE id parameter sits at $29.
   await query(
     `UPDATE articles SET pillar_id=$1, category_id=$2, author_id=$3, title=$4, excerpt=$5, cover_url=$6,
        content=$7, author=$8, meta_title=$9, meta_description=$10, reading_minutes=$11,
        template=$12, hero_image=$13,
        status=$14, published_at=COALESCE(published_at, CASE WHEN $14='published' THEN now() END),
-       updated_at=now() WHERE id = $15`,
+       ${seoSetClause(15)},
+       updated_at=now() WHERE id = $${15 + seoVals.length}`,
     [
       b.pillar_id || null,
       b.category_id || null,
@@ -149,6 +161,7 @@ router.put('/:id', requireAuth, async (req, res) => {
       tpl,
       trimStr(b.hero_image, 500),
       status,
+      ...seoVals,
       id,
     ]
   );

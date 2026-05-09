@@ -3,9 +3,10 @@ const { many, one, query } = require('../db/client');
 const { requireAuth } = require('../middleware/auth');
 const { recordAudit } = require('../middleware/audit');
 const { isSlug, trimStr, clamp } = require('../utils/validate');
+const { SEO_SELECT, extractSeoValues, seoValuesPlaceholders, seoSetClause } = require('../utils/seo-fields');
 
 const router = express.Router();
-const FIELDS = `id, slug, name, icon, cover_url, summary, body, meta_title, meta_description, sort_order, status, created_at, updated_at`;
+const FIELDS = `id, slug, name, icon, cover_url, summary, body, meta_title, meta_description, sort_order, status, created_at, updated_at, ${SEO_SELECT}`;
 
 router.get('/', async (_req, res) => {
   const rows = await many(
@@ -32,9 +33,14 @@ router.post('/', requireAuth, async (req, res) => {
   const b = req.body || {};
   const slug = trimStr(b.slug, 190).toLowerCase();
   if (!isSlug(slug)) return res.status(400).json({ error: 'invalid_slug' });
+  const seoVals = extractSeoValues(b);
   const r = await query(
-    `INSERT INTO applications (slug, name, icon, cover_url, summary, body, meta_title, meta_description, sort_order, status)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
+    `INSERT INTO applications (slug, name, icon, cover_url, summary, body, meta_title, meta_description, sort_order, status,
+       focus_keyword, secondary_keywords, canonical_override, robots,
+       og_title, og_description, og_image_url,
+       twitter_title, twitter_description, twitter_image_url,
+       schema_type, schema_extra, seo_score, seo_checks)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10, ${seoValuesPlaceholders(11)}) RETURNING id`,
     [
       slug,
       trimStr(b.name, 190),
@@ -46,6 +52,7 @@ router.post('/', requireAuth, async (req, res) => {
       trimStr(b.meta_description, 500),
       clamp(b.sort_order, 0, 999, 0),
       b.status === 'draft' ? 'draft' : 'published',
+      ...seoVals,
     ]
   );
   await recordAudit({ req, action: 'create', entity: 'application', entityId: r.rows[0].id, detail: { slug } });
@@ -56,10 +63,14 @@ router.put('/:id', requireAuth, async (req, res) => {
   const id = clamp(req.params.id, 1, 1e9, 0);
   if (!id) return res.status(400).json({ error: 'invalid_id' });
   const b = req.body || {};
+  const seoVals = extractSeoValues(b);
+  // SEO columns sit at $10..$23, the WHERE id parameter sits at $24.
   await query(
     `UPDATE applications SET name=$1, icon=$2, cover_url=$3, summary=$4, body=$5,
-       meta_title=$6, meta_description=$7, sort_order=$8, status=$9, updated_at=now()
-     WHERE id = $10`,
+       meta_title=$6, meta_description=$7, sort_order=$8, status=$9,
+       ${seoSetClause(10)},
+       updated_at=now()
+     WHERE id = $${10 + seoVals.length}`,
     [
       trimStr(b.name, 190),
       trimStr(b.icon, 120),
@@ -70,6 +81,7 @@ router.put('/:id', requireAuth, async (req, res) => {
       trimStr(b.meta_description, 500),
       clamp(b.sort_order, 0, 999, 0),
       b.status === 'draft' ? 'draft' : 'published',
+      ...seoVals,
       id,
     ]
   );
