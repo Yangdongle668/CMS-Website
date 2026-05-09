@@ -297,12 +297,16 @@ async function autoMigrate() {
        os VARCHAR(40) NOT NULL DEFAULT '',
        referer_host VARCHAR(190) NOT NULL DEFAULT '',
        visitor_hash VARCHAR(64) NOT NULL DEFAULT '',
+       ip_text VARCHAR(45) NOT NULL DEFAULT '',
        is_bot BOOLEAN NOT NULL DEFAULT FALSE
      )`,
     `CREATE INDEX IF NOT EXISTS idx_analytics_ts ON analytics_hits(ts DESC)`,
     `CREATE INDEX IF NOT EXISTS idx_analytics_path ON analytics_hits(path)`,
     `CREATE INDEX IF NOT EXISTS idx_analytics_country ON analytics_hits(country)`,
     `CREATE INDEX IF NOT EXISTS idx_analytics_visitor ON analytics_hits(visitor_hash, ts)`,
+    // Add ip_text column on existing deployments. Stores the raw client
+    // IP (caller's choice — operator may purge with /api/analytics/purge-ips).
+    `ALTER TABLE analytics_hits ADD COLUMN IF NOT EXISTS ip_text VARCHAR(45) NOT NULL DEFAULT ''`,
     `INSERT INTO authors (slug, name, job_title, bio)
        VALUES ('zufek-engineering', 'Zufek Engineering', 'Cell engineering team',
                'Collective byline for the Zufek cell engineering team. Articles authored under this name are reviewed by our four founder-engineers (Chen Li, et al.) and the lead PM on the relevant pillar program.')

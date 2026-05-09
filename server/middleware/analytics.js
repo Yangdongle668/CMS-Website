@@ -108,9 +108,9 @@ function trackerMiddleware(req, res, next) {
     // Async insert. Errors are logged but never block the response.
     const { query } = require('../db/client');
     query(
-      `INSERT INTO analytics_hits (path, country, browser, os, referer_host, visitor_hash, is_bot)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-      [path, country, browser, os, ref, visitorHash, false]
+      `INSERT INTO analytics_hits (path, country, browser, os, referer_host, visitor_hash, ip_text, is_bot)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [path, country, browser, os, ref, visitorHash, ip.slice(0, 45), false]
     ).catch((err) => {
       // Common case during early boot: table doesn't exist yet. The auto-
       // migration in server/index.js will create it. Don't spam the log.

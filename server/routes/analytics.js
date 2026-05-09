@@ -124,6 +124,58 @@ router.get('/summary', async (req, res) => {
   });
 });
 
+// ===== Recent visitors — paginated list of raw hits, newest first =====
+// Includes ip_text + country so the operator can audit traffic origins.
+router.get('/visitors', async (req, res) => {
+  const limit  = Math.min(200, Math.max(1, parseInt(req.query.limit  || '50', 10)));
+  const offset =        Math.max(0, parseInt(req.query.offset || '0', 10));
+  const where = ['is_bot = FALSE'];
+  const params = [];
+  if (req.query.country) {
+    params.push(String(req.query.country).toUpperCase().slice(0, 2));
+    where.push(`country = $${params.length}`);
+  }
+  if (req.query.path) {
+    params.push(String(req.query.path));
+    where.push(`path = $${params.length}`);
+  }
+  if (req.query.ip) {
+    params.push(String(req.query.ip));
+    where.push(`ip_text = $${params.length}`);
+  }
+  params.push(limit);
+  params.push(offset);
+  const items = await many(
+    `SELECT id, ts, path, country, browser, os, referer_host, ip_text
+       FROM analytics_hits
+      WHERE ${where.join(' AND ')}
+      ORDER BY ts DESC
+      LIMIT $${params.length - 1} OFFSET $${params.length}`,
+    params
+  );
+  const total = await one(
+    `SELECT count(*)::int AS n FROM analytics_hits WHERE ${where.join(' AND ')}`,
+    params.slice(0, params.length - 2)
+  );
+  res.json({ items, total: total ? total.n : 0, limit, offset });
+});
+
+// ===== Privacy: clear stored raw IPs older than N days =====
+// Operator-triggered, non-destructive (keeps the row, only blanks
+// ip_text). Useful for GDPR retention compliance.
+router.post('/purge-ips', async (req, res) => {
+  const days = Math.max(1, Math.min(3650, parseInt((req.body && req.body.days) || '30', 10)));
+  const r = await one(
+    `WITH updated AS (
+        UPDATE analytics_hits SET ip_text = ''
+         WHERE ip_text <> '' AND ts < NOW() - ($1 || ' days')::interval
+         RETURNING 1
+     ) SELECT count(*)::int AS n FROM updated`,
+    [String(days)]
+  );
+  res.json({ ok: true, anonymized: r ? r.n : 0, days });
+});
+
 // ===== Realtime — last 5 minutes + last 30 minutes hits per minute =====
 router.get('/realtime', async (_req, res) => {
   const since = new Date(Date.now() - 30 * 60 * 1000);
