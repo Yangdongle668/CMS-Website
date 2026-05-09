@@ -271,11 +271,14 @@ async function renderPillar(req, res, slug) {
 
   const customHtml = (pillar.customization && pillar.customization.enabled
                      && Array.isArray(pillar.customization.items) && pillar.customization.items.length)
-    ? pillar.customization.items.map((c) => `<div class="feat-item">
-         <div class="feat-icon">+</div>
-         <h3>${escapeHtml(c.label || '')}</h3>
-         <p>${escapeHtml(c.value || '')}</p>
-       </div>`).join('')
+    ? pillar.customization.items.map((c, i) => {
+        const num = String(i + 1).padStart(2, '0');
+        return `<div class="cust-item">
+          <span class="cust-item__num">${num}</span>
+          <p class="cust-item__label">${escapeHtml(c.label || '')}</p>
+          <p class="cust-item__value">${escapeHtml(c.value || '')}</p>
+        </div>`;
+      }).join('')
     : '';
 
   const certsHtml = Array.isArray(pillar.certifications)
