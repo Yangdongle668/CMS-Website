@@ -438,9 +438,14 @@ const escape = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&
     if (!d || !Array.isArray(d.items) || !d.items.length) return;
     // Only render rows that have a cover_url — without an image, the
     // tesla-slide renders as an empty grey rectangle which looks broken.
-    // Falling back to the static slides for these applications is better.
+    // We also require the API to return at least as many usable rows
+    // as the static fallback already shows: if the live DB is partial
+    // (e.g. cover_url not yet back-filled on some rows), keep the
+    // static fallback slides intact rather than collapsing the slider
+    // to a 1-2 entry broken state.
+    const staticCount = track.querySelectorAll('.tesla-slide').length;
     const rows = d.items.filter((a) => a && a.cover_url);
-    if (!rows.length) return;
+    if (rows.length < Math.max(3, staticCount)) return;
     track.innerHTML = rows.map((a, i) => {
       const idx = String(i + 1).padStart(2, '0');
       const sub = a.summary || '';
