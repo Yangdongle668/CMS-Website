@@ -22,6 +22,7 @@
 // =====================================================================
 
 const { SYSTEM_PROMPT } = require('./ai-prompts');
+const aiSettings = require('./ai-settings');
 
 class AiError extends Error {
   constructor(code, message, status = 502) {
@@ -33,160 +34,106 @@ class AiError extends Error {
 }
 
 // ---------------------------------------------------------------------
-// Provider registry — declarative, easy to extend.
+// Provider metadata — labels + endpoint URLs. Per-provider api_key /
+// model / base_url come from aiSettings.snapshot() so the admin UI can
+// edit them at runtime.
 // ---------------------------------------------------------------------
-const PROVIDERS = {
-  anthropic: {
-    label: 'Anthropic Claude',
-    keyEnv: 'ANTHROPIC_API_KEY',
-    modelEnv: 'ANTHROPIC_MODEL',
-    defaultModel: 'claude-sonnet-4-6',
-    style: 'anthropic',
-    url: 'https://api.anthropic.com/v1/messages',
-  },
-  openai: {
-    label: 'OpenAI',
-    keyEnv: 'OPENAI_API_KEY',
-    modelEnv: 'OPENAI_MODEL',
-    defaultModel: 'gpt-4o-mini',
-    style: 'openai',
-    url: 'https://api.openai.com/v1/chat/completions',
-  },
-  deepseek: {
-    label: 'DeepSeek',
-    keyEnv: 'DEEPSEEK_API_KEY',
-    modelEnv: 'DEEPSEEK_MODEL',
-    defaultModel: 'deepseek-chat',
-    style: 'openai',
-    url: 'https://api.deepseek.com/v1/chat/completions',
-  },
-  moonshot: {
-    label: '月之暗面 Kimi',
-    keyEnv: 'MOONSHOT_API_KEY',
-    modelEnv: 'MOONSHOT_MODEL',
-    defaultModel: 'moonshot-v1-32k',
-    style: 'openai',
-    url: 'https://api.moonshot.cn/v1/chat/completions',
-  },
-  zhipu: {
-    label: '智谱 GLM',
-    keyEnv: 'ZHIPU_API_KEY',
-    modelEnv: 'ZHIPU_MODEL',
-    defaultModel: 'glm-4-plus',
-    style: 'openai',
-    url: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
-  },
-  qwen: {
-    label: '阿里通义千问',
-    keyEnv: 'QWEN_API_KEY',
-    modelEnv: 'QWEN_MODEL',
-    defaultModel: 'qwen-plus',
-    style: 'openai',
-    url: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-  },
-  openai_compat: {
-    label: 'OpenAI 兼容 (自定义)',
-    keyEnv: 'OPENAI_COMPAT_API_KEY',
-    modelEnv: 'OPENAI_COMPAT_MODEL',
-    urlEnv: 'OPENAI_COMPAT_URL',          // user-provided base URL
-    defaultModel: 'custom',
-    style: 'openai',
-    url: '',                              // resolved at call time from env
-  },
+const PROVIDER_META = {
+  anthropic:     { label: 'Anthropic Claude',  style: 'anthropic', url: 'https://api.anthropic.com/v1/messages' },
+  openai:        { label: 'OpenAI',            style: 'openai',    url: 'https://api.openai.com/v1/chat/completions' },
+  deepseek:      { label: 'DeepSeek',          style: 'openai',    url: 'https://api.deepseek.com/v1/chat/completions' },
+  moonshot:      { label: '月之暗面 Kimi',     style: 'openai',    url: 'https://api.moonshot.cn/v1/chat/completions' },
+  zhipu:         { label: '智谱 GLM',          style: 'openai',    url: 'https://open.bigmodel.cn/api/paas/v4/chat/completions' },
+  qwen:          { label: '阿里通义千问',      style: 'openai',    url: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions' },
+  openai_compat: { label: 'OpenAI 兼容 (自定义)', style: 'openai', url: '' /* resolved from settings.providers.openai_compat.base_url */ },
 };
 
-function getMaxTokens() {
-  return parseInt(process.env.ANTHROPIC_MAX_TOKENS || process.env.AI_MAX_TOKENS || '4096', 10);
+function providerKey(id) {
+  const s = aiSettings.snapshot();
+  return (s.providers && s.providers[id] && s.providers[id].api_key) || '';
+}
+
+function providerModel(id, override) {
+  if (override) return String(override).slice(0, 80);
+  const s = aiSettings.snapshot();
+  return (s.providers && s.providers[id] && s.providers[id].model) ||
+    aiSettings.PROVIDER_DEFAULT_MODEL[id] || '';
+}
+
+function providerUrl(id) {
+  if (id === 'openai_compat') {
+    const s = aiSettings.snapshot();
+    const base = (s.providers && s.providers.openai_compat && s.providers.openai_compat.base_url) || '';
+    if (!base) return '';
+    return /\/chat\/completions\b/.test(base) ? base : base.replace(/\/$/, '') + '/v1/chat/completions';
+  }
+  return PROVIDER_META[id] ? PROVIDER_META[id].url : '';
 }
 
 function getDefaultProvider() {
-  // 1) explicit env override
-  const explicit = (process.env.AI_PROVIDER || '').trim().toLowerCase();
-  if (explicit && PROVIDERS[explicit] && providerKey(explicit)) return explicit;
-  // 2) first configured provider in registry order
-  for (const id of Object.keys(PROVIDERS)) {
+  const s = aiSettings.snapshot();
+  const explicit = (s.default_provider || '').trim().toLowerCase();
+  if (explicit && PROVIDER_META[explicit] && providerKey(explicit)) return explicit;
+  for (const id of Object.keys(PROVIDER_META)) {
     if (providerKey(id)) return id;
   }
   return 'anthropic';
 }
 
-function providerKey(id) {
-  const def = PROVIDERS[id];
-  if (!def) return '';
-  return process.env[def.keyEnv] || '';
-}
-
-function providerModel(id, override) {
-  const def = PROVIDERS[id];
-  if (!def) return '';
-  if (override) return String(override).slice(0, 80);
-  return process.env[def.modelEnv] || def.defaultModel;
-}
-
-function providerUrl(id) {
-  const def = PROVIDERS[id];
-  if (!def) return '';
-  if (def.urlEnv) {
-    const custom = process.env[def.urlEnv] || '';
-    // Append the standard chat-completions path if user only gave a base.
-    if (!custom) return '';
-    if (/\/chat\/completions\b/.test(custom)) return custom;
-    return custom.replace(/\/$/, '') + '/v1/chat/completions';
-  }
-  return def.url;
-}
-
 function isConfigured() {
-  return Object.keys(PROVIDERS).some((id) => !!providerKey(id));
+  return Object.keys(PROVIDER_META).some((id) => !!providerKey(id));
 }
 
 function listProviders() {
-  return Object.entries(PROVIDERS).map(([id, def]) => ({
+  return Object.entries(PROVIDER_META).map(([id, meta]) => ({
     id,
-    label: def.label,
-    style: def.style,
+    label: meta.label,
+    style: meta.style,
     configured: !!providerKey(id),
     defaultModel: providerModel(id),
   }));
 }
 
 function getEnv() {
+  const s = aiSettings.snapshot();
   const provider = getDefaultProvider();
-  const detectProvider = (process.env.AI_DETECT_PROVIDER || 'heuristic').toLowerCase();
-  const detectThreshold = parseInt(process.env.AI_DETECT_THRESHOLD || '45', 10);
   return {
     provider,
     model: providerModel(provider),
-    maxTokens: getMaxTokens(),
-    detectProvider,
-    detectThreshold,
+    maxTokens: s.max_tokens || 4096,
+    detectProvider: s.detect_provider || 'heuristic',
+    detectThreshold: s.detect_threshold || 45,
   };
+}
+
+function getMaxTokens() {
+  return aiSettings.snapshot().max_tokens || 4096;
 }
 
 // ---------------------------------------------------------------------
 // Universal LLM call dispatcher
 // ---------------------------------------------------------------------
 async function callLLM({ provider, model, system, user, maxTokens, temperature = 0.7 }) {
-  const id = provider && PROVIDERS[provider] ? provider : getDefaultProvider();
-  const def = PROVIDERS[id];
-  if (!def) throw new AiError('invalid_provider', `未知的 LLM provider: ${provider}`, 400);
+  const id = provider && PROVIDER_META[provider] ? provider : getDefaultProvider();
+  const meta = PROVIDER_META[id];
+  if (!meta) throw new AiError('invalid_provider', `未知的 LLM provider: ${provider}`, 400);
   const key = providerKey(id);
   if (!key) {
     throw new AiError('ai_not_configured',
-      `${def.label} 未配置 API Key（环境变量 ${def.keyEnv}）。请先在 .env 中设置后重启。`, 503);
+      `${meta.label} 未配置 API Key。请到 后台设置 → AI 接入 中填写后保存（即时生效，无需重启）。`, 503);
   }
   const useModel = providerModel(id, model);
   const url = providerUrl(id);
   if (!url) {
     throw new AiError('ai_not_configured',
-      `${def.label} 缺少接口地址（${def.urlEnv || 'unknown'}）。请在 .env 中配置后重启。`, 503);
+      `${meta.label} 缺少接口地址。${id === 'openai_compat' ? '请在 后台设置 → AI 接入 → 自定义端点 base_url 中填写。' : ''}`, 503);
   }
   const tokens = Math.min(maxTokens || getMaxTokens(), getMaxTokens());
 
-  if (def.style === 'anthropic') {
+  if (meta.style === 'anthropic') {
     return callAnthropic({ url, key, model: useModel, system, user, maxTokens: tokens, temperature });
   }
-  return callOpenAICompat({ url, key, model: useModel, system, user, maxTokens: tokens, temperature, providerLabel: def.label });
+  return callOpenAICompat({ url, key, model: useModel, system, user, maxTokens: tokens, temperature, providerLabel: meta.label });
 }
 
 async function callAnthropic({ url, key, model, system, user, maxTokens, temperature }) {
@@ -487,8 +434,8 @@ function detectHeuristic(text) {
 }
 
 async function detectGPTZero(text) {
-  const key = process.env.GPTZERO_API_KEY;
-  if (!key) throw new AiError('detect_not_configured', 'GPTZERO_API_KEY 未配置');
+  const key = aiSettings.snapshot().gptzero_key || '';
+  if (!key) throw new AiError('detect_not_configured', 'GPTZero API Key 未配置（在 后台设置 → AI 接入 中填写）');
   const res = await fetch('https://api.gptzero.me/v2/predict/text', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': key },
@@ -515,8 +462,8 @@ async function detectGPTZero(text) {
 }
 
 async function detectSapling(text) {
-  const key = process.env.SAPLING_API_KEY;
-  if (!key) throw new AiError('detect_not_configured', 'SAPLING_API_KEY 未配置');
+  const key = aiSettings.snapshot().sapling_key || '';
+  if (!key) throw new AiError('detect_not_configured', 'Sapling API Key 未配置（在 后台设置 → AI 接入 中填写）');
   const res = await fetch('https://api.sapling.ai/api/v1/aidetect', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -564,7 +511,7 @@ async function detectAi({ text }) {
 
 module.exports = {
   AiError,
-  PROVIDERS,
+  PROVIDER_META,
   isConfigured,
   listProviders,
   getEnv,
