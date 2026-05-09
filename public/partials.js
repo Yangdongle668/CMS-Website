@@ -37,6 +37,12 @@ const FALLBACK = {
         { label: 'Medical Devices', url: '/applications/medical.html' },
         { label: 'Wearables', url: '/applications/wearables.html' },
         { label: 'IoT Devices', url: '/applications/iot.html' },
+        { label: 'Drones & Robotics', url: '/applications/drones.html' },
+        { label: 'Power Tools', url: '/applications/power-tools.html' },
+        { label: 'E-Mobility', url: '/applications/e-mobility.html' },
+        { label: 'Industrial Handhelds', url: '/applications/industrial-handhelds.html' },
+        { label: 'Defence & Aerospace', url: '/applications/defence-aerospace.html' },
+        { label: 'Smart Home', url: '/applications/smart-home.html' },
       ]},
       { label: 'CUSTOM SOLUTIONS', url: '/solutions/', nav: 'solutions', children: [
         { label: 'Design Support', url: '/solutions/design.html' },
