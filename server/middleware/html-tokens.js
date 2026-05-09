@@ -394,7 +394,30 @@ async function applyPageOverrides(html) {
   //   { text, link } object  → replace textContent; if the element is an
   //                            <a>, also rewrite its href
   if (page.sections && typeof page.sections === 'object' && !Array.isArray(page.sections)) {
-    for (const [key, value] of Object.entries(page.sections)) {
+    // Build a normalised sections map. Two supported shapes:
+    //   * Modern:  { hero_cta_primary: { text, link } } — element-keyed
+    //   * Legacy:  { hero_cta_primary_text, hero_cta_primary_link } —
+    //              two string siblings whose <base>_text / <base>_link
+    //              names map to a single [data-section="<base>"] element
+    // We collapse the legacy form into the modern shape before applying so
+    // both formats end up in the rendered HTML on first paint.
+    const merged = {};
+    for (const [k, v] of Object.entries(page.sections)) {
+      if (!k) continue;
+      const matchTextSuffix = k.match(/^(.+)_text$/);
+      const matchLinkSuffix = k.match(/^(.+)_link$/);
+      if (matchTextSuffix && typeof v === 'string') {
+        const base = matchTextSuffix[1];
+        merged[base] = Object.assign({}, merged[base], { text: v });
+      } else if (matchLinkSuffix && typeof v === 'string') {
+        const base = matchLinkSuffix[1];
+        merged[base] = Object.assign({}, merged[base], { link: v });
+      } else {
+        merged[k] = v;
+      }
+    }
+
+    for (const [key, value] of Object.entries(merged)) {
       if (!key) continue;
       // Escape regex specials in the key (slug-ish keys typically only have
       // [a-z0-9_-], but defend against the general case).
