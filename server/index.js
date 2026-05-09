@@ -229,17 +229,17 @@ app.get(['/products/:slug', '/applications/:slug', '/blog/:slug'], async (req, r
     path.join(ROOT, 'public', dir, slug, 'index.html'),
     path.join(ROOT, 'public', dir, '_template.html'),
   ];
-  if (tryServeHtml(req, res, candidates, { canonicalPath: req.path })) return;
+  if (await tryServeHtml(req, res, candidates, { canonicalPath: req.path })) return;
   return next();
 });
 
 // ----- 404 -----
-app.use((req, res) => {
+app.use(async (req, res) => {
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ error: 'not_found' });
   }
   const candidates = [path.join(ROOT, 'public', '404.html')];
-  if (tryServeHtml(req, res, candidates, { status: 404, canonicalPath: req.path })) return;
+  if (await tryServeHtml(req, res, candidates, { status: 404, canonicalPath: req.path })) return;
   res.status(404).send('Not found');
 });
 
