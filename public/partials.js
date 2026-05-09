@@ -14,7 +14,7 @@ const FALLBACK = {
   site: {
     name: 'Zufek',
     legal_name: 'Dongguan Zufek Technology Co.,Ltd',
-    tagline: 'Custom lithium batteries for AR/VR, medical, wearables and IoT. Founded 2018 in Dongguan.',
+    tagline: 'R&D-led lithium-cell maker for AR/VR, medical, wearables and IoT. A 100-person Dongguan team that has shipped 300+ custom programs worldwide since 2018.',
     email: 'info@zufek.com',
     engineering_email: 'engineering@zufek.com',
     phone: '+86 153 7772 0020',
