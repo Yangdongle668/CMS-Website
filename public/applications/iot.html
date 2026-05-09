@@ -3,26 +3,63 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IoT Device Batteries — Zufek</title>
-<meta name="description" content="Long-life primary and rechargeable cells for sensors, asset trackers, smart meters and edge devices.">
+<title>IoT Battery: Li-Po Pouches & Coin Cells for Sensors & Trackers | Zufek</title>
+<meta name="description" content="Custom Li-Po pouches and rechargeable coin cells for IoT trackers, smart locks, beacons and connected sensors. 50-2000 mAh, 5-yr shelf life, ISO 9001 + UN 38.3 certified.">
 <link rel="canonical" href="{{CANONICAL_URL}}">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="{{SITE_NAME}}">
-<meta property="og:title" content="IoT Device Batteries — Zufek">
-<meta property="og:description" content="Long-life primary and rechargeable cells for sensors, asset trackers, smart meters and edge devices.">
+<meta property="og:title" content="IoT Battery — Li-Po Pouches & Coin Cells | Zufek">
+<meta property="og:description" content="Custom Li-Po pouches and rechargeable coin cells for IoT trackers, locks, beacons and connected sensors.">
 <meta property="og:url" content="{{CANONICAL_URL}}">
-<meta property="og:image" content="{{DEFAULT_OG_IMAGE}}">
+<meta property="og:image" content="https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=1920&q=80">
 <meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="IoT Device Batteries — Zufek">
-<meta name="twitter:description" content="Long-life primary and rechargeable cells for sensors, asset trackers, smart meters and edge devices.">
-<meta name="twitter:image" content="{{DEFAULT_OG_IMAGE}}">
+<meta name="twitter:title" content="IoT Battery | Zufek">
+<meta name="twitter:description" content="Custom Li-Po pouches and rechargeable coin cells for IoT trackers, locks, beacons and sensors.">
+<meta name="twitter:image" content="https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=1920&q=80">
 <meta name="theme-color" content="#0b3a82">
 <meta name="format-detection" content="telephone=no">
 <link rel="stylesheet" href="/styles.css">
 <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script type="application/ld+json">{
+  "@context":"https://schema.org",
+  "@type":"BreadcrumbList",
+  "itemListElement":[
+    {"@type":"ListItem","position":1,"name":"Home","item":"{{CANONICAL_BASE}}/"},
+    {"@type":"ListItem","position":2,"name":"Applications","item":"{{CANONICAL_BASE}}/applications/"},
+    {"@type":"ListItem","position":3,"name":"IoT Devices","item":"{{CANONICAL_BASE}}/applications/iot.html"}
+  ]
+}</script>
+<script type="application/ld+json">{
+  "@context":"https://schema.org",
+  "@type":"WebPage",
+  "@id":"{{CANONICAL_BASE}}/applications/iot.html#webpage",
+  "url":"{{CANONICAL_BASE}}/applications/iot.html",
+  "name":"IoT Battery | Zufek",
+  "description":"Custom Li-Po pouches and rechargeable coin cells for IoT devices.",
+  "isPartOf":{"@id":"{{CANONICAL_BASE}}/#website"},
+  "about":{"@id":"{{CANONICAL_BASE}}/#organization"},
+  "image":"https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=1920&q=80"
+}</script>
+<script type="application/ld+json">{
+  "@context":"https://schema.org",
+  "@type":"FAQPage",
+  "@id":"{{CANONICAL_BASE}}/applications/iot.html#faq",
+  "mainEntity":[
+    {"@type":"Question","name":"What capacity Li-Po do I need for an IoT device that recharges weekly?",
+     "acceptedAnswer":{"@type":"Answer","text":"Take the device's average current draw, multiply by 7 days, and add a 25% headroom margin for ageing. A typical BLE smart-lock at 0.5 mA average draws 84 mAh per week, so a 200 to 400 mAh Li-Po pouch hits a comfortable margin with 200+ recharge cycles. For higher-event devices (cellular trackers reporting every 5 minutes) plan on 1,200 to 2,000 mAh."}},
+    {"@type":"Question","name":"When should I use a coin cell instead of a Li-Po pouch?",
+     "acceptedAnswer":{"@type":"Answer","text":"Three cases. (1) Tiny SMD-mountable RTC backup or BLE beacon — ML2032 or ML2430 cells reflow onto the PCB and run for 5+ years on a single charge. (2) Sensor with very low duty cycle (door/window sensor reporting every few hours) — LIR2032/2450 lasts 1 to 3 years between charges. (3) Smart card or wearable accessory where pouch geometry doesn't fit but a 20 mm hermetic coin does. Coin cells dominate when the device is sealed and rarely opened."}},
+    {"@type":"Question","name":"What's the max temperature range for Li-Po IoT cells?",
+     "acceptedAnswer":{"@type":"Answer","text":"Standard Li-Po: -20 to +60 °C in discharge, 0 to +45 °C in charge. For outdoor IoT (smart agriculture, asset tracker, marine sensor) we ship a wide-temperature variant rated -30 to +70 °C with cold-charge inhibit below 0 °C. For deployments below -20 °C we recommend a coin cell ML2032 (rated -40 to +85 °C with 70 to 80% capacity at -40 °C) over Li-Po."}},
+    {"@type":"Question","name":"How do I plan for 5-year storage shelf life?",
+     "acceptedAnswer":{"@type":"Answer","text":"Three things matter: ship cells at 30 to 40% SoC (not full charge — that accelerates calendar ageing), store at 20 °C ± 5 °C and < 60% RH, and rotate inventory every 12 months if possible. Our medical-grade Li-Po holds ≥ 85% capacity after 5 years at these conditions; standard consumer-grade holds ≥ 75%. ML/LIR coin cells hold ≥ 90% over the same period."}},
+    {"@type":"Question","name":"What certifications do I need for global IoT shipping?",
+     "acceptedAnswer":{"@type":"Answer","text":"UN 38.3 globally for transport. IEC 62133-2:2017 + Amendment 1 for safety in use. CE under the EU Battery Regulation, FCC at the device level for the US, BIS for India. KC for Korea if the device is sold there. Total stack: USD 25 to 40k and 14 to 16 weeks for a clean global rollout."}}
+  ]
+}</script>
 </head>
 <body data-nav="applications" data-page="applications/iot">
 <div id="header-mount"></div>
@@ -30,8 +67,8 @@
 <main>
   <section class="page-hero" style="background-image:url('https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=1920&q=80');">
     <div class="breadcrumbs"><a href="/">Home</a><span>/</span><a href="/applications/">Applications</a><span>/</span><span>IoT Devices</span></div>
-    <h1>IoT Devices</h1>
-    <p>Deployed once, replaced rarely. The battery is the uptime.</p>
+    <h1>IoT Device Battery</h1>
+    <p>Two formats cover most IoT: a custom Li-Po pouch sized to the device, and a reflow-mounted coin cell for the RTC.</p>
   </section>
 
   <div data-page-body>
@@ -40,41 +77,129 @@
     <div class="section-inner">
       <span class="eyebrow">The Reality</span>
       <h2>An IoT node is only as reliable as its cell.</h2>
-      <p class="lead">Half of IoT field failures trace back to battery behaviour under edge conditions — cold storage rooms, rooftop heat, high-humidity containers, decade-long asset tags. We build cells sized for the environment, not the datasheet.</p>
+      <p class="lead">Half of IoT field failures trace back to battery behaviour at the edges — cold storage rooms, rooftop heat, decade-long buried asset tags, recharge protocols that age the cell faster than the firmware predicts. We build cells around the duty cycle and the operating temperature distribution, not the convenient 25 °C nameplate.</p>
+      <p>Our IoT customers ship two cell types from us: <a href="/products/polymer-lithium-battery">custom Li-Po pouches</a> for any rechargeable device that fits a polymer geometry, and <a href="/products/coin-steel-shell-lithium-battery">rechargeable coin cells</a> (LIR / ML series) for the SMD-mounted RTC backup, BLE beacon and sensor maintenance modes. We do not make 18650 / 21700 cylindrical cells or Li-SOCl₂ cylindrical primaries — for ultra-long-life primary applications, your sourcing path is a different supplier.</p>
 
       <div class="feat-grid">
-        <div class="feat-item"><div class="feat-icon">❆</div><h3>Wide Temperature</h3><p>−40 °C to +85 °C variants for cold-chain, outdoor and industrial deployments.</p></div>
-        <div class="feat-item"><div class="feat-icon">⌛</div><h3>Long Shelf Life</h3><p>Li-SOCl₂ primaries with 10+ year passive life. Li-MnO₂ for higher pulse current.</p></div>
-        <div class="feat-item"><div class="feat-icon">⚡</div><h3>High-Pulse Ready</h3><p>Hybrid cell + supercap modules for LoRa, NB-IoT and LTE-M transmission bursts.</p></div>
-        <div class="feat-item"><div class="feat-icon">↻</div><h3>Rechargeable Options</h3><p>LiFePO4 and Li-ion for solar-harvesting or wired backup configurations.</p></div>
-        <div class="feat-item"><div class="feat-icon">▣</div><h3>IP67 / IP68 Packs</h3><p>Sealed enclosures with gas-vent membranes for outdoor and underground use.</p></div>
-        <div class="feat-item"><div class="feat-icon">✓</div><h3>UN 38.3 &amp; ATEX</h3><p>Certification support for hazardous-area, aerospace and maritime deployments.</p></div>
+        <div class="feat-item"><div class="feat-icon">▣</div><h3>Custom Li-Po pouch</h3><p>50 mAh to 2,000 mAh in any rectangular, stepped or curved geometry. Sized to the enclosure, not constrained by standard SKUs.</p></div>
+        <div class="feat-item"><div class="feat-icon">○</div><h3>Reflow-mountable coin (ML)</h3><p>SMD ML2032 / ML2430 rechargeable cells. Survives J-STD-020 lead-free reflow profile. -40 to +85 °C operating.</p></div>
+        <div class="feat-item"><div class="feat-icon">⌛</div><h3>5-year shelf life</h3><p>≥ 85% capacity after 5 years at 20 °C / 40% SoC for medical-grade Li-Po, ≥ 90% for ML coin cells. Inventory rotation friendly.</p></div>
+        <div class="feat-item"><div class="feat-icon">❆</div><h3>Wide-temp variant</h3><p>-30 to +70 °C Li-Po option for outdoor and cold-chain. ML coin cells -40 to +85 °C, 70 to 80% capacity at -40 °C.</p></div>
+        <div class="feat-item"><div class="feat-icon">↻</div><h3>500 to 1,500 cycle life</h3><p>Standard Li-Po 500+ cycles at 80% DoD. ML coin 1,000+ cycles. LIR coin 500+ cycles. Cycle life qualified per lot before shipment.</p></div>
+        <div class="feat-item"><div class="feat-icon">✓</div><h3>UN 38.3 + IEC 62133-2</h3><p>Cells ship with valid UN 38.3 test summary, IEC 62133-2 declaration of conformity, and MSDS. Audit support for medical and aerospace IoT.</p></div>
       </div>
     </div>
   </section>
 
   <section class="section section-grey">
     <div class="section-inner">
+      <span class="eyebrow">Cell selection</span>
+      <h2>Two architectures cover the IoT we ship into.</h2>
+      <p class="lead">IoT cell selection mistakes usually come from picking the wrong format for the duty cycle and recharge cadence. The split below covers what we make.</p>
+
+      <div class="content-split">
+        <div class="text-col">
+          <h3>Custom Li-Po pouch — for rechargeable IoT.</h3>
+          <p>For any IoT device that recharges from solar, USB or a contact cradle: smart locks, video doorbells, cellular asset trackers, connected sensors, smart-agriculture nodes, contactless payment terminals (the rechargeable kind). Capacity 50 mAh to 2,000 mAh in custom geometry; 500+ cycles at 80% DoD; -30 to +70 °C wide-temp variant available.</p>
+          <p>Engineering deep-dive: <a href="/blog/cell-sizing">sizing a Li-Po cell from a power profile</a> and <a href="/blog/how-to-choose-li-po-capacity-iot">how to choose Li-Po capacity for IoT devices</a> — both walked through with worked examples.</p>
+        </div>
+        <div class="img-col">
+          <img src="https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=1000&q=80" alt="Industrial IoT sensor mounted outdoors" loading="lazy" decoding="async" width="1000" height="667">
+        </div>
+      </div>
+
+      <div class="content-split reverse">
+        <div class="text-col">
+          <h3>Rechargeable coin cell — for SMD RTC, beacon, low-event sensor.</h3>
+          <p>For tiny embedded use cases: SMD-mounted RTC backup, BLE beacon, smart-card co-processor, sensor maintenance mode, smart-meter calibration retention. ML2032 and ML2430 cells survive standard lead-free reflow (260 °C peak) and run for 5+ years on a single charge. LIR2032 and LIR2450 are direct upgrades from CR2032 sockets when the device adds in-circuit recharging.</p>
+          <p>See <a href="/blog/lir-vs-ml-coin-cell-which-to-choose">LIR vs ML — choosing the right rechargeable coin cell</a> and <a href="/blog/reflow-profile-ml-coin-cell">designing the reflow profile for an SMD ML cell</a>.</p>
+        </div>
+        <div class="img-col">
+          <img src="https://images.unsplash.com/photo-1607968565043-36af90dde238?w=1000&q=80" alt="Reflow oven and SMD assembly" loading="lazy" decoding="async" width="1000" height="667">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-light">
+    <div class="section-inner">
       <span class="eyebrow">Typical Deployments</span>
       <h2>What we've powered in the field.</h2>
       <table class="spec-table">
-        <thead><tr><th>Application</th><th>Chemistry</th><th>Target Life</th><th>Notes</th></tr></thead>
+        <thead><tr><th>Application</th><th>Cell Format</th><th>Capacity</th><th>Notes</th></tr></thead>
         <tbody>
-          <tr><td>Water / gas smart meter</td><td>Li-SOCl₂</td><td>15 – 20 yrs</td><td>Ultra-low self-discharge</td></tr>
-          <tr><td>Asset tracker (LoRa)</td><td>Li-SOCl₂ + HPC</td><td>5 – 10 yrs</td><td>Pulse-ready hybrid</td></tr>
-          <tr><td>Cold-chain logger</td><td>Li-MnO₂</td><td>1 – 3 yrs</td><td>−40 °C operation</td></tr>
-          <tr><td>Smart lock</td><td>Alkaline / Li-AA</td><td>1 – 2 yrs</td><td>Drop-in replacements</td></tr>
-          <tr><td>Solar edge node</td><td>LiFePO4</td><td>10+ yrs</td><td>3,000+ cycle rechargeable</td></tr>
-          <tr><td>Industrial PLC backup</td><td>Li-MnO₂ coin</td><td>5 – 10 yrs</td><td>High reliability, low cost</td></tr>
+          <tr><td>Cellular asset tracker (LTE-M / NB-IoT)</td><td>Li-Po pouch</td><td>1,200 – 2,000 mAh</td><td>3 yr active life with periodic recharge from solar</td></tr>
+          <tr><td>BLE / LoRa indoor sensor</td><td>Li-Po pouch</td><td>200 – 600 mAh</td><td>1 yr between charges, 500+ cycles</td></tr>
+          <tr><td>Smart door lock</td><td>Li-Po pouch</td><td>1,500 – 2,500 mAh</td><td>12 mo / charge, 500+ cycles</td></tr>
+          <tr><td>Video doorbell / camera</td><td>Li-Po pouch</td><td>4,000 – 6,500 mAh</td><td>3 mo / charge, 800+ cycles</td></tr>
+          <tr><td>SMD-mounted RTC backup</td><td>ML coin (reflow-compatible)</td><td>40 – 65 mAh</td><td>5+ yr passive, 1000+ cycles</td></tr>
+          <tr><td>BLE beacon (consumer)</td><td>ML2032 SMD</td><td>65 mAh</td><td>5 yr life, no battery replacement</td></tr>
+          <tr><td>Smart card / RFID writer</td><td>LIR2032 / LIR2450</td><td>40 – 120 mAh</td><td>500 cycles, drop-in upgrade from CR2032</td></tr>
+          <tr><td>Smart-meter calibration retention</td><td>ML coin</td><td>40 – 100 mAh</td><td>10 yr industrial RTC</td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
+  <section class="section section-grey">
+    <div class="section-inner">
+      <span class="eyebrow">Common questions</span>
+      <h2>What IoT teams ask before they commit.</h2>
+
+      <details class="faq-item" open>
+        <summary><strong>What Li-Po capacity do I need for a weekly-recharge IoT device?</strong></summary>
+        <p>Take the average current draw × 7 days × 1.25 (ageing margin). A 0.5 mA BLE smart lock draws ~84 mAh per week → 200 to 400 mAh pouch. For high-event cellular trackers reporting every 5 minutes, plan 1,200 to 2,000 mAh. See <a href="/blog/cell-sizing">sizing a cell from a power profile</a>.</p>
+      </details>
+      <details class="faq-item">
+        <summary><strong>When does a coin cell beat a Li-Po pouch?</strong></summary>
+        <p>Three cases. (1) SMD-mountable RTC backup — ML2032 reflows onto the board and runs 5+ years. (2) Very low duty cycle sensors (door/window contact reporting every few hours) — LIR2032 lasts 1 to 3 years between charges. (3) Sealed devices where pouch geometry doesn't fit but a 20 mm hermetic coin does. See <a href="/blog/lir-vs-ml-coin-cell-which-to-choose">LIR vs ML</a>.</p>
+      </details>
+      <details class="faq-item">
+        <summary><strong>What's the temperature range for IoT cells?</strong></summary>
+        <p>Standard Li-Po: -20 to +60 °C discharge, 0 to +45 °C charge. Wide-temp Li-Po variant: -30 to +70 °C. Below -20 °C deployment, switch to ML coin cells (-40 to +85 °C, 70 to 80% capacity at -40 °C). Always inhibit charging below 0 °C to prevent lithium plating regardless of cell type.</p>
+      </details>
+      <details class="faq-item">
+        <summary><strong>How do I get 5-year storage shelf life?</strong></summary>
+        <p>Ship at 30 to 40% SoC (not full — full charge accelerates calendar ageing), store at 20 °C ± 5 °C, &lt; 60% RH, and rotate inventory every 12 months. Medical-grade Li-Po holds ≥ 85% capacity after 5 years at these conditions; ML/LIR coin cells hold ≥ 90%.</p>
+      </details>
+      <details class="faq-item">
+        <summary><strong>Which certifications are needed for global IoT rollout?</strong></summary>
+        <p>UN 38.3 + IEC 62133-2:2017 + Amendment 1 globally. CE under the EU Battery Regulation, FCC at device level for the US, BIS for India, KC for Korea. Total stack: USD 25 to 40k, 14 to 16 weeks. See <a href="/blog/iec-62133-2-full-walkthrough">IEC 62133-2 complete walkthrough</a>.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="section section-light">
+    <div class="section-inner">
+      <span class="eyebrow">Related reading</span>
+      <h2>Engineering deep-dives.</h2>
+      <div class="product-grid" style="grid-template-columns:repeat(3,1fr);">
+        <a href="/blog/cell-sizing" class="product-card">
+          <div class="product-tag">Engineering</div>
+          <h3>Sizing a Cell From a Power Profile</h3>
+          <p>From current trace to capacity spec — worked LoRa IoT example.</p>
+          <span class="news-link">Read the deep-dive &rarr;</span>
+        </a>
+        <a href="/blog/how-to-choose-li-po-capacity-iot" class="product-card">
+          <div class="product-tag">IoT</div>
+          <h3>Choose Li-Po Capacity for IoT</h3>
+          <p>Practical 4-step guide for IoT hardware engineers.</p>
+          <span class="news-link">Read more &rarr;</span>
+        </a>
+        <a href="/blog/lir-vs-ml-coin-cell-which-to-choose" class="product-card">
+          <div class="product-tag">Coin</div>
+          <h3>LIR vs ML Coin Cells</h3>
+          <p>Voltage, cycle life, reflow tolerance — picking the rechargeable coin.</p>
+          <span class="news-link">Read more &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
   <section class="section section-dark cta-band">
     <div class="section-inner">
-      <h2>Specifying a node for 10 years in the field?</h2>
-      <p class="lead">Tell us the duty cycle, environment and comms protocol — we'll size the cell and predict end-of-life.</p>
+      <h2>Specifying an IoT node?</h2>
+      <p class="lead">Tell us the duty cycle, recharge cadence and operating temperature — we'll size the Li-Po pouch or recommend the right coin cell, with a feasibility note in 24 hours.</p>
       <a href="/contact.html" class="btn btn-accent">Request a Battery Budget</a>
     </div>
   </section>

@@ -201,69 +201,47 @@ INSERT INTO pillar_pages (
 ON CONFLICT (slug) DO NOTHING;
 
 -- ----- Applications -----
+-- We make polymer Li-Po pouch (any geometry) + coin steel-shell rechargeable
+-- cells. We do NOT make 18650/21700 cylindrical, Li-SOCl2 D-cell, or any
+-- other format we cannot ship. So the application list is restricted to
+-- categories where polymer/coin is the dominant or competitive choice.
 INSERT INTO applications (slug, name, icon, cover_url, summary, body, sort_order) VALUES
 ('medical', 'Medical Devices', 'medical',
  'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=1200&q=80',
- 'IEC 60601-compliant cells for patient monitors, infusion pumps, hearing aids and surgical tools.',
- 'We supply medical OEMs with cells that meet IEC 60601 leakage requirements, ISO 13485 traceability and 5+ year shelf life. Common formats include ultra-thin Li-Po for wearable monitors and 18650 packs for portable diagnostic carts.',
+ 'IEC 60601-aligned Li-Po pouches and coin cells for hearing aids, CGM patches, ECG monitors and infusion pumps.',
+ 'We supply medical OEMs with cells that meet IEC 60601 leakage requirements, ISO 13485 traceability and 5+ year shelf life. Common formats: ultra-thin Li-Po pouches for wearable monitors and CGM patches, plus rechargeable coin cells (LIR/ML) for hearing aids and reusable diagnostic accessories.',
  1),
 ('wearables', 'Wearables', 'wearables',
  'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1200&q=80',
- 'Ultra-small round and curved Li-Po cells for TWS earbuds, smart bands and patches.',
- 'From 25 mAh discoid cells in 10 mm earbuds to 200 mAh curved cells in fitness bands, we deliver the highest energy density in the smallest envelopes for consumer wearables.',
+ 'Ultra-small round and curved Li-Po cells for TWS earbuds, smart bands, smart rings and patches.',
+ 'From 25 mAh discoid cells in 10 mm earbuds to 500 mAh curved cells in flagship smartwatches, we deliver the highest energy density in the smallest envelopes for consumer wearables.',
  2),
 ('iot', 'IoT Devices',  'iot',
  'https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=1200&q=80',
- 'Long shelf-life cells with low self-discharge for asset trackers, gateways and smart meters.',
- 'Industrial IoT requires cells that survive on shelves for 12+ months and operate from -20°C to +60°C. Our IFR 18650 and Li-Po cells are widely used in trackers, smart locks and LoRaWAN sensors.',
+ 'Custom Li-Po pouches for high-event IoT devices, plus rechargeable coin cells for RTC backup and sensor maintenance modes.',
+ 'Zufek-grade IoT cells: ultra-thin Li-Po (50-2,000 mAh) for cellular trackers, smart locks and connected sensors that need to recharge from solar or USB; ML/LIR coin cells (40-120 mAh) for SMD-mounted RTC backup, BLE beacons and SoC sleep retention.',
  3),
 ('ar-vr', 'AR / VR Glasses', 'ar-vr',
  'https://images.unsplash.com/photo-1592478411213-6153e4ebc07d?w=1200&q=80',
- 'Ultra-thin and curved cells for slim AR temples and VR headsets.',
- 'Headset OEMs use our custom stepped Li-Po cells to free up optical and PCB volume while maintaining 2-4 hour runtime targets.',
+ 'Ultra-thin and curved Li-Po pouches for slim AR temples and VR headsets.',
+ 'Headset OEMs use our custom stepped Li-Po cells (0.45-5 mm thickness) to free up optical and PCB volume while maintaining 2-4 hour runtime targets.',
  4),
-('drones', 'Drones & UAV', 'drones',
- 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=1200&q=80',
- 'High C-rate Li-Po and 21700 packs for commercial UAV platforms.',
- 'We support commercial drone OEMs with 5C-15C continuous discharge cells, balanced BMS and IP-rated battery enclosures certified for outdoor flight operations.',
- 5),
-('power-tools', 'Power Tools', 'power-tools',
- 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=1200&q=80',
- '20A continuous, high cycle 18650/21700 packs for cordless tools.',
- 'Our INR 21700 cells support 35A pulse and 15-20A continuous, with proven longevity in 18V/40V/60V cordless tool platforms.',
- 6),
-('e-mobility', 'E-Mobility', 'e-mobility',
- 'https://images.unsplash.com/photo-1556122071-e404eaedb77f?w=1200&q=80',
- 'NMC and LFP cylindrical packs for e-bikes, e-scooters, AGVs and light EVs.',
- 'Zufek designs and assembles 36V to 96V battery packs with integrated BMS, CAN bus, and IP67 housings for e-mobility OEMs across Europe and Southeast Asia.',
- 7),
-('energy-storage', 'Energy Storage', 'energy-storage',
- 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=1200&q=80',
- 'LFP cylindrical and prismatic systems for residential, telecom and commercial ESS.',
- 'Cycle-optimised LiFePO4 cells (3,000-6,000 cycles) configured into 48V telecom modules, 5kWh wall-mount residential batteries, and 100kWh+ commercial cabinets.',
- 8),
--- ----- Three new application landing pages — sitemap registration only.
+-- ----- Two extra application landing pages — sitemap registration only.
 -- ----- The actual rich landing pages live as static .html files at:
 -- -----   /applications/smart-home.html
--- -----   /applications/industrial-handhelds.html
 -- -----   /applications/defence-aerospace.html
 -- ----- These DB rows exist so /api/sitemap.xml emits them and the
 -- ----- /api/applications endpoint can enumerate the full set.
 ('smart-home', 'Smart Home', 'smart-home',
  'https://images.unsplash.com/photo-1558002038-1055907df827?w=1200&q=80',
- 'Long-life Li-Po and primary lithium cells for smart locks, sensors, cameras, robot vacuums and connected home devices.',
- 'Smart-home batteries have to last 12-24 months between charges, survive -20C winters and 5-year retail shelf life. We ship custom Li-Po pouches for high-event devices and primary lithium coin/AA cells for low-event sensors.',
- 9),
-('industrial-handhelds', 'Industrial Handhelds', 'industrial-handhelds',
- 'https://images.unsplash.com/photo-1580674684081-7617fbf3d745?w=1200&q=80',
- 'Smart battery packs with SMBus, hot-swap and authentication for barcode scanners, mobile computers, payment terminals and rugged handhelds.',
- 'Industrial handhelds run 8-10 hour shifts, get dropped on concrete, survive -25C freezer aisles and authenticate against host devices. We ship smart packs with TI bq40z fuel-gauging, SMBus telemetry, SHA-256 challenge-response auth and hot-swap support.',
- 10),
+ 'Long-life Li-Po pouches and rechargeable coin cells for smart locks, doorbells, sensors and connected home devices.',
+ 'Smart-home batteries have to last 12-24 months between charges, survive -20C winters and 5-year retail shelf life. We ship custom Li-Po pouches (200-2,000 mAh) for video doorbells and locks, plus ML/LIR coin cells (40-120 mAh) for low-event wireless sensors.',
+ 5),
 ('defence-aerospace', 'Defence & Aerospace', 'defence-aerospace',
  'https://images.unsplash.com/photo-1559131397-f94da358f7ca?w=1200&q=80',
- 'Selectively-engaged defence and aerospace battery programs. ITAR-free BOM where required, MIL-PRF-32383 abuse compliance, AS9100D-aligned production.',
- 'We engage selectively on dual-use defence: man-portable comms, dismounted soldier electronics, surveillance UAV / ground-robot batteries, ISR sensor packs. We do not engage on weapon-system primary batteries or USML / EU CML-listed programs.',
- 11)
+ 'Selectively-engaged Li-Po and coin-cell programs for dismounted electronics. ITAR-free BOM where required, MIL-PRF-32383 abuse, AS9100D-aligned QA.',
+ 'We engage selectively on dual-use defence Li-Po pouch and coin-cell programs: man-portable sensors, dismounted soldier wearables, ISR sensor patches, and ruggedised handheld electronics. We do not engage on weapon-system primary batteries or USML / EU CML-listed programs.',
+ 6)
 ON CONFLICT (slug) DO NOTHING;
 
 -- ----- Backfill rich body, meta_title, meta_description, focus_keyword -----
@@ -272,39 +250,15 @@ ON CONFLICT (slug) DO NOTHING;
 -- visible content. These UPDATEs make sure the DB entries also carry
 -- the SEO meta the sitemap reads (and the SSR fallback path uses).
 UPDATE applications SET
-  meta_title = 'Drone & UAV Battery Manufacturer — High-Discharge LiPo & 21700 Packs | Zufek',
-  meta_description = 'High C-rate Li-Po and 21700 packs for commercial drones, UAVs, robotics and AGVs. 5C–80C continuous discharge, CAN-bus BMS, IP-rated enclosures. ISO 9001 + UN 38.3 certified.',
-  focus_keyword = 'high-discharge LiPo drone battery'
-WHERE slug = 'drones';
-
-UPDATE applications SET
-  meta_title = 'Cordless Power Tool Battery Manufacturer — 21700 NMC Packs | Zufek',
-  meta_description = 'High-power 21700 NMC and LFP battery packs for cordless tools and garden equipment. 35A pulse, 18V to 60V configurations. UL 2271 + UN 38.3 certified.',
-  focus_keyword = '21700 power tool battery pack'
-WHERE slug = 'power-tools';
-
-UPDATE applications SET
-  meta_title = 'E-Mobility Battery Manufacturer — E-Bike, E-Scooter & LEV Packs | Zufek',
-  meta_description = '36V to 96V NMC and LFP packs for e-bikes, e-scooters, AGVs and last-mile delivery vehicles. CAN-bus BMS, IP67 housings, EN 15194 + UL 2271 certified.',
-  focus_keyword = 'e-bike battery pack manufacturer'
-WHERE slug = 'e-mobility';
-
-UPDATE applications SET
-  meta_title = 'Smart Home Battery Manufacturer — Long-Life Cells for Locks, Sensors & Cameras | Zufek',
-  meta_description = 'Long-life Li-Po and primary lithium cells for smart locks, door sensors, cameras, robot vacuums. 5+ year shelf life, low self-discharge, UL 2054 certified.',
-  focus_keyword = 'long-life smart home battery'
+  meta_title = 'Smart Home Battery: Long-Life Li-Po & Coin Cells for Locks, Doorbells, Sensors | Zufek',
+  meta_description = 'Custom Li-Po pouches for smart locks and video doorbells, plus rechargeable coin cells for low-event wireless sensors. 5-yr shelf life, UN 38.3 + IEC 62133-2 certified.',
+  focus_keyword = 'smart home Li-Po battery'
 WHERE slug = 'smart-home';
 
 UPDATE applications SET
-  meta_title = 'Industrial Handheld Battery Manufacturer — Smart Packs for Scanners & Terminals | Zufek',
-  meta_description = 'Smart battery packs with SMBus, hot-swap and authentication for barcode scanners, mobile computers and rugged handhelds. SMBus 1.1, 8-hour shift runtime.',
-  focus_keyword = 'smart battery pack scanner SMBus'
-WHERE slug = 'industrial-handhelds';
-
-UPDATE applications SET
-  meta_title = 'Defence & Aerospace Battery Manufacturer — ITAR-Free BOM | Zufek',
-  meta_description = 'Selectively-engaged defence and aerospace battery programs. ITAR-free BOM where required, MIL-PRF-32383 abuse compliance, AS9100D-aligned, 10-year traceability.',
-  focus_keyword = 'ITAR-free defence battery'
+  meta_title = 'Defence & Aerospace Battery: Li-Po & Coin Cells, ITAR-Free BOM | Zufek',
+  meta_description = 'Selectively-engaged Li-Po pouch and coin-cell programs for dismounted electronics. ITAR-free BOM where required, MIL-PRF-32383 abuse, AS9100D-aligned QA.',
+  focus_keyword = 'ITAR-free defence Li-Po battery'
 WHERE slug = 'defence-aerospace';
 
 -- Also backfill SEO meta for the original 4 industries so every entity
@@ -574,7 +528,7 @@ INSERT INTO settings (key, value) VALUES
 ('mail',
  '{"reply_to":"info@zufek.com","subject_prefix":"[Inquiry]","auto_reply_enabled":true}'),
 ('navigation',
- '{"header":[{"label":"HOME","url":"/","nav":"home"},{"label":"PRODUCTS","url":"/products/","nav":"products","children":[{"label":"Polymer Lithium Battery","url":"/products/polymer-lithium-battery"},{"label":"Custom-Shaped Polymer (Li-Po)","url":"/products/custom-shaped-polymer-lithium-battery"},{"label":"Coin Steel-Shell Lithium","url":"/products/coin-steel-shell-lithium-battery"}]},{"label":"APPLICATIONS","url":"/applications/","nav":"applications","children":[{"label":"AR / VR Glasses","url":"/applications/ar-vr.html"},{"label":"Medical Devices","url":"/applications/medical.html"},{"label":"Wearables","url":"/applications/wearables.html"},{"label":"IoT Devices","url":"/applications/iot.html"},{"label":"Drones & Robotics","url":"/applications/drones.html"},{"label":"Power Tools","url":"/applications/power-tools.html"},{"label":"E-Mobility","url":"/applications/e-mobility.html"},{"label":"Industrial Handhelds","url":"/applications/industrial-handhelds.html"},{"label":"Defence & Aerospace","url":"/applications/defence-aerospace.html"},{"label":"Smart Home","url":"/applications/smart-home.html"}]},{"label":"CUSTOM SOLUTIONS","url":"/solutions/","nav":"solutions","children":[{"label":"Design Support","url":"/solutions/design.html"},{"label":"Prototyping","url":"/solutions/prototyping.html"},{"label":"Mass Production","url":"/solutions/mass-production.html"}]},{"label":"ABOUT US","url":"/about/","nav":"about","children":[{"label":"Company Profile","url":"/about/profile.html"},{"label":"Factory Tour","url":"/about/factory.html"},{"label":"Team","url":"/about/team.html"}]},{"label":"BLOG","url":"/blog/","nav":"blog"},{"label":"FAQ","url":"/faq.html","nav":"faq"},{"label":"CONTACT","url":"/contact.html","nav":"contact"}]}')
+ '{"header":[{"label":"HOME","url":"/","nav":"home"},{"label":"PRODUCTS","url":"/products/","nav":"products","children":[{"label":"Polymer Lithium Battery","url":"/products/polymer-lithium-battery"},{"label":"Custom-Shaped Polymer (Li-Po)","url":"/products/custom-shaped-polymer-lithium-battery"},{"label":"Coin Steel-Shell Lithium","url":"/products/coin-steel-shell-lithium-battery"}]},{"label":"APPLICATIONS","url":"/applications/","nav":"applications","children":[{"label":"AR / VR Glasses","url":"/applications/ar-vr.html"},{"label":"Medical Devices","url":"/applications/medical.html"},{"label":"Wearables","url":"/applications/wearables.html"},{"label":"IoT Devices","url":"/applications/iot.html"},{"label":"Smart Home","url":"/applications/smart-home.html"},{"label":"Defence & Aerospace","url":"/applications/defence-aerospace.html"}]},{"label":"CUSTOM SOLUTIONS","url":"/solutions/","nav":"solutions","children":[{"label":"Design Support","url":"/solutions/design.html"},{"label":"Prototyping","url":"/solutions/prototyping.html"},{"label":"Mass Production","url":"/solutions/mass-production.html"}]},{"label":"ABOUT US","url":"/about/","nav":"about","children":[{"label":"Company Profile","url":"/about/profile.html"},{"label":"Factory Tour","url":"/about/factory.html"},{"label":"Team","url":"/about/team.html"}]},{"label":"BLOG","url":"/blog/","nav":"blog"},{"label":"FAQ","url":"/faq.html","nav":"faq"},{"label":"CONTACT","url":"/contact.html","nav":"contact"}]}')
 ON CONFLICT (key) DO NOTHING;
 
 

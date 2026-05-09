@@ -3,26 +3,63 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Wearable Batteries — Zufek</title>
-<meta name="description" content="Curved and shaped lithium cells for smartwatches, TWS earbuds, fitness trackers and smart rings.">
+<title>Wearable Battery: Curved Cells for Smartwatches & TWS | Zufek</title>
+<meta name="description" content="Curved and shaped lithium cells for smartwatches, TWS earbuds, fitness trackers and smart rings. From 15 mAh, HV LCO 4.48 V, 5+ days runtime, ISO 9001 + UN 38.3 certified.">
 <link rel="canonical" href="{{CANONICAL_URL}}">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="{{SITE_NAME}}">
-<meta property="og:title" content="Wearable Batteries — Zufek">
-<meta property="og:description" content="Curved and shaped lithium cells for smartwatches, TWS earbuds, fitness trackers and smart rings.">
+<meta property="og:title" content="Wearable Battery — Curved Cells for Smartwatches & TWS | Zufek">
+<meta property="og:description" content="Curved + pin-shaped lithium cells from 15 mAh for smartwatches, TWS, fitness trackers, smart rings.">
 <meta property="og:url" content="{{CANONICAL_URL}}">
-<meta property="og:image" content="{{DEFAULT_OG_IMAGE}}">
+<meta property="og:image" content="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1920&q=80">
 <meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Wearable Batteries — Zufek">
-<meta name="twitter:description" content="Curved and shaped lithium cells for smartwatches, TWS earbuds, fitness trackers and smart rings.">
-<meta name="twitter:image" content="{{DEFAULT_OG_IMAGE}}">
+<meta name="twitter:title" content="Wearable Battery | Zufek">
+<meta name="twitter:description" content="Curved + pin-shaped lithium cells from 15 mAh for smartwatches, TWS, fitness trackers, smart rings.">
+<meta name="twitter:image" content="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1920&q=80">
 <meta name="theme-color" content="#0b3a82">
 <meta name="format-detection" content="telephone=no">
 <link rel="stylesheet" href="/styles.css">
 <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script type="application/ld+json">{
+  "@context":"https://schema.org",
+  "@type":"BreadcrumbList",
+  "itemListElement":[
+    {"@type":"ListItem","position":1,"name":"Home","item":"{{CANONICAL_BASE}}/"},
+    {"@type":"ListItem","position":2,"name":"Applications","item":"{{CANONICAL_BASE}}/applications/"},
+    {"@type":"ListItem","position":3,"name":"Wearables","item":"{{CANONICAL_BASE}}/applications/wearables.html"}
+  ]
+}</script>
+<script type="application/ld+json">{
+  "@context":"https://schema.org",
+  "@type":"WebPage",
+  "@id":"{{CANONICAL_BASE}}/applications/wearables.html#webpage",
+  "url":"{{CANONICAL_BASE}}/applications/wearables.html",
+  "name":"Wearable Battery | Zufek",
+  "description":"Curved and shaped lithium cells for smartwatches, TWS earbuds, fitness trackers and smart rings.",
+  "isPartOf":{"@id":"{{CANONICAL_BASE}}/#website"},
+  "about":{"@id":"{{CANONICAL_BASE}}/#organization"},
+  "image":"https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1920&q=80"
+}</script>
+<script type="application/ld+json">{
+  "@context":"https://schema.org",
+  "@type":"FAQPage",
+  "@id":"{{CANONICAL_BASE}}/applications/wearables.html#faq",
+  "mainEntity":[
+    {"@type":"Question","name":"What capacity do I need for a 5-day smartwatch runtime?",
+     "acceptedAnswer":{"@type":"Answer","text":"For an always-on AMOLED smartwatch with continuous HR sensing and BLE, plan on 350 to 450 mAh for a 5-day target. Sleep current dominates — keep MCU sleep under 50 µA and the watch face refresh at 1 Hz instead of 60 Hz to make the math work. Curved Li-Po with HV LCO 4.45 V chemistry typically wins on volumetric density."}},
+    {"@type":"Question","name":"Pin-shaped LiPo or coin Li-ion for TWS earbuds?",
+     "acceptedAnswer":{"@type":"Answer","text":"Coin Li-ion (Ø 6 to 16 mm) wins on cycle life and the rigid hermetic shell — important for an earbud that gets dropped on tile floors. Pin-shaped LiPo wins on capacity per millimetre when the earbud architecture cannot fit a coin (e.g., open-ear designs). Most TWS programs we ship today use a coin in the bud and a pouch in the charging case."}},
+    {"@type":"Question","name":"How thin can a smart-ring battery go?",
+     "acceptedAnswer":{"@type":"Answer","text":"Realistic envelope is 150 to 500 mm³ of usable battery volume in a typical smart ring (size 8 inner diameter ~18 mm). At HV LCO volumetric density that is roughly 25 to 80 mAh. Beyond 50 mAh you are pushing into stepped or multi-arc cell geometries. See our smart ring battery design guide for the full power budget walkthrough."}},
+    {"@type":"Question","name":"How fast can I charge a wearable cell without losing cycle life?",
+     "acceptedAnswer":{"@type":"Answer","text":"Up to 1C (full charge in ~70 minutes including CV tail) is fine for cycle life on standard Li-Po. Above 2C, lithium plating risk grows below 15 °C and cycle life drops by 30 to 50% over 500 cycles. Our wearable BMS uses a temperature-vs-rate lookup that limits charge to C/5 below 5 °C and 1C above 15 °C. Most user-perceived 'fast charge' on wearables comes from optimising the first 60 minutes, not the full charge."}},
+    {"@type":"Question","name":"Which certifications are needed for global wearable shipping?",
+     "acceptedAnswer":{"@type":"Answer","text":"UN 38.3 globally for transport. IEC 62133-2:2017 + Amendment 1 for cell safety. CE Battery Regulation for the EU, FCC at the device level for the US, KC for Korea, BIS for India, PSE only if the pack exceeds 100 Wh (rare in wearables). Total cert stack runs USD 25 to 40k and 14 to 16 weeks for a clean global launch."}}
+  ]
+}</script>
 </head>
 <body data-nav="applications" data-page="applications/wearables">
 <div id="header-mount"></div>
@@ -30,7 +67,7 @@
 <main>
   <section class="page-hero" style="background-image:url('https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1920&q=80');">
     <div class="breadcrumbs"><a href="/">Home</a><span>/</span><a href="/applications/">Applications</a><span>/</span><span>Wearables</span></div>
-    <h1>Wearables</h1>
+    <h1>Wearable Battery</h1>
     <p>Round, curved, stacked, tiny. Wearables ask for cells that shouldn't geometrically exist — we build them anyway.</p>
   </section>
 
@@ -40,26 +77,27 @@
     <div class="section-inner">
       <span class="eyebrow">Form Factor First</span>
       <h2>The cell bends around the product, not the other way.</h2>
-      <p class="lead">Wearables live or die on industrial design. We start from your enclosure — ring, band, earbud, patch — and engineer the cell to fit it, with matching BMS and terminals pre-integrated.</p>
+      <p class="lead">Wearables live or die on industrial design. We start from your enclosure — ring, band, earbud, patch — and engineer the cell to fit it, with matching BMS and terminals pre-integrated. Co-design starts at industrial-design lock; engaging us late means leaving 15 to 30% of available enclosure volume unused.</p>
 
       <div class="content-split">
         <div class="text-col">
-          <h3>Curved &amp; shaped pouches</h3>
-          <p>Single or double curvature, arbitrary polygon outlines, stepped cells that hug two enclosure heights in one piece. Minimum bend radius: 25 mm for 3 mm cells.</p>
-          <p>Thickness tolerances held to ±0.05 mm for tight ID enclosures.</p>
+          <h3>Curved &amp; shaped <a href="/products/custom-shaped-polymer-lithium-battery">pouches</a>.</h3>
+          <p>Single or double curvature, arbitrary polygon outlines, stepped cells that hug two enclosure heights in one piece. Minimum bend radius: 25 mm for 3 mm cells, R10 mm for 1 mm cells. Thickness tolerances held to ±0.05 mm for tight ID enclosures.</p>
+          <p>HV LCO 4.45 V chemistry is standard on the wearable line — +8 to 12% volumetric density vs 4.40 V cells, calibrated for the 800 to 1,000 cycle life target most flagship watches and earbuds want today.</p>
         </div>
         <div class="img-col">
-          <img src="https://images.unsplash.com/photo-1510017098667-27dfc7150acb?w=1000&q=80" alt="Smartwatch" loading="lazy" decoding="async" width="1000" height="667">
+          <img src="https://images.unsplash.com/photo-1510017098667-27dfc7150acb?w=1000&q=80" alt="Smartwatch on a wrist" loading="lazy" decoding="async" width="1000" height="667">
         </div>
       </div>
 
       <div class="content-split reverse">
         <div class="text-col">
-          <h3>Round coin cells for earbuds &amp; rings</h3>
-          <p>Rechargeable Li-ion button cells from 4 mm to 16 mm diameter, 1.0 mm to 5.8 mm thickness. Pair with our charging-case cell for a complete TWS solution — we ship both sides.</p>
+          <h3>Round <a href="/products/coin-steel-shell-lithium-battery">coin cells</a> for earbuds &amp; rings.</h3>
+          <p>Rechargeable Li-ion button cells from 4 mm to 16 mm diameter, 1.0 mm to 5.8 mm thickness. Hermetic stainless-steel can survives drop tests on hard floors better than any pouch. Pair with our charging-case cell for a complete TWS solution — we ship both sides.</p>
+          <p>For smart rings the geometry shifts again: arc-shaped Li-Po pouches at R10 to R12 mm, curved circumferentially around the finger channel. 25 to 80 mAh in 150 to 500 mm³.</p>
         </div>
         <div class="img-col">
-          <img src="https://images.unsplash.com/photo-1590658006821-04f4008d5717?w=1000&q=80" alt="Earbuds" loading="lazy" decoding="async" width="1000" height="667">
+          <img src="https://images.unsplash.com/photo-1590658006821-04f4008d5717?w=1000&q=80" alt="TWS earbuds in a charging case" loading="lazy" decoding="async" width="1000" height="667">
         </div>
       </div>
     </div>
@@ -72,13 +110,86 @@
       <table class="spec-table">
         <thead><tr><th>Device</th><th>Cell Format</th><th>Capacity</th><th>Notes</th></tr></thead>
         <tbody>
-          <tr><td>Smartwatch</td><td>Curved LiPo</td><td>250 – 500 mAh</td><td>3–7 day runtime targets</td></tr>
-          <tr><td>Fitness band</td><td>Flat LiPo</td><td>70 – 200 mAh</td><td>7–14 day runtime</td></tr>
-          <tr><td>TWS earbud (per side)</td><td>Coin Li-ion</td><td>40 – 95 mAh</td><td>6–9 h music playback</td></tr>
-          <tr><td>TWS charging case</td><td>Cylindrical / pouch</td><td>400 – 600 mAh</td><td>3–5 charge cycles</td></tr>
-          <tr><td>Smart ring</td><td>Arc / curved pouch</td><td>15 – 35 mAh</td><td>4–7 day runtime</td></tr>
+          <tr><td>Smartwatch (AMOLED, always-on)</td><td>Curved LiPo, HV LCO 4.45 V</td><td>250 – 500 mAh</td><td>3 – 7 day runtime targets</td></tr>
+          <tr><td>Fitness band</td><td>Flat LiPo</td><td>70 – 200 mAh</td><td>7 – 14 day runtime, low SD</td></tr>
+          <tr><td>TWS earbud (per side)</td><td>Coin Li-ion (Ø 10 – 14)</td><td>40 – 95 mAh</td><td>6 – 9 h music playback</td></tr>
+          <tr><td>TWS charging case</td><td>Cylindrical / pouch</td><td>400 – 600 mAh</td><td>3 – 5 charge cycles per case</td></tr>
+          <tr><td>Smart ring</td><td>Arc / curved pouch</td><td>15 – 80 mAh</td><td>4 – 7 day runtime</td></tr>
+          <tr><td>Skin patch (single-use)</td><td>Thin LiPo</td><td>30 – 100 mAh</td><td>7 – 14 day runtime, sterile</td></tr>
         </tbody>
       </table>
+    </div>
+  </section>
+
+  <section class="section section-light">
+    <div class="section-inner">
+      <span class="eyebrow">Engineering Stack</span>
+      <h2>Six layers between the spec and the wrist.</h2>
+      <p class="lead">A wearable cell that ships at scale clears the same six checkpoints, regardless of whether it ends up in a watch, a ring or an earbud.</p>
+
+      <div class="feat-grid">
+        <div class="feat-item"><div class="feat-icon">①</div><h3>Custom geometry tooling</h3><p>Pouch forming dies and electrode cutting masks built per program. Stepped, L-shaped and curved cells need dedicated tooling — see our tooling cost breakdown for the math.</p></div>
+        <div class="feat-item"><div class="feat-icon">②</div><h3>HV LCO 4.45 V chemistry</h3><p>+8 to 12% volumetric density vs 4.40 V baseline. Tighter charge-voltage reference (±10 mV). LiDFOB additive for cathode stability above 4.40 V.</p></div>
+        <div class="feat-item"><div class="feat-icon">③</div><h3>FPC tab routing</h3><p>Flexible printed circuit tab welding for curved cells where rigid metal tabs would crack at the cell edge. Tab fatigue qualified through 50,000 cycles of ±3 mm deflection.</p></div>
+        <div class="feat-item"><div class="feat-icon">④</div><h3>Skin-contact thermal limit</h3><p>BMS de-rates charge above 38 °C skin-side. Cell-internal NTC compensates for the 2 to 4 °C lag between cell and PCB during fast charge.</p></div>
+        <div class="feat-item"><div class="feat-icon">⑤</div><h3>Wireless-charge BMS</h3><p>Qi and proprietary wireless charging supported with thermal throttling at 38 °C cell. Coil-side rectifier integration tested with 5 W and 10 W transmit pads.</p></div>
+        <div class="feat-item"><div class="feat-icon">⑥</div><h3>Accelerated cycle aging</h3><p>500-cycle screening at 45 °C and 1C charge / 1C discharge per lot. Capacity retention must clear 80% to release. Catches the cells that age fast in the warm-and-fast-charge regime that real users impose.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-grey">
+    <div class="section-inner">
+      <span class="eyebrow">Common questions</span>
+      <h2>What wearable OEMs ask before they commit.</h2>
+
+      <details class="faq-item" open>
+        <summary><strong>What capacity gets me a 5-day smartwatch runtime?</strong></summary>
+        <p>For an always-on AMOLED smartwatch with continuous HR + BLE, plan on 350 to 450 mAh for 5 days. Sleep current dominates — MCU sleep under 50 µA and a 1 Hz watch face refresh make the math work. Curved Li-Po with HV LCO 4.45 V chemistry typically wins on volumetric density. See <a href="/blog/cell-sizing">sizing a cell from a power profile</a>.</p>
+      </details>
+      <details class="faq-item">
+        <summary><strong>Pin-shaped LiPo or coin Li-ion for TWS earbuds?</strong></summary>
+        <p>Coin Li-ion wins on cycle life and the rigid hermetic shell — important for an earbud dropped on tile floors. Pin-shaped LiPo wins on capacity per millimetre when the architecture cannot fit a coin. Most TWS programs we ship today use a coin in the bud and a pouch in the charging case. See <a href="/blog/tws-earbuds-next">why TWS earbuds plateaued — and what comes next</a>.</p>
+      </details>
+      <details class="faq-item">
+        <summary><strong>How small can a smart ring battery go?</strong></summary>
+        <p>Realistic envelope is 150 to 500 mm³ of usable volume in a typical ring. At HV LCO density that is 25 to 80 mAh. Beyond 50 mAh, expect to commit to stepped or multi-arc geometries with custom tooling. See <a href="/blog/smart-ring-battery-design">battery design for smart rings</a> for the full power budget walkthrough.</p>
+      </details>
+      <details class="faq-item">
+        <summary><strong>What's the cycle-life trade-off for fast charging?</strong></summary>
+        <p>1C (full charge in ~70 min) is fine. Above 2C, plating risk grows below 15 °C and cycle life drops 30 to 50% over 500 cycles. Our wearable BMS uses a temp-vs-rate lookup: C/5 below 5 °C, 1C above 15 °C. Most user-perceived "fast charge" comes from optimising the first 60 minutes, not the full charge.</p>
+      </details>
+      <details class="faq-item">
+        <summary><strong>Which certifications are needed for global launch?</strong></summary>
+        <p>UN 38.3 + IEC 62133-2:2017 + A1 globally. CE for EU, FCC for US (device level), KC for Korea, BIS for India. Total stack: USD 25 to 40k, 14 to 16 weeks. See our <a href="/blog/iec-62133-2-full-walkthrough">IEC 62133-2 complete walkthrough</a>.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="section section-light">
+    <div class="section-inner">
+      <span class="eyebrow">Related reading</span>
+      <h2>Engineering deep-dives.</h2>
+      <div class="product-grid" style="grid-template-columns:repeat(3,1fr);">
+        <a href="/blog/smart-ring-battery-design" class="product-card">
+          <div class="product-tag">Wearables</div>
+          <h3>Battery Design for Smart Rings</h3>
+          <p>Geometry, chemistry and a worked power budget for &lt; 200 mm³ devices.</p>
+          <span class="news-link">Read the deep-dive &rarr;</span>
+        </a>
+        <a href="/blog/stepped-battery-geometry" class="product-card">
+          <div class="product-tag">Geometry</div>
+          <h3>Stepped & L-Shaped Battery Design</h3>
+          <p>How L, U, T and stepped pouch cells fit non-rectangular wearables.</p>
+          <span class="news-link">Read more &rarr;</span>
+        </a>
+        <a href="/products/custom-shaped-polymer-lithium-battery" class="product-card">
+          <div class="product-tag">Pillar</div>
+          <h3>Custom-Shaped Polymer Lithium</h3>
+          <p>The cell platform under every curved wearable we ship.</p>
+          <span class="news-link">Explore the pillar &rarr;</span>
+        </a>
+      </div>
     </div>
   </section>
 
