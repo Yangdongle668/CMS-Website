@@ -3,9 +3,21 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title data-meta="title">Application | Acme Battery</title>
-<meta name="description" data-meta="description" content=""/>
-<link rel="canonical" data-canonical href=""/>
+<title>Battery Application | {{SITE_NAME}}</title>
+<meta name="description" content="">
+<link rel="canonical" href="{{CANONICAL_URL}}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{SITE_NAME}}">
+<meta property="og:title" content="">
+<meta property="og:description" content="">
+<meta property="og:url" content="{{CANONICAL_URL}}">
+<meta property="og:image" content="{{DEFAULT_OG_IMAGE}}">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="">
+<meta name="twitter:description" content="">
+<meta name="twitter:image" content="{{DEFAULT_OG_IMAGE}}">
+<meta name="theme-color" content="#0b3a82">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/assets/css/theme.css"/>
 </head>
@@ -53,9 +65,11 @@
   try { data = await fetchJson('/api/applications/' + encodeURIComponent(slug)); }
   catch (_) { location.href = '/404.html'; return; }
   const a = data.application;
-  document.title = (a.meta_title || a.name) + ' | Acme Battery';
-  document.querySelector('[data-meta="description"]').setAttribute('content', a.meta_description || a.summary);
-  document.querySelector('[data-canonical]').setAttribute('href', '/applications/' + a.slug);
+  // SSR (middleware/ssr-detail.js) already populates head; we only patch
+  // the browser tab title in the rare case SSR was bypassed.
+  if (!document.title || /\{\{SITE_NAME\}\}/.test(document.title)) {
+    document.title = (a.meta_title || a.name) + ' | Zufek';
+  }
   document.querySelector('[data-app-name]').textContent = a.name;
   document.querySelector('[data-app-title]').textContent = a.name;
   document.querySelector('[data-app-summary]').textContent = a.summary || '';

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>图片替换 | 后台管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+<style>
+  .mo-row { display:grid; grid-template-columns: 1.4fr 1.4fr 0.7fr; gap:14px; align-items:center; padding:14px; border:1px solid var(--a-line); border-radius:8px; margin-bottom:10px; background:#fff; }
+  .mo-row.is-mapped { border-color:#22c55e; background:#f0fdf4; }
+  .mo-src { font-size:12px; color:var(--a-mute2); word-break:break-all; }
+  .mo-src strong { display:block; color:var(--a-text); font-weight:500; font-size:12.5px; margin-bottom:4px; }
+  .mo-thumb { width:80px; height:54px; object-fit:cover; border-radius:4px; background:#f5f5f7; flex-shrink:0; border:1px solid var(--a-line); }
+  .mo-pages { font-size:11.5px; color:var(--a-mute2); }
+  .mo-input { font-family: 'JetBrains Mono', monospace; font-size:12.5px; }
+  .mo-help { padding:14px 16px; background:#f0f7ff; border-left:3px solid var(--a-accent); border-radius:6px; margin-bottom:18px; font-size:13px; line-height:1.55; }
+</style>
+</head>
+<body>
+<div data-admin-shell></div>
+<script src="/admin/assets/js/admin.js"></script>
+<script>
+(async function () {
+  const { api, escapeHtml, toast, bootShell } = window.AdminAPI;
+  const shell = await bootShell({ title: '图片替换', crumbs: '内容 / 图片替换' });
+  if (!shell) return;
+
+  async function load() {
+    const data = await api('/api/media/overrides');
+    return data;
+  }
+
+  function render(data) {
+    const sources = data.sources || [];
+    const overrides = data.overrides || {};
+    const mappedCount = sources.filter((s) => s.overrideTo).length;
+
+    shell.content.innerHTML = `
+      <div class="panel">
+        <div class="panel__head">
+          <h2>图片替换 <span style="font-weight:400; font-size:13px; color:var(--a-mute2);">${mappedCount}/${sources.length} 已映射</span></h2>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn--ghost btn--sm" id="rescan">↻ 重新扫描</button>
+            <a class="btn btn--ghost btn--sm" href="/admin/media.html">媒体库 ↗</a>
+          </div>
+        </div>
+        <div class="mo-help">
+          <strong>它是怎么工作的？</strong><br>
+          下面列的是当前所有公共 HTML 页面里出现的外部图片（多数是 Unsplash 占位图）。把它替换成 <code>/uploads/...</code> 后，访客访问的每个页面会被服务端实时替换为新图，不需要改任何 HTML。<br>
+          上传新图：先到 <a href="/admin/media.html">媒体库</a> 上传 → 复制返回的 <code>/uploads/xxx.webp</code> URL → 粘贴到下表的右栏 → 点保存。<br>
+          推荐尺寸：hero 图 1920×1080；卡片图 1200×800；缩略图 600×400。建议 WebP/AVIF 格式，质量 80。
+        </div>
+        <div id="mo-list">
+          ${sources.length ? sources.map((s) => `
+            <div class="mo-row${s.overrideTo ? ' is-mapped' : ''}" data-src="${escapeHtml(s.url)}">
+              <div style="display:flex; gap:12px; align-items:center;">
+                <img class="mo-thumb" src="${escapeHtml(s.url)}" alt="" loading="lazy" onerror="this.style.display='none'"/>
+                <div class="mo-src">
+                  <strong>外部 URL</strong>
+                  <a href="${escapeHtml(s.url)}" target="_blank" style="color:var(--a-mute2);">${escapeHtml(s.url.length > 70 ? s.url.slice(0, 67) + '...' : s.url)}</a>
+                  <div class="mo-pages">${s.count} 处引用 · ${s.files.slice(0, 3).map((f) => escapeHtml(f)).join(', ')}${s.files.length > 3 ? ` 等 ${s.files.length} 个页面` : ''}</div>
+                </div>
+              </div>
+              <div>
+                <input class="mo-input" data-target value="${escapeHtml(s.overrideTo || '')}" placeholder="/uploads/your-photo.webp"/>
+                ${s.overrideTo ? `<div style="margin-top:6px; display:flex; gap:8px; align-items:center;">
+                  <img class="mo-thumb" style="width:48px; height:32px;" src="${escapeHtml(s.overrideTo)}" alt="" loading="lazy" onerror="this.style.display='none'"/>
+                  <span style="font-size:11.5px; color:var(--a-mute2);">已替换 →</span>
+                </div>` : ''}
+              </div>
+              <div style="text-align:right;">
+                ${s.overrideTo ? '<button class="btn btn--ghost btn--sm" data-clear>清除</button>' : ''}
+              </div>
+            </div>
+          `).join('') : '<div class="empty">扫描没有发现外部图片。</div>'}
+        </div>
+        <div class="form-actions" style="position:sticky; bottom:0; background:#fff; border-top:1px solid var(--a-line); padding-top:16px; z-index:10;">
+          <button class="btn btn--primary" id="save">保存全部映射</button>
+          <span style="font-size:12.5px; color:var(--a-mute2); margin-left:12px;">保存后立即生效，无需重启。访客刷新页面即可看到新图。</span>
+        </div>
+      </div>
+    `;
+
+    document.querySelectorAll('[data-clear]').forEach((b) => {
+      b.addEventListener('click', () => {
+        const row = b.closest('.mo-row');
+        row.querySelector('[data-target]').value = '';
+        row.classList.remove('is-mapped');
+        b.remove();
+      });
+    });
+
+    document.getElementById('rescan').addEventListener('click', async () => {
+      try { const data = await load(); render(data); toast('已重新扫描', 'success'); }
+      catch (err) { toast('扫描失败：' + err.message, 'error'); }
+    });
+
+    document.getElementById('save').addEventListener('click', async () => {
+      const out = {};
+      document.querySelectorAll('.mo-row').forEach((r) => {
+        const src = r.dataset.src;
+        const dst = r.querySelector('[data-target]').value.trim();
+        if (src && dst) out[src] = dst;
+      });
+      try {
+        const r = await api('/api/media/overrides', { method: 'PUT', body: JSON.stringify({ overrides: out }) });
+        toast(`已保存 ${r.count} 条映射`, 'success');
+        const data = await load();
+        render(data);
+      } catch (err) { toast('保存失败：' + err.message, 'error'); }
+    });
+  }
+
+  try {
+    const data = await load();
+    render(data);
+  } catch (err) {
+    shell.content.innerHTML = `<div class="panel"><p style="color:var(--a-danger);">加载失败：${escapeHtml(err.message)}</p></div>`;
+  }
+})();
+</script>
+</body>
+</html>

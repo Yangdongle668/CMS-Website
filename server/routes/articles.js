@@ -6,12 +6,15 @@ const { isSlug, trimStr, clamp } = require('../utils/validate');
 
 const router = express.Router();
 const FIELDS = `
-  a.id, a.pillar_id, a.category_id, a.slug, a.title, a.excerpt, a.cover_url,
+  a.id, a.pillar_id, a.category_id, a.author_id, a.slug, a.title, a.excerpt, a.cover_url,
   a.content, a.author, a.meta_title, a.meta_description, a.reading_minutes,
   a.template, a.hero_image,
   a.published_at, a.status, a.created_at, a.updated_at,
   c.name AS category_name, c.slug AS category_slug,
-  p.slug AS pillar_slug, p.short_name AS pillar_short_name, p.name AS pillar_name
+  p.slug AS pillar_slug, p.short_name AS pillar_short_name, p.name AS pillar_name,
+  au.slug AS author_slug, au.name AS author_name, au.job_title AS author_job_title,
+  au.bio AS author_bio, au.avatar_url AS author_avatar_url, au.email AS author_email,
+  au.knows_about AS author_knows_about, au.same_as AS author_same_as
 `;
 
 router.get('/', async (req, res) => {
@@ -33,6 +36,7 @@ router.get('/', async (req, res) => {
     `SELECT ${FIELDS} FROM articles a
      LEFT JOIN categories c ON c.id = a.category_id
      LEFT JOIN pillar_pages p ON p.id = a.pillar_id
+     LEFT JOIN authors au ON au.id = a.author_id
      WHERE ${where.join(' AND ')}
      ORDER BY a.published_at DESC NULLS LAST
      LIMIT $${params.length - 1} OFFSET $${params.length}`,
@@ -55,6 +59,7 @@ router.get('/:slug', async (req, res) => {
     `SELECT ${FIELDS} FROM articles a
      LEFT JOIN categories c ON c.id = a.category_id
      LEFT JOIN pillar_pages p ON p.id = a.pillar_id
+     LEFT JOIN authors au ON au.id = a.author_id
      WHERE a.slug = $1`,
     [slug]
   );
@@ -75,6 +80,7 @@ router.get('/admin/list', requireAuth, async (_req, res) => {
     `SELECT ${FIELDS} FROM articles a
      LEFT JOIN categories c ON c.id = a.category_id
      LEFT JOIN pillar_pages p ON p.id = a.pillar_id
+     LEFT JOIN authors au ON au.id = a.author_id
      ORDER BY a.created_at DESC`
   );
   res.json({ items: rows });
@@ -90,12 +96,13 @@ router.post('/', requireAuth, async (req, res) => {
   const tpl = ['standard','guide','case-study'].includes(b.template) ? b.template : 'standard';
   const r = await query(
     `INSERT INTO articles (
-       pillar_id, category_id, slug, title, excerpt, cover_url, content, author,
+       pillar_id, category_id, author_id, slug, title, excerpt, cover_url, content, author,
        meta_title, meta_description, reading_minutes, template, hero_image, published_at, status
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING id`,
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING id`,
     [
       b.pillar_id || null,
       b.category_id || null,
+      b.author_id || null,
       slug,
       title,
       trimStr(b.excerpt, 500),
@@ -122,14 +129,15 @@ router.put('/:id', requireAuth, async (req, res) => {
   const status = b.status === 'published' ? 'published' : 'draft';
   const tpl = ['standard','guide','case-study'].includes(b.template) ? b.template : 'standard';
   await query(
-    `UPDATE articles SET pillar_id=$1, category_id=$2, title=$3, excerpt=$4, cover_url=$5,
-       content=$6, author=$7, meta_title=$8, meta_description=$9, reading_minutes=$10,
-       template=$11, hero_image=$12,
-       status=$13, published_at=COALESCE(published_at, CASE WHEN $13='published' THEN now() END),
-       updated_at=now() WHERE id = $14`,
+    `UPDATE articles SET pillar_id=$1, category_id=$2, author_id=$3, title=$4, excerpt=$5, cover_url=$6,
+       content=$7, author=$8, meta_title=$9, meta_description=$10, reading_minutes=$11,
+       template=$12, hero_image=$13,
+       status=$14, published_at=COALESCE(published_at, CASE WHEN $14='published' THEN now() END),
+       updated_at=now() WHERE id = $15`,
     [
       b.pillar_id || null,
       b.category_id || null,
+      b.author_id || null,
       trimStr(b.title, 255),
       trimStr(b.excerpt, 500),
       trimStr(b.cover_url, 500),

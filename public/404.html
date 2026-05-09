@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Page Not Found (404) — {{SITE_NAME}}</title>
+<meta name="description" content="The page you requested could not be found. Browse our pillar product lines, application industries or recent engineering insights, or send us an inquiry.">
+<meta name="robots" content="noindex,follow">
+<link rel="canonical" href="{{CANONICAL_URL}}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{SITE_NAME}}">
+<meta property="og:title" content="Page Not Found (404) — {{SITE_NAME}}">
+<meta property="og:description" content="The page you requested could not be found. Browse our pillar product lines, application industries or recent engineering insights.">
+<meta property="og:url" content="{{CANONICAL_URL}}">
+<meta property="og:image" content="{{DEFAULT_OG_IMAGE}}">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Page Not Found (404) — {{SITE_NAME}}">
+<meta name="twitter:description" content="The page you requested could not be found.">
+<meta name="twitter:image" content="{{DEFAULT_OG_IMAGE}}">
+<meta name="theme-color" content="#0b3a82">
+<link rel="stylesheet" href="/styles.css?v=18">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  .e404-hero { min-height: 60vh; display: grid; place-items: center; text-align: center; padding: 80px 24px; background: linear-gradient(180deg, #0f1115 0%, #1d2028 100%); color: #f5f5f7; }
+  .e404-code { font-family: 'Space Grotesk', sans-serif; font-size: clamp(80px, 18vw, 180px); font-weight: 300; letter-spacing: -4px; line-height: 1; margin: 0 0 24px; color: #f5a623; }
+  .e404-hero h1 { font-size: clamp(28px, 4vw, 44px); margin: 0 0 16px; font-weight: 500; letter-spacing: -0.5px; }
+  .e404-hero p { font-size: 16px; max-width: 540px; margin: 0 auto 36px; color: #c7c7cc; line-height: 1.55; }
+  .e404-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .e404-actions .btn { min-width: 180px; }
+  .e404-grid { padding: 80px 24px; }
+  .e404-grid__inner { max-width: 1120px; margin: 0 auto; }
+  .e404-grid__title { font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; color: #5c5e62; font-weight: 600; margin-bottom: 8px; }
+  .e404-grid__h2 { font-size: 28px; margin: 0 0 32px; font-weight: 500; letter-spacing: -0.4px; }
+  .e404-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .e404-card { display: block; padding: 28px 24px; border: 1px solid #ececec; border-radius: 12px; background: #fff; color: inherit; transition: border-color .2s ease, transform .2s ease; }
+  .e404-card:hover { border-color: #0b3a82; transform: translateY(-2px); }
+  .e404-card h3 { font-size: 18px; margin: 0 0 8px; font-weight: 500; }
+  .e404-card p { font-size: 14px; color: #5c5e62; margin: 0; line-height: 1.5; }
+  .e404-card .pill { display: inline-block; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: #0b3a82; font-weight: 600; margin-bottom: 10px; }
+  .e404-recent { padding: 0 24px 80px; }
+  .e404-recent__inner { max-width: 1120px; margin: 0 auto; }
+  .e404-list { display: grid; gap: 8px; }
+  .e404-list a { display: flex; justify-content: space-between; gap: 16px; padding: 14px 16px; border-bottom: 1px solid #ececec; color: inherit; font-size: 14px; }
+  .e404-list a:hover { background: #fafafa; }
+  .e404-list strong { font-weight: 500; }
+  .e404-list span { color: #5c5e62; font-size: 12.5px; white-space: nowrap; }
+</style>
+</head>
+<body data-page="404">
+
+<div id="header-mount"></div>
+
+<main>
+  <section class="e404-hero">
+    <div>
+      <p class="e404-code">404</p>
+      <h1>This page could not be found.</h1>
+      <p>The link you followed may be outdated, mistyped, or the page has been moved. Try one of the routes below — or send us a quick inquiry and we'll point you the right way.</p>
+      <div class="e404-actions">
+        <a href="/" class="btn btn-primary">Back to home</a>
+        <a href="/contact.html" class="btn btn-secondary">Talk to engineering</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="e404-grid">
+    <div class="e404-grid__inner">
+      <p class="e404-grid__title">Try one of these</p>
+      <h2 class="e404-grid__h2">Most-requested entry points.</h2>
+      <div class="e404-cards">
+        <a class="e404-card" href="/products/polymer-lithium-battery">
+          <span class="pill">Pillar 01</span>
+          <h3>Polymer Lithium Battery</h3>
+          <p>Pouch Li-Po cells from 30&nbsp;mAh to 20&nbsp;Ah. Standard catalogue and full-custom design.</p>
+        </a>
+        <a class="e404-card" href="/products/custom-shaped-polymer-lithium-battery">
+          <span class="pill">Pillar 02</span>
+          <h3>Custom-Shaped Polymer</h3>
+          <p>Round, curved, stepped and ultra-thin polymer cells. STEP-file feasibility in 5 days.</p>
+        </a>
+        <a class="e404-card" href="/products/coin-steel-shell-lithium-battery">
+          <span class="pill">Pillar 03</span>
+          <h3>Coin Steel-Shell Lithium</h3>
+          <p>Rechargeable LIR / ML coin cells in hermetic stainless-steel cases. Reflow-mountable.</p>
+        </a>
+        <a class="e404-card" href="/applications/">
+          <span class="pill">Industries</span>
+          <h3>Applications</h3>
+          <p>AR/VR, medical, wearables, IoT, drones, power tools and more.</p>
+        </a>
+        <a class="e404-card" href="/blog/">
+          <span class="pill">Insights</span>
+          <h3>Engineering Blog</h3>
+          <p>Cell-sizing, BMS topology, thermal management and certification deep-dives.</p>
+        </a>
+        <a class="e404-card" href="/solutions/">
+          <span class="pill">Service</span>
+          <h3>Custom Solutions</h3>
+          <p>Design support · Prototyping · Mass Production. One PM end-to-end.</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="e404-recent">
+    <div class="e404-recent__inner">
+      <p class="e404-grid__title">Latest insights</p>
+      <h2 class="e404-grid__h2">Recent articles from the cell team.</h2>
+      <div class="e404-list" data-recent-articles>
+        <p style="color:#5c5e62; padding:14px 0;">Loading recent posts&hellip;</p>
+      </div>
+      <p style="margin-top: 24px;"><a href="/blog/" class="news-link">Browse the full blog &rarr;</a></p>
+    </div>
+  </section>
+</main>
+
+<div id="footer-mount"></div>
+<div id="sidemenu-mount"></div>
+<script src="/partials.js?v=18"></script>
+<script src="/script.js?v=18"></script>
+<script>
+(async function () {
+  const target = document.querySelector('[data-recent-articles]');
+  if (!target) return;
+  const escape = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { year:'numeric', month:'short', day:'2-digit' }) : '';
+  try {
+    const j = await (await fetch('/api/articles?limit=6')).json();
+    const items = j.items || [];
+    if (!items.length) {
+      target.innerHTML = '<p style="color:#5c5e62; padding:14px 0;">No published posts yet.</p>';
+      return;
+    }
+    target.innerHTML = items.map((a) => {
+      const cat = a.category_name || a.pillar_short_name || 'Article';
+      const date = fmtDate(a.published_at);
+      return `<a href="/blog/${escape(a.slug)}">
+        <strong>${escape(a.title)}</strong>
+        <span>${escape(cat)}${date ? ' · ' + date : ''}</span>
+      </a>`;
+    }).join('');
+  } catch (_) {
+    target.innerHTML = '<p style="color:#5c5e62; padding:14px 0;">Couldn\'t load recent posts. <a href="/blog/">Visit the blog &rarr;</a></p>';
+  }
+})();
+</script>
+</body>
+</html>

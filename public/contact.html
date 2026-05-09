@@ -5,9 +5,40 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Contact — Zufek</title>
 <meta name="description" content="Get in touch with Zufek — request a quote, schedule a factory tour or start a custom battery program.">
+<link rel="canonical" href="{{CANONICAL_URL}}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{SITE_NAME}}">
+<meta property="og:title" content="Contact — Zufek">
+<meta property="og:description" content="Get in touch with Zufek — request a quote, schedule a factory tour or start a custom battery program.">
+<meta property="og:url" content="{{CANONICAL_URL}}">
+<meta property="og:image" content="{{DEFAULT_OG_IMAGE}}">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Contact — Zufek">
+<meta name="twitter:description" content="Get in touch with Zufek — request a quote, schedule a factory tour or start a custom battery program.">
+<meta name="twitter:image" content="{{DEFAULT_OG_IMAGE}}">
+<meta name="theme-color" content="#0b3a82">
+<meta name="format-detection" content="telephone=no">
 <link rel="stylesheet" href="/styles.css">
+<link rel="preconnect" href="https://images.unsplash.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script type="application/ld+json">{
+  "@context":"https://schema.org",
+  "@type":"ContactPage",
+  "@id":"{{CANONICAL_BASE}}/contact.html#contactpage",
+  "url":"{{CANONICAL_BASE}}/contact.html",
+  "name":"Contact {{SITE_NAME}}",
+  "mainEntity":{"@id":"{{CANONICAL_BASE}}/#organization"}
+}</script>
+<script type="application/ld+json">{
+  "@context":"https://schema.org",
+  "@type":"BreadcrumbList",
+  "itemListElement":[
+    {"@type":"ListItem","position":1,"name":"Home","item":"{{CANONICAL_BASE}}/"},
+    {"@type":"ListItem","position":2,"name":"Contact","item":"{{CANONICAL_BASE}}/contact.html"}
+  ]
+}</script>
 </head>
 <body data-nav="contact" data-page="contact">
 <div id="header-mount"></div>
@@ -137,7 +168,7 @@
           </p>
         </div>
         <div class="img-col">
-          <img src="https://images.unsplash.com/photo-1566275529824-cca6d008f3da?w=1000&q=80" alt="Dongguan">
+          <img src="https://images.unsplash.com/photo-1566275529824-cca6d008f3da?w=1000&q=80" alt="Dongguan" loading="lazy" decoding="async" width="1000" height="667">
         </div>
       </div>
     </div>

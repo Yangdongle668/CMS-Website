@@ -169,7 +169,7 @@ SMTP_PORT=465
 SMTP_SECURE=true
 SMTP_USER=sales@example.com
 SMTP_PASS=<smtp-password>
-MAIL_FROM="Acme Battery <sales@example.com>"
+MAIL_FROM="Zufek Sales <info@zufek.com>"
 INQUIRY_RECIPIENTS=sales@example.com,manager@example.com
 
 TURNSTILE_SITE_KEY=<site key>

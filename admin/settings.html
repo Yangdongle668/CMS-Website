@@ -18,12 +18,19 @@
   if (!shell) return;
 
   const { settings } = await api('/api/settings');
-  const s = (k) => settings[k] || {};
+  // Helper that returns a deep clone-ish object so direct binding works.
+  const s = (k) => (settings[k] && typeof settings[k] === 'object') ? settings[k] : {};
+
+  // Pre-extract address & contact_points from organization for nicer UI.
+  const org = s('organization');
+  const orgAddr = org.address || {};
+  const orgContacts = Array.isArray(org.contactPoints) ? org.contactPoints : [];
 
   shell.content.innerHTML = `
     <div class="tabs">
       <button class="tabs__btn is-active" data-tab="site">站点</button>
       <button class="tabs__btn" data-tab="seo">SEO</button>
+      <button class="tabs__btn" data-tab="organization">Organization 结构化数据</button>
       <button class="tabs__btn" data-tab="navigation">导航</button>
       <button class="tabs__btn" data-tab="social">社交</button>
       <button class="tabs__btn" data-tab="gdpr">GDPR</button>
@@ -33,27 +40,79 @@
     <div data-pane="site">
       <div class="panel">
         <h2 style="margin-top:0;">站点信息</h2>
+        <p style="font-size:13px; color:var(--a-mute2); margin-top:0;">"公司名称"用于站点 header / footer / 标题；"法律实体名"会写入 Organization schema 与法律页脚。</p>
         <div class="field-row">
-          <div class="field"><label>公司名称</label><input data-key="site.name" value="${escapeHtml(s('site').name || '')}"/></div>
-          <div class="field"><label>标语</label><input data-key="site.tagline" value="${escapeHtml(s('site').tagline || '')}"/></div>
+          <div class="field"><label>公司名称（品牌名）</label><input data-key="site.name" value="${escapeHtml(s('site').name || '')}"/></div>
+          <div class="field"><label>法律实体名</label><input data-key="site.legal_name" value="${escapeHtml(s('site').legal_name || '')}"/></div>
         </div>
+        <div class="field"><label>标语</label><input data-key="site.tagline" value="${escapeHtml(s('site').tagline || '')}"/></div>
         <div class="field-row">
           <div class="field"><label>销售邮箱</label><input data-key="site.email" value="${escapeHtml(s('site').email || '')}"/></div>
-          <div class="field"><label>电话</label><input data-key="site.phone" value="${escapeHtml(s('site').phone || '')}"/></div>
+          <div class="field"><label>工程邮箱</label><input data-key="site.engineering_email" value="${escapeHtml(s('site').engineering_email || '')}"/></div>
         </div>
-        <div class="field"><label>地址</label><input data-key="site.address" value="${escapeHtml(s('site').address || '')}"/></div>
+        <div class="field-row">
+          <div class="field"><label>电话</label><input data-key="site.phone" value="${escapeHtml(s('site').phone || '')}"/></div>
+          <div class="field"><label>地址</label><input data-key="site.address" value="${escapeHtml(s('site').address || '')}"/></div>
+        </div>
         <div class="field-row">
           <div class="field"><label>成立年份</label><input type="number" data-key="site.founded_year" value="${s('site').founded_year || ''}"/></div>
           <div class="field"><label>工厂面积（m²）</label><input type="number" data-key="site.factory_size_sqm" value="${s('site').factory_size_sqm || ''}"/></div>
+          <div class="field"><label>员工总数</label><input type="number" data-key="site.staff_count" value="${s('site').staff_count || ''}"/></div>
         </div>
       </div>
     </div>
 
     <div data-pane="seo" style="display:none;">
       <div class="panel">
-        <h2 style="margin-top:0;">SEO 默认值</h2>
-        <div class="field"><label>默认 Meta 描述</label><textarea data-key="seo.default_meta_description" rows="3">${escapeHtml(s('seo').default_meta_description || '')}</textarea></div>
-        <div class="field"><label>默认 OG 图 URL</label><input data-key="seo.default_meta_image" value="${escapeHtml(s('seo').default_meta_image || '')}"/></div>
+        <h2 style="margin-top:0;">SEO 配置</h2>
+        <p style="font-size:13px; color:var(--a-mute2); margin-top:0;">公开 URL 用于 canonical / sitemap 的绝对地址。优先级：环境变量 PUBLIC_URL &gt; 此处的设置 &gt; 请求 Host。</p>
+        <div class="field"><label>公开 URL <span class="hint">（如 https://zufek.com，无尾斜杠）</span></label><input data-key="seo.public_url" value="${escapeHtml(s('seo').public_url || '')}" placeholder="https://zufek.com"/></div>
+        <div class="field"><label>默认 Meta 描述 <span class="hint">（160 字符内）</span></label><textarea data-key="seo.default_meta_description" rows="3" maxlength="200">${escapeHtml(s('seo').default_meta_description || '')}</textarea></div>
+        <div class="field"><label>默认 OG 图 URL <span class="hint">（推荐 1200×630 PNG/JPG）</span></label><input data-key="seo.default_meta_image" value="${escapeHtml(s('seo').default_meta_image || '')}" placeholder="/assets/img/og-default.png"/></div>
+        <div class="field-row">
+          <div class="field"><label>Twitter / X 账号 <span class="hint">（如 @zufek）</span></label><input data-key="seo.twitter_handle" value="${escapeHtml(s('seo').twitter_handle || '')}" placeholder="@zufek"/></div>
+          <div class="field"><label>GA4 测量 ID <span class="hint">（G-XXXXXXX）</span></label><input data-key="seo.ga4_measurement_id" value="${escapeHtml(s('seo').ga4_measurement_id || '')}" placeholder="G-..."/></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Google Search Console 验证码</label><input data-key="seo.gsc_verify" value="${escapeHtml(s('seo').gsc_verify || '')}" placeholder="abc123..."/></div>
+          <div class="field"><label>Bing Webmaster 验证码</label><input data-key="seo.bing_verify" value="${escapeHtml(s('seo').bing_verify || '')}" placeholder="ABCDEF..."/></div>
+        </div>
+        <p style="font-size:12px; color:var(--a-mute2);">⚠️ GA4 仅在访客同意 analytics cookie 后加载，自动启用 IP 匿名化。</p>
+      </div>
+    </div>
+
+    <div data-pane="organization" style="display:none;">
+      <div class="panel">
+        <h2 style="margin-top:0;">Organization 结构化数据</h2>
+        <p style="font-size:13px; color:var(--a-mute2); margin-top:0;">这些字段直接写入站内的 <code>Organization</code> JSON-LD（每个页面注入），用于 Google Knowledge Panel 与 AI Overviews 引用。</p>
+        <div class="field-row">
+          <div class="field"><label>法律实体名</label><input data-key="organization.legal_name" value="${escapeHtml(org.legal_name || '')}"/></div>
+          <div class="field"><label>品牌名</label><input data-key="organization.brand_name" value="${escapeHtml(org.brand_name || '')}"/></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>成立日期 <span class="hint">（YYYY 或 YYYY-MM-DD）</span></label><input data-key="organization.founding_date" value="${escapeHtml(org.founding_date || '')}"/></div>
+          <div class="field"><label>Logo URL</label><input data-key="organization.logo" value="${escapeHtml(org.logo || '')}" placeholder="/logo.png"/></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>VAT ID <span class="hint">（欧盟客户合规需要）</span></label><input data-key="organization.vat_id" value="${escapeHtml(org.vat_id || '')}"/></div>
+          <div class="field"><label>D-U-N-S 编号 <span class="hint">（B2B 信用查询用）</span></label><input data-key="organization.duns" value="${escapeHtml(org.duns || '')}"/></div>
+        </div>
+        <h3 style="margin-bottom:12px; font-size:14px;">注册地址</h3>
+        <div class="field"><label>街道地址</label><input data-key="organization.address.streetAddress" value="${escapeHtml(orgAddr.streetAddress || '')}"/></div>
+        <div class="field-row">
+          <div class="field"><label>城市</label><input data-key="organization.address.addressLocality" value="${escapeHtml(orgAddr.addressLocality || '')}"/></div>
+          <div class="field"><label>省 / 州</label><input data-key="organization.address.addressRegion" value="${escapeHtml(orgAddr.addressRegion || '')}"/></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>邮编</label><input data-key="organization.address.postalCode" value="${escapeHtml(orgAddr.postalCode || '')}"/></div>
+          <div class="field"><label>国家代码 <span class="hint">（ISO 3166-1，如 CN / US / DE）</span></label><input data-key="organization.address.addressCountry" value="${escapeHtml(orgAddr.addressCountry || 'CN')}"/></div>
+        </div>
+        <h3 style="margin-bottom:12px; font-size:14px;">sameAs 外链 <span style="font-size:12px; color:var(--a-mute2);">（每行一条，社交资料和媒体页都行）</span></h3>
+        <div class="field"><textarea data-key="organization.sameAs" rows="4" placeholder="https://www.linkedin.com/company/zufek
+https://twitter.com/zufek">${escapeHtml((org.sameAs || []).join('\n'))}</textarea></div>
+        <h3 style="margin-bottom:12px; font-size:14px;">联系方式（ContactPoint）</h3>
+        <p style="font-size:12px; color:var(--a-mute2);">每条对应一组业务联系（销售 / 工程 / 客服 / 媒体），写入 schema。</p>
+        <textarea class="mono" data-key="organization.contactPoints" rows="10" placeholder='[{"type":"sales","email":"info@zufek.com","telephone":"+86 ...","areaServed":"Worldwide","availableLanguage":["en","zh"]}]'>${escapeHtml(JSON.stringify(orgContacts, null, 2))}</textarea>
       </div>
     </div>
 
@@ -68,10 +127,11 @@
 
     <div data-pane="social" style="display:none;">
       <div class="panel">
-        <h2 style="margin-top:0;">社交链接</h2>
+        <h2 style="margin-top:0;">社交链接 <span style="font-size:12px; color:var(--a-mute2); font-weight:normal;">（也会自动并入 Organization sameAs）</span></h2>
         <div class="field"><label>LinkedIn</label><input data-key="social.linkedin" value="${escapeHtml(s('social').linkedin || '')}"/></div>
         <div class="field"><label>YouTube</label><input data-key="social.youtube" value="${escapeHtml(s('social').youtube || '')}"/></div>
         <div class="field"><label>X / Twitter</label><input data-key="social.x" value="${escapeHtml(s('social').x || '')}"/></div>
+        <div class="field"><label>WhatsApp</label><input data-key="social.whatsapp" value="${escapeHtml(s('social').whatsapp || '')}"/></div>
       </div>
     </div>
 
@@ -112,20 +172,38 @@
   }));
 
   document.getElementById('save-all').addEventListener('click', async () => {
-    // Group inputs by top-level key (e.g., site.*)
+    // Group inputs by top-level settings key. data-key supports dotted
+    // paths like "organization.address.city" so nested objects map cleanly.
     const groups = {};
+    function setNested(obj, pathParts, val) {
+      let cur = obj;
+      for (let i = 0; i < pathParts.length - 1; i++) {
+        const k = pathParts[i];
+        if (!cur[k] || typeof cur[k] !== 'object' || Array.isArray(cur[k])) cur[k] = {};
+        cur = cur[k];
+      }
+      cur[pathParts[pathParts.length - 1]] = val;
+    }
+    let jsonError = null;
     document.querySelectorAll('[data-key]').forEach((el) => {
-      const [group, field] = el.dataset.key.split('.');
+      if (jsonError) return;
+      const parts = el.dataset.key.split('.');
+      const group = parts[0];
       if (!groups[group]) groups[group] = JSON.parse(JSON.stringify(s(group)));
       let val = el.value;
-      if (el.tag名称 === 'TEXTAREA' && el.classList.contains('mono')) {
+      // Special: organization.sameAs textarea is line-separated, not JSON.
+      if (el.dataset.key === 'organization.sameAs') {
+        val = String(val).split('\n').map((x) => x.trim()).filter(Boolean);
+      } else if (el.tagName === 'TEXTAREA' && el.classList.contains('mono')) {
         try { val = JSON.parse(val); }
-        catch (_) { return toast('JSON 格式错误：' + el.dataset.key, 'error'); }
+        catch (_) { jsonError = el.dataset.key; return; }
+      } else if (el.type === 'number') {
+        val = parseInt(val, 10) || 0;
       }
-      if (el.type === 'number') val = parseInt(val, 10) || 0;
-      groups[group][field] = val;
+      setNested(groups[group], parts.slice(1), val);
     });
-    // Auto-reply checkbox
+    if (jsonError) return toast('JSON 格式错误：' + jsonError, 'error');
+    // Auto-reply checkbox lives outside data-key inputs.
     if (groups.mail) {
       groups.mail.auto_reply_enabled = document.getElementById('auto-reply').checked;
     }

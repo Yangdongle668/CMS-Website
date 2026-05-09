@@ -3,10 +3,11 @@ const { many, one, query } = require('../db/client');
 const { requireAuth } = require('../middleware/auth');
 const { recordAudit } = require('../middleware/audit');
 const { trimStr, asJson } = require('../utils/validate');
+const { invalidateSettingsCache } = require('../middleware/html-tokens');
 
 const router = express.Router();
 
-const PUBLIC_KEYS = new Set(['site', 'social', 'seo', 'gdpr', 'navigation']);
+const PUBLIC_KEYS = new Set(['site', 'social', 'seo', 'gdpr', 'navigation', 'organization']);
 
 router.get('/public', async (_req, res) => {
   const rows = await many(`SELECT key, value FROM settings WHERE key = ANY($1::text[])`, [
@@ -34,6 +35,10 @@ router.put('/:key', requireAuth, async (req, res) => {
     [key, value]
   );
   await recordAudit({ req, action: 'update', entity: 'settings', entityId: key });
+  // Refresh the in-memory cache used by the HTML token middleware so the
+  // edit is reflected on the very next page load (no need to wait for the
+  // 30s polling interval).
+  invalidateSettingsCache();
   res.json({ ok: true });
 });
 

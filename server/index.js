@@ -64,13 +64,26 @@ const apiLimiter = rateLimit({
 });
 app.use('/api/', apiLimiter);
 
-// ----- Public env (Turnstile site key for client) -----
-app.get('/api/public/config', (_req, res) => {
+// ----- Public env (Turnstile site key + SEO defaults for the client) -----
+app.get('/api/public/config', async (_req, res) => {
+  // Read latest seo settings so the SPA can populate analytics/verification
+  // tags without a separate fetch and without staleness vs. /api/settings/public.
+  let seo = {};
+  try {
+    const { many } = require('./db/client');
+    const rows = await many(`SELECT key, value FROM settings WHERE key = 'seo'`);
+    seo = (rows[0] && rows[0].value) || {};
+  } catch (_) { /* DB might not be ready during early boot */ }
   res.json({
-    siteName: process.env.SITE_NAME || 'Acme Battery',
-    publicUrl: process.env.PUBLIC_URL || '',
+    siteName: process.env.SITE_NAME || 'Zufek',
+    publicUrl: process.env.PUBLIC_URL || seo.public_url || '',
     turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || '',
     privacyPolicyVersion: process.env.PRIVACY_POLICY_VERSION || '1.0',
+    ga4: seo.ga4_measurement_id || '',
+    gscVerify: seo.gsc_verify || '',
+    bingVerify: seo.bing_verify || '',
+    twitterHandle: seo.twitter_handle || '',
+    defaultOgImage: seo.default_meta_image || '/assets/img/og-default.png',
   });
 });
 
@@ -87,9 +100,17 @@ app.use('/api/gdpr', require('./routes/gdpr'));
 app.use('/api/audit', require('./routes/audit'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/pages', require('./routes/pages'));
+app.use('/api/authors', require('./routes/authors'));
+app.use('/api/media/overrides', require('./routes/media-overrides'));
 
 // ----- SEO endpoints -----
 app.use('/', require('./routes/seo'));
+
+// ----- HTML token replacement (canonical, OG, SITE_NAME, etc.) -----
+// Mounted BEFORE express.static so .html files flow through replaceTokens.
+// Static assets (CSS/JS/images) are short-circuited inside the middleware.
+const { htmlTokenMiddleware, tryServeHtml } = require('./middleware/html-tokens');
+app.use(htmlTokenMiddleware);
 
 // ----- Static uploads -----
 app.use('/uploads', express.static(path.join(ROOT, 'uploads'), { maxAge: '7d', index: false }));
@@ -103,7 +124,7 @@ app.get('/admin/*', (req, res, next) => {
   return res.sendFile(path.join(ROOT, 'admin', 'index.html'));
 });
 
-// ----- Static public site -----
+// ----- Static public site (assets only — HTML already handled above) -----
 app.use(
   express.static(path.join(ROOT, 'public'), {
     extensions: ['html'],
@@ -114,21 +135,39 @@ app.use(
 );
 
 // ----- Pretty URLs for products / blog / applications -----
-app.get(['/products/:slug', '/applications/:slug', '/blog/:slug'], (req, res, next) => {
+// Order:
+//   1. Per-slug .html file (already handled by token middleware above for
+//      static pages like /applications/medical.html).
+//   2. SSR detail render — server reads DB and injects title/meta/canonical
+//      /OG/JSON-LD into _template.html before sending. Required for SEO so
+//      Googlebot, social-card scrapers and AI parsers see the head in the
+//      initial HTML.
+//   3. Final fallback: ship _template.html with token replacement only
+//      (JS will hydrate body, but head is already populated by tokens).
+const ssrDetail = require('./middleware/ssr-detail');
+app.get(['/products/:slug', '/applications/:slug', '/blog/:slug'], async (req, res, next) => {
   const segments = req.path.split('/').filter(Boolean);
   const dir = segments[0];
   const slug = segments[1];
   if (!slug) return next();
+
+  // 1. SSR detail render based on the URL section.
+  try {
+    if (dir === 'products' && await ssrDetail.renderPillar(req, res, slug)) return;
+    if (dir === 'blog' && await ssrDetail.renderArticle(req, res, slug)) return;
+    if (dir === 'applications' && await ssrDetail.renderApplication(req, res, slug)) return;
+  } catch (err) {
+    console.error('[ssr] %s %s failed:', dir, slug, err && err.message);
+    // Fall through to token-only rendering rather than 500ing.
+  }
+
+  // 2. Token-only fallback (per-slug .html or _template.html with placeholders).
   const candidates = [
     path.join(ROOT, 'public', dir, `${slug}.html`),
     path.join(ROOT, 'public', dir, slug, 'index.html'),
+    path.join(ROOT, 'public', dir, '_template.html'),
   ];
-  for (const f of candidates) {
-    if (fs.existsSync(f)) return res.sendFile(f);
-  }
-  // Fallback to template that fetches via API
-  const tpl = path.join(ROOT, 'public', dir, '_template.html');
-  if (fs.existsSync(tpl)) return res.sendFile(tpl);
+  if (tryServeHtml(req, res, candidates, { canonicalPath: req.path })) return;
   return next();
 });
 
@@ -137,8 +176,8 @@ app.use((req, res) => {
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ error: 'not_found' });
   }
-  const file = path.join(ROOT, 'public', '404.html');
-  if (fs.existsSync(file)) return res.status(404).sendFile(file);
+  const candidates = [path.join(ROOT, 'public', '404.html')];
+  if (tryServeHtml(req, res, candidates, { status: 404, canonicalPath: req.path })) return;
   res.status(404).send('Not found');
 });
 
@@ -183,6 +222,28 @@ async function autoMigrate() {
        status VARCHAR(20) NOT NULL DEFAULT 'published',
        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
      )`,
+    // Authors table — drives Person JSON-LD on article pages and the
+    // author profile cards used for E-E-A-T credibility (2026 Google
+    // helpful-content guidance).
+    `CREATE TABLE IF NOT EXISTS authors (
+       id SERIAL PRIMARY KEY,
+       slug VARCHAR(190) UNIQUE NOT NULL,
+       name VARCHAR(190) NOT NULL,
+       job_title VARCHAR(190) NOT NULL DEFAULT '',
+       bio TEXT NOT NULL DEFAULT '',
+       avatar_url VARCHAR(500) NOT NULL DEFAULT '',
+       email VARCHAR(190) NOT NULL DEFAULT '',
+       knows_about JSONB NOT NULL DEFAULT '[]'::jsonb,
+       same_as JSONB NOT NULL DEFAULT '[]'::jsonb,
+       is_active BOOLEAN NOT NULL DEFAULT TRUE,
+       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+     )`,
+    `ALTER TABLE articles ADD COLUMN IF NOT EXISTS author_id INT REFERENCES authors(id) ON DELETE SET NULL`,
+    `INSERT INTO authors (slug, name, job_title, bio)
+       VALUES ('zufek-engineering', 'Zufek Engineering', 'Cell engineering team',
+               'Collective byline for the Zufek cell engineering team. Articles authored under this name are reviewed by our four founder-engineers (Chen Li, et al.) and the lead PM on the relevant pillar program.')
+       ON CONFLICT (slug) DO NOTHING`,
   ];
   for (const sql of stmts) {
     try { await query(sql); }

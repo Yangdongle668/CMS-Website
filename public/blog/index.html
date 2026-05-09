@@ -1,13 +1,46 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Insights — Battery Engineering Blog</title>
 <meta name="description" content="Battery guides, industry analysis and technical deep-dives from our cell engineering team.">
+<link rel="canonical" href="{{CANONICAL_URL}}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{SITE_NAME}}">
+<meta property="og:title" content="Insights — Battery Engineering Blog">
+<meta property="og:description" content="Battery guides, industry analysis and technical deep-dives from our cell engineering team.">
+<meta property="og:url" content="{{CANONICAL_URL}}">
+<meta property="og:image" content="{{DEFAULT_OG_IMAGE}}">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Insights — Battery Engineering Blog">
+<meta name="twitter:description" content="Battery guides, industry analysis and technical deep-dives from our cell engineering team.">
+<meta name="twitter:image" content="{{DEFAULT_OG_IMAGE}}">
+<meta name="theme-color" content="#0b3a82">
+<meta name="format-detection" content="telephone=no">
 <link rel="stylesheet" href="/styles.css?v=18">
+<link rel="preconnect" href="https://images.unsplash.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script type="application/ld+json">{
+  "@context":"https://schema.org",
+  "@type":"Blog",
+  "@id":"{{CANONICAL_BASE}}/blog/#blog",
+  "name":"{{SITE_NAME}} Engineering Insights",
+  "url":"{{CANONICAL_BASE}}/blog/",
+  "description":"Battery guides, industry analysis and technical deep-dives from our cell engineering team.",
+  "publisher":{"@id":"{{CANONICAL_BASE}}/#organization"},
+  "inLanguage":"en"
+}</script>
+<script type="application/ld+json">{
+  "@context":"https://schema.org",
+  "@type":"BreadcrumbList",
+  "itemListElement":[
+    {"@type":"ListItem","position":1,"name":"Home","item":"{{CANONICAL_BASE}}/"},
+    {"@type":"ListItem","position":2,"name":"Insights","item":"{{CANONICAL_BASE}}/blog/"}
+  ]
+}</script>
 </head>
 <body data-nav="blog" data-page="blog/index">
 
@@ -88,7 +121,7 @@
         <span class="blog-card__pill">${escape(cat)}</span>
         <h3 class="blog-card__title">${escape(a.title)}</h3>
         <p class="blog-card__excerpt">${escape((a.excerpt || '').slice(0, 140))}</p>
-        <div class="blog-card__byline">${escape(a.author || 'Acme Engineering')} &middot; ${a.reading_minutes || 5} min${date ? ' &middot; ' + date : ''}</div>
+        <div class="blog-card__byline">${escape(a.author || 'Zufek Engineering')} &middot; ${a.reading_minutes || 5} min${date ? ' &middot; ' + date : ''}</div>
       </div>
     </a>`;
   }
@@ -109,7 +142,7 @@
     document.querySelector('[data-featured-excerpt]').textContent = (a.excerpt || '').slice(0, 240);
     const date = fmtDate(a.published_at);
     document.querySelector('[data-featured-byline]').innerHTML =
-      `<strong>${escape(a.author || 'Acme Engineering')}</strong> &middot; ${a.reading_minutes || 5} min read${date ? ' &middot; ' + date : ''}`;
+      `<strong>${escape(a.author || 'Zufek Engineering')}</strong> &middot; ${a.reading_minutes || 5} min read${date ? ' &middot; ' + date : ''}`;
   }
 
   async function loadCategories() {

@@ -21,14 +21,14 @@ INSERT INTO pillar_pages (
   'polymer-lithium-battery',
   'Polymer Lithium Battery',
   'Polymer Li-Po',
-  'Polymer Lithium Battery Manufacturer | Custom Li-Po Cells | Acme Battery',
+  'Polymer Lithium Battery Manufacturer | Custom Li-Po Cells | Zufek',
   'Industrial-grade polymer lithium (Li-Po) batteries with custom capacities from 30 mAh to 20 Ah. ISO 9001 certified manufacturer with UN38.3, IEC 62133, CE compliance.',
   'Pillar Series 01',
   'Polymer Lithium Battery',
   'High energy density Li-Po cells engineered for thin, light, and mission-critical applications. From wearables to medical devices, our polymer lithium batteries deliver consistent performance across thousands of cycles.',
   '/assets/img/pillar-polymer.svg',
   'Get a Quote', '/quote', 'Download Datasheet', '/uploads/datasheet-polymer.pdf',
-  '{"title":"What is a Polymer Lithium Battery?","body":"Polymer lithium batteries (Li-Po) use a gel-like polymer electrolyte instead of the liquid electrolyte found in conventional lithium-ion cells. This allows for ultra-thin profiles, flexible form factors, and improved safety under abuse conditions. Acme manufactures Li-Po cells from 30 mAh up to 20 Ah, with thicknesses as low as 0.4 mm."}',
+  '{"title":"What is a Polymer Lithium Battery?","body":"Polymer lithium batteries (Li-Po) use a gel-like polymer electrolyte instead of the liquid electrolyte found in conventional lithium-ion cells. This allows for ultra-thin profiles, flexible form factors, and improved safety under abuse conditions. Zufek manufactures Li-Po cells from 30 mAh up to 20 Ah, with thicknesses as low as 0.4 mm."}',
   '[
     {"name":"Standard Li-Po Cells","summary":"Pre-designed cells with industry-standard footprints, MOQ 500 pcs, lead time 2 weeks.","image":"/assets/img/variant-standard.svg"},
     {"name":"Custom Li-Po Cells","summary":"Bespoke dimensions, capacity, connectors and BMS integration. ODM/OEM from prototype to mass production.","image":"/assets/img/variant-custom.svg"}
@@ -86,7 +86,7 @@ INSERT INTO pillar_pages (
   'When a rectangular cell will not fit, our engineering team designs the battery around your enclosure. Round, curved, stepped or notched – we manufacture polymer lithium cells in any non-standard geometry.',
   '/assets/img/pillar-custom.svg',
   'Start a Custom Project', '/quote', 'See Capabilities', '#capabilities',
-  '{"title":"Why Custom Geometry?","body":"Modern devices leave little room for off-the-shelf cells. By co-designing the battery with your mechanical team, we recover 10-30% more volumetric energy density and remove dead space. Acme has shipped over 200 custom geometries for medical, wearable and defence customers."}',
+  '{"title":"Why Custom Geometry?","body":"Modern devices leave little room for off-the-shelf cells. By co-designing the battery with your mechanical team, we recover 10-30% more volumetric energy density and remove dead space. Zufek has shipped over 200 custom geometries for medical, wearable and defence customers."}',
   '[
     {"name":"Round / Coin-Style","summary":"Discoid Li-Po cells from 8 mm diameter, used in TWS earbuds and smart sensors.","image":"/assets/img/variant-round.svg"},
     {"name":"Curved","summary":"Single or double curvature for wristbands, helmets and curved medical patches.","image":"/assets/img/variant-curved.svg"},
@@ -235,7 +235,7 @@ INSERT INTO applications (slug, name, icon, cover_url, summary, body, sort_order
 ('e-mobility', 'E-Mobility', 'e-mobility',
  'https://images.unsplash.com/photo-1556122071-e404eaedb77f?w=1200&q=80',
  'NMC and LFP cylindrical packs for e-bikes, e-scooters, AGVs and light EVs.',
- 'Acme designs and assembles 36V to 96V battery packs with integrated BMS, CAN bus, and IP67 housings for e-mobility OEMs across Europe and Southeast Asia.',
+ 'Zufek designs and assembles 36V to 96V battery packs with integrated BMS, CAN bus, and IP67 housings for e-mobility OEMs across Europe and Southeast Asia.',
  7),
 ('energy-storage', 'Energy Storage', 'energy-storage',
  'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=1200&q=80',
@@ -291,21 +291,21 @@ INSERT INTO articles (pillar_id, category_id, slug, title, excerpt, content, aut
  'How to Choose Li-Po Battery Capacity for IoT Devices',
  'A practical guide for hardware engineers selecting polymer lithium cells for low-power IoT applications.',
  '<p>Choosing the right polymer lithium (Li-Po) battery for an IoT device is a balance between runtime, form factor and cycle life. In this guide we walk through the four key parameters every hardware engineer should specify before issuing an RFQ.</p><h2>1. Estimate average current draw</h2><p>Compute the average current as the weighted sum of active and sleep currents. For a typical LoRaWAN sensor reporting once per hour, average current is often 50-150 µA.</p><h2>2. Add 25% headroom for ageing</h2><p>Li-Po cells lose ~20% capacity by cycle 500. Spec the nominal capacity 25% above the runtime requirement so the device still meets its target at end-of-life.</p><h2>3. Match the temperature range</h2><p>Standard Li-Po operates -20°C to +60°C in discharge, but charging below 0°C is not allowed. If your device must charge in cold environments, ask for a low-temperature variant.</p>',
- 'Acme Engineering', 6, now() - interval '5 days', 'published'),
+ 'Zufek Engineering', 6, now() - interval '5 days', 'published'),
 ((SELECT id FROM pillar_pages WHERE slug='custom-shaped-polymer-lithium-battery'),
  (SELECT id FROM categories WHERE slug='technology'),
  'designing-curved-batteries-for-wearables',
  'Designing Curved Polymer Batteries for Wearable Devices',
  'How curvature radius, electrode coating and stack geometry affect cycle life in curved Li-Po cells.',
  '<p>Curved batteries unlock 10-30% extra volume in wearable enclosures, but they also introduce manufacturing trade-offs that affect cycle life. This article explains what to ask your battery vendor before committing to a curved design.</p><h2>Minimum curvature radius</h2><p>For single-curvature cells we recommend R ≥ 25 mm to maintain coating integrity over 500 cycles. Tighter radii are achievable but require thinner electrodes and reduce capacity.</p>',
- 'Acme Engineering', 7, now() - interval '12 days', 'published'),
+ 'Zufek Engineering', 7, now() - interval '12 days', 'published'),
 ((SELECT id FROM pillar_pages WHERE slug='coin-steel-shell-lithium-battery'),
  (SELECT id FROM categories WHERE slug='industry-insights'),
  'lir-vs-ml-coin-cell-which-to-choose',
  'LIR vs. ML Coin Cells: Which Rechargeable Chemistry to Choose',
  'A practical decision guide for picking between LIR (Li-ion 3.6 V) and ML (Li-MnO2 3.0 V) rechargeable coin cells.',
  '<p>Most engineers default to LIR2032 because it''s the obvious CR2032 replacement. That''s usually correct — but for an industrial PCB that has to be reflow-mounted or run hot, ML is the only sensible choice. Here is how we steer customers.</p><h2>Voltage and the regulator question</h2><p>LIR (Li-ion) sits at 3.6-4.2 V, ML (Li-MnO2) at 2.8-3.0 V. If your circuit was designed for a CR2032 (3.0 V) and you can''t add a regulator, ML drops in. LIR needs an LDO or boost depending on the load.</p><h2>Reflow compatibility</h2><p>Only ML survives standard lead-free reflow profiles (260 °C peak). LIR cells must be hand-soldered or socket-mounted.</p><h2>Cycle count</h2><p>ML offers 1,000+ cycles vs. LIR''s 500+. For a daily-charge wearable that''s 1.4 vs. 2.7 years of design life — usually a deciding factor for product warranty.</p>',
- 'Acme Engineering', 7, now() - interval '20 days', 'published')
+ 'Zufek Engineering', 7, now() - interval '20 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 
 -- ----- Pages (hero + meta for each static HTML + homepage sections JSON) -----
@@ -473,15 +473,17 @@ ON CONFLICT (slug) DO NOTHING;
 -- ----- Settings -----
 INSERT INTO settings (key, value) VALUES
 ('site',
- '{"name":"Acme Battery","tagline":"Custom lithium batteries for AR/VR, medical, wearables and IoT. Founded 2018 in Dongguan.","email":"sales@example.com","engineering_email":"engineering@example.com","phone":"+86 755 0000 0000","address":"Building A, Industrial Park, Shenzhen 518000, China","founded_year":2008,"factory_size_sqm":18000,"staff_count":420}'),
+ '{"name":"Zufek","legal_name":"Dongguan Zufek Technology Co.,Ltd","tagline":"Custom lithium batteries for AR/VR, medical, wearables and IoT. Founded 2018 in Dongguan.","email":"info@zufek.com","engineering_email":"engineering@zufek.com","phone":"+86 153 7772 0020","address":"Room 432, Building 1, No. 34 Jinniu Road, Guancheng Subdistrict, Dongguan City, Guangdong Province, China","founded_year":2018,"factory_size_sqm":18000,"staff_count":100}'),
 ('social',
- '{"linkedin":"","whatsapp":""}'),
+ '{"linkedin":"https://www.linkedin.com/company/zufek","whatsapp":"https://wa.me/8615377720020"}'),
 ('seo',
- '{"default_meta_description":"OEM/ODM lithium battery manufacturer specialising in polymer Li-Po, custom-shaped Li-Po and cylindrical Li-Ion cells. ISO 9001, UN 38.3, CE compliant.","default_meta_image":"/assets/img/og-default.svg"}'),
+ '{"public_url":"https://zufek.com","default_meta_description":"OEM/ODM lithium battery manufacturer specialising in polymer Li-Po, custom-shaped Li-Po and coin steel-shell lithium cells. ISO 9001, UN 38.3, CE compliant.","default_meta_image":"/logo.png","twitter_handle":"","ga4_measurement_id":"","gsc_verify":"","bing_verify":""}'),
+('organization',
+ '{"legal_name":"Dongguan Zufek Technology Co.,Ltd","brand_name":"Zufek","founding_date":"2018","vat_id":"","duns":"","logo":"/logo.png","sameAs":["https://www.linkedin.com/company/zufek"],"address":{"streetAddress":"Room 432, Building 1, No. 34 Jinniu Road, Guancheng Subdistrict","addressLocality":"Dongguan","addressRegion":"Guangdong","postalCode":"523000","addressCountry":"CN"},"contactPoints":[{"type":"sales","email":"info@zufek.com","telephone":"+86 153 7772 0020","areaServed":"Worldwide","availableLanguage":["en","zh"]},{"type":"technical support","email":"engineering@zufek.com","areaServed":"Worldwide","availableLanguage":["en"]}]}'),
 ('gdpr',
- '{"retention_days":365,"soft_delete_days":30,"policy_version":"1.0","controller":"Acme Battery Co., Ltd.","controller_email":"privacy@example.com","cookie_categories":{"necessary":{"required":true,"label":"Strictly necessary","description":"Required for the site to function (session, security, language preference)."},"analytics":{"required":false,"label":"Analytics","description":"Aggregated traffic statistics to help us improve the site."},"marketing":{"required":false,"label":"Marketing","description":"Used to measure the performance of advertising campaigns."}}}'),
+ '{"retention_days":365,"soft_delete_days":30,"policy_version":"1.0","controller":"Dongguan Zufek Technology Co.,Ltd","controller_email":"info@zufek.com","cookie_categories":{"necessary":{"required":true,"label":"Strictly necessary","description":"Required for the site to function (session, security, language preference)."},"analytics":{"required":false,"label":"Analytics","description":"Aggregated traffic statistics to help us improve the site."},"marketing":{"required":false,"label":"Marketing","description":"Used to measure the performance of advertising campaigns."}}}'),
 ('mail',
- '{"reply_to":"sales@example.com","subject_prefix":"[Inquiry]","auto_reply_enabled":true}'),
+ '{"reply_to":"info@zufek.com","subject_prefix":"[Inquiry]","auto_reply_enabled":true}'),
 ('navigation',
  '{"header":[{"label":"HOME","url":"/","nav":"home"},{"label":"PRODUCTS","url":"/products/","nav":"products","children":[{"label":"Polymer Lithium Battery","url":"/products/polymer-lithium-battery"},{"label":"Custom-Shaped Polymer (Li-Po)","url":"/products/custom-shaped-polymer-lithium-battery"},{"label":"Coin Steel-Shell Lithium","url":"/products/coin-steel-shell-lithium-battery"}]},{"label":"APPLICATIONS","url":"/applications/","nav":"applications","children":[{"label":"AR / VR Glasses","url":"/applications/ar-vr.html"},{"label":"Medical Devices","url":"/applications/medical.html"},{"label":"Wearables","url":"/applications/wearables.html"},{"label":"IoT Devices","url":"/applications/iot.html"}]},{"label":"CUSTOM SOLUTIONS","url":"/solutions/","nav":"solutions","children":[{"label":"Design Support","url":"/solutions/design.html"},{"label":"Prototyping","url":"/solutions/prototyping.html"},{"label":"Mass Production","url":"/solutions/mass-production.html"}]},{"label":"ABOUT US","url":"/about/","nav":"about","children":[{"label":"Company Profile","url":"/about/profile.html"},{"label":"Factory Tour","url":"/about/factory.html"},{"label":"Team","url":"/about/team.html"}]},{"label":"BLOG","url":"/blog/","nav":"blog"},{"label":"FAQ","url":"/faq.html","nav":"faq"},{"label":"CONTACT","url":"/contact.html","nav":"contact"}]}')
 ON CONFLICT (key) DO NOTHING;
@@ -529,7 +531,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/wearable-chemistry.html" class="prev">&larr; Previous: Wearable Chemistry</a>
           <a href="/blog/un-iec-compliance.html" class="next">Next: UN 38.3 &amp; IEC 62133 &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 12, (SELECT id FROM categories WHERE slug='technology'), now() - interval '10 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 12, (SELECT id FROM categories WHERE slug='technology'), now() - interval '10 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('ar-vr-market-2026', $art$The AR/VR Battery Market in 2026$art$, $art$A sober look at AR/VR headset shipment forecasts and what they mean for pouch-cell supply.$art$, 'https://images.unsplash.com/photo-1617802690992-15d93263d3a3?w=1920&q=80', $art$<p class="lede">The AR/VR category enters 2026 with three distinct sub-segments forming, each with its own battery-sourcing reality. For pouch-cell suppliers, these segments are not equally attractive &mdash; and the wrong bet could leave a factory stranded on cell sizes that nobody orders in 2027.</p>
 
@@ -570,7 +572,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/industry.html" class="prev">&larr; Back to Industry Articles</a>
           <a href="/blog/solid-state-reality.html" class="next">Next: Solid-State Reality &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 5, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '13 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 5, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '13 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('bms-pcm-smart', $art$Protection PCM vs Smart Battery: When to Use Which$art$, $art$Cost, complexity and firmware implications of the two main BMS topologies in consumer electronics.$art$, 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1920&q=80', $art$<p class="lede">Every lithium cell needs protection. The question is only how much of it lives on the cell itself versus on the host system. A protection PCM (PCM = protection circuit module) handles the basics for pennies. A smart battery pack negotiates with the host at the cost of dollars. Between those two there is no middle ground worth defending.</p>
 
@@ -627,7 +629,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/cell-sizing.html" class="prev">&larr; Previous: Cell Sizing</a>
           <a href="/blog/wearable-thermal.html" class="next">Next: Skin-Contact Thermal &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 7, (SELECT id FROM categories WHERE slug='technology'), now() - interval '16 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 7, (SELECT id FROM categories WHERE slug='technology'), now() - interval '16 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('cell-sizing', $art$Sizing a Cell From a Power Profile$art$, $art$How to turn a current-vs-time trace into a real-world capacity specification — with a worked IoT example.$art$, 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=1920&q=80', $art$<p class="lede">Most &ldquo;battery dies too fast&rdquo; complaints trace back to the same mistake: picking a cell capacity that matches nameplate runtime, not real-world runtime. The right method is uncomfortable because it forces you to give up capacity on paper to gain it in the field.</p>
 
@@ -680,7 +682,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/un-iec-compliance.html" class="prev">&larr; Previous: UN 38.3 &amp; IEC 62133</a>
           <a href="/blog/bms-pcm-smart.html" class="next">Next: PCM vs Smart Battery &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 9, (SELECT id FROM categories WHERE slug='technology'), now() - interval '19 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 9, (SELECT id FROM categories WHERE slug='technology'), now() - interval '19 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('china-medical-battery', $art$China's Medical Device Battery Landscape$art$, $art$How NMPA-driven localisation is reshaping the supplier base for wearable medical devices in China and globally.$art$, 'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=1920&q=80', $art$<p class="lede">Medical-device batteries sit in a category of their own: small volumes, long qualification cycles, and regulatory exposure that scales with end-device approval rather than with the battery itself. In China, the last three years have brought real consolidation on the supply side, along with policy pressure to localise. The net effect is a supplier base that&rsquo;s more capable but more concentrated than it was.</p>
 
@@ -736,7 +738,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/hv-lco-density.html" class="prev">&larr; Previous: HV LCO at 4.48 V</a>
           <a href="/blog/industry.html" class="next">Back to Industry Articles &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 4, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '22 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 4, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '22 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('cobalt-nickel-lfp', $art$Supply Chain Notes: Cobalt, Nickel, LFP Outlook$art$, $art$Raw-material pricing, geographic concentration risks, and what procurement teams should lock in for 2026–2027.$art$, 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1920&q=80', $art$<p class="lede">Three raw materials dictate lithium-cell pricing: cobalt, nickel, and the lithium compounds themselves. For small-format cells, cobalt is still the structural factor; for bigger-format packs, nickel-heavy NMC chemistries and LFP are competing on total cost of ownership. Here&rsquo;s how we read the next 12&ndash;24 months.</p>
 
@@ -770,7 +772,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/solid-state-reality.html" class="prev">&larr; Previous: Solid-State Reality</a>
           <a href="/blog/eu-battery-passport.html" class="next">Next: EU Battery Passport &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 4, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '25 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 4, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '25 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('cycle-life-curves', $art$Reading a Cycle-Life Curve Honestly$art$, $art$Why$art$, 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&q=80', $art$<p class="lede">When you look at a cell datasheet and see a single cycle-life number, someone has already made four decisions on your behalf &mdash; decisions that determine whether you&rsquo;ll see that number in the field or half of it. Before you trust a cycle-life claim, learn to ask for the conditions.</p>
 
@@ -817,7 +819,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/lithium-shipping.html" class="prev">&larr; Previous: DGR Basics</a>
           <a href="/blog/thermal-runaway.html" class="next">Next: Thermal Runaway &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 10, (SELECT id FROM categories WHERE slug='technology'), now() - interval '28 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 10, (SELECT id FROM categories WHERE slug='technology'), now() - interval '28 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('eu-battery-passport', $art$The EU Battery Passport: Timeline & Data Requirements$art$, $art$What the new EU Battery Regulation asks for, which product categories are in scope, and what OEMs need from their cell suppliers.$art$, 'https://images.unsplash.com/photo-1529421308418-eab98863cee4?w=1920&q=80', $art$<p class="lede">The EU Battery Regulation (2023/1542) introduces the concept of a digital &ldquo;Battery Passport&rdquo; &mdash; a machine-readable record that travels with a battery through its life. For consumer electronics brands this is not yet the same burden as for EV makers, but the data-collection habits you build now determine how painful the 2030 wave will be.</p>
 
@@ -896,7 +898,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/cobalt-nickel-lfp.html" class="prev">&larr; Previous: Cobalt, Nickel, LFP</a>
           <a href="/blog/second-life-cells.html" class="next">Next: Second-Life Cells &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 6, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '31 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 6, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '31 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('hv-lco-density', $art$HV LCO at 4.48 V: Density Gains for Wearables$art$, $art$An update on high-voltage lithium-cobalt-oxide cathode platforms and what they actually buy at the pack level.$art$, 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1920&q=80', $art$<p class="lede">High-voltage lithium-cobalt-oxide is the quiet cathode upgrade that reshaped premium wearables over the last three years. Pushing the charge cut-off from 4.35 V to 4.45 V, and now to 4.48 V, buys roughly 8&ndash;12% more volumetric energy density at the cell. Here&rsquo;s what that looks like in real products.</p>
 
@@ -960,7 +962,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/lithium-air-freight.html" class="prev">&larr; Previous: Lithium Air Freight</a>
           <a href="/blog/china-medical-battery.html" class="next">Next: China Medical Battery &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 6, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '34 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 6, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '34 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('lithium-air-freight', $art$Lithium Air Freight in 2025: New Rules, Higher Costs$art$, $art$IATA's recent updates to lithium-battery air-cargo rules and their real impact on sample shipping and volume logistics for OEMs outside China.$art$, 'https://images.unsplash.com/photo-1583414692941-2dcf8e0e1ea4?w=1920&q=80', $art$<p class="lede">Air-freight pricing for lithium batteries has risen faster than general cargo every year since 2022. The drivers are a mix of genuine safety updates and insurance-market tightening. For OEMs outside China who depend on air for samples and low-volume launches, the change is already reshaping procurement cadence.</p>
 
@@ -1020,7 +1022,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/tws-earbuds-next.html" class="prev">&larr; Previous: TWS Earbuds Next</a>
           <a href="/blog/hv-lco-density.html" class="next">Next: HV LCO at 4.48 V &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 9, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '37 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 9, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '37 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('lithium-shipping', $art$Shipping Lithium: DGR Basics for Product Managers$art$, $art$Class 9 labels, state-of-charge limits, quantity caps per package — what dangerous-goods regs actually require when you ship lithium cells.$art$, 'https://images.unsplash.com/photo-1568057373560-8d71ccf43b26?w=1920&q=80', $art$<p class="lede">Lithium cells and batteries are dangerous goods. Not dangerous in the &ldquo;explodes in your warehouse&rdquo; sense, but dangerous in the regulatory sense: they move under IATA Dangerous Goods Regulations (DGR) for air, IMO IMDG code for sea, and ADR for road in the EU. Get the paperwork wrong and the shipment stops at origin.</p>
 
@@ -1073,7 +1075,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/wearable-thermal.html" class="prev">&larr; Previous: Skin-Contact Thermal</a>
           <a href="/blog/cycle-life-curves.html" class="next">Next: Reading Cycle-Life Curves &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 5, (SELECT id FROM categories WHERE slug='technology'), now() - interval '40 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 5, (SELECT id FROM categories WHERE slug='technology'), now() - interval '40 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('second-life-cells', $art$Second-Life Cells: Who's Buying, Who's Selling$art$, $art$The emerging re-qualification market for used lithium cells, and whether it makes commercial sense for small formats.$art$, 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1920&q=80', $art$<p class="lede">Second-life cells &mdash; lithium cells retired from one application and repurposed for another &mdash; have moved from concept to commercial reality in the last three years, but almost entirely for EV-scale formats. The economics for consumer-electronics cells look different, and mostly don&rsquo;t pencil.</p>
 
@@ -1125,7 +1127,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/eu-battery-passport.html" class="prev">&larr; Previous: EU Battery Passport</a>
           <a href="/blog/tws-earbuds-next.html" class="next">Next: TWS Earbuds Next &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 8, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '43 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 8, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '43 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('solid-state-reality', $art$Solid-State: Hype vs Reality for Consumer Electronics$art$, $art$Where solid-state batteries make sense today, where they don't, and a realistic timeline for wearables adoption.$art$, 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1920&q=80', $art$<p class="lede">Solid-state batteries have been &ldquo;five years away&rdquo; for fifteen years. In 2026 we can finally say with confidence that partial solid-state &mdash; specifically semi-solid and polymer-hybrid designs &mdash; is shipping in limited volumes. Fully sulfide-based solid-state remains a laboratory and prototype technology outside of a handful of EV pilot programs.</p>
 
@@ -1180,7 +1182,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/ar-vr-market-2026.html" class="prev">&larr; Previous: AR/VR Market 2026</a>
           <a href="/blog/cobalt-nickel-lfp.html" class="next">Next: Cobalt, Nickel, LFP &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 7, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '46 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 7, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '46 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('thermal-runaway', $art$Thermal Runaway: What Triggers It, How to Design Against It$art$, $art$Separator shutdown, vent design, cell spacing and the role of BMS early-warning in lithium cell safety.$art$, 'https://images.unsplash.com/photo-1532456745301-b2c645d8b80d?w=1920&q=80', $art$<p class="lede">Thermal runaway is the chain reaction inside a lithium cell where internal temperature rises faster than it can dissipate &mdash; eventually triggering electrolyte decomposition, gas generation, and in the worst case, venting or fire. It is always the result of one of three triggers: mechanical, thermal, or electrical abuse. Design against all three and you&rsquo;ve covered nearly every real-world failure mode.</p>
 
@@ -1238,7 +1240,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/cycle-life-curves.html" class="prev">&larr; Previous: Cycle-Life Curves</a>
           <a href="/blog/guides.html" class="next">Back to Battery Guides &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 8, (SELECT id FROM categories WHERE slug='technology'), now() - interval '49 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 8, (SELECT id FROM categories WHERE slug='technology'), now() - interval '49 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('tws-earbuds-next', $art$Why TWS Earbuds Plateaued — And What Comes Next$art$, $art$Battery form factor and acoustic volume are in direct conflict. Here's how the next generation of earbuds can break past it.$art$, 'https://images.unsplash.com/photo-1590658006821-04f4008d5717?w=1920&q=80', $art$<p class="lede">True-wireless earbuds have stopped getting smaller. The last three generations of flagship TWS from the major brands are within a few tenths of a gram of each other. That plateau is not a design choice &mdash; it&rsquo;s a physical limit dictated by the conflict between battery volume and acoustic chamber volume inside the earbud shell.</p>
 
@@ -1290,7 +1292,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/second-life-cells.html" class="prev">&larr; Previous: Second-Life Cells</a>
           <a href="/blog/lithium-air-freight.html" class="next">Next: Lithium Air Freight 2025 &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 5, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '52 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 5, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '52 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('un-iec-compliance', $art$UN 38.3 & IEC 62133: What OEMs Need to Know$art$, $art$A plain-English walkthrough of the two safety standards every lithium cell has to pass before it can ship.$art$, 'https://images.unsplash.com/photo-1618477388954-7852f32655ec?w=1920&q=80', $art$<p class="lede">Every lithium cell that ships by air, sea, road, or rail has to clear UN 38.3. Every cell sold for portable consumer use has to clear IEC 62133-2. Miss either and the shipment stops at customs. Plan for both from week one of a program.</p>
 
@@ -1353,7 +1355,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/ar-thin-battery.html" class="prev">&larr; Previous: Ultra-Thin for AR</a>
           <a href="/blog/cell-sizing.html" class="next">Next: Sizing a Cell from Power Profile &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 6, (SELECT id FROM categories WHERE slug='technology'), now() - interval '55 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 6, (SELECT id FROM categories WHERE slug='technology'), now() - interval '55 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('wearable-chemistry', $art$Choosing Between LiPo, Li-ion and LiFePO4 for Wearables$art$, $art$A decision framework for picking the right lithium chemistry for wearables: energy density, safety, cycle life and form factor.$art$, 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1920&q=80', $art$<p class="lede">When a product manager asks &ldquo;which chemistry should we use?&rdquo;, the honest first answer is almost always a counter-question: how small, how long, and how safe does it have to be? Those three constraints collapse the choice faster than any spec sheet.</p>
 
@@ -1404,7 +1406,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/guides.html" class="prev">← Back to Battery Guides</a>
           <a href="/blog/ar-thin-battery.html" class="next">Next: Ultra-Thin Battery for AR Glasses →</a>
-        </nav>$art$, 'Acme Engineering', 8, (SELECT id FROM categories WHERE slug='technology'), now() - interval '58 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 8, (SELECT id FROM categories WHERE slug='technology'), now() - interval '58 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('wearable-thermal', $art$Managing Skin-Contact Temperature on Wearables$art$, $art$Why 41 °C is an industrial-design problem, and what the BMS can do to stay under it without ruining runtime.$art$, 'https://images.unsplash.com/photo-1510017098667-27dfc7150acb?w=1920&q=80', $art$<p class="lede">A wearable is a heater strapped to a person. The battery is one source of that heat; the SoC, display driver, and charging circuit are others. The design goal isn&rsquo;t to minimise temperature &mdash; it&rsquo;s to keep the skin-facing surface below a threshold the user&rsquo;s nerves won&rsquo;t complain about.</p>
 
@@ -1450,5 +1452,382 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/bms-pcm-smart.html" class="prev">&larr; Previous: PCM vs Smart Battery</a>
           <a href="/blog/lithium-shipping.html" class="next">Next: Lithium Shipping Basics &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 11, (SELECT id FROM categories WHERE slug='technology'), now() - interval '61 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 11, (SELECT id FROM categories WHERE slug='technology'), now() - interval '61 days', 'published')
+ON CONFLICT (slug) DO NOTHING;
+
+
+-- =====================================================================
+-- Authors (E-E-A-T named experts) — seeded after the table exists.
+-- Schema is ensured by the autoMigrate() pass at app boot, but the
+-- table is also declared in schema.sql so npm run db:seed creates it.
+-- =====================================================================
+INSERT INTO authors (slug, name, job_title, bio, avatar_url, email, knows_about, same_as, is_active) VALUES
+('chen-li',
+ 'Chen Li',
+ 'Chief Cell Engineer & Co-founder',
+ 'Chen Li leads cathode and electrolyte development at Zufek. 14+ years in lithium-polymer R&D at tier-1 manufacturers before founding Zufek in 2018. Holds 9 issued patents on high-voltage Li-Po formulations. Personally signs off the chemistry roadmap and reviews every NPI feasibility note that goes out.',
+ '',
+ 'chen.li@zufek.com',
+ '["Lithium polymer chemistry","High-voltage LCO","Electrolyte formulation","Cell formation cycling","NPI cell qualification"]'::jsonb,
+ '[]'::jsonb,
+ TRUE),
+('wei-zhang',
+ 'Wei Zhang',
+ 'Mechanical & Custom-Shape Lead',
+ 'Wei Zhang heads the custom-geometry program at Zufek. 12 years tooling and stack design for non-rectangular Li-Po, including 200+ shipped custom geometries for medical wearables, AR/VR and TWS earbuds. Owns the relationship with the in-house tooling shop and sets the minimum-radius and stepped-pouch design rules used in customer feasibility notes.',
+ '',
+ 'wei.zhang@zufek.com',
+ '["Custom Li-Po geometry","Stack and winding design","Tooling for pouch cells","Curved cell mechanics","Stepped pouch yield"]'::jsonb,
+ '[]'::jsonb,
+ TRUE),
+('lin-zhao',
+ 'Lin Zhao',
+ 'Coin Cell & Industrial Programs Lead',
+ 'Lin Zhao runs the coin-cell line at Zufek (LIR + ML formats), the medical-device program (ISO 13485 alignment) and the reflow-mountable ML-series qualification. Background in hermetic crimping, IEC 60086-4 testing and IPC/JEDEC J-STD-020 reflow profile work for SMD-mount lithium cells.',
+ '',
+ 'lin.zhao@zufek.com',
+ '["Coin cell manufacturing","LIR Li-ion 3.6V","ML Li-MnO2 3.0V","Reflow soldering of lithium cells","IEC 62133-2","IEC 60086-4"]'::jsonb,
+ '[]'::jsonb,
+ TRUE),
+('mei-yang',
+ 'Mei Yang',
+ 'Quality, Compliance & GDPR Lead',
+ 'Mei Yang leads Zufek''s ISO 9001 / ISO 13485 program and runs all UN 38.3, IEC 62133, UL 1642, KC 62133 and PSE filings. Maintains the audit-ready document control system and the 10-year traceability database. Primary contact for customer audits and quality agreements.',
+ '',
+ 'mei.yang@zufek.com',
+ '["ISO 9001 quality systems","ISO 13485 medical device","UN 38.3 air shipping","IEC 62133 / UL 1642","Customer quality audits","CAPA"]'::jsonb,
+ '[]'::jsonb,
+ TRUE)
+ON CONFLICT (slug) DO UPDATE SET
+  name = EXCLUDED.name,
+  job_title = EXCLUDED.job_title,
+  bio = EXCLUDED.bio,
+  knows_about = EXCLUDED.knows_about,
+  is_active = EXCLUDED.is_active,
+  updated_at = now();
+
+
+-- =====================================================================
+-- Bind existing 19 articles to (pillar, author) so cluster relationships
+-- propagate to the pillar pages and Person JSON-LD renders the right
+-- expert. Idempotent: UPDATE-by-slug only touches rows that exist.
+-- Cluster mapping rationale:
+--   Polymer Li-Po pillar gets articles about generic Li-Po sizing,
+--     thermal management, BMS topology and chemistry trade-offs.
+--   Custom-Shaped pillar gets articles about wearables, AR/VR, TWS,
+--     curved/thin cells and medical wearables.
+--   Coin Steel-Shell pillar gets the existing LIR-vs-ML article
+--     plus the six new ones below.
+--   Compliance / shipping articles are kept as cross-pillar (no
+--     pillar_id, but author_id set so they still surface a Person).
+-- =====================================================================
+DO $$
+DECLARE
+  pillar_polymer  INT := (SELECT id FROM pillar_pages WHERE slug='polymer-lithium-battery');
+  pillar_custom   INT := (SELECT id FROM pillar_pages WHERE slug='custom-shaped-polymer-lithium-battery');
+  pillar_coin     INT := (SELECT id FROM pillar_pages WHERE slug='coin-steel-shell-lithium-battery');
+  author_chen     INT := (SELECT id FROM authors WHERE slug='chen-li');
+  author_wei      INT := (SELECT id FROM authors WHERE slug='wei-zhang');
+  author_lin      INT := (SELECT id FROM authors WHERE slug='lin-zhao');
+  author_mei      INT := (SELECT id FROM authors WHERE slug='mei-yang');
+BEGIN
+  -- Custom-Shape (wearables, AR/VR, thin/curved, TWS)
+  UPDATE articles SET pillar_id = pillar_custom, author_id = author_wei
+    WHERE slug IN ('ar-thin-battery','ar-vr-market-2026','tws-earbuds-next',
+                   'wearable-chemistry','wearable-thermal','china-medical-battery');
+
+  -- Polymer Li-Po (sizing, BMS, chemistry, cycle life, HV LCO, thermal runaway)
+  UPDATE articles SET pillar_id = pillar_polymer, author_id = author_chen
+    WHERE slug IN ('cell-sizing','bms-pcm-smart','cobalt-nickel-lfp',
+                   'cycle-life-curves','hv-lco-density','thermal-runaway','solid-state-reality');
+
+  -- Compliance / shipping / regulation cluster — owned by Mei (QA/Compliance lead).
+  UPDATE articles SET author_id = author_mei
+    WHERE slug IN ('un-iec-compliance','lithium-shipping','lithium-air-freight',
+                   'eu-battery-passport','second-life-cells');
+
+  -- Existing pillar-bound seed articles also get an author now that they have one.
+  UPDATE articles SET author_id = author_chen WHERE slug = 'how-to-choose-li-po-capacity-iot';
+  UPDATE articles SET author_id = author_wei  WHERE slug = 'designing-curved-batteries-for-wearables';
+  UPDATE articles SET author_id = author_lin  WHERE slug = 'lir-vs-ml-coin-cell-which-to-choose';
+END$$;
+
+
+-- =====================================================================
+-- 6 new cluster articles for the Coin Steel-Shell pillar so it has
+-- enough breadth to compete with the other two (which already have
+-- 6-7 cluster posts each after the binding above). All bound to
+-- the coin pillar + Lin Zhao (or Mei Yang for the compliance piece).
+-- =====================================================================
+INSERT INTO articles (pillar_id, author_id, category_id, slug, title, excerpt, cover_url, hero_image, content, author, reading_minutes, published_at, status) VALUES
+((SELECT id FROM pillar_pages WHERE slug='coin-steel-shell-lithium-battery'),
+ (SELECT id FROM authors WHERE slug='lin-zhao'),
+ (SELECT id FROM categories WHERE slug='technology'),
+ 'reflow-profile-ml-coin-cell',
+ 'Designing the Reflow Profile for an SMD-Mounted ML Coin Cell',
+ 'A practical IPC/JEDEC J-STD-020 walkthrough for engineers who want to put an ML2032 or ML2430 on a PCB through a real lead-free reflow oven without losing capacity.',
+ 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&q=80',
+ 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1920&q=80',
+ $art$<p class="lede">A reflow-mountable lithium cell is rare, useful, and very easy to abuse. ML2032 and ML2430 survive standard lead-free reflow if — and only if — your profile is built around their physics, not the JEDEC J-STD-020 default. Here is the profile we recommend after qualifying ML cells across roughly 80 customer SMD programs.</p>
+<h2>What the cell can take</h2>
+<p>Both ML2032 and ML2430 are rated for 260 °C peak reflow with the constraints below. The hermetic stainless-steel can is what makes this physically possible — a pouch cell would never survive. Three thermal limits matter:</p>
+<ul>
+  <li><strong>Peak temperature ≤ 260 °C</strong>, with no more than 30 seconds above 250 °C.</li>
+  <li><strong>Time above 217 °C ≤ 90 seconds</strong>, ideally 60–80 s.</li>
+  <li><strong>Total time above 200 °C ≤ 150 seconds</strong>.</li>
+</ul>
+<p>The standard J-STD-020 envelope allows up to 150 s above 217 °C. ML can take a "soft" J-STD-020 profile but will lose noticeable capacity if you run the upper-bound profile twice (e.g. on a double-sided board). Always assume one reflow pass per ML cell unless your profile sits well inside the envelope.</p>
+<h2>The profile we recommend</h2>
+<p>From cold board to fully-soldered, four phases:</p>
+<ol>
+  <li><strong>Preheat 25 → 150 °C</strong> at ≤ 3 °C/s, total 80–100 s. The cell internals equalise; nothing dramatic.</li>
+  <li><strong>Soak 150 → 200 °C</strong> over 60–80 s. Flux activates. Cell temperature lags board by 4–8 °C; that's fine.</li>
+  <li><strong>Reflow 200 → 250 °C</strong> over 30–40 s. Stay above 217 °C for 70–80 s. Peak the cell can <em>just</em> reach 250 °C; do not push higher.</li>
+  <li><strong>Cooldown 250 → 100 °C</strong> at 3–5 °C/s. Forced air OK; do not water-quench.</li>
+</ol>
+<p>Total time above 200 °C: ~120 s. Peak: 250–255 °C. This sits in the 75th percentile of customer profiles that pass our 12-month aging test (≤ 8% capacity loss after one reflow pass).</p>
+<h2>The mistakes we see most often</h2>
+<p><strong>Profile from a JEDEC reference board.</strong> JEDEC reference profiles assume a thin SMD package; an ML cell has 2–3 mm of can mass that lags. Always thermocouple the cell can, not the PCB.</p>
+<p><strong>Two-pass reflow on the same cell.</strong> If the board has components on both sides, the ML cell must go on the side that reflows first, then be protected with foam tape during the second pass. Two passes through a full profile typically halves cycle life.</p>
+<p><strong>Hand-touch-up after reflow.</strong> Soldering iron temps (350–400 °C) damage the crimp seal. If a tab needs rework, use a hot-air rework station with the cell shielded.</p>
+<h2>Pre-conditioning before SMT</h2>
+<p>Store ML cells at 20 °C ± 5 °C and < 60% RH. If shipped through humid logistics, bake the cells at 60 °C for 24 h before placement. Moisture in the can during reflow is the most common failure mode (visible as bulging or split crimp).</p>
+<h2>Test plan to qualify your specific profile</h2>
+<ol>
+  <li>Thermocouple 5 sample cells inside the oven at the placement location.</li>
+  <li>Run 30 cells through one pass; measure OCV and IR before vs. after.</li>
+  <li>Cycle 10 of those 30 to 200 cycles at 0.2C; compare to a non-reflowed control.</li>
+  <li>Acceptance: < 5% delta IR, < 3% delta capacity at C200.</li>
+</ol>
+<p>For medical and automotive programs we do this qualification with a serial-numbered batch and keep the data for 10 years per ISO 13485 retention.</p>
+<nav class="article-nav">
+  <a href="/blog/lir-vs-ml-coin-cell-which-to-choose" class="prev">&larr; Previous: LIR vs ML Coin Cells</a>
+  <a href="/blog/coin-cell-tab-welding" class="next">Next: Coin Cell Tab Welding &rarr;</a>
+</nav>$art$,
+ 'Lin Zhao', 9, now() - interval '8 days', 'published'),
+
+((SELECT id FROM pillar_pages WHERE slug='coin-steel-shell-lithium-battery'),
+ (SELECT id FROM authors WHERE slug='lin-zhao'),
+ (SELECT id FROM categories WHERE slug='technology'),
+ 'coin-cell-tab-welding',
+ 'Tab Welding Coin Cells: When to Pick Nickel, Copper or Through-Hole Posts',
+ 'A field guide to selecting the right termination for LIR and ML coin cells when you need them welded into a pack rather than dropped into a holder.',
+ 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&q=80',
+ 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1920&q=80',
+ $art$<p class="lede">A coin cell with welded tabs is a cheap, hermetic, mechanically rigid energy source — perfect for hearing aids, RTC backups, BLE beacons and small wearables. The choice between nickel tabs, copper tabs and through-hole posts is rarely about cost. It is about what the next assembly step looks like.</p>
+<h2>Nickel tabs (the default)</h2>
+<p>0.10–0.15 mm pure nickel strip, spot-welded to the cell can on the negative side and the cap on the positive side. Two welds per side, ~6 mm spacing. Pull strength is typically 25–40 N — well above what any reasonable handling stress puts on a coin cell.</p>
+<ul>
+  <li><strong>Pick when:</strong> the device is hand-soldered, hot-bar soldered or threaded into a wire harness.</li>
+  <li><strong>Avoid when:</strong> downstream assembly uses ultrasonic welding (nickel-to-nickel ultrasonic is unreliable on tabs this thin).</li>
+  <li><strong>Cost:</strong> baseline. ~USD 0.02 / cell over a bare cell.</li>
+</ul>
+<h2>Copper tabs</h2>
+<p>0.05–0.10 mm copper strip with a thin nickel plating for weldability. Lower resistance than nickel (about 5× lower for the same cross-section), so worth it when the cell sees pulse currents above 1 C.</p>
+<ul>
+  <li><strong>Pick when:</strong> peak discharge currents matter (Bluetooth radio bursts in a beacon, DC-DC inrush in a wearable).</li>
+  <li><strong>Avoid when:</strong> the device is reflow-soldered. Copper-tab nickel plating can dewet during reflow and cause weld embrittlement.</li>
+</ul>
+<h2>Through-hole posts (TH posts)</h2>
+<p>1.0–1.5 mm diameter brass posts laser-welded to the cell faces, designed to drop into PTH holes on a PCB and wave-solder. Surprisingly under-used.</p>
+<ul>
+  <li><strong>Pick when:</strong> the device is a small PCB with through-hole assembly (RTC backup on industrial controllers, BLE beacons in 2025-vintage designs).</li>
+  <li><strong>Avoid when:</strong> any vibration spec exceeds 5 G — the posts concentrate stress at the weld interface and fatigue.</li>
+</ul>
+<h2>Specifying tabs without ambiguity</h2>
+<p>An RFQ that just says "with tabs" is the most common cause of late-stage redesign. Specify all of:</p>
+<ul>
+  <li>Material and thickness (e.g., "0.10 mm pure nickel, no plating").</li>
+  <li>Length and width (drawing preferred; otherwise "12 mm × 6 mm").</li>
+  <li>Orientation (horizontal lay-flat vs. vertical post-out).</li>
+  <li>Polarity marking (we recommend a permanent ink dot on the positive tab).</li>
+  <li>Pull-strength target if downstream assembly is rough (typical: ≥ 20 N).</li>
+</ul>
+<p>For medical programs we add a serial number laser-etched on the negative tab so the cell links back to its formation batch.</p>
+<h2>Welding parameters Zufek uses</h2>
+<p>For documentation and audits, the parameters are:</p>
+<ul>
+  <li>Spot welder: 100 J capacitor-discharge, 1.0 ms pulse, 0.5 mm tip diameter.</li>
+  <li>Two welds per tab side, 6 mm centre-to-centre.</li>
+  <li>Pull-test 1 in 100 cells to ≥ 25 N. Failures are diverted out of the medical-program lot.</li>
+</ul>
+<nav class="article-nav">
+  <a href="/blog/reflow-profile-ml-coin-cell" class="prev">&larr; Previous: Reflow Profile for ML</a>
+  <a href="/blog/coin-cell-hearing-aid" class="next">Next: Coin Cells in Hearing Aids &rarr;</a>
+</nav>$art$,
+ 'Lin Zhao', 7, now() - interval '14 days', 'published'),
+
+((SELECT id FROM pillar_pages WHERE slug='coin-steel-shell-lithium-battery'),
+ (SELECT id FROM authors WHERE slug='lin-zhao'),
+ (SELECT id FROM categories WHERE slug='industry-insights'),
+ 'coin-cell-hearing-aid',
+ 'Why Hearing Aids Use Pin Coin Cells (and What That Means for Your Wearable)',
+ 'Hearing-aid cells are a quiet specialism inside coin manufacturing. The constraints that make them work translate directly to slim wearables and implantable medical devices.',
+ 'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=1200&q=80',
+ 'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=1920&q=80',
+ $art$<p class="lede">A modern receiver-in-canal hearing aid uses a 25–100 mAh rechargeable coin cell, recharges nightly, runs 14–18 hours a day at near-zero average current with brief audio bursts, lives in a humid ear canal, and has to last at least three years on a battery you can''t replace. There is essentially no consumer-electronics cell on earth with stricter requirements.</p>
+<h2>The hearing-aid coin cell, deconstructed</h2>
+<p>The category is dominated by Ø 5–10 mm coin cells in the LIR / ML steel-shell family. They use:</p>
+<ul>
+  <li><strong>A dual-shell hermetic crimp</strong> with a fluoropolymer gasket — three orders of magnitude better humidity resistance than a pouch laminate.</li>
+  <li><strong>Welded pin contacts</strong> instead of tabs, so the cell drops directly into a metal contact spring on the device.</li>
+  <li><strong>Conservative voltage windows</strong> (3.0–4.1 V on LIR variants) to extend cycle life past 1,000 cycles.</li>
+  <li><strong>Ultra-low self-discharge electrolyte</strong> (sub-2 % per month) so a 60 % SOC cell still has charge two months later when the device sits on a shelf.</li>
+</ul>
+<h2>The lessons that travel</h2>
+<p>If you are building any of:</p>
+<ul>
+  <li>A continuous-glucose monitor patch (14-day life, sterile pack).</li>
+  <li>A smart ring or skin-contact biosensor.</li>
+  <li>An implantable pulse generator.</li>
+  <li>A long-life industrial sensor with sealed enclosure.</li>
+</ul>
+<p>Hearing-aid manufacturing IP is the most relevant template. Specifically: hermetic crimp design, dual-shell construction, pin-contact terminations, low-SD electrolyte, and ISO 13485-aligned production.</p>
+<h2>What we ship into hearing-aid programs today</h2>
+<p>The two most common Zufek SKUs in this category:</p>
+<ul>
+  <li><strong>LIR ZA10 (10 mm Ø, 30 mAh)</strong> for in-ear receiver-in-canal devices. 1,000+ cycles at 0.2 C.</li>
+  <li><strong>LIR ZA13 (8 mm Ø, 25 mAh)</strong> for completely-in-canal devices. 800+ cycles, slimmer crimp.</li>
+</ul>
+<p>Both run on our medical-grade line under ISO 13485 alignment, with full lot traceability and IEC 62133-2 / IEC 60086-4 documentation per shipment.</p>
+<h2>If you''re evaluating a coin-cell vendor for a wearable</h2>
+<p>Three diligence questions worth asking:</p>
+<ol>
+  <li>Show me your hermetic-crimp leak test data on a 12-month shelf-life sample.</li>
+  <li>Show me the pin-contact pull-test SOP and the AQL.</li>
+  <li>Can you document a 14-day continuous-discharge profile at body temperature with full capacity reporting?</li>
+</ol>
+<p>If they can answer all three quickly, they have shipped this category. If they can''t, your medical timeline is at risk.</p>
+<nav class="article-nav">
+  <a href="/blog/coin-cell-tab-welding" class="prev">&larr; Previous: Tab Welding Coin Cells</a>
+  <a href="/blog/coin-cell-rtc-backup" class="next">Next: Coin Cells for RTC Backup &rarr;</a>
+</nav>$art$,
+ 'Lin Zhao', 6, now() - interval '22 days', 'published'),
+
+((SELECT id FROM pillar_pages WHERE slug='coin-steel-shell-lithium-battery'),
+ (SELECT id FROM authors WHERE slug='lin-zhao'),
+ (SELECT id FROM categories WHERE slug='technology'),
+ 'coin-cell-rtc-backup',
+ 'Designing RTC Backup with a Reflow-Mounted ML Coin Cell',
+ 'How a USD 0.40 ML2032 with welded tabs replaces the tray-loaded CR2032 + holder + assembly labour in industrial controllers — and the four design rules that make it reliable.',
+ 'https://images.unsplash.com/photo-1565514020179-026b92b84bb6?w=1200&q=80',
+ 'https://images.unsplash.com/photo-1565514020179-026b92b84bb6?w=1920&q=80',
+ $art$<p class="lede">Real-time-clock backup is one of the few places in industrial electronics where a primary CR2032 has held the design line for two decades. ML rechargeable coin cells have been quietly displacing it since 2020. Here is when ML wins on engineering merit, and the four design rules that get it right the first time.</p>
+<h2>The CR2032 status quo</h2>
+<p>A typical industrial controller (PLC, motor drive, network gateway) uses a CR2032 lithium primary in a tray holder to keep the RTC alive between power cycles. Self-discharge is roughly 1 % / year, capacity 220 mAh, expected life 8–12 years on a 1 µA RTC load. Replacement is a service call.</p>
+<p>The ML approach replaces that with a soldered-in 65 mAh ML2032 that recharges from main power whenever the controller is on. Self-discharge is higher (~2 %/month under voltage hold), but because the cell continuously trickle-charges, the RTC sees full capacity indefinitely — until the cell hits ~10 years of total cycle exposure, at which point cycle ageing limits life rather than capacity loss.</p>
+<h2>When ML wins</h2>
+<ul>
+  <li>The product runs from main power most of the time and the RTC backup is for short outages (< 30 days continuous).</li>
+  <li>Service replacement is expensive (industrial, telecom, solar inverter) — eliminating a tray holder and a service call typically pays back at unit volumes above 5,000.</li>
+  <li>Operating temperature exceeds CR2032''s rating of +60 °C. ML is rated to +85 °C with a different electrolyte.</li>
+  <li>The PCB sees lead-free reflow. ML can be reflowed; CR2032 cannot.</li>
+</ul>
+<h2>When ML loses</h2>
+<ul>
+  <li>The product is fully off-grid for months at a time. Self-discharge eats the cell long before cycle life matters. Stay with CR2032.</li>
+  <li>RTC current draw exceeds 5 µA average. The 65 mAh ML reservoir runs out in months without recharging.</li>
+</ul>
+<h2>Four design rules for an ML RTC</h2>
+<p><strong>Rule 1 — current-limit the charge path.</strong> ML wants ≤ 0.05 C constant-current trickle until the cell hits 3.0 V, then constant-voltage hold. A 1.5 kΩ resistor on a 3.3 V rail is the simplest implementation, sized for ≤ 1 mA charge current. Or use a one-cell charger IC like the MCP73831.</p>
+<p><strong>Rule 2 — diode-isolate the discharge path.</strong> When main power is off, the ML cell becomes the only source. A Schottky diode on the cell positive prevents reverse-current sneaking back into other rails. Use a low-leakage Schottky (BAT54-type, ~30 nA leakage at 25 °C).</p>
+<p><strong>Rule 3 — undervoltage-protect the cell.</strong> ML below 1.8 V is irreversibly damaged. Add a comparator that disables the discharge path at 2.2 V cell voltage. The 0.4 V margin protects against the diode forward drop and ageing.</p>
+<p><strong>Rule 4 — temperature-protect the charger.</strong> ML below 0 °C should not charge. A simple PTC thermistor in series with the trickle resistor takes care of this without adding firmware.</p>
+<h2>Compliance trail</h2>
+<p>Because ML is rechargeable lithium, it triggers IEC 62133-2 instead of IEC 60086-4 (which CR2032 uses). UN 38.3 also requires a 50-cycle pre-test before shipment. Both are routine; we ship every ML lot with both reports.</p>
+<nav class="article-nav">
+  <a href="/blog/coin-cell-hearing-aid" class="prev">&larr; Previous: Coin Cells in Hearing Aids</a>
+  <a href="/blog/coin-cell-low-temp" class="next">Next: Coin Cell Low-Temperature Behaviour &rarr;</a>
+</nav>$art$,
+ 'Lin Zhao', 8, now() - interval '30 days', 'published'),
+
+((SELECT id FROM pillar_pages WHERE slug='coin-steel-shell-lithium-battery'),
+ (SELECT id FROM authors WHERE slug='lin-zhao'),
+ (SELECT id FROM categories WHERE slug='technology'),
+ 'coin-cell-low-temp',
+ 'Coin Cells in the Cold: How LIR and ML Behave from -40 °C to +85 °C',
+ 'Hard data and design rules for using rechargeable coin cells in outdoor IoT, automotive, cold-chain and aerospace devices.',
+ 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=1200&q=80',
+ 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=1920&q=80',
+ $art$<p class="lede">Operating temperature is the single biggest reason customers pick ML over LIR — and yet most datasheets stop at +60 °C. This article gives the actual capacity and impedance data we measure on a per-batch basis from -40 °C to +85 °C, and the design rules that follow.</p>
+<h2>What the curves look like</h2>
+<p>From representative test cells (ML2032, sample size n=30, cycled fresh):</p>
+<table>
+  <thead><tr><th>Temperature</th><th>Capacity vs. 25 °C baseline</th><th>Internal resistance vs. 25 °C</th></tr></thead>
+  <tbody>
+    <tr><td>-40 °C</td><td>40–55 %</td><td>4–6×</td></tr>
+    <tr><td>-20 °C</td><td>72–82 %</td><td>2.0–2.5×</td></tr>
+    <tr><td>  0 °C</td><td>88–94 %</td><td>1.4×</td></tr>
+    <tr><td>+25 °C</td><td>100 % (baseline)</td><td>1.0×</td></tr>
+    <tr><td>+60 °C</td><td>96–99 %</td><td>0.85×</td></tr>
+    <tr><td>+85 °C</td><td>92–95 % (1st use), accelerated ageing thereafter</td><td>0.75× initially</td></tr>
+  </tbody>
+</table>
+<p>For LIR2032 the cold-temperature numbers are roughly 10 % worse, the hot-temperature ageing accelerates more sharply above +60 °C.</p>
+<h2>Five design rules</h2>
+<p><strong>Rule 1 — design for end-of-life and the cold corner together.</strong> If the device must run at -20 °C after 500 cycles, your headroom factor is 0.8 (cycle ageing) × 0.78 (cold derating) = 0.62. Spec a cell ≥ 1.6× the runtime requirement.</p>
+<p><strong>Rule 2 — never charge below 0 °C.</strong> Both chemistries lithium-plate aggressively under cold charge. A PTC thermistor in series with the charge path prevents firmware mistakes.</p>
+<p><strong>Rule 3 — current pulses get bigger at cold.</strong> If your firmware has a 50 mA radio burst, it draws nearly 200 mA equivalent of impedance loss at -40 °C. Your reservoir capacitor needs to be sized for the cold corner, not the room-temperature spec.</p>
+<p><strong>Rule 4 — above +60 °C, treat the cell as a calendar-life part.</strong> ML at +85 °C ages roughly 3× faster than at +25 °C in calendar terms, even unloaded. Plan for replacement (if accessible) or a shorter product life. We do not honour cycle-life specs above +70 °C average operating temperature.</p>
+<p><strong>Rule 5 — pre-condition before measuring.</strong> A 12 °C ramp from cold storage to test condition takes ~30 minutes for an ML coin cell to thermalise internally. Capacity tests immediately after cold storage typically read 5–8 % low.</p>
+<h2>What we ship into automotive and outdoor IoT</h2>
+<p>Most automotive ECU RTC/event-log applications use ML2032 with an automotive-grade electrolyte rated -40 °C to +85 °C continuous, +125 °C peak (e.g., engine compartment). For outdoor IoT (asset trackers, smart agriculture sensors) we typically recommend ML2430 in a heated micro-compartment driven by the device''s main heater when present.</p>
+<nav class="article-nav">
+  <a href="/blog/coin-cell-rtc-backup" class="prev">&larr; Previous: ML RTC Backup</a>
+  <a href="/blog/coin-cell-iec-62133-2" class="next">Next: IEC 62133-2 for Coin Cells &rarr;</a>
+</nav>$art$,
+ 'Lin Zhao', 9, now() - interval '38 days', 'published'),
+
+((SELECT id FROM pillar_pages WHERE slug='coin-steel-shell-lithium-battery'),
+ (SELECT id FROM authors WHERE slug='mei-yang'),
+ (SELECT id FROM categories WHERE slug='certifications'),
+ 'coin-cell-iec-62133-2',
+ 'IEC 62133-2 for Coin Cells: What Tests Apply and What You Have to Pay For',
+ 'A compliance-lead''s walkthrough of which IEC 62133-2 / IEC 60086-4 / UN 38.3 sections actually fire on a rechargeable coin cell, what they cost, and how to avoid paying twice.',
+ 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=1200&q=80',
+ 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=1920&q=80',
+ $art$<p class="lede">Compliance budgets quietly eat 5–8 % of a battery program''s engineering cost. Half of that is paying for tests you didn''t need. This walkthrough covers exactly which IEC 62133-2 / IEC 60086-4 / UN 38.3 sections fire on a rechargeable coin cell — and which sections you can skip if you already shipped on a sister cell.</p>
+<h2>The mandatory test stack for a new rechargeable coin cell</h2>
+<ol>
+  <li><strong>UN 38.3</strong> — required for any lithium cell that will travel by air. 8 sub-tests (T1–T8). Coin cells under 0.3 g lithium content can use the simplified report. Cost: USD 4–8k typical.</li>
+  <li><strong>IEC 62133-2:2017+A1:2021</strong> — secondary lithium safety. The main batteries-and-cells standard. Mandatory tests: external short, abnormal charge, forced discharge, overcharge, temperature cycling, mechanical shock, vibration, internal short.</li>
+  <li><strong>IEC 60086-4</strong> — applies if any party in the supply chain treats the cell as a primary equivalent (it shouldn''t, for LIR/ML, but customs sometimes asks).</li>
+</ol>
+<p>For sale into specific jurisdictions you''ll also need:</p>
+<ul>
+  <li>UL 1642 (US, often required by reference, not directly).</li>
+  <li>UL 2054 (US, pack-level for multi-cell — single coin cells usually exempt).</li>
+  <li>KC 62133 (Korea).</li>
+  <li>PSE (Japan, only for 100 Wh+ packs — not coin cells).</li>
+  <li>BIS (India, mandatory).</li>
+</ul>
+<h2>Tests that fire only conditionally</h2>
+<p><strong>Drop test.</strong> Required for "portable" applications (devices carried in pockets, handbags). For an embedded RTC backup it is not required — but customers often ask for it anyway because it is in the IEC 62133-2 standard.</p>
+<p><strong>Crush test.</strong> Mandatory only when the standard''s sample-size threshold is reached. For coin cells under 5 mm thickness the crush profile is reduced.</p>
+<p><strong>Forced internal short.</strong> Optional under IEC 62133-2:2017 Amendment 1 — but Apple, Samsung and Garmin all require it. Plan for it if your customer is a tier-1 consumer-electronics OEM.</p>
+<h2>Cost reality check</h2>
+<table>
+  <thead><tr><th>Cert</th><th>Lab-fee range (typical 2026)</th><th>Lead time</th></tr></thead>
+  <tbody>
+    <tr><td>UN 38.3</td><td>USD 4–8k</td><td>4 weeks</td></tr>
+    <tr><td>IEC 62133-2 + Amendment 1</td><td>USD 12–18k</td><td>8 weeks</td></tr>
+    <tr><td>UL 1642</td><td>USD 8–12k</td><td>10 weeks</td></tr>
+    <tr><td>KC 62133 + factory inspection</td><td>USD 6–10k + travel</td><td>12 weeks</td></tr>
+    <tr><td>BIS (India)</td><td>USD 5–8k</td><td>16 weeks</td></tr>
+  </tbody>
+</table>
+<p>If your team is shipping an entirely new cell SKU, budget USD 35–55k and 14 weeks total to be selling everywhere. If you''re using an existing certified cell with a different label, the recerts run roughly 30 % of the original cost.</p>
+<h2>How we structure the certification stack at Zufek</h2>
+<p>We ship every production lot with three documents in the box:</p>
+<ol>
+  <li>UN 38.3 test summary (latest version, < 12 months old).</li>
+  <li>IEC 62133-2 declaration of conformity, referencing the cell''s lab report ID.</li>
+  <li>MSDS (English) and SDS (per-region for EU REACH, US OSHA, China GHS).</li>
+</ol>
+<p>For medical and aerospace customers the SOP adds a Certificate of Conformity per lot, signed by Mei Yang or the deputy compliance lead. Customers can request the underlying lab reports under NDA.</p>
+<nav class="article-nav">
+  <a href="/blog/coin-cell-low-temp" class="prev">&larr; Previous: Coin Cell Low-Temp Behaviour</a>
+  <a href="/blog/lir-vs-ml-coin-cell-which-to-choose" class="next">Next: LIR vs ML — the original primer &rarr;</a>
+</nav>$art$,
+ 'Mei Yang', 10, now() - interval '46 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
