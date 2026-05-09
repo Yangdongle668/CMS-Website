@@ -31,6 +31,7 @@ const settingsCache = {
   seo: {},
   site: {},
   organization: {},
+  media_overrides: {},
   loadedAt: 0,
 };
 
@@ -38,7 +39,7 @@ async function loadSettingsCache() {
   try {
     const { many } = require('../db/client');
     const rows = await many(
-      `SELECT key, value FROM settings WHERE key IN ('seo','site','organization')`
+      `SELECT key, value FROM settings WHERE key IN ('seo','site','organization','media_overrides')`
     );
     for (const r of rows) settingsCache[r.key] = r.value || {};
     settingsCache.loadedAt = Date.now();
@@ -93,13 +94,28 @@ function resolveDefaultOgImage(canonicalBase) {
 }
 
 function replaceTokens(html, ctx) {
-  return html
+  let out = html
     .replace(/\{\{CANONICAL_BASE\}\}/g, ctx.canonicalBase)
     .replace(/\{\{CANONICAL_PATH\}\}/g, ctx.canonicalPath)
     .replace(/\{\{CANONICAL_URL\}\}/g, ctx.canonicalBase + ctx.canonicalPath)
     .replace(/\{\{SITE_NAME\}\}/g, ctx.siteName)
     .replace(/\{\{ORG_LEGAL_NAME\}\}/g, ctx.orgLegalName)
     .replace(/\{\{DEFAULT_OG_IMAGE\}\}/g, ctx.defaultOgImage);
+  // Apply media overrides last so the operator can map an external URL
+  // (Unsplash hot-link, etc.) to a self-hosted /uploads/* asset without
+  // editing source files. The replacement is exact-match on the full
+  // URL string — if the source file uses a different size variant, add
+  // a separate override entry for it.
+  const overrides = settingsCache.media_overrides || {};
+  for (const [src, dst] of Object.entries(overrides)) {
+    if (!src || !dst) continue;
+    // Use split/join instead of regex to avoid regex-special-character
+    // escaping (URLs commonly contain ?, &, =).
+    if (out.indexOf(src) !== -1) {
+      out = out.split(src).join(dst);
+    }
+  }
+  return out;
 }
 
 function buildContext(req, canonicalPathOverride) {

@@ -101,6 +101,7 @@ app.use('/api/audit', require('./routes/audit'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/pages', require('./routes/pages'));
 app.use('/api/authors', require('./routes/authors'));
+app.use('/api/media/overrides', require('./routes/media-overrides'));
 
 // ----- SEO endpoints -----
 app.use('/', require('./routes/seo'));

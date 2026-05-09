@@ -19,6 +19,8 @@
 | Step 6 | `server/middleware/ssr-detail.js` 新模块：pillar/blog/applications 详情页服务端从 DB 读取后注入 title / description / canonical / OG / Twitter / JSON-LD（Product/Article/WebPage + BreadcrumbList + FAQPage）。客户端 JS 不再覆盖 head；只 hydrate body | ✅ 完成 (`07026c97`) |
 | Step 7 | 全部 `<img>` 加 `loading=lazy` `decoding=async` `width=1000` `height=667` `alt`；hero CDN preconnect；首页 hero `<link rel=preload>` + `fetchpriority=high` | ✅ 完成 (`008656f9`) |
 | Step 8 | 新增 `authors` 表 + `articles.author_id` 外键；`/api/authors` CRUD；admin 作者档案页 (`/admin/authors.html`) 完整 UI（slug/avatar/bio/knowsAbout/sameAs/active）；admin 文章编辑页加 author 下拉；SSR Article schema 用 Person (`worksFor` 指向 Organization)；hub 页全部加 BreadcrumbList + ItemList/Service/AboutPage/ContactPage/FAQPage/Blog schema；OG 默认 SVG brand 文字改为 Zufek + Coin Steel-Shell；admin sidebar brand "Zufek CMS" | ✅ 完成 (`72acae77`) |
+| Step 10 | seed 4 个具名作者（Chen Li 化学 / Wei Zhang 机械-异形 / Lin Zhao 钮扣电池 / Mei Yang 质量合规）；UPDATE 把 19 篇现有文章绑定到对应 pillar + author；为 Coin Steel-Shell pillar 新增 6 篇深度技术文章（reflow profile、tab welding、hearing aid、RTC backup、low-temp behaviour、IEC 62133-2 cost reality） | ✅ 完成 (`1af54083`) |
+| Step 11 | `media_overrides` settings + `/api/media/overrides` 路由（GET 扫描所有公共 HTML 里的外部图片 URL，PUT 保存映射）；HTML token 中间件应用映射做透明替换；admin "图片替换" 页面（`/admin/media-overrides.html`）：自动列出 38 个外部图片 URL、引用次数、引用页面，提供对每张图的 `/uploads/` 替换输入；保存即时生效无需重启 | ✅ 完成（本次） |
 
 ### 通过 grep / curl 验证
 
@@ -46,6 +48,8 @@
 | Blog 文章模板（standard/guide/case-study）+ pillar 关联 | 内容 → 博客文章 | `articles` ↔ SSR + Article schema |
 | Pages（首页 sections、自定义页面） | 内容 → 页面 | `pages` 表 ↔ sitemap 自动包含 |
 | 询盘 / 邮件 / GDPR | 设置 → 邮件 / GDPR; 收件箱 / GDPR 请求 | 已有功能不变，brand 引用统一为 Zufek |
+| 把任意 Unsplash 占位图替换为自托管照片（无需改代码） | 内容 → 图片替换 (`/admin/media-overrides.html`) | `settings.media_overrides` JSON 映射 ↔ `html-tokens` 中间件 string-replace ↔ scanExternalImages 自动列出 38 个待替换 URL |
+| 文章作者头像（avatar_url） | 内容 → 作者档案 → 编辑某作者 | 上传到媒体库，复制 `/uploads/...` 粘贴到 author.avatar_url；SSR Person schema 自动取用 |
 
 ---
 
