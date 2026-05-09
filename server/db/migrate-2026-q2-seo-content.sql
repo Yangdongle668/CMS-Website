@@ -341,4 +341,156 @@ UPDATE products
          END)
  WHERE focus_keyword = '' OR focus_keyword IS NULL;
 
+-- ---------------------------------------------------------------
+-- APPLICATIONS (continued) — 3 new application landing pages
+-- (smart-home, industrial-handhelds, defence-aerospace) added in
+-- the 2026-Q2 content batch. The first 8 are above.
+-- ---------------------------------------------------------------
+UPDATE applications SET
+  focus_keyword     = 'smart home battery',
+  secondary_keywords = '["smart lock battery","door lock lithium battery","smart sensor battery","video doorbell battery"]'::jsonb,
+  meta_title        = 'Smart Home Battery: Long-Life Cells for Locks & Sensors | Zufek',
+  meta_description  = 'Long-life lithium cells for smart locks, video doorbells, sensors, cameras and robot vacuums. 5-yr shelf life, low self-discharge, 1000+ cycles for rechargeable models.',
+  og_title          = 'Smart Home Battery — Long-Life Cells for Locks & Sensors',
+  og_description    = 'Lithium cells for smart locks, doorbells, sensors, cameras. 5-yr shelf, low SD, 1000+ cycles.'
+WHERE slug = 'smart-home' AND (focus_keyword = '' OR focus_keyword IS NULL);
+
+UPDATE applications SET
+  focus_keyword     = 'industrial handheld battery',
+  secondary_keywords = '["smart battery scanner","SMBus battery pack","hot-swap industrial battery","authenticated battery"]'::jsonb,
+  meta_title        = 'Industrial Handheld Battery: Smart Packs for Scanners & Terminals | Zufek',
+  meta_description  = 'Smart battery packs with SMBus, hot-swap and SHA-256 authentication for industrial scanners, terminals and rugged handhelds. -20 °C to +60 °C, IP65, 1500+ cycles.',
+  og_title          = 'Industrial Handheld Battery — Smart Packs with SMBus',
+  og_description    = 'Smart packs for scanners, terminals, rugged handhelds. SMBus, hot-swap, SHA-256 auth, IP65.'
+WHERE slug = 'industrial-handhelds' AND (focus_keyword = '' OR focus_keyword IS NULL);
+
+UPDATE applications SET
+  focus_keyword     = 'defence aerospace battery',
+  secondary_keywords = '["ITAR-free battery","MIL-PRF-32383","AS9100D lithium","defence lithium pack"]'::jsonb,
+  meta_title        = 'Defence & Aerospace Battery: ITAR-Free, MIL-PRF-32383 | Zufek',
+  meta_description  = 'ITAR-free lithium cells and packs for dual-use defence and aerospace programs. MIL-PRF-32383 abuse stack, AS9100D-aligned QA, 10-year traceability. Selective engagement only.',
+  og_title          = 'Defence & Aerospace Battery — ITAR-Free, MIL-PRF-32383',
+  og_description    = 'ITAR-free dual-use lithium cells and packs. MIL-PRF-32383, AS9100D-aligned, 10-yr traceability.'
+WHERE slug = 'defence-aerospace' AND (focus_keyword = '' OR focus_keyword IS NULL);
+
+-- ---------------------------------------------------------------
+-- ARTICLES — hand-tuned SEO meta for the 14 new 2026-Q2 cluster
+-- articles (8 polymer pillar + 6 custom-shape pillar). The
+-- generic auto-fill above gives each a focus_keyword from title;
+-- these UPDATEs override with specifically optimised meta_title /
+-- meta_description, which are still gated on the meta fields
+-- being blank so operator edits stay intact.
+-- ---------------------------------------------------------------
+
+-- Polymer pillar
+UPDATE articles SET focus_keyword = 'IEC 62133-2 test requirements',
+       meta_title = COALESCE(NULLIF(meta_title, ''),
+         'IEC 62133-2 Test Requirements: Complete Lithium Battery Walkthrough'),
+       meta_description = COALESCE(NULLIF(meta_description, ''),
+         'Plain-English walkthrough of every mandatory and conditional IEC 62133-2:2017 + Amendment 1 test for lithium batteries — with cost estimates, timelines and regional marks.')
+ WHERE slug = 'iec-62133-2-full-walkthrough';
+
+UPDATE articles SET focus_keyword = 'LiPo battery swelling causes',
+       meta_title = COALESCE(NULLIF(meta_title, ''),
+         'LiPo Battery Swelling: Root Causes, Risk Levels and Design Fixes'),
+       meta_description = COALESCE(NULLIF(meta_description, ''),
+         'Why LiPo batteries swell, which scenarios are dangerous vs benign, and how to design enclosures + BMS parameters that prevent it. Risk-level chart and BMS settings.')
+ WHERE slug = 'lipo-battery-swelling-causes';
+
+UPDATE articles SET focus_keyword = 'lithium battery capacity fade mechanisms',
+       meta_title = COALESCE(NULLIF(meta_title, ''),
+         'Lithium Battery Capacity Fade: 4 Mechanisms in LiPo Cells'),
+       meta_description = COALESCE(NULLIF(meta_description, ''),
+         'SEI growth, lithium plating, cathode particle cracking and electrolyte depletion — the four mechanisms behind capacity fade in lithium-polymer cells, with BMS controls.')
+ WHERE slug = 'lithium-battery-capacity-fade';
+
+UPDATE articles SET focus_keyword = 'lithium battery CC CV charging',
+       meta_title = COALESCE(NULLIF(meta_title, ''),
+         'CC/CV Charging Protocol: How Lithium Battery Charging Works'),
+       meta_description = COALESCE(NULLIF(meta_description, ''),
+         'Constant-current and constant-voltage phases explained, termination current trade-offs (C/5 vs C/10 vs C/20), fast-charge implications, and the 4 most common charger mistakes.')
+ WHERE slug = 'cc-cv-charging-protocol';
+
+UPDATE articles SET focus_keyword = 'lithium battery series parallel configuration',
+       meta_title = COALESCE(NULLIF(meta_title, ''),
+         'Series vs Parallel Lithium Battery Configuration: Pack Designer''s Guide'),
+       meta_description = COALESCE(NULLIF(meta_description, ''),
+         'xSyP notation explained, when to add cells in series vs parallel, balancing requirements, tab-welding topology, and when to upgrade from PCM to a smart battery BMS.')
+ WHERE slug = 'parallel-series-cell-configuration';
+
+UPDATE articles SET focus_keyword = 'BMS topology selection guide',
+       meta_title = COALESCE(NULLIF(meta_title, ''),
+         'BMS Topology Selection Guide: Decision Framework for OEMs'),
+       meta_description = COALESCE(NULLIF(meta_description, ''),
+         'PCM-only → fuel gauge → SBS 1.1 smart battery → CAN-bus BMS — choose the right battery management topology for your cell count, host integration and BOM target.')
+ WHERE slug = 'bms-topology-selection-guide';
+
+UPDATE articles SET focus_keyword = 'lithium battery formation cycling',
+       meta_title = COALESCE(NULLIF(meta_title, ''),
+         'Lithium Battery Formation Cycling: The Step That Sets Cell Life'),
+       meta_description = COALESCE(NULLIF(meta_description, ''),
+         'How the formation cycle builds the SEI layer that determines a lithium cell''s entire service life. Coulombic efficiency, grading and 5 questions to ask your supplier.')
+ WHERE slug = 'formation-cycling-impact';
+
+UPDATE articles SET focus_keyword = 'lithium electrolyte additives VC FEC',
+       meta_title = COALESCE(NULLIF(meta_title, ''),
+         'Lithium Electrolyte Additives: What VC, FEC and LiDFOB Actually Do'),
+       meta_description = COALESCE(NULLIF(meta_description, ''),
+         'Why plain LiPF6 is not enough, and what the three main additive families (vinylene carbonate, FEC, LiDFOB) contribute to cycle life, voltage window and HV-LCO stability.')
+ WHERE slug = 'electrolyte-additives-lipo';
+
+-- Custom-shape pillar
+UPDATE articles SET focus_keyword = 'stepped battery design wearable',
+       meta_title = COALESCE(NULLIF(meta_title, ''),
+         'Stepped & L-Shaped Battery Design for Wearable Electronics'),
+       meta_description = COALESCE(NULLIF(meta_description, ''),
+         'How L, U, T and stepped pouch-cell geometries fit non-rectangular wearable enclosures. Electrode constraints, tab placement rules and capacity-vs-volume trade-offs.')
+ WHERE slug = 'stepped-battery-geometry';
+
+UPDATE articles SET focus_keyword = 'custom battery tooling cost',
+       meta_title = COALESCE(NULLIF(meta_title, ''),
+         'Custom Battery Tooling Cost: Break-Even Analysis 2026'),
+       meta_description = COALESCE(NULLIF(meta_description, ''),
+         'Itemised cost (USD 10,500-33,000) for custom pouch-cell tooling — coating mask, cutting die, pouch die, weld fixture. Amortisation math and tooling-ownership clauses.')
+ WHERE slug = 'custom-battery-tooling-cost';
+
+UPDATE articles SET focus_keyword = 'custom battery co-design workflow',
+       meta_title = COALESCE(NULLIF(meta_title, ''),
+         'Co-designing a Custom Lithium Battery: 6-Stage Supplier Workflow'),
+       meta_description = COALESCE(NULLIF(meta_description, ''),
+         'Why custom battery projects fail when the supplier is engaged too late, and the 6-stage workflow (space claim → chemistry → prototype → tooling → qualification → production).')
+ WHERE slug = 'co-design-battery-workflow';
+
+UPDATE articles SET focus_keyword = 'flexible battery wearable',
+       meta_title = COALESCE(NULLIF(meta_title, ''),
+         'Flexible Batteries for Wearables: What''s Real in 2026 and What Isn''t'),
+       meta_description = COALESCE(NULLIF(meta_description, ''),
+         'Honest assessment of two flexible-battery categories: curved rigid-pouch cells (shipping today) vs true flex-electrolyte cells (semi-flex gel-polymer at TRL 7-8 only).')
+ WHERE slug = 'flexible-battery-wearable';
+
+UPDATE articles SET focus_keyword = 'smart ring battery design',
+       meta_title = COALESCE(NULLIF(meta_title, ''),
+         'Smart Ring Battery Design: Geometry, Chemistry & Power Budget'),
+       meta_description = COALESCE(NULLIF(meta_description, ''),
+         '150-500 mm³ available volume, 25-80 mAh achievable. Why HV-LCO at 4.48 V wins for smart rings, plus FPC tab routing, wireless-charging BMS and a worked power budget.')
+ WHERE slug = 'smart-ring-battery-design';
+
+UPDATE articles SET focus_keyword = 'custom shaped battery reliability testing',
+       meta_title = COALESCE(NULLIF(meta_title, ''),
+         'Reliability Testing for Custom-Shaped Lithium Cells: Bend, Torsion, Peel'),
+       meta_description = COALESCE(NULLIF(meta_description, ''),
+         'IEC 62133-2 alone does not cover non-rectangular cell geometries. Supplementary fold-line bend, tab fatigue and seal-integrity tests, plus a first-article inspection matrix.')
+ WHERE slug = 'custom-battery-reliability-testing';
+
+-- ---------------------------------------------------------------
+-- NAVIGATION setting — refresh on existing deployments to include
+-- the 6 new application pages (drones, power-tools, e-mobility,
+-- industrial-handhelds, defence-aerospace, smart-home). Idempotent:
+-- only updates rows that still hold the old 4-application payload.
+-- ---------------------------------------------------------------
+UPDATE settings
+   SET value = '{"header":[{"label":"HOME","url":"/","nav":"home"},{"label":"PRODUCTS","url":"/products/","nav":"products","children":[{"label":"Polymer Lithium Battery","url":"/products/polymer-lithium-battery"},{"label":"Custom-Shaped Polymer (Li-Po)","url":"/products/custom-shaped-polymer-lithium-battery"},{"label":"Coin Steel-Shell Lithium","url":"/products/coin-steel-shell-lithium-battery"}]},{"label":"APPLICATIONS","url":"/applications/","nav":"applications","children":[{"label":"AR / VR Glasses","url":"/applications/ar-vr.html"},{"label":"Medical Devices","url":"/applications/medical.html"},{"label":"Wearables","url":"/applications/wearables.html"},{"label":"IoT Devices","url":"/applications/iot.html"},{"label":"Drones & Robotics","url":"/applications/drones.html"},{"label":"Power Tools","url":"/applications/power-tools.html"},{"label":"E-Mobility","url":"/applications/e-mobility.html"},{"label":"Industrial Handhelds","url":"/applications/industrial-handhelds.html"},{"label":"Defence & Aerospace","url":"/applications/defence-aerospace.html"},{"label":"Smart Home","url":"/applications/smart-home.html"}]},{"label":"CUSTOM SOLUTIONS","url":"/solutions/","nav":"solutions","children":[{"label":"Design Support","url":"/solutions/design.html"},{"label":"Prototyping","url":"/solutions/prototyping.html"},{"label":"Mass Production","url":"/solutions/mass-production.html"}]},{"label":"ABOUT US","url":"/about/","nav":"about","children":[{"label":"Company Profile","url":"/about/profile.html"},{"label":"Factory Tour","url":"/about/factory.html"},{"label":"Team","url":"/about/team.html"}]},{"label":"BLOG","url":"/blog/","nav":"blog"},{"label":"FAQ","url":"/faq.html","nav":"faq"},{"label":"CONTACT","url":"/contact.html","nav":"contact"}]}'::jsonb
+ WHERE key = 'navigation'
+   AND value::text NOT LIKE '%applications/drones.html%';
+
 COMMIT;

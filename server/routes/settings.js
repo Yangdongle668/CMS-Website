@@ -15,6 +15,50 @@ router.get('/public', async (_req, res) => {
   ]);
   const out = {};
   for (const r of rows) out[r.key] = r.value;
+
+  // Auto-expand navigation children from live DB tables. The
+  // settings.navigation JSON acts as the SKELETON; nodes whose
+  // `nav` key matches a known content collection get their
+  // children replaced with the current published rows. This means
+  // adding a new application or pillar in the admin shows up in
+  // the header dropdown / footer columns automatically — no JSON
+  // editing required.
+  if (out.navigation && Array.isArray(out.navigation.header)) {
+    try {
+      const [apps, pillars] = await Promise.all([
+        many(
+          `SELECT slug, name FROM applications WHERE status='published' ORDER BY sort_order, id`
+        ),
+        many(
+          `SELECT slug, name FROM pillar_pages WHERE status='published' ORDER BY sort_order, id`
+        ),
+      ]);
+      const appChildren = apps.map((a) => ({
+        label: a.name,
+        url: `/applications/${a.slug}.html`,
+      }));
+      const pillarChildren = pillars.map((p) => ({
+        label: p.name,
+        url: `/products/${p.slug}`,
+      }));
+      out.navigation = {
+        ...out.navigation,
+        header: out.navigation.header.map((item) => {
+          if (item.nav === 'applications' && appChildren.length) {
+            return { ...item, children: appChildren };
+          }
+          if (item.nav === 'products' && pillarChildren.length) {
+            return { ...item, children: pillarChildren };
+          }
+          return item;
+        }),
+      };
+    } catch (_e) {
+      // If the auto-expand fails (e.g. tables not yet migrated),
+      // fall back to the static skeleton already in `out.navigation`.
+    }
+  }
+
   res.json({ settings: out });
 });
 
