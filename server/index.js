@@ -125,9 +125,16 @@ app.use('/api/authors', require('./routes/authors'));
 app.use('/api/media/overrides', require('./routes/media-overrides'));
 app.use('/api/text-overrides', require('./routes/text-overrides'));
 app.use('/api/seo-check', require('./routes/seo-check'));
+app.use('/api/analytics', require('./routes/analytics'));
 
 // ----- SEO endpoints -----
 app.use('/', require('./routes/seo'));
+
+// ----- First-party analytics tracker (aggregate-only, GDPR-friendly) -----
+// Mounted BEFORE the HTML token middleware so the tracker sees the
+// real path (and HTML responses still get tokens replaced afterwards).
+const { trackerMiddleware } = require('./middleware/analytics');
+app.use(trackerMiddleware);
 
 // ----- HTML token replacement (canonical, OG, SITE_NAME, etc.) -----
 // Mounted BEFORE express.static so .html files flow through replaceTokens.
@@ -270,6 +277,24 @@ async function autoMigrate() {
        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
      )`,
     `ALTER TABLE articles ADD COLUMN IF NOT EXISTS author_id INT REFERENCES authors(id) ON DELETE SET NULL`,
+    // First-party analytics — every public HTML page-view writes one row.
+    // Privacy: visitor_hash uses a daily-rotating salt so cross-day
+    // identification is impossible; raw IP is never stored.
+    `CREATE TABLE IF NOT EXISTS analytics_hits (
+       id BIGSERIAL PRIMARY KEY,
+       ts TIMESTAMPTZ NOT NULL DEFAULT now(),
+       path VARCHAR(500) NOT NULL,
+       country VARCHAR(2) NOT NULL DEFAULT '',
+       browser VARCHAR(40) NOT NULL DEFAULT '',
+       os VARCHAR(40) NOT NULL DEFAULT '',
+       referer_host VARCHAR(190) NOT NULL DEFAULT '',
+       visitor_hash VARCHAR(64) NOT NULL DEFAULT '',
+       is_bot BOOLEAN NOT NULL DEFAULT FALSE
+     )`,
+    `CREATE INDEX IF NOT EXISTS idx_analytics_ts ON analytics_hits(ts DESC)`,
+    `CREATE INDEX IF NOT EXISTS idx_analytics_path ON analytics_hits(path)`,
+    `CREATE INDEX IF NOT EXISTS idx_analytics_country ON analytics_hits(country)`,
+    `CREATE INDEX IF NOT EXISTS idx_analytics_visitor ON analytics_hits(visitor_hash, ts)`,
     `INSERT INTO authors (slug, name, job_title, bio)
        VALUES ('zufek-engineering', 'Zufek Engineering', 'Cell engineering team',
                'Collective byline for the Zufek cell engineering team. Articles authored under this name are reviewed by our four founder-engineers (Chen Li, et al.) and the lead PM on the relevant pillar program.')
