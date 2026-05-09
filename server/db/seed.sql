@@ -237,11 +237,6 @@ INSERT INTO applications (slug, name, icon, cover_url, summary, body, sort_order
  'NMC and LFP cylindrical packs for e-bikes, e-scooters, AGVs and light EVs.',
  'Zufek designs and assembles 36V to 96V battery packs with integrated BMS, CAN bus, and IP67 housings for e-mobility OEMs across Europe and Southeast Asia.',
  7),
-('energy-storage', 'Energy Storage', 'energy-storage',
- 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=1200&q=80',
- 'LFP cylindrical and prismatic systems for residential, telecom and commercial ESS.',
- 'Cycle-optimised LiFePO4 cells (3,000-6,000 cycles) configured into 48V telecom modules, 5kWh wall-mount residential batteries, and 100kWh+ commercial cabinets.',
- 8),
 -- ----- Three new application landing pages — sitemap registration only.
 -- ----- The actual rich landing pages live as static .html files at:
 -- -----   /applications/smart-home.html

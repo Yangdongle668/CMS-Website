@@ -125,14 +125,13 @@ UPDATE applications SET
   og_description    = 'Custom packs for e-bikes, scooters, last-mile vehicles. CAN BMS, IP67 housings, 1500+ cycles.'
 WHERE slug = 'e-mobility' AND (focus_keyword = '' OR focus_keyword IS NULL);
 
-UPDATE applications SET
-  focus_keyword     = 'battery energy storage',
-  secondary_keywords = '["BESS lithium","home energy storage","commercial battery storage","LFP energy storage"]'::jsonb,
-  meta_title        = 'Battery Energy Storage: LFP Packs for BESS | Zufek',
-  meta_description  = 'LFP-chemistry battery packs for residential, commercial and telecom energy storage. 5 kWh to 200 kWh modules, 6000+ cycles, IEC 62619 + UN 38.3 certified.',
-  og_title          = 'Battery Energy Storage — LFP Packs for BESS',
-  og_description    = 'Residential, commercial, telecom energy storage. 5-200 kWh, 6000+ cycles, IEC 62619.'
-WHERE slug = 'energy-storage' AND (focus_keyword = '' OR focus_keyword IS NULL);
+-- Remove the legacy energy-storage application row. It was registered
+-- in seed.sql for future use but no static landing page was ever
+-- written, so any link to /applications/energy-storage[.html] falls
+-- through to a near-empty _template.html render. Easier to drop the
+-- DB row than ship a stub page; if the program ever wants a real
+-- BESS landing page later, re-add the row + the static .html together.
+DELETE FROM applications WHERE slug = 'energy-storage';
 
 -- ---------------------------------------------------------------
 -- STATIC PAGES (homepage, about, contact, faq, …)
