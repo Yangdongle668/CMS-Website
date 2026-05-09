@@ -394,7 +394,18 @@ async function autoMigrate() {
   }
 }
 
-app.listen(PORT, () => {
-  console.log(`[battery-cms] running on http://localhost:${PORT}`);
-  autoMigrate().catch((err) => console.error('[migrate] error:', err));
-});
+// Block on schema migrations BEFORE accepting traffic. Otherwise an
+// admin who hits PUT /api/articles/:id during the first few seconds
+// after restart can get a 500 because the SEO columns haven't been
+// added yet. The migrations are idempotent so re-running on every
+// boot costs only a few ms.
+(async () => {
+  try {
+    await autoMigrate();
+  } catch (err) {
+    console.error('[migrate] error:', err);
+  }
+  app.listen(PORT, () => {
+    console.log(`[battery-cms] running on http://localhost:${PORT}`);
+  });
+})();

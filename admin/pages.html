@@ -24,8 +24,6 @@
 
   let bodyEditor = null;
   let heroPicker = null;
-  let previewIframe = null;
-  let scanTimer = null;
 
   const wantId = new URLSearchParams(location.search).get('id');
 
@@ -87,13 +85,13 @@
         <div class="panel__head">
           <h2>${isNew ? '新建页面' : '编辑: ' + escapeHtml(p.slug)}</h2>
           <div style="display:flex; gap:8px;">
-            ${!isNew ? `<a target="_blank" class="btn btn--ghost btn--sm" href="${slugToUrl(p.slug)}">在新窗口打开 ↗</a>` : ''}
+            ${!isNew && previewUrl ? `<a target="_blank" class="btn btn--primary btn--sm" href="/admin/visual-edit.html?url=${encodeURIComponent(previewUrl)}&back=${encodeURIComponent(location.pathname + location.search)}">🎨 可视化编辑 ↗</a>` : ''}
+            ${!isNew && previewUrl ? `<a target="_blank" class="btn btn--ghost btn--sm" href="${escapeHtml(previewUrl)}">预览 ↗</a>` : ''}
             <a href="/admin/pages.html" class="btn btn--ghost btn--sm">返回</a>
           </div>
         </div>
 
-        <div class="page-editor-split">
-          <!-- LEFT: form -->
+        <div class="page-editor-fullform">
           <div class="page-editor-form">
             <div class="tabs">
               <button class="tabs__btn is-active" data-tab="hero">Hero &amp; Meta</button>
@@ -149,20 +147,8 @@
               <button class="btn btn--primary" id="save">保存</button>
               ${!isNew ? '<button class="btn btn--danger" id="delete">删除</button>' : ''}
               <a href="/admin/pages.html" class="btn btn--ghost">取消</a>
+              ${!isNew && previewUrl ? `<a target="_blank" class="btn btn--ghost" href="/admin/visual-edit.html?url=${encodeURIComponent(previewUrl)}&back=${encodeURIComponent(location.pathname + location.search)}">🎨 进入可视化编辑 ↗</a>` : ''}
             </div>
-          </div>
-
-          <!-- RIGHT: live preview -->
-          <div class="page-editor-preview">
-            <div class="page-editor-preview__bar">
-              <code>${previewUrl ? escapeHtml(previewUrl) : '保存后预览此处展示'}</code>
-              <button type="button" class="btn btn--ghost btn--sm" id="reload-frame" ${previewUrl ? '' : 'disabled'}>↻ 刷新</button>
-            </div>
-            ${previewUrl ? `<iframe class="page-editor-preview__frame" id="preview-frame" src="${escapeHtml(previewUrl)}" loading="lazy"></iframe>` : '<div style="flex:1; display:grid; place-items:center; color:var(--a-mute2); font-size:13px; padding:60px 20px; text-align:center;">先填写 Slug 并保存，预览将出现在这里。<br>预览支持点击页面里的图片直接替换。</div>'}
-            ${previewUrl ? `<div class="page-editor-preview__images">
-              <h4>本页图片 — 点击替换 <span style="font-weight:400; text-transform:none; letter-spacing:0; color:var(--a-mute2);" id="img-count">扫描中…</span></h4>
-              <div class="preview-img-grid" id="preview-img-grid"></div>
-            </div>` : ''}
           </div>
         </div>
       </div>
@@ -226,30 +212,10 @@
       }
     })();
 
-    /* Live iframe preview: scan for images + enable click-to-edit text */
-    previewIframe = panel.querySelector('#preview-frame');
-    if (previewIframe) {
-      previewIframe.addEventListener('load', async () => {
-        await scanIframeImages();
-        // Enable inline text editing inside the iframe. Pulls the current
-        // text_overrides map so already-edited blocks render with a green
-        // outline + "已替换" treatment.
-        try {
-          let overrides = {};
-          try {
-            const r = await fetch('/api/text-overrides', { credentials: 'include' });
-            if (r.ok) overrides = (await r.json()).overrides || {};
-          } catch (_) {}
-          window.IframeTextEditor.enable(previewIframe, {
-            overrides,
-            onSave: () => { /* iframe reload handled by editor itself */ },
-          });
-        } catch (err) { /* non-fatal — image grid still works */ }
-      });
-      panel.querySelector('#reload-frame').addEventListener('click', () => {
-        previewIframe.contentWindow.location.reload();
-      });
-    }
+    // Visual editing (click images / click text inside the rendered page)
+    // is no longer wired into a side iframe — it lives in its own full-
+    // screen page at /admin/visual-edit.html. The "进入可视化编辑 ↗"
+    // button at the top of this form opens it in a new tab.
 
     /* Save handler */
     panel.querySelector('#save').addEventListener('click', save);
@@ -298,118 +264,9 @@
         } else {
           await api('/api/pages/' + p.id, { method: 'PUT', body: JSON.stringify(payload) });
           toast('已保存', 'success');
-          // Refresh the iframe so the operator sees the change immediately.
-          if (previewIframe) previewIframe.contentWindow.location.reload();
         }
       } catch (err) { toast('保存失败：' + err.message, 'error'); }
     }
-  }
-
-  /* Scan the loaded preview iframe for all images (both <img> elements
-     and CSS background-image:url()) and present them as clickable
-     thumbnails. Clicking a thumbnail uploads a new file → saves an entry
-     in settings.media_overrides → reloads the iframe. */
-  async function scanIframeImages() {
-    const grid = document.getElementById('preview-img-grid');
-    const counter = document.getElementById('img-count');
-    if (!grid || !previewIframe) return;
-    let doc;
-    try { doc = previewIframe.contentDocument; }
-    catch (err) { grid.innerHTML = '<p style="color:var(--a-mute2); font-size:12px;">无法读取预览（同源问题）</p>'; return; }
-    if (!doc) return;
-    const found = new Map();   // url → { count, isExternal }
-    function add(url) {
-      if (!url) return;
-      // Drop data: URIs and obvious non-images
-      if (/^(data:|blob:)/i.test(url)) return;
-      // Drop fonts / scripts / stylesheets
-      if (/\.(css|js|woff2?|ttf|otf)(\?|$)/i.test(url)) return;
-      const isExternal = /^https?:\/\//.test(url);
-      const isImageExt = /\.(png|jpe?g|gif|webp|avif|svg)(\?|$)/i.test(url);
-      const isImageHost = /images\.unsplash\.com|cloudfront\.net|imgix\.net|cdn\./i.test(url);
-      if (!(isImageExt || isImageHost)) return;
-      if (found.has(url)) found.get(url).count += 1;
-      else found.set(url, { count: 1, isExternal });
-    }
-    // <img> tags
-    doc.querySelectorAll('img[src]').forEach((el) => add(el.getAttribute('src')));
-    // background-image:url()
-    doc.querySelectorAll('[style*="background-image"]').forEach((el) => {
-      const m = (el.getAttribute('style') || '').match(/background-image\s*:\s*url\(\s*['"]?([^'")]+)['"]?\s*\)/i);
-      if (m) add(m[1]);
-    });
-
-    // Cross-reference with current overrides so we can show "已替换" badges.
-    let overrideMap = {};
-    try { const r = await api('/api/media/overrides'); overrideMap = r.overrides || {}; }
-    catch (_) {}
-    // Reverse map: /uploads/foo → [original-source-urls]
-    const reverseMap = {};
-    for (const [src, dst] of Object.entries(overrideMap)) {
-      if (!reverseMap[dst]) reverseMap[dst] = [];
-      reverseMap[dst].push(src);
-    }
-
-    const items = Array.from(found.entries()).map(([url, meta]) => {
-      const sourceUrl = reverseMap[url] && reverseMap[url][0]; // if currently rendered URL is an override target
-      return { renderedUrl: url, sourceUrl, count: meta.count, isExternal: meta.isExternal, isMapped: !!sourceUrl };
-    });
-
-    const externalCount = items.filter((i) => i.isExternal || i.isMapped).length;
-    counter.textContent = `${items.length} 张图片 (${externalCount} 张可替换)`;
-
-    if (!items.length) { grid.innerHTML = '<p style="color:var(--a-mute2); font-size:12px;">本页没有图片。</p>'; return; }
-    grid.innerHTML = items.map((it, i) => {
-      const replaceable = it.isExternal || it.isMapped;
-      return `<div class="preview-img-card${it.isMapped ? ' is-mapped' : ''}"
-                  data-rendered="${escapeHtml(it.renderedUrl)}"
-                  data-source="${escapeHtml(it.sourceUrl || it.renderedUrl)}"
-                  data-replaceable="${replaceable ? '1' : '0'}"
-                  title="${escapeHtml(it.renderedUrl)}">
-        <img src="${escapeHtml(it.renderedUrl)}" alt="" loading="lazy" onerror="this.style.display='none'"/>
-        ${replaceable ? '<div class="preview-img-card__overlay">📤 点击替换</div>' : '<div class="preview-img-card__overlay" style="background:rgba(80,80,80,0.85)">本地图片<br>(已是 /uploads)</div>'}
-        ${it.isMapped ? '<span class="preview-img-card__badge">已替换</span>' : ''}
-      </div>`;
-    }).join('');
-
-    grid.querySelectorAll('.preview-img-card').forEach((card) => {
-      card.addEventListener('click', () => onPickImage(card));
-    });
-  }
-
-  async function onPickImage(card) {
-    if (card.dataset.replaceable !== '1') {
-      toast('这张图已经是 /uploads 下的本地图片，可在媒体库直接管理', 'info');
-      return;
-    }
-    const sourceUrl = card.dataset.source;  // the URL we'll map FROM
-    const inp = document.createElement('input');
-    inp.type = 'file';
-    inp.accept = 'image/*';
-    inp.style.display = 'none';
-    document.body.appendChild(inp);
-    inp.addEventListener('change', async () => {
-      const file = inp.files && inp.files[0];
-      inp.remove();
-      if (!file) return;
-      try {
-        const fd = new FormData();
-        fd.append('file', file);
-        fd.append('alt_text', file.name.replace(/\.[a-z0-9]+$/i, '').replace(/[-_]+/g, ' '));
-        const up = await fetch('/api/media', { method: 'POST', credentials: 'include', body: fd });
-        const upJson = await up.json();
-        if (!up.ok || !upJson.url) throw new Error(upJson.error || ('HTTP ' + up.status));
-        // Merge into existing override map so we don't clobber other entries.
-        const cur = await api('/api/media/overrides');
-        const map = Object.assign({}, cur.overrides || {});
-        map[sourceUrl] = upJson.url;
-        await api('/api/media/overrides', { method: 'PUT', body: JSON.stringify({ overrides: map }) });
-        toast('已替换该图片，刷新预览…', 'success');
-        // Reload iframe so the override fires.
-        if (previewIframe) previewIframe.contentWindow.location.reload();
-      } catch (err) { toast('替换失败：' + err.message, 'error'); }
-    });
-    inp.click();
   }
 
   document.addEventListener('click', (ev) => {

@@ -180,6 +180,16 @@
     overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
     overlay.querySelector('[data-edit-save]').addEventListener('click', async () => {
       const newVal = ta.value;
+      // If the operator clicked save without changing anything, the
+      // server treats `to === from` as "delete the override" — which
+      // makes the save look broken to anyone who didn't intend to
+      // remove a prior edit. Surface that explicitly so they know.
+      if (newVal === from) {
+        if (window.AdminAPI && window.AdminAPI.toast) {
+          window.AdminAPI.toast('文字没有变化，未保存（如想清除已有替换，请用"清除此项替换"按钮）', 'info');
+        }
+        return;
+      }
       try {
         await fetch('/api/text-overrides', {
           method: 'PATCH',
@@ -187,7 +197,7 @@
           credentials: 'include',
           body: JSON.stringify({ from, to: newVal }),
         }).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
-        if (onSave) onSave({ from, to: newVal, removed: !newVal || newVal === from });
+        if (onSave) onSave({ from, to: newVal, removed: !newVal });
         close();
         if (iframe) iframe.contentWindow.location.reload();
       } catch (err) {
