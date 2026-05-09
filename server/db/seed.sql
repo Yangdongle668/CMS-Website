@@ -2856,3 +2856,442 @@ INSERT INTO articles (pillar_id, author_id, category_id, slug, title, excerpt, c
  'Mei Yang', 11, now() - interval '42 days', 'published')
 
 ON CONFLICT (slug) DO NOTHING;
+
+
+-- =====================================================================
+-- BATCH 3 — 7 new cluster articles for the Coin Steel-Shell pillar
+-- (post-product-line audit). Topics chosen to fill obvious gaps:
+-- comparison primer, cycle life, shelf life, charging IC selection,
+-- mounting options, safety/abuse behaviour, BLE beacon application.
+-- After this batch the coin pillar carries 14 cluster articles —
+-- comparable depth to custom-shape (13) and polymer (16).
+--
+-- Article briefs:
+--
+-- 1. cr-vs-lir-vs-ml-coin-cell-comparison
+--    Focus: CR2032 vs LIR2032 vs ML2032 head-to-head. Voltage,
+--    capacity, cycle life, cost, application fit. Author: Lin Zhao.
+--
+-- 2. coin-cell-cycle-life-curves
+--    Focus: rechargeable coin cell cycle life. What 500 / 1,000 /
+--    2,000 cycle ratings mean. Author: Lin Zhao.
+--
+-- 3. coin-cell-self-discharge-shelf-life
+--    Focus: 5-year shelf-life math for coin cells. Author: Lin Zhao.
+--
+-- 4. coin-cell-charging-ic-design
+--    Focus: charger IC selection for LIR / ML coin cells. MCP73831,
+--    BQ24210, CN3052 trade-offs. Author: Lin Zhao.
+--
+-- 5. coin-cell-mounting-holder-tab-smd
+--    Focus: holder vs solder-tab vs SMD reflow mounting choice.
+--    Author: Lin Zhao.
+--
+-- 6. coin-cell-safety-abuse-behavior
+--    Focus: short-circuit, crush, vent behaviour. Author: Mei Yang.
+--
+-- 7. ble-beacon-ml-coin-cell-design
+--    Focus: 5-year BLE beacon design with ML2032. Author: Lin Zhao.
+-- =====================================================================
+INSERT INTO articles (pillar_id, author_id, category_id, slug, title, excerpt, cover_url, hero_image, content, author, reading_minutes, published_at, status) VALUES
+
+-- ---------- 1. CR vs LIR vs ML head-to-head ----------
+((SELECT id FROM pillar_pages WHERE slug='coin-steel-shell-lithium-battery'),
+ (SELECT id FROM authors WHERE slug='lin-zhao'),
+ (SELECT id FROM categories WHERE slug='technology'),
+ 'cr-vs-lir-vs-ml-coin-cell-comparison',
+ 'CR2032 vs LIR2032 vs ML2032: A Head-to-Head Coin Cell Comparison',
+ 'Three families share the 20 mm coin form factor but solve different problems. A practical side-by-side on voltage, capacity, cycle life, reflow tolerance and cost.',
+ 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&q=80',
+ 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1920&q=80',
+ $art$<p class="lede">Three coin cell families share the 20 mm diameter form factor, and engineers regularly ask which one fits their product. The short answer: CR is primary (one-shot), LIR is high-energy rechargeable, and ML is reflow-and-forget rechargeable. The long answer below.</p>
+
+<h2>The three platforms at a glance</h2>
+<p>All three are 20 mm diameter, 3.2 mm tall coin cells with stainless-steel hermetic cans. They use different cathode chemistries, which is why they behave so differently:</p>
+<table class="spec-table">
+  <thead><tr><th>Parameter</th><th>CR2032</th><th>LIR2032</th><th>ML2032</th></tr></thead>
+  <tbody>
+    <tr><td>Chemistry</td><td>Li-MnO2 primary</td><td>Li-Co rechargeable</td><td>Li-Mn rechargeable</td></tr>
+    <tr><td>Nominal voltage</td><td>3.0 V</td><td>3.7 V</td><td>3.0 V</td></tr>
+    <tr><td>Charge cutoff</td><td>n/a</td><td>4.20 V</td><td>3.10 V</td></tr>
+    <tr><td>Capacity</td><td>225 mAh</td><td>40 mAh</td><td>65 mAh</td></tr>
+    <tr><td>Cycle life</td><td>Single use</td><td>500 cycles</td><td>1,000 cycles</td></tr>
+    <tr><td>Self-discharge</td><td>&lt; 1% / yr</td><td>&lt; 5% / yr</td><td>&lt; 2% / yr</td></tr>
+    <tr><td>Reflow tolerance</td><td>No</td><td>No</td><td>Yes (260 °C peak)</td></tr>
+    <tr><td>Operating range</td><td>-30 to +60 °C</td><td>-20 to +60 °C</td><td>-40 to +85 °C</td></tr>
+    <tr><td>Typical price (USD)</td><td>0.10 – 0.35</td><td>0.40 – 0.90</td><td>0.80 – 2.20</td></tr>
+  </tbody>
+</table>
+<p>We make LIR and ML rechargeable cells; we do not produce primary CR cells. CR2032 is included in the table because every engineer asks how the rechargeable variants compare. If your product needs CR (10-year primary life, no recharge circuit), the right path is a different supplier.</p>
+
+<h2>How to choose between LIR and ML</h2>
+<p>Once you have committed to a rechargeable platform, the LIR vs ML choice is driven by three factors: voltage, manufacturing path, and lifecycle.</p>
+<h3>Voltage matters more than capacity</h3>
+<p>LIR runs at 3.7 V nominal. ML runs at 3.0 V nominal. If your MCU and radio sit in a 3.0 to 3.3 V power tree, ML drops in without a buck converter — saving cost and BoM. If your design assumes 3.7 V (a Li-Po replacement scenario, e.g. swapping out a small Li-Po for a wider operating window), LIR is the answer.</p>
+<h3>Manufacturing path matters for sealed designs</h3>
+<p>ML survives standard lead-free reflow at 260 °C peak, so it can be SMD-mounted onto the PCB and flow through your normal SMT line. LIR cannot — its electrolyte is reflow-incompatible. For products that should never be opened (BLE beacons, smart cards, sealed environmental sensors), ML wins because the cell becomes a pick-and-place component. For products with a battery door, either platform works.</p>
+<h3>Lifecycle expectation matters for warranty</h3>
+<p>ML is rated for 1,000 cycles to 80% capacity; LIR for 500 cycles. In practice we routinely see ML cells in 5-year deployments still holding 70% of original capacity, while LIR cells in the same conditions degrade faster because the LCO chemistry is more sensitive to high SOC dwell time. If the device sits at 100% charge for long periods (e.g. a smart card on a desk), ML is more forgiving.</p>
+
+<h2>Where each one wins</h2>
+<p><strong>CR2032 wins:</strong> remote controls, fitness trackers without a recharge path, key fobs, smoke alarm RTC backup, automotive TPMS, smart wallet trackers. Anywhere primary single-use is acceptable and the device is opened to swap the cell.</p>
+<p><strong>LIR2032 wins:</strong> wearable accessories with a Li-Po pouch primary battery and a backup coin, smart card with battery, drop-in upgrade to a CR2032 socket where the device adds in-circuit recharging, BLE locator tags with a USB-C charge port.</p>
+<p><strong>ML2032 wins:</strong> SMD-mounted RTC retention on industrial PCBs, BLE beacon with sealed housing, deployable environmental sensor, smart-meter calibration retention, smart card with reflow-mounted cell. Anywhere the device is sealed and the recharge cadence is occasional.</p>
+
+<h2>What we ship</h2>
+<p>Our coin cell line covers LIR2032, LIR2025, LIR2450, ML2032, ML2430 and ML2016 in standard catalogue. Custom diameters between 6 mm and 24 mm available with 50,000 unit minimum. All cells ship with UN 38.3 test summary, IEC 62133-2 declaration of conformity, and MSDS in English. ATEX Zone 2 variants available on a 16-week lead time.</p>
+
+<nav class="article-nav">
+  <a href="/blog/lir-vs-ml-coin-cell-which-to-choose" class="prev">&larr; Previous: LIR vs ML — the original primer</a>
+  <a href="/blog/coin-cell-cycle-life-curves" class="next">Next: Cycle Life of Rechargeable Coin Cells &rarr;</a>
+</nav>$art$,
+ 'Lin Zhao', 8, now() - interval '4 days', 'published'),
+
+-- ---------- 2. Cycle life of rechargeable coin cells ----------
+((SELECT id FROM pillar_pages WHERE slug='coin-steel-shell-lithium-battery'),
+ (SELECT id FROM authors WHERE slug='lin-zhao'),
+ (SELECT id FROM categories WHERE slug='technology'),
+ 'coin-cell-cycle-life-curves',
+ 'Cycle Life of Rechargeable Coin Cells: What 500, 1,000 and 2,000 Cycle Ratings Mean',
+ 'A 1,000-cycle datasheet number depends on four conditions you cannot read from the spec sheet. Here is how to translate the rating into expected service life in your product.',
+ 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&q=80',
+ 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&q=80',
+ $art$<p class="lede">When a coin cell datasheet says "1,000 cycles to 80% capacity", four hidden conditions decide whether you will see that number in the field or half of it. Three of those four are under your control as the device designer. Read on for the practical translation.</p>
+
+<h2>What the datasheet number actually means</h2>
+<p>Cycle life ratings on rechargeable coin cells follow IEC 61960 conventions: charge to nominal cutoff (4.20 V for LIR, 3.10 V for ML), discharge at 0.2C to nominal end voltage (3.0 V for LIR, 2.0 V for ML), measure capacity. Repeat. The cycle count at which capacity falls below the threshold (typically 80% of fresh) is reported.</p>
+<p>The four conditions baked into that rating:</p>
+<ol>
+  <li><strong>Charge rate</strong> — usually 0.2C (slow) for the test, but real products often charge at 0.5C or 1C.</li>
+  <li><strong>Discharge depth</strong> — usually 100% DoD for the test, but real products often run shallower (10-30% DoD per cycle).</li>
+  <li><strong>Temperature</strong> — usually 25 °C ± 2 °C for the test, but real products see 5-50 °C ambient.</li>
+  <li><strong>Rest interval</strong> — usually no rest between cycles for the test, but real products dwell at 100% SOC for hours or days.</li>
+</ol>
+<p>Each of those four either extends or shortens the cycle count you actually see.</p>
+
+<h2>What real-world conditions do to the number</h2>
+<table class="spec-table">
+  <thead><tr><th>Deviation from datasheet</th><th>Effect on cycle life</th></tr></thead>
+  <tbody>
+    <tr><td>Charge at 1C instead of 0.2C</td><td>-30 to -45%</td></tr>
+    <tr><td>Charge at 2C</td><td>-50 to -65%</td></tr>
+    <tr><td>Operate at 45 °C ambient (vs 25 °C)</td><td>-25 to -40%</td></tr>
+    <tr><td>Operate at 60 °C ambient</td><td>-50 to -70%</td></tr>
+    <tr><td>Float at 100% SOC for &gt; 12 h between use</td><td>-15 to -25%</td></tr>
+    <tr><td>Use only 30% DoD per cycle</td><td>+200 to +400% (longer life)</td></tr>
+    <tr><td>Charge cutoff +50 mV (e.g. LIR 4.25 V)</td><td>-40 to -55%</td></tr>
+  </tbody>
+</table>
+<p>The shallow-DoD bonus is large — designers who only use 30% of the cell capacity per cycle routinely see 3-4× the rated cycle life. This is why ML coin cells in BLE beacons (where the daily energy consumption is a few percent of cell capacity) consistently outlive their nominal 1,000-cycle rating and reach 2,500-3,000 effective cycles.</p>
+
+<h2>The four design knobs</h2>
+<h3>1. Cap the charge rate</h3>
+<p>If the device has a recharge path, set the charging IC to 0.2C maximum unless thermal margin and time-to-full constraints force you higher. For a 65 mAh ML2032 that is 13 mA charge current. Most charger ICs we recommend (MCP73831, CN3052) default to higher rates; you have to program them down with the ISET resistor.</p>
+<h3>2. Shrink the DoD</h3>
+<p>If your power budget allows, run the cell between 30% and 80% SOC instead of 0% to 100%. The middle SOC band is where the cathode is most stable. This is easy on rechargeable coin cells because the capacity is small relative to most embedded device power needs.</p>
+<h3>3. Block charging when hot</h3>
+<p>Use the charging IC's NTC input (or have firmware monitor the cell temperature via an external thermistor) and inhibit charging above 45 °C. Almost all the high-temperature cycle-life loss comes from charging at temperature, not discharging at temperature.</p>
+<h3>4. Avoid 100% SOC dwell</h3>
+<p>If the device sits idle for hours at full charge, the cell ages calendar-wise on top of cycle-wise. For applications like smart cards (charged once a week, idle the rest of the time), tune the firmware to charge to 90% during weekly top-ups rather than 100%. This single change extends cycle life by 15-25% in our measurement data.</p>
+
+<h2>What we measure on every lot</h2>
+<p>Each production lot is sampled for an accelerated cycle-life test: 200 cycles at 1C charge / 0.5C discharge, 25 °C, 100% DoD. The lot must clear 90% of fresh capacity at C200 to release. This is tougher than the datasheet conditions, so a passing lot reliably hits the rated life under the actual datasheet conditions in customer use.</p>
+<p>For medical and aerospace customers we extend this to 500 cycles per lot at customer-specified conditions. Adds 6 weeks to lead time but produces a lot-specific cycle-life curve that the customer can submit with their device technical file.</p>
+
+<nav class="article-nav">
+  <a href="/blog/cr-vs-lir-vs-ml-coin-cell-comparison" class="prev">&larr; Previous: CR vs LIR vs ML head-to-head</a>
+  <a href="/blog/coin-cell-self-discharge-shelf-life" class="next">Next: Coin Cell Self-Discharge & Shelf Life &rarr;</a>
+</nav>$art$,
+ 'Lin Zhao', 7, now() - interval '11 days', 'published'),
+
+-- ---------- 3. Self-discharge / 5-year shelf life ----------
+((SELECT id FROM pillar_pages WHERE slug='coin-steel-shell-lithium-battery'),
+ (SELECT id FROM authors WHERE slug='lin-zhao'),
+ (SELECT id FROM categories WHERE slug='technology'),
+ 'coin-cell-self-discharge-shelf-life',
+ 'Coin Cell Self-Discharge: Doing the 5-Year Shelf Life Math',
+ 'How rechargeable coin cells lose charge sitting on a warehouse shelf, what determines the rate, and how to plan inventory rotation that keeps your devices customer-ready.',
+ 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1200&q=80',
+ 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1920&q=80',
+ $art$<p class="lede">Coin cells lose capacity sitting on a shelf even when nobody touches them. The rate depends on chemistry, storage conditions, and the SOC the cell was shipped at. For products with retail-channel inventory cycles of 6 to 18 months, self-discharge is often a bigger constraint than cycle life.</p>
+
+<h2>Self-discharge by chemistry</h2>
+<p>Three numbers worth memorising for the rechargeable coin cells we ship:</p>
+<table class="spec-table">
+  <thead><tr><th>Cell</th><th>Self-discharge at 25 °C</th><th>Self-discharge at 40 °C</th><th>Capacity at year 5</th></tr></thead>
+  <tbody>
+    <tr><td>LIR2032</td><td>4 to 6% / yr</td><td>10 to 15% / yr</td><td>65 to 75%</td></tr>
+    <tr><td>LIR2450</td><td>3 to 5% / yr</td><td>8 to 12% / yr</td><td>70 to 80%</td></tr>
+    <tr><td>ML2032</td><td>1 to 2% / yr</td><td>4 to 6% / yr</td><td>85 to 92%</td></tr>
+    <tr><td>ML2430</td><td>1 to 2% / yr</td><td>4 to 6% / yr</td><td>85 to 92%</td></tr>
+  </tbody>
+</table>
+<p>ML beats LIR substantially on shelf life because the Li-MnO2 cathode is more thermodynamically stable than LCO at the lower cell voltage (3.0 V vs 3.7 V nominal). For long-term storage applications the platform choice almost always lands on ML.</p>
+
+<h2>Why temperature is the dominant variable</h2>
+<p>Self-discharge follows an Arrhenius relationship — every 10 °C increase roughly doubles the rate. A cell shipped at 30% SOC and stored at 25 °C for 5 years holds 75% capacity. The same cell stored at 35 °C for 5 years holds 55%. At 45 °C the same 5 years lands at 35% — below the threshold most products need to function.</p>
+<p>Practical implication: warehouse temperature matters more than nameplate self-discharge. If your distribution chain includes summer-month container ships through Suez (where ambient inside the container can exceed 50 °C for weeks), the cell needs to be ML and the inventory rotation plan needs to assume 6 month maximum dwell, not 18.</p>
+
+<h2>Why ship-out SOC matters</h2>
+<p>Cells shipped at 100% SOC age calendar-wise faster than cells shipped at 30% SOC. The cathode is most stable in the middle of its voltage window. Counter-intuitively, the customer who receives a cell at 30% SOC and uses 70% of it before recharging gets longer total service life than the customer who receives at 100% SOC and runs it down to 30% before recharging.</p>
+<p>Our standard ship-out SOC for ML and LIR coin cells is 30% ± 5%. We document this on the carton and the test report. Customers who need 100% SOC at receipt (typical for distributors who consumer-package and resell) get a separate SKU with a higher unit price and a shorter inventory rotation requirement.</p>
+
+<h2>The 5-year shelf life math, worked</h2>
+<p>For a smart-meter calibration retention application using ML2430 (110 mAh nominal):</p>
+<ol>
+  <li>Ship at 30% SOC = 33 mAh delivered</li>
+  <li>Storage 18 months at 30 °C average = -2.7% of capacity = -3 mAh = 30 mAh remaining at install</li>
+  <li>Calibration retention current = 0.5 µA average</li>
+  <li>Available time = 30 mAh / 0.5 µA = 60,000 hours = 6.8 years</li>
+  <li>De-rate by 30% for cathode ageing over 5 years in service = 4.7 effective years</li>
+</ol>
+<p>The 4.7 year service life sits below the 10-year product target — the firmware schedules a recharge top-up every 18 months to bring SOC back to 80% during normal calibration cycles. Without that top-up, the device would need a larger cell (ML2450 at 200 mAh) to clear 10 years.</p>
+
+<h2>What we recommend</h2>
+<p>For inventory cycles up to 12 months: LIR is fine, ship at 30% SOC, store below 30 °C.</p>
+<p>For inventory cycles 12 to 36 months: ML is the better default, ship at 30% SOC, store below 35 °C.</p>
+<p>For inventory cycles &gt; 36 months: ML at 30% SOC, store below 25 °C, plan for inventory rotation every 24 months as a safety margin against high-temperature distribution events you cannot control.</p>
+
+<nav class="article-nav">
+  <a href="/blog/coin-cell-cycle-life-curves" class="prev">&larr; Previous: Coin Cell Cycle Life Curves</a>
+  <a href="/blog/coin-cell-charging-ic-design" class="next">Next: Coin Cell Charging IC Design &rarr;</a>
+</nav>$art$,
+ 'Lin Zhao', 7, now() - interval '17 days', 'published'),
+
+-- ---------- 4. Charging IC selection ----------
+((SELECT id FROM pillar_pages WHERE slug='coin-steel-shell-lithium-battery'),
+ (SELECT id FROM authors WHERE slug='lin-zhao'),
+ (SELECT id FROM categories WHERE slug='technology'),
+ 'coin-cell-charging-ic-design',
+ 'Coin Cell Charging IC Design: MCP73831, BQ24210 and the Trade-Offs',
+ 'A practical guide to selecting and configuring a charging IC for a 40 to 200 mAh rechargeable coin cell — current limit, voltage threshold, NTC integration, quiescent draw.',
+ 'https://images.unsplash.com/photo-1532288147748-cccef7a3aaa1?w=1200&q=80',
+ 'https://images.unsplash.com/photo-1532288147748-cccef7a3aaa1?w=1920&q=80',
+ $art$<p class="lede">A 40 to 200 mAh rechargeable coin cell has different charging requirements from a 1,000 mAh Li-Po pouch. The off-the-shelf charger IC catalogue is dominated by Li-Po-class parts; the few that support sub-100 mAh cells need careful configuration to avoid over-charge or thermal abuse.</p>
+
+<h2>The shortlist</h2>
+<table class="spec-table">
+  <thead><tr><th>Part</th><th>Min charge current</th><th>Cell voltage support</th><th>NTC input</th><th>Quiescent</th><th>Package</th></tr></thead>
+  <tbody>
+    <tr><td>Microchip MCP73831</td><td>15 mA</td><td>4.20 V (LIR), 3.10 V (ML w/ resistor div)</td><td>No</td><td>50 µA</td><td>SOT-23-5</td></tr>
+    <tr><td>TI BQ24210</td><td>10 mA</td><td>4.20 V (LIR), programmable to 3.6-4.4 V</td><td>Yes (10 kΩ)</td><td>15 µA</td><td>WSON-10 (3×3)</td></tr>
+    <tr><td>Consonance CN3052</td><td>50 mA (limit)</td><td>4.20 V (LIR only)</td><td>Yes</td><td>30 µA</td><td>SOT-23-5</td></tr>
+    <tr><td>TI BQ25040</td><td>5 mA</td><td>3.6 to 4.4 V programmable</td><td>Yes</td><td>10 µA</td><td>WSON-6 (2×2)</td></tr>
+    <tr><td>Skyworks AAT3681A</td><td>10 mA</td><td>4.20 V (LIR)</td><td>No</td><td>40 µA</td><td>SC-70-5</td></tr>
+  </tbody>
+</table>
+<p>For ML cells (3.0 V nominal, 3.10 V cutoff) the catalogue narrows further. Most charger ICs assume 4.20 V cutoff; you either select a programmable part (BQ24210, BQ25040) or use a resistor divider on the FB pin to fool a fixed-cutoff part into stopping at 3.10 V. The divider approach works but doubles the IR error on the cutoff voltage; we generally recommend the programmable parts.</p>
+
+<h2>Setting the charge rate</h2>
+<p>The charger IC's ISET resistor (sometimes called PROG) sets the charge current. For coin cells the rule is simple: start at 0.2C, drop to 0.1C if thermal headroom is tight.</p>
+<table class="spec-table">
+  <thead><tr><th>Cell</th><th>Capacity</th><th>0.2C charge</th><th>0.1C charge</th></tr></thead>
+  <tbody>
+    <tr><td>LIR2032</td><td>40 mAh</td><td>8 mA</td><td>4 mA</td></tr>
+    <tr><td>LIR2450</td><td>120 mAh</td><td>24 mA</td><td>12 mA</td></tr>
+    <tr><td>ML2032</td><td>65 mAh</td><td>13 mA</td><td>6.5 mA</td></tr>
+    <tr><td>ML2430</td><td>110 mAh</td><td>22 mA</td><td>11 mA</td></tr>
+  </tbody>
+</table>
+<p>For an MCP73831 the formula is I_chg = 1000 / R_PROG. For an 8 mA target, R_PROG = 125 kΩ. Most engineers we work with default to a 10 kΩ resistor (100 mA) which is too aggressive for a 40 mAh LIR2032. Always do the math.</p>
+
+<h2>Termination current</h2>
+<p>The charger IC stops when charge current falls to a threshold (typically 10% of the programmed rate, sometimes called I_TERM). For an 8 mA programmed rate, termination at 0.8 mA. This works fine with most charger ICs for LIR cells, but ML cells need explicit verification: the LiMn2O4 cathode plateau is flat near full charge, so cells can sit at 90% SOC indefinitely without termination triggering. We recommend a firmware-level timeout (e.g. 4 hours from charge start) as a backstop.</p>
+
+<h2>NTC integration</h2>
+<p>Charge inhibit above 45 °C is the single biggest cycle-life saver for coin cells. The TI BQ24210 and BQ25040 have a dedicated NTC input that handles this in hardware — connect a 10 kΩ NTC between the cell and the IC's TS pin. The MCP73831 has no NTC input; you have to monitor temperature in firmware and gate the IC's enable line.</p>
+<p>For sealed designs (SMD-mounted ML cell, no separate thermistor) the host MCU's internal temperature sensor is usually within 3-5 °C of the cell. That is good enough for a 45 °C inhibit threshold but not for thermal runaway protection — for that we still recommend a dedicated NTC at the cell.</p>
+
+<h2>Quiescent draw matters</h2>
+<p>For a coin-cell-powered device, the charger IC is on the battery rail at all times. A 40 µA quiescent draw on a 65 mAh ML cell costs 350 mAh / year — half the cell's annual capacity budget gone to the charger IC alone. The TI BQ25040 at 10 µA is the quietest option in the comparable price range. The MCP73831 at 50 µA is acceptable if the device has a recharge path that gets hit weekly.</p>
+
+<h2>Common mistakes</h2>
+<p><strong>Programming charge current too high.</strong> The MCP73831 default reference designs assume 100 mA. For a 40 mAh LIR cell that is 2.5C — well above the cell's ratings, and reliable cycle life suffers.</p>
+<p><strong>Skipping the NTC.</strong> Without temperature protection the cell ages 2-3× faster in field deployments that hit warm enclosures during charging.</p>
+<p><strong>Floating the cell at 100% SOC.</strong> Continuous trickle from a USB-attached device. For LIR cells specifically this kills calendar life. Add a firmware-level "stop charging at 90% if device is on continuous power" rule.</p>
+
+<nav class="article-nav">
+  <a href="/blog/coin-cell-self-discharge-shelf-life" class="prev">&larr; Previous: Coin Cell Self-Discharge & Shelf Life</a>
+  <a href="/blog/coin-cell-mounting-holder-tab-smd" class="next">Next: Coin Cell Mounting Options &rarr;</a>
+</nav>$art$,
+ 'Lin Zhao', 8, now() - interval '23 days', 'published'),
+
+-- ---------- 5. Mounting options ----------
+((SELECT id FROM pillar_pages WHERE slug='coin-steel-shell-lithium-battery'),
+ (SELECT id FROM authors WHERE slug='lin-zhao'),
+ (SELECT id FROM categories WHERE slug='technology'),
+ 'coin-cell-mounting-holder-tab-smd',
+ 'Coin Cell Mounting: Holder vs Solder Tab vs SMD Reflow',
+ 'Three ways to attach a coin cell to a PCB. Each has different cost, reliability, and serviceability profiles. A mechanical engineer''s decision tree.',
+ 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=1200&q=80',
+ 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=1920&q=80',
+ $art$<p class="lede">A coin cell on a PCB can be held by a snap-in holder, attached with a pre-welded solder tab, or mounted directly through reflow. Each option has a different total cost (cell + assembly + service), and the right choice depends on whether the device is opened over its life.</p>
+
+<h2>Option 1: Snap-in holder</h2>
+<p>A plastic-or-metal socket that the coin cell drops into. Standard part numbers like Keystone 1066 (CR2032 holder) or Linx BAT-HLD-001. The cell can be replaced by the end user.</p>
+<p><strong>Pros:</strong> Standard part, $0.10 to $0.40 per holder. End user can swap the cell. Through-hole or SMD versions available. Survives reflow without the cell installed (cell goes in after assembly).</p>
+<p><strong>Cons:</strong> Higher contact resistance (typically 5 to 30 mΩ vs &lt; 1 mΩ for welded). Vibration can disengage the cell unless the holder is keyed or retained. Adds 2 to 4 mm of board height. The holder's own quiescent leakage is small but not zero.</p>
+<p><strong>Use when:</strong> The end user is expected to replace the cell; the device is opened during normal life; service centres need to swap cells without rework equipment.</p>
+
+<h2>Option 2: Pre-welded solder tab</h2>
+<p>The coin cell ships with two nickel or copper tabs spot-welded to the can. The tabs are then soldered to the PCB in a pre-production assembly step. Common in legacy designs.</p>
+<p><strong>Pros:</strong> Low contact resistance (&lt; 1 mΩ). Cell is mechanically retained against the board. No socket cost.</p>
+<p><strong>Cons:</strong> Cell cannot be replaced without rework. Increases assembly cost (manual hand-soldering after main reflow, or selective wave soldering). Tab fatigue in vibration environments unless the tab is supported.</p>
+<p><strong>Use when:</strong> The device is sealed, but reflow-mounting is impossible (LIR cells, or product has heat-sensitive components nearby); a single hand-solder station in production is acceptable.</p>
+<p>See our <a href="/blog/coin-cell-tab-welding">coin cell tab welding guide</a> for the full process, materials and reliability data.</p>
+
+<h2>Option 3: SMD reflow mount</h2>
+<p>The coin cell (ML2032 or ML2430 only — LIR cannot reflow) goes through the standard SMT line as a pick-and-place component. Pads on the PCB; cell on a tape-and-reel feeder; through reflow oven once.</p>
+<p><strong>Pros:</strong> Lowest assembly cost — no separate manual step. Lowest contact resistance (&lt; 0.5 mΩ). Tightest mechanical retention. Smallest board area (no holder body).</p>
+<p><strong>Cons:</strong> Cell must survive 260 °C peak reflow — only ML cells qualify. Cell cannot be replaced, period. One reflow pass per cell only (no double-sided board with cell on the second side). Higher cell cost (ML at $0.80 to $2.20 vs holder + CR/LIR at $0.40 to $0.90 combined).</p>
+<p><strong>Use when:</strong> The device is sealed for life and the cell capacity is enough for 5+ year operation; high-volume program where assembly cost dominates BoM.</p>
+<p>See our <a href="/blog/reflow-profile-ml-coin-cell">reflow profile guide</a> for the J-STD-020 envelope ML cells tolerate.</p>
+
+<h2>Decision matrix</h2>
+<table class="spec-table">
+  <thead><tr><th>Question</th><th>Holder</th><th>Solder tab</th><th>SMD</th></tr></thead>
+  <tbody>
+    <tr><td>Does the user replace the cell?</td><td>✓ Yes</td><td>✗ No</td><td>✗ No</td></tr>
+    <tr><td>Is the device sealed for life?</td><td>✗ No</td><td>✓ Yes</td><td>✓ Yes</td></tr>
+    <tr><td>Can ML chemistry meet runtime?</td><td>n/a</td><td>n/a</td><td>Required</td></tr>
+    <tr><td>Vibration / shock environment?</td><td>Holder must be keyed</td><td>Tab support needed</td><td>✓ Best</td></tr>
+    <tr><td>Lowest assembly cost?</td><td>Mid</td><td>Highest</td><td>Lowest</td></tr>
+    <tr><td>Highest production volume?</td><td>OK</td><td>Avoid</td><td>✓ Best</td></tr>
+    <tr><td>Service / repair needed?</td><td>✓ Easy</td><td>Difficult</td><td>Impossible</td></tr>
+  </tbody>
+</table>
+
+<h2>The two patterns we ship most often</h2>
+<p><strong>Holder + LIR2032</strong>: smart accessory devices where the user might replace the cell once over the device's life (typical: smart card with battery, BLE tracker with USB-C charge, smart pen). Holder cost is justified by occasional service swap.</p>
+<p><strong>SMD + ML2032</strong>: sealed-for-life products with 5+ year battery target (typical: BLE beacon, RTC backup on industrial PCB, smart-meter calibration retention). Lowest total cost when you amortise assembly cost across the production run.</p>
+
+<nav class="article-nav">
+  <a href="/blog/coin-cell-charging-ic-design" class="prev">&larr; Previous: Coin Cell Charging IC Design</a>
+  <a href="/blog/coin-cell-safety-abuse-behavior" class="next">Next: Coin Cell Safety & Abuse Behaviour &rarr;</a>
+</nav>$art$,
+ 'Lin Zhao', 7, now() - interval '29 days', 'published'),
+
+-- ---------- 6. Safety / abuse behavior ----------
+((SELECT id FROM pillar_pages WHERE slug='coin-steel-shell-lithium-battery'),
+ (SELECT id FROM authors WHERE slug='mei-yang'),
+ (SELECT id FROM categories WHERE slug='certifications'),
+ 'coin-cell-safety-abuse-behavior',
+ 'Coin Cell Safety: Short-Circuit, Crush and Vent Behaviour Under Abuse',
+ 'How rechargeable coin cells fail when abused — and why the hermetic stainless-steel shell makes that failure substantially safer than a pouch cell of the same capacity.',
+ 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=1200&q=80',
+ 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=1920&q=80',
+ $art$<p class="lede">Coin cells fail differently from pouch cells under the same abuse. The hermetic stainless-steel shell is a structural element, not just a package — it changes how energy releases when something goes wrong. Designers planning safety analyses for medical, aerospace and industrial devices should understand the difference.</p>
+
+<h2>The three abuse cases</h2>
+<p>IEC 62133-2 and UN 38.3 both test coin cells through three primary abuse cases that reflect realistic field failures:</p>
+<ol>
+  <li><strong>External short-circuit</strong> — the positive and negative terminals connected through a low-resistance path</li>
+  <li><strong>Mechanical crush</strong> — direct compression force applied perpendicular to the cell axis</li>
+  <li><strong>Forced over-charge</strong> — current applied beyond the cell's rated cutoff voltage</li>
+</ol>
+<p>How the cell fails in each case is determined more by the can construction than by the chemistry. A 65 mAh ML cell short-circuited dissipates roughly 0.7 Wh — meaningful, but not enough to cause cascade failure in adjacent components if the can holds.</p>
+
+<h2>External short-circuit behaviour</h2>
+<p>When a coin cell is shorted externally, the entire stored energy dissipates as heat in the cell internals and the short-circuit path. For a healthy ML2032 the surface temperature peaks at 85 to 110 °C within 30 to 60 seconds, then declines as the cell discharges to flat. For LIR2032 the same test peaks at 100 to 130 °C because of the higher voltage and energy density.</p>
+<p>The hermetic can does not vent during a normal short. The internal pressure builds slightly from electrolyte vapour but stays below the can's burst pressure (typically &gt; 30 bar). The cell goes flat and stays sealed. This is why coin cells pass IEC 62133-2 short-circuit testing reliably — there is no post-test cleanup of vented electrolyte, no fire risk, no neighbouring component damage.</p>
+
+<h2>Mechanical crush behaviour</h2>
+<p>Under MIL-STD-810H mechanical crush at 13 kN applied across the flat faces, the can deforms before the internal stack ruptures. The deformation alone short-circuits the internal positive and negative tabs, and the cell discharges through the internal short. Surface temperature spikes briefly to 80 to 100 °C, then declines.</p>
+<p>The risk in mechanical crush is electrolyte leakage if the deformation breaks the crimp seal. For the LIR cells we ship, &lt; 0.5% of crushed cells in a typical 100-cell test batch leak measurable electrolyte. For ML cells, &lt; 0.2% — the crimp seal on ML is more conservative because of the reflow tolerance requirement.</p>
+<p>Compare to a pouch cell of the same capacity (e.g. a 65 mAh thin Li-Po): mechanical crush typically punctures the aluminium-laminate pouch, releases vaporised electrolyte, and may ignite if the crush is fast enough. Coin cells do not have this failure mode because the can is structurally orders of magnitude stiffer than a pouch.</p>
+
+<h2>Forced over-charge behaviour</h2>
+<p>Forced over-charge — applying current after the cell reaches cutoff — drives the cathode beyond its stable potential. For LIR2032 above 4.30 V the LCO releases oxygen and the cell can vent or burst. For ML2032 above 3.50 V the LiMn2O4 cathode is more stable; the cell tolerates a wider over-charge envelope before venting.</p>
+<p>Both chemistries have a cell-internal over-charge protection mechanism: a current interrupt device (CID) inside the can that breaks the circuit when internal pressure reaches a threshold. The CID is mechanical; once tripped, the cell is permanently disabled but does not vent flame. This is the primary safety feature that lets coin cells pass UN 38.3 forced over-charge testing without external BMS.</p>
+
+<h2>Vent design and what happens after</h2>
+<p>If internal pressure exceeds the CID threshold and continues rising (rare, but possible under extreme abuse like sustained over-charge from a mis-configured charger after CID activation), the can has a designed vent point — a thinned section of the metal that bursts at a controlled pressure (40 to 60 bar). The vent releases vapourised electrolyte through a defined direction (typically downward through the negative terminal pad).</p>
+<p>For SMD-mounted ML cells, the vent direction matters for the PCB layout: keep heat-sensitive components 10 mm clear of the negative terminal pad, and avoid placing the cell directly above any IC that can fail open under thermal exposure.</p>
+
+<h2>What we test on every lot</h2>
+<p>Each production lot is sampled for:</p>
+<ul>
+  <li><strong>External short-circuit</strong>: 5 cells for 24 hours, surface temperature monitored, no venting allowed</li>
+  <li><strong>Crimp seal integrity</strong>: 5 cells held at 60 °C / 80% RH for 7 days, weight loss &lt; 0.1%</li>
+  <li><strong>Forced over-charge</strong>: 3 cells charged to 1.5× rated voltage, CID must trip, no flame</li>
+  <li><strong>Mechanical drop</strong>: 5 cells dropped 1.5 m onto concrete, no leakage, capacity retention &gt; 95%</li>
+</ul>
+<p>For medical and aerospace customers the SOP adds two more: vibration test per MIL-STD-810H and thermal cycling -40 °C ↔ +85 °C for 200 cycles. Test reports retained 10 years per ISO 13485.</p>
+
+<nav class="article-nav">
+  <a href="/blog/coin-cell-mounting-holder-tab-smd" class="prev">&larr; Previous: Coin Cell Mounting Options</a>
+  <a href="/blog/ble-beacon-ml-coin-cell-design" class="next">Next: 5-Year BLE Beacon with ML Coin Cell &rarr;</a>
+</nav>$art$,
+ 'Mei Yang', 8, now() - interval '36 days', 'published'),
+
+-- ---------- 7. BLE beacon design ----------
+((SELECT id FROM pillar_pages WHERE slug='coin-steel-shell-lithium-battery'),
+ (SELECT id FROM authors WHERE slug='lin-zhao'),
+ (SELECT id FROM categories WHERE slug='technology'),
+ 'ble-beacon-ml-coin-cell-design',
+ 'Designing a 5-Year BLE Beacon with an ML Coin Cell',
+ 'A worked design for a sealed BLE beacon that runs five years on a single 65 mAh ML2032 cell. Power budget, advertising interval, MCU sleep, and the firmware tricks that hit the target.',
+ 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&q=80',
+ 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1920&q=80',
+ $art$<p class="lede">A 65 mAh ML2032 coin cell carries 195 mWh of energy. To run a BLE beacon for 5 years on that budget, the average current draw cannot exceed 1.5 µA. That sounds impossible — and is, with off-the-shelf BLE stack defaults. With four firmware tricks it lands comfortably.</p>
+
+<h2>The energy budget</h2>
+<table class="spec-table">
+  <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+  <tbody>
+    <tr><td>Cell capacity (ML2032)</td><td>65 mAh</td></tr>
+    <tr><td>Effective capacity at year 5 (cycling + ageing)</td><td>~52 mAh</td></tr>
+    <tr><td>Target service life</td><td>5 years = 43,800 hours</td></tr>
+    <tr><td>Maximum average current</td><td>52 mAh / 43,800 h = 1.19 µA</td></tr>
+  </tbody>
+</table>
+<p>For a 1 µA average current target on a Bluetooth LE beacon, every microwatt of design margin matters. The dominant power consumers are the BLE radio during advertising bursts and the MCU during the wake/sleep transitions. Both are addressable in firmware.</p>
+
+<h2>The four firmware tricks</h2>
+<h3>1. Stretch the advertising interval</h3>
+<p>BLE advertising at 100 ms interval means 10 transmissions per second — roughly 700 µA average draw on a typical nRF52 SoC. At 1,000 ms interval (1/sec) the average drops to 70 µA. At 10,000 ms (every 10 sec) the average drops to 7 µA — still too high, but in range.</p>
+<p>For asset-tracking and presence-detection use cases, an advertising interval of 30 to 60 seconds is acceptable and brings the radio's contribution to the average down to 1 to 2 µA. For high-frequency use cases (proximity beacons in retail), the cell choice escalates to ML2430 (110 mAh) or LIR2450 (120 mAh).</p>
+
+<h3>2. Eliminate the MCU's hot path during sleep</h3>
+<p>The nRF52832 in System OFF mode draws 0.3 µA. In System ON mode with RAM retention it draws 1.5 µA. The difference matters: between advertising bursts the MCU should be in System OFF, woken only by the RTC. Most BLE beacon reference designs leave the MCU in System ON because the wake-up path is simpler — that 1.2 µA delta is the difference between 5 years and 7 years of life.</p>
+
+<h3>3. Use the cheap RTC, not the expensive one</h3>
+<p>The nRF52832 has a low-power RTC running off a 32.768 kHz crystal, drawing 0.3 µA. It also has a high-frequency RTC on the 64 MHz oscillator, drawing 80 µA. Use the cheap one. Round trip from System OFF, RTC wake, advertise once, return to System OFF, takes 8-12 ms with the LF RTC.</p>
+
+<h3>4. Tune the radio TX power and back off when the link allows it</h3>
+<p>Default BLE TX power is +4 dBm. For most beacon use cases (10 to 30 m range to a receiver), 0 dBm is sufficient and saves 30% on radio energy per advertising burst. -4 dBm works for sub-10 m proximity applications and saves 50%. Beacons designed for fixed deployments where receiver location is known often back off to -4 dBm and never look back.</p>
+
+<h2>The current draw budget, worked</h2>
+<p>For a 30-second advertising interval, 0 dBm TX power, nRF52832 in System OFF between bursts:</p>
+<table class="spec-table">
+  <thead><tr><th>Activity</th><th>Current</th><th>Duration</th><th>Charge per cycle</th></tr></thead>
+  <tbody>
+    <tr><td>System OFF (sleep)</td><td>0.3 µA</td><td>29.99 s</td><td>2.5 µAs</td></tr>
+    <tr><td>RTC wake + MCU boot</td><td>3 mA</td><td>2 ms</td><td>6 µAs</td></tr>
+    <tr><td>BLE advertise (3 channels)</td><td>5 mA</td><td>3 ms</td><td>15 µAs</td></tr>
+    <tr><td>Return to System OFF</td><td>1 mA</td><td>1 ms</td><td>1 µAs</td></tr>
+  </tbody>
+</table>
+<p>Total per 30-second cycle: 24.5 µAs. Average current: 24.5 / 30 = 0.82 µA. Comfortably below the 1.19 µA target. Service life with 65 mAh fresh capacity: 8.0 years; with 52 mAh aged capacity: 6.4 years.</p>
+<p>That margin lets the device survive cell ageing better than the spec calls for, and survive imperfect storage conditions (a cell stored at 35 °C for 18 months before deployment loses 8 to 10% capacity that the budget can absorb).</p>
+
+<h2>The hardware checklist</h2>
+<ol>
+  <li>Use ML2032 SMD cell, not LIR — gets you the reflow path and the 5+ year shelf life</li>
+  <li>nRF52832 or equivalent (Cortex-M4 with BLE 5.x and System OFF mode)</li>
+  <li>32.768 kHz crystal for the LF RTC; do not use the internal RC oscillator (drift wastes battery)</li>
+  <li>Decoupling caps sized for 5 mA peak current — 10 µF + 100 nF on each rail</li>
+  <li>Skip the LDO if you can — drop the cell directly onto the MCU's power input</li>
+  <li>One LED for assembly verification only — never an indicator that lights during normal operation</li>
+</ol>
+
+<h2>What we ship for this application</h2>
+<p>Reflow-grade ML2032 in tape-and-reel for SMT lines. Standard MOQ 50,000 units. Lead time 4 to 6 weeks for first article, 2 weeks for repeat. UN 38.3 + IEC 62133-2 + MSDS bundle ships with each lot. Custom MOQ down to 10,000 units possible with an upfront tooling fee.</p>
+
+<nav class="article-nav">
+  <a href="/blog/coin-cell-safety-abuse-behavior" class="prev">&larr; Previous: Coin Cell Safety Behaviour</a>
+  <a href="/products/coin-steel-shell-lithium-battery" class="next">Explore Coin Steel-Shell Cells &rarr;</a>
+</nav>$art$,
+ 'Lin Zhao', 7, now() - interval '43 days', 'published')
+
+ON CONFLICT (slug) DO NOTHING;
