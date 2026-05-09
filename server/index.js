@@ -100,6 +100,7 @@ app.use('/api/gdpr', require('./routes/gdpr'));
 app.use('/api/audit', require('./routes/audit'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/pages', require('./routes/pages'));
+app.use('/api/authors', require('./routes/authors'));
 
 // ----- SEO endpoints -----
 app.use('/', require('./routes/seo'));
@@ -220,6 +221,28 @@ async function autoMigrate() {
        status VARCHAR(20) NOT NULL DEFAULT 'published',
        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
      )`,
+    // Authors table — drives Person JSON-LD on article pages and the
+    // author profile cards used for E-E-A-T credibility (2026 Google
+    // helpful-content guidance).
+    `CREATE TABLE IF NOT EXISTS authors (
+       id SERIAL PRIMARY KEY,
+       slug VARCHAR(190) UNIQUE NOT NULL,
+       name VARCHAR(190) NOT NULL,
+       job_title VARCHAR(190) NOT NULL DEFAULT '',
+       bio TEXT NOT NULL DEFAULT '',
+       avatar_url VARCHAR(500) NOT NULL DEFAULT '',
+       email VARCHAR(190) NOT NULL DEFAULT '',
+       knows_about JSONB NOT NULL DEFAULT '[]'::jsonb,
+       same_as JSONB NOT NULL DEFAULT '[]'::jsonb,
+       is_active BOOLEAN NOT NULL DEFAULT TRUE,
+       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+     )`,
+    `ALTER TABLE articles ADD COLUMN IF NOT EXISTS author_id INT REFERENCES authors(id) ON DELETE SET NULL`,
+    `INSERT INTO authors (slug, name, job_title, bio)
+       VALUES ('zufek-engineering', 'Zufek Engineering', 'Cell engineering team',
+               'Collective byline for the Zufek cell engineering team. Articles authored under this name are reviewed by our four founder-engineers (Chen Li, et al.) and the lead PM on the relevant pillar program.')
+       ON CONFLICT (slug) DO NOTHING`,
   ];
   for (const sql of stmts) {
     try { await query(sql); }

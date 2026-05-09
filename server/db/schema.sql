@@ -101,17 +101,35 @@ CREATE TABLE IF NOT EXISTS categories (
   name VARCHAR(190) NOT NULL
 );
 
+-- ----- authors (named experts behind articles, drives Person JSON-LD + E-E-A-T) -----
+CREATE TABLE IF NOT EXISTS authors (
+  id           SERIAL PRIMARY KEY,
+  slug         VARCHAR(190) UNIQUE NOT NULL,
+  name         VARCHAR(190) NOT NULL,
+  job_title    VARCHAR(190) NOT NULL DEFAULT '',
+  bio          TEXT         NOT NULL DEFAULT '',
+  avatar_url   VARCHAR(500) NOT NULL DEFAULT '',
+  email        VARCHAR(190) NOT NULL DEFAULT '',
+  knows_about  JSONB        NOT NULL DEFAULT '[]'::jsonb,   -- topic strings
+  same_as      JSONB        NOT NULL DEFAULT '[]'::jsonb,   -- LinkedIn / ORCID URLs
+  is_active    BOOLEAN      NOT NULL DEFAULT TRUE,
+  created_at   TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at   TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_authors_active ON authors(is_active);
+
 -- ----- articles (technical blog, the cluster content) -----
 CREATE TABLE IF NOT EXISTS articles (
   id            SERIAL PRIMARY KEY,
   pillar_id     INT REFERENCES pillar_pages(id) ON DELETE SET NULL,
   category_id   INT REFERENCES categories(id) ON DELETE SET NULL,
+  author_id     INT REFERENCES authors(id) ON DELETE SET NULL,
   slug          VARCHAR(190) UNIQUE NOT NULL,
   title         VARCHAR(255) NOT NULL,
   excerpt       TEXT  NOT NULL DEFAULT '',
   cover_url     VARCHAR(500) NOT NULL DEFAULT '',
   content       TEXT  NOT NULL DEFAULT '',
-  author        VARCHAR(120) NOT NULL DEFAULT '',
+  author        VARCHAR(120) NOT NULL DEFAULT '',  -- legacy free-text author; superseded by author_id
   meta_title    VARCHAR(255) NOT NULL DEFAULT '',
   meta_description TEXT NOT NULL DEFAULT '',
   reading_minutes INT NOT NULL DEFAULT 5,
@@ -126,6 +144,7 @@ CREATE TABLE IF NOT EXISTS articles (
 -- Idempotent migrations for existing deployments:
 ALTER TABLE articles ADD COLUMN IF NOT EXISTS template VARCHAR(40) NOT NULL DEFAULT 'standard';
 ALTER TABLE articles ADD COLUMN IF NOT EXISTS hero_image VARCHAR(500) NOT NULL DEFAULT '';
+ALTER TABLE articles ADD COLUMN IF NOT EXISTS author_id INT REFERENCES authors(id) ON DELETE SET NULL;
 
 CREATE INDEX IF NOT EXISTS idx_articles_pillar ON articles(pillar_id);
 CREATE INDEX IF NOT EXISTS idx_articles_status ON articles(status, published_at DESC);

@@ -15,6 +15,7 @@
       { label: '产品', href: '/admin/products.html', icon: '▣' },
       { label: '应用行业', href: '/admin/applications.html', icon: '◷' },
       { label: '博客文章', href: '/admin/articles.html', icon: '✎' },
+      { label: '作者档案', href: '/admin/authors.html', icon: '☺' },
       { label: '媒体库', href: '/admin/media.html', icon: '◫' },
     ]},
     { group: '合规', items: [
@@ -99,8 +100,8 @@
     shell.innerHTML = `
       <aside class="sidebar">
         <div class="sidebar__brand">
-          <div class="sidebar__brand-mark">A</div>
-          <div>Acme CMS</div>
+          <div class="sidebar__brand-mark">Z</div>
+          <div>Zufek CMS</div>
         </div>
         <nav class="sidebar__nav">
           ${NAV.map((g) => `

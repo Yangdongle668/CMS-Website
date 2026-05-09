@@ -162,10 +162,14 @@ async function renderArticle(req, res, slug) {
   let article;
   try { article = await one(`
     SELECT a.*, c.name AS category_name, c.slug AS category_slug,
-           p.slug AS pillar_slug, p.short_name AS pillar_short_name, p.name AS pillar_name
+           p.slug AS pillar_slug, p.short_name AS pillar_short_name, p.name AS pillar_name,
+           au.slug AS author_slug, au.name AS author_name, au.job_title AS author_job_title,
+           au.bio AS author_bio, au.avatar_url AS author_avatar_url,
+           au.knows_about AS author_knows_about, au.same_as AS author_same_as
       FROM articles a
       LEFT JOIN categories c ON c.id = a.category_id
       LEFT JOIN pillar_pages p ON p.id = a.pillar_id
+      LEFT JOIN authors au ON au.id = a.author_id
      WHERE a.slug=$1 AND a.status='published'`, [slug]); }
   catch (_) { return false; }
   if (!article) return false;
@@ -185,6 +189,27 @@ async function renderArticle(req, res, slug) {
   const ogImage = abs(article.hero_image || article.cover_url || ctx.defaultOgImage, ctx.canonicalBase);
   const canonicalUrl = ctx.canonicalBase + req.path;
 
+  // Build a fully-described Person node when an authors row is linked.
+  // Falls back to a Person typed by the legacy free-text author field.
+  const authorNode = article.author_slug ? {
+    '@type': 'Person',
+    '@id': ctx.canonicalBase + '/about/team/' + article.author_slug + '#person',
+    name: article.author_name,
+    jobTitle: article.author_job_title || undefined,
+    description: (article.author_bio || '').slice(0, 320) || undefined,
+    image: article.author_avatar_url ? abs(article.author_avatar_url, ctx.canonicalBase) : undefined,
+    knowsAbout: Array.isArray(article.author_knows_about) && article.author_knows_about.length
+      ? article.author_knows_about : undefined,
+    sameAs: Array.isArray(article.author_same_as) && article.author_same_as.length
+      ? article.author_same_as : undefined,
+    worksFor: { '@id': ctx.canonicalBase + '/#organization' },
+    url: ctx.canonicalBase + '/about/team/' + article.author_slug,
+  } : {
+    '@type': 'Person',
+    name: article.author || `${ctx.siteName} Engineering`,
+    worksFor: { '@id': ctx.canonicalBase + '/#organization' },
+  };
+
   const ld = [
     {
       '@context': 'https://schema.org',
@@ -193,7 +218,7 @@ async function renderArticle(req, res, slug) {
       headline: article.title,
       description,
       image: ogImage,
-      author: { '@type': 'Person', name: article.author || `${ctx.siteName} Engineering` },
+      author: authorNode,
       publisher: { '@id': ctx.canonicalBase + '/#organization' },
       datePublished: article.published_at ? new Date(article.published_at).toISOString() : undefined,
       dateModified: article.updated_at ? new Date(article.updated_at).toISOString() : undefined,

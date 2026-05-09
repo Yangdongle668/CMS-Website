@@ -20,6 +20,7 @@
 
   const pillars = (await api('/api/pillars?status=all')).items;
   const cats = (await api('/api/articles/categories/list')).items;
+  const authors = (await api('/api/authors?all=1')).items;
 
   async function refresh() {
     const wantId = new URLSearchParams(location.search).get('id');
@@ -88,9 +89,16 @@
         <div class="field"><label>正文内容 <span class="hint">（支持 HTML）</span></label><textarea id="f-content" rows="14">${escapeHtml(a.content || '')}</textarea></div>
 
         <div class="field-row">
-          <div class="field"><label>作者</label><input id="f-author" value="${escapeHtml(a.author || 'Zufek Engineering')}"/></div>
+          <div class="field">
+            <label>作者档案 <span class="hint">— 选择已建立的作者档案，将渲染 Person 结构化数据（E-E-A-T）。<a href="/admin/authors.html" target="_blank" style="color:var(--a-accent);">管理作者 ↗</a></span></label>
+            <select id="f-author-id">
+              <option value="">— 无 —</option>
+              ${authors.map((au) => `<option value="${au.id}" ${au.id === a.author_id ? 'selected' : ''}>${escapeHtml(au.name)}${au.job_title ? ' — ' + escapeHtml(au.job_title) : ''}</option>`).join('')}
+            </select>
+          </div>
           <div class="field"><label>阅读时长（分钟）</label><input id="f-min" type="number" value="${a.reading_minutes || 5}"/></div>
         </div>
+        <div class="field"><label>显示作者名 <span class="hint">— 如果不绑定作者档案，可填一个文本（默认 "Zufek Engineering"）。绑定档案后此字段被忽略。</span></label><input id="f-author" value="${escapeHtml(a.author || 'Zufek Engineering')}"/></div>
         <div class="field-row">
           <div class="field">
             <label>文章模板 <span class="hint">（决定详情页排版）</span></label>
@@ -125,6 +133,7 @@
         cover_url: panel.querySelector('#f-cover').value,
         pillar_id: panel.querySelector('#f-pillar').value || null,
         category_id: panel.querySelector('#f-cat').value || null,
+        author_id: panel.querySelector('#f-author-id').value || null,
         content: panel.querySelector('#f-content').value,
         author: panel.querySelector('#f-author').value,
         reading_minutes: parseInt(panel.querySelector('#f-min').value, 10) || 5,
