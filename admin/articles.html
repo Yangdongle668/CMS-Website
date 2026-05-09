@@ -11,9 +11,11 @@
 <body>
 <div data-admin-shell></div>
 <script src="/admin/assets/js/admin.js"></script>
+<script src="/admin/assets/js/quill-editor.js"></script>
 <script>
 (async function () {
   const { api, escapeHtml, formatDate, toast, bootShell } = window.AdminAPI;
+  let contentEditor = null;
   const shell = await bootShell({ title: '博客文章', crumbs: '内容 / 博客文章' });
   if (!shell) return;
   shell.actions.innerHTML = `<button class="btn btn--sm" id="new">+ 新建文章</button>`;
@@ -86,7 +88,10 @@
           </div>
         </div>
 
-        <div class="field"><label>正文内容 <span class="hint">（支持 HTML）</span></label><textarea id="f-content" rows="14">${escapeHtml(a.content || '')}</textarea></div>
+        <div class="field">
+          <label>正文内容 <span class="hint">— 可视化编辑器：标题 / 列表 / 加粗 / 链接 / 图片直接上传到媒体库。需要直接编辑 HTML 时点编辑器底部"查看 HTML 源代码"。</span></label>
+          <div id="f-content"></div>
+        </div>
 
         <div class="field-row">
           <div class="field">
@@ -125,7 +130,26 @@
       </div>
     `;
 
+    // Mount the visual editor on #f-content. Falls back gracefully to a
+    // textarea if the Quill bundle fails to load (e.g. CSP block, offline
+    // CDN) so the operator never loses the ability to save content.
+    contentEditor = null;
+    (async () => {
+      try {
+        contentEditor = await window.QuillEditor.mount('f-content', a.content || '', {
+          placeholder: '撰写文章正文…图片直接拖拽或粘贴会自动上传到媒体库。',
+        });
+      } catch (err) {
+        const host = panel.querySelector('#f-content');
+        host.innerHTML = `<textarea id="f-content-fallback" rows="20" style="width:100%; font-family:'JetBrains Mono',monospace;">${escapeHtml(a.content || '')}</textarea>`;
+        toast('可视化编辑器加载失败（' + err.message + '），已退回到 HTML 文本框', 'error');
+      }
+    })();
+
     panel.querySelector('#save').addEventListener('click', async () => {
+      const fallback = panel.querySelector('#f-content-fallback');
+      const content = contentEditor ? contentEditor.getHtml()
+        : (fallback ? fallback.value : '');
       const payload = {
         slug: panel.querySelector('#f-slug').value,
         title: panel.querySelector('#f-title').value,
@@ -134,7 +158,7 @@
         pillar_id: panel.querySelector('#f-pillar').value || null,
         category_id: panel.querySelector('#f-cat').value || null,
         author_id: panel.querySelector('#f-author-id').value || null,
-        content: panel.querySelector('#f-content').value,
+        content,
         author: panel.querySelector('#f-author').value,
         reading_minutes: parseInt(panel.querySelector('#f-min').value, 10) || 5,
         template: panel.querySelector('#f-template').value,

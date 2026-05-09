@@ -35,8 +35,15 @@ const cspDirectives = {
     'https://challenges.cloudflare.com',
     'https://www.googletagmanager.com',
     'https://*.googletagmanager.com',
+    // Quill 2.0 — visual editor in /admin/ pages only. Pulled from
+    // jsdelivr CDN; admin pages are noindex so no SEO impact.
+    'https://cdn.jsdelivr.net',
   ],
-  'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+  'style-src': [
+    "'self'", "'unsafe-inline'",
+    'https://fonts.googleapis.com',
+    'https://cdn.jsdelivr.net',
+  ],
   'font-src': ["'self'", 'https://fonts.gstatic.com', 'data:'],
   'img-src': ["'self'", 'data:', 'blob:', 'http:', 'https:'],
   'connect-src': [
