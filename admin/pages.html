@@ -11,9 +11,11 @@
 <body>
 <div data-admin-shell></div>
 <script src="/admin/assets/js/admin.js"></script>
+<script src="/admin/assets/js/quill-editor.js"></script>
 <script>
 (async function () {
   const { api, escapeHtml, formatDate, toast, bootShell } = window.AdminAPI;
+  let bodyEditor = null;
   const shell = await bootShell({ title: '页面', crumbs: '内容 / 静态页面' });
   if (!shell) return;
   shell.actions.innerHTML = `<button class="btn btn--sm" id="new">+ 新建页面</button>`;
@@ -105,9 +107,9 @@
         </div>
 
         <div data-pane="body" style="display:none;">
-          <p style="font-size:13px; color:var(--a-mute2);">可选：用自定义 HTML 替换 <strong>Hero 之后的正文区</strong> (everything below the hero) 。留空保留页面默认内容。可用类名： <code>.section</code>, <code>.section-light</code>, <code>.section-inner</code>, <code>.eyebrow</code>, <code>.lead</code>, <code>.product-grid</code>, <code>.feat-grid</code>, 等。</p>
+          <p style="font-size:13px; color:var(--a-mute2);">可选：用可视化编辑器替换 <strong>Hero 之后的正文区</strong>（hero 下方所有内容）。留空保留页面默认内容。需要直接编辑 HTML 时点编辑器底部"查看 HTML 源代码"。</p>
           <p style="font-size:13px; color:var(--a-warning);"><strong>注意：</strong>静态 HTML 中必须包含 <code>&lt;div data-page-body&gt;...&lt;/div&gt;</code> 包裹层才会生效。没有该层的页面只会更新 Hero 和 Meta。</p>
-          <div class="field"><textarea id="f-body" rows="20" class="mono">${escapeHtml(p.body_html || '')}</textarea></div>
+          <div class="field"><div id="f-body"></div></div>
         </div>
 
         <div data-pane="sections" style="display:none;">
@@ -135,12 +137,30 @@
       panel.querySelectorAll('[data-pane]').forEach((x) => x.style.display = x.dataset.pane === b.dataset.tab ? '' : 'none');
     }));
 
+    // Mount the visual editor on #f-body. Falls back to a plain textarea
+    // if Quill fails to load so saves never block on a CDN outage.
+    bodyEditor = null;
+    (async () => {
+      try {
+        bodyEditor = await window.QuillEditor.mount('f-body', p.body_html || '', {
+          placeholder: '撰写 hero 之后的正文区…图片直接拖拽或粘贴会上传到媒体库。',
+        });
+      } catch (err) {
+        const host = panel.querySelector('#f-body');
+        host.innerHTML = `<textarea id="f-body-fallback" rows="20" class="mono" style="width:100%;">${escapeHtml(p.body_html || '')}</textarea>`;
+        toast('可视化编辑器加载失败（' + err.message + '），已退回到 HTML 文本框', 'error');
+      }
+    })();
+
     panel.querySelector('#save').addEventListener('click', async () => {
       let crumbs, sections;
       try { crumbs = JSON.parse(panel.querySelector('#f-crumbs').value || '[]'); }
       catch (_) { return toast('面包屑 JSON 格式错误', 'error'); }
       try { sections = JSON.parse(panel.querySelector('#f-sections').value || '{}'); }
       catch (_) { return toast('结构化区块 JSON 格式错误', 'error'); }
+      const fallback = panel.querySelector('#f-body-fallback');
+      const bodyHtml = bodyEditor ? bodyEditor.getHtml()
+        : (fallback ? fallback.value : '');
       const payload = {
         slug: panel.querySelector('#f-slug').value,
         nav: panel.querySelector('#f-nav').value,
@@ -152,7 +172,7 @@
         hero_subtitle: panel.querySelector('#f-hsub').value,
         hero_image: panel.querySelector('#f-himg').value,
         hero_breadcrumbs: crumbs,
-        body_html: panel.querySelector('#f-body').value,
+        body_html: bodyHtml,
         sections,
         status: panel.querySelector('#f-status').value,
       };

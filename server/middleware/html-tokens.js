@@ -93,6 +93,52 @@ function resolveDefaultOgImage(canonicalBase) {
   return /^https?:\/\//.test(fromSeo) ? fromSeo : canonicalBase + fromSeo;
 }
 
+// Build the search-engine verification + GA4 bootstrap meta/script block
+// that has to live in the SERVER-RENDERED HTML. Google's site-verification
+// fetcher does NOT execute JavaScript — a JS-injected meta tag fails
+// verification — and Bing/IndexNow follow the same rule. GA4 is also
+// bootstrapped here so the gtag.js library is in the document before
+// first interaction; consent gating still happens client-side via
+// gtag('consent', 'update', ...).
+function escapeAttr(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[c]);
+}
+
+function buildVerificationBlock() {
+  const seo = settingsCache.seo || {};
+  const out = [];
+  if (seo.gsc_verify) {
+    out.push(`<meta name="google-site-verification" content="${escapeAttr(seo.gsc_verify)}">`);
+  }
+  if (seo.bing_verify) {
+    out.push(`<meta name="msvalidate.01" content="${escapeAttr(seo.bing_verify)}">`);
+  }
+  if (seo.twitter_handle) {
+    const handle = String(seo.twitter_handle).startsWith('@')
+      ? seo.twitter_handle : '@' + seo.twitter_handle;
+    out.push(`<meta name="twitter:site" content="${escapeAttr(handle)}">`);
+  }
+  // GA4 with Consent Mode v2: load the library always, but default ALL
+  // consent categories to denied so cookies/network calls are blocked
+  // until the visitor accepts the analytics category. partials.js fires
+  // gtag('consent', 'update', ...) on consent grant.
+  if (seo.ga4_measurement_id) {
+    const id = escapeAttr(seo.ga4_measurement_id);
+    out.push(`<script async src="https://www.googletagmanager.com/gtag/js?id=${id}"></script>`);
+    out.push(
+      `<script>` +
+      `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}` +
+      `gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',wait_for_update:500});` +
+      `gtag('js',new Date());` +
+      `gtag('config','${id}',{anonymize_ip:true,send_page_view:true});` +
+      `</script>`
+    );
+  }
+  return out.join('\n');
+}
+
 function replaceTokens(html, ctx) {
   let out = html
     .replace(/\{\{CANONICAL_BASE\}\}/g, ctx.canonicalBase)
@@ -101,6 +147,14 @@ function replaceTokens(html, ctx) {
     .replace(/\{\{SITE_NAME\}\}/g, ctx.siteName)
     .replace(/\{\{ORG_LEGAL_NAME\}\}/g, ctx.orgLegalName)
     .replace(/\{\{DEFAULT_OG_IMAGE\}\}/g, ctx.defaultOgImage);
+  // Inject the verification + GA4 block immediately before </head> so
+  // Google's verification fetcher and Bing's fetcher both see it in the
+  // initial server response. Skipping admin pages because they have
+  // <meta name="robots" content="noindex"> and never need this.
+  const block = buildVerificationBlock();
+  if (block && out.indexOf('</head>') !== -1 && !/google-site-verification/.test(out)) {
+    out = out.replace('</head>', block + '\n</head>');
+  }
   // Apply media overrides last so the operator can map an external URL
   // (Unsplash hot-link, etc.) to a self-hosted /uploads/* asset without
   // editing source files. The replacement is exact-match on the full

@@ -82,6 +82,53 @@ function injectIntoHead(html, head) {
   return html;
 }
 
+// Pre-fill the visible above-the-fold body placeholders that the
+// _template.html ships with empty (e.g. <h1 data-hero-title>Pillar</h1>).
+// Without this, visitors see a brief flash of literal "Pillar" text before
+// JS finishes hydrating. With this, the page is fully readable from the
+// initial HTML response, JS only enhances.
+//
+// Each entry maps a CSS-style selector (data-attr name) to the rendered
+// content type:
+//   text  — escapes and replaces innerText
+//   bg    — replaces the inline background-image style URL
+//   attr  — sets a specific attribute (used for canonical breadcrumb links)
+function injectIntoBody(html, body) {
+  function setText(html, attrName, value) {
+    if (value == null || value === '') return html;
+    const safe = escapeHtml(value);
+    // Match <tag ... data-attrName ...>...</tag> and replace the inner text.
+    const re = new RegExp(
+      `(<([a-z0-9]+)\\b[^>]*\\sdata-${attrName}\\b[^>]*>)([\\s\\S]*?)(</\\2>)`,
+      'i'
+    );
+    return html.replace(re, (_m, openTag, _tag, _inner, closeTag) =>
+      openTag + safe + closeTag
+    );
+  }
+  function setBackground(html, attrName, url) {
+    if (!url) return html;
+    const safe = String(url).replace(/'/g, "\\'");
+    // Replace the entire <tag ... data-attrName ...> opening to inject
+    // the background-image style. Preserves all other attributes.
+    const re = new RegExp(
+      `<([a-z0-9]+)\\b([^>]*\\sdata-${attrName}\\b[^>]*?)>`,
+      'i'
+    );
+    return html.replace(re, (m, tag, attrs) => {
+      // Strip any existing inline style="background-image:..." so we don't
+      // end up with two competing values.
+      const cleaned = attrs.replace(/\s*style="[^"]*"/i, '');
+      return `<${tag}${cleaned} style="background-image:url('${safe}');">`;
+    });
+  }
+  for (const entry of body) {
+    if (entry.kind === 'text')      html = setText(html, entry.attr, entry.value);
+    else if (entry.kind === 'bg')   html = setBackground(html, entry.attr, entry.value);
+  }
+  return html;
+}
+
 async function renderPillar(req, res, slug) {
   let pillar;
   try { pillar = await one(`SELECT * FROM pillar_pages WHERE slug=$1 AND status='published'`, [slug]); }
@@ -153,6 +200,94 @@ async function renderPillar(req, res, slug) {
     siteName: ctx.siteName,
     jsonLd: JSON.stringify(ld),
   });
+
+  // Pre-fill the above-the-fold body placeholders (hero title/subtitle/
+  // breadcrumb + hero background) so the visitor sees real content from
+  // the very first paint instead of the literal "Pillar" placeholder.
+  html = injectIntoBody(html, [
+    { kind: 'text', attr: 'hero-title', value: pillar.hero_title || pillar.name },
+    { kind: 'text', attr: 'hero-subtitle', value: pillar.hero_subtitle || description },
+    { kind: 'text', attr: 'crumb-current', value: pillar.short_name || pillar.name },
+    { kind: 'bg', attr: 'pillar-hero', value: pillar.hero_image },
+  ]);
+
+  res.type('html').send(html);
+  return true;
+}
+
+// Individual product (SKU) — uses the same /products/_template.html shell
+// as the pillar, but sources from the products table. Without this,
+// /products/<sku-slug> would fall through to the JS template, which
+// previously redirected the visitor to /products/ because fetch() does
+// not throw on a 404 from /api/pillars/<sku-slug>.
+async function renderProduct(req, res, slug) {
+  let row;
+  try { row = await one(`SELECT * FROM products WHERE slug=$1 AND status='published'`, [slug]); }
+  catch (_) { return false; }
+  if (!row) return false;
+  let pillar = null;
+  if (row.pillar_id) {
+    try { pillar = await one(
+      `SELECT slug, name, short_name FROM pillar_pages WHERE id=$1`,
+      [row.pillar_id]
+    ); } catch (_) {}
+  }
+
+  const tplPath = path.join(PUBLIC_DIR, 'products', '_template.html');
+  if (!fs.existsSync(tplPath)) return false;
+  let html = fs.readFileSync(tplPath, 'utf8');
+
+  const ctx = buildContext(req, req.path);
+  html = replaceTokens(html, ctx);
+
+  const title = row.meta_title || `${row.name} | ${ctx.siteName}`;
+  const description = row.meta_description || row.tagline || row.description || '';
+  const ogImage = abs(row.cover_url || ctx.defaultOgImage, ctx.canonicalBase);
+  const canonicalUrl = ctx.canonicalBase + req.path;
+
+  const ld = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      '@id': canonicalUrl + '#product',
+      name: row.name,
+      sku: row.model_no || undefined,
+      description,
+      image: ogImage,
+      brand: { '@type': 'Brand', name: ctx.siteName },
+      manufacturer: { '@id': ctx.canonicalBase + '/#organization' },
+      isRelatedTo: pillar ? { '@type': 'Product', name: pillar.name, url: ctx.canonicalBase + '/products/' + pillar.slug } : undefined,
+      url: canonicalUrl,
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: ctx.canonicalBase + '/' },
+        { '@type': 'ListItem', position: 2, name: 'Products', item: ctx.canonicalBase + '/products/' },
+      ].concat(
+        pillar ? [{ '@type': 'ListItem', position: 3, name: pillar.short_name || pillar.name, item: ctx.canonicalBase + '/products/' + pillar.slug }] : []
+      ).concat([
+        { '@type': 'ListItem', position: pillar ? 4 : 3, name: row.name, item: canonicalUrl },
+      ]),
+    },
+  ];
+
+  html = injectIntoHead(html, {
+    title,
+    description,
+    canonicalUrl,
+    ogImage,
+    ogType: 'product',
+    siteName: ctx.siteName,
+    jsonLd: JSON.stringify(ld),
+  });
+  html = injectIntoBody(html, [
+    { kind: 'text', attr: 'hero-title', value: row.name },
+    { kind: 'text', attr: 'hero-subtitle', value: row.tagline || description },
+    { kind: 'text', attr: 'crumb-current', value: row.model_no || row.name },
+    { kind: 'bg', attr: 'pillar-hero', value: row.cover_url },
+  ]);
 
   res.type('html').send(html);
   return true;
@@ -247,6 +382,23 @@ async function renderArticle(req, res, slug) {
     jsonLd: JSON.stringify(ld),
   });
 
+  // Pre-fill article hero body placeholders (title / subtitle / pill / meta).
+  const fmtDate = (d) => {
+    if (!d) return '';
+    try { return new Date(d).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: '2-digit' }); }
+    catch (_) { return ''; }
+  };
+  html = injectIntoBody(html, [
+    { kind: 'text', attr: 'art-title', value: article.title },
+    { kind: 'text', attr: 'art-subtitle', value: article.excerpt || description },
+    { kind: 'text', attr: 'art-pill', value: article.category_name || article.pillar_short_name || 'Article' },
+    { kind: 'text', attr: 'art-crumb', value: article.title },
+    { kind: 'text', attr: 'art-author', value: article.author_name || article.author || `${ctx.siteName} Engineering` },
+    { kind: 'text', attr: 'art-reading', value: (article.reading_minutes || 5) + ' min read' },
+    { kind: 'text', attr: 'art-date', value: fmtDate(article.published_at) },
+    { kind: 'bg', attr: 'hero', value: article.hero_image || article.cover_url },
+  ]);
+
   res.type('html').send(html);
   return true;
 }
@@ -302,8 +454,15 @@ async function renderApplication(req, res, slug) {
     jsonLd: JSON.stringify(ld),
   });
 
+  // Pre-fill the application page hero (title / summary / breadcrumb).
+  html = injectIntoBody(html, [
+    { kind: 'text', attr: 'app-name', value: app.name },
+    { kind: 'text', attr: 'app-title', value: app.name },
+    { kind: 'text', attr: 'app-summary', value: app.summary || description },
+  ]);
+
   res.type('html').send(html);
   return true;
 }
 
-module.exports = { renderPillar, renderArticle, renderApplication };
+module.exports = { renderPillar, renderProduct, renderArticle, renderApplication };

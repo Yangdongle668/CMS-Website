@@ -200,10 +200,14 @@
   const escape = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: '2-digit' }) : '';
 
-  let data;
-  try { data = await (await fetch('/api/articles/' + encodeURIComponent(slug))).json(); }
-  catch (_) { location.href = '/404.html'; return; }
-  if (!data || !data.article) { location.href = '/blog/'; return; }
+  // fetch() does not throw on HTTP 4xx — must check res.ok explicitly
+  // or a 404 silently produces {error:'not_found'} and the old
+  // "if (!data.article) redirect" line bounced every missing slug
+  // back to /blog/ instead of showing the 404 page.
+  let data = null;
+  const res = await fetch('/api/articles/' + encodeURIComponent(slug)).catch(() => null);
+  if (res && res.ok) data = await res.json().catch(() => null);
+  if (!data || !data.article) { location.replace('/404.html'); return; }
   const a = data.article;
 
   // ------- Meta + OG + canonical (fallback only when SSR did not run) -------

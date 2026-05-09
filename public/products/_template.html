@@ -154,36 +154,53 @@
   if (!slug) { location.href = '/products/'; return; }
   const escape = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-  let data;
-  try {
-    data = await (await fetch('/api/pillars/' + encodeURIComponent(slug))).json();
-  } catch (_) {
-    // Fall back to a specific product
-    try {
-      const pr = await (await fetch('/api/products/' + encodeURIComponent(slug))).json();
-      const p = pr.product;
-      const par = pr.pillar || {};
-      data = {
-        pillar: {
-          slug: p.slug, name: p.name, short_name: p.model_no || par.short_name || p.name,
-          meta_title: p.meta_title, meta_description: p.meta_description,
-          hero_title: p.name, hero_subtitle: p.tagline || p.description,
-          hero_image: p.cover_url,
-          overview: { title: 'Overview', body: p.description },
-          variants: [], spec_table: p.specs ? {
-            headers: ['Parameter', 'Value'],
-            rows: Object.entries(p.specs).map(([k, v]) => [k.replace(/_/g, ' '), String(v)])
-          } : { headers: [], rows: [] },
-          customization: { enabled: !!p.is_custom, items: [] },
-          manufacturing: {}, certifications: [], faq: [], applications: [],
-        },
-        siblings: par.slug ? [{ slug: par.slug, name: par.name, short_name: par.short_name }] : [],
-        articles: [], applications: [], products: pr.related || [],
-      };
-    } catch (__) { location.href = '/404.html'; return; }
+  // Fetch logic note: fetch() does NOT throw on HTTP 4xx — it only rejects
+  // on a network error. So we have to inspect res.ok ourselves; otherwise
+  // a 404 from /api/pillars/<sku-slug> would silently produce
+  // {error:'not_found'} and the old "if (!data.pillar) redirect" logic
+  // would bounce every individual product URL back to /products/.
+  let data = null;
+  let res = await fetch('/api/pillars/' + encodeURIComponent(slug)).catch(() => null);
+  if (res && res.ok) {
+    data = await res.json().catch(() => null);
   }
-
-  if (!data || !data.pillar) { location.href = '/products/'; return; }
+  if (!data || !data.pillar) {
+    // Try the per-SKU product API as a fallback (used when this URL is
+    // an individual product, not one of the three pillars).
+    res = await fetch('/api/products/' + encodeURIComponent(slug)).catch(() => null);
+    if (res && res.ok) {
+      const pr = await res.json().catch(() => null);
+      if (pr && pr.product) {
+        const p = pr.product;
+        const par = pr.pillar || {};
+        data = {
+          pillar: {
+            slug: p.slug, name: p.name, short_name: p.model_no || par.short_name || p.name,
+            meta_title: p.meta_title, meta_description: p.meta_description,
+            hero_title: p.name, hero_subtitle: p.tagline || p.description,
+            hero_image: p.cover_url,
+            overview: { title: 'Overview', body: p.description },
+            variants: [], spec_table: p.specs ? {
+              headers: ['Parameter', 'Value'],
+              rows: Object.entries(p.specs).map(([k, v]) => [k.replace(/_/g, ' '), String(v)])
+            } : { headers: [], rows: [] },
+            customization: { enabled: !!p.is_custom, items: [] },
+            manufacturing: {}, certifications: [], faq: [], applications: [],
+          },
+          siblings: par.slug ? [{ slug: par.slug, name: par.name, short_name: par.short_name }] : [],
+          articles: [], applications: [], products: pr.related || [],
+        };
+      }
+    }
+  }
+  if (!data || !data.pillar) {
+    // Slug exists in neither pillar nor product table. Render the 404
+    // page in-place rather than location.href = '/products/' which the
+    // old behaviour did and which the user reported as the "click a
+    // product, get bounced to the hub" bug.
+    location.replace('/404.html');
+    return;
+  }
   const p = data.pillar;
 
   // ----- Meta + OG (fallback only when SSR didn't run) -----

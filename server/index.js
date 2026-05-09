@@ -25,13 +25,34 @@ app.set('trust proxy', 1);
 // HTTPS and gets ERR_SSL_PROTOCOL_ERROR.
 const forceHttps = String(process.env.FORCE_HTTPS || 'false') === 'true';
 
+// CSP allows the analytics + tag-manager hosts so a configured GA4 ID
+// can actually load gtag.js + report events. Only Google-owned hosts
+// are whitelisted; Hotjar / Mixpanel etc. would need a future opt-in.
 const cspDirectives = {
   'default-src': ["'self'"],
-  'script-src': ["'self'", "'unsafe-inline'", 'https://challenges.cloudflare.com'],
-  'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+  'script-src': [
+    "'self'", "'unsafe-inline'",
+    'https://challenges.cloudflare.com',
+    'https://www.googletagmanager.com',
+    'https://*.googletagmanager.com',
+    // Quill 2.0 — visual editor in /admin/ pages only. Pulled from
+    // jsdelivr CDN; admin pages are noindex so no SEO impact.
+    'https://cdn.jsdelivr.net',
+  ],
+  'style-src': [
+    "'self'", "'unsafe-inline'",
+    'https://fonts.googleapis.com',
+    'https://cdn.jsdelivr.net',
+  ],
   'font-src': ["'self'", 'https://fonts.gstatic.com', 'data:'],
   'img-src': ["'self'", 'data:', 'blob:', 'http:', 'https:'],
-  'connect-src': ["'self'", 'https://challenges.cloudflare.com'],
+  'connect-src': [
+    "'self'",
+    'https://challenges.cloudflare.com',
+    'https://*.google-analytics.com',
+    'https://*.analytics.google.com',
+    'https://*.googletagmanager.com',
+  ],
   'frame-src': ['https://challenges.cloudflare.com'],
   'object-src': ["'none'"],
   'base-uri': ["'self'"],
@@ -102,6 +123,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/pages', require('./routes/pages'));
 app.use('/api/authors', require('./routes/authors'));
 app.use('/api/media/overrides', require('./routes/media-overrides'));
+app.use('/api/seo-check', require('./routes/seo-check'));
 
 // ----- SEO endpoints -----
 app.use('/', require('./routes/seo'));
@@ -151,9 +173,16 @@ app.get(['/products/:slug', '/applications/:slug', '/blog/:slug'], async (req, r
   const slug = segments[1];
   if (!slug) return next();
 
-  // 1. SSR detail render based on the URL section.
+  // 1. SSR detail render based on the URL section. Order matters under
+  //    /products/:slug — try the pillar first (the three pillar slugs are
+  //    the canonical product hubs), then fall through to the SKU-level
+  //    renderProduct so individual product detail URLs render fully
+  //    server-side instead of redirecting to /products/.
   try {
-    if (dir === 'products' && await ssrDetail.renderPillar(req, res, slug)) return;
+    if (dir === 'products') {
+      if (await ssrDetail.renderPillar(req, res, slug)) return;
+      if (await ssrDetail.renderProduct(req, res, slug)) return;
+    }
     if (dir === 'blog' && await ssrDetail.renderArticle(req, res, slug)) return;
     if (dir === 'applications' && await ssrDetail.renderApplication(req, res, slug)) return;
   } catch (err) {

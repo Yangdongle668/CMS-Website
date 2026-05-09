@@ -163,6 +163,15 @@ function footerHtml(settings) {
 
   return `<footer>
     <div class="footer-cols">
+      ${listColumn('Products', products)}
+      ${listColumn('Applications', applications)}
+      ${listColumn('Solutions', solutions)}
+      <div class="footer-col">
+        <h5>Company</h5>
+        ${aboutChildren.map((c) => `<a href="${escapeHtml(c.url)}">${escapeHtml(c.label)}</a>`).join('')}
+        ${flatExtras.map((c) => `<a href="${escapeHtml(c.url)}">${escapeHtml(c.label)}</a>`).join('')}
+        <a href="/contact.html">Contact</a>
+      </div>
       <div class="footer-col footer-col--brand">
         <h5>${escapeHtml(site.name || 'Zufek')}</h5>
         <p>${escapeHtml(site.tagline || '')}</p>
@@ -173,15 +182,6 @@ function footerHtml(settings) {
         ${site.phone ? `<p>${escapeHtml(site.phone)}</p>` : ''}
         ${site.address ? `<p>${escapeHtml(site.address)}</p>` : ''}
         ${(linkedin || whatsapp) ? `<div class="footer-social">${linkedin}${whatsapp}</div>` : ''}
-      </div>
-      ${listColumn('Products', products)}
-      ${listColumn('Applications', applications)}
-      ${listColumn('Solutions', solutions)}
-      <div class="footer-col">
-        <h5>Company</h5>
-        ${aboutChildren.map((c) => `<a href="${escapeHtml(c.url)}">${escapeHtml(c.label)}</a>`).join('')}
-        ${flatExtras.map((c) => `<a href="${escapeHtml(c.url)}">${escapeHtml(c.label)}</a>`).join('')}
-        <a href="/contact.html">Contact</a>
       </div>
     </div>
     <div class="footer-bottom">
@@ -249,6 +249,9 @@ function setConsent(categories) {
       pv: STATE.config.privacyPolicyVersion,
     }));
   } catch {}
+  // Push the new state into GA4 immediately via Consent Mode v2. Skips
+  // cleanly if gtag.js wasn't server-injected (no GA4 ID configured).
+  try { applyGa4Consent(); } catch (_) {}
   // Also send to server so it can audit consent decisions.
   fetch('/api/gdpr/consent', {
     method: 'POST',
@@ -411,39 +414,30 @@ function injectOrganizationSchema() {
   document.head.appendChild(s2);
 }
 
-// ===== Search-engine verification meta + analytics =====
-function injectVerificationAndAnalytics() {
-  const c = STATE.config || {};
-  const head = document.head;
-  function ensureMeta(name, content) {
-    if (!content) return;
-    const sel = `meta[name="${name}"]`;
-    let m = head.querySelector(sel);
-    if (!m) {
-      m = document.createElement('meta');
-      m.setAttribute('name', name);
-      head.appendChild(m);
-    }
-    m.setAttribute('content', content);
-  }
-  ensureMeta('google-site-verification', c.gscVerify);
-  ensureMeta('msvalidate.01', c.bingVerify);
-  if (c.twitterHandle) ensureMeta('twitter:site', c.twitterHandle);
-  // GA4 — gated on user consent (analytics category). Defaults to "off" to
-  // satisfy GDPR. The cookie banner flips it via window.__gaConsentGranted.
-  if (c.ga4 && !document.querySelector('script[data-ga4]')) {
-    const consent = (function () { try { return JSON.parse(localStorage.getItem(CONSENT_KEY) || 'null'); } catch (_) { return null; } })();
-    if (consent && consent.categories && consent.categories.analytics) {
-      const s = document.createElement('script');
-      s.async = true;
-      s.dataset.ga4 = c.ga4;
-      s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(c.ga4);
-      head.appendChild(s);
-      const inline = document.createElement('script');
-      inline.textContent = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${c.ga4}',{anonymize_ip:true});`;
-      head.appendChild(inline);
-    }
-  }
+// ===== GA4 consent gate =====
+// google-site-verification + msvalidate.01 (Bing) + twitter:site are all
+// rendered by the server-side html-tokens middleware now — Google's site-
+// verification fetcher does not execute JavaScript, so JS-injected meta
+// tags fail verification.
+//
+// GA4 is loaded by the server (gtag.js + Consent Mode v2 with default
+// "denied" for all categories). This client-side hook only flips the
+// consent state on/off based on the cookie banner choice, so analytics
+// starts firing the instant the visitor accepts — no page reload needed.
+function applyGa4Consent() {
+  if (typeof window.gtag !== 'function') return;
+  const consent = (function () {
+    try { return JSON.parse(localStorage.getItem(CONSENT_KEY) || 'null'); }
+    catch (_) { return null; }
+  })();
+  const granted = !!(consent && consent.categories && consent.categories.analytics);
+  const marketing = !!(consent && consent.categories && consent.categories.marketing);
+  window.gtag('consent', 'update', {
+    analytics_storage: granted ? 'granted' : 'denied',
+    ad_storage: marketing ? 'granted' : 'denied',
+    ad_user_data: marketing ? 'granted' : 'denied',
+    ad_personalization: marketing ? 'granted' : 'denied',
+  });
 }
 
 // Floating "Quick Quote" button (sitewide) — appears after the user has
@@ -498,7 +492,9 @@ function injectFloatingQuote() {
   // first so the live values overwrite cleanly).
   document.querySelectorAll('script[data-jsonld="organization"], script[data-jsonld="website"]').forEach((n) => n.remove());
   injectOrganizationSchema();
-  injectVerificationAndAnalytics();
+  // Apply current consent state to GA4 (gtag is already loaded server-side
+  // when seo.ga4_measurement_id is set; we only flip the consent flags).
+  applyGa4Consent();
   // Re-fire any consumers that wanted live data
   document.dispatchEvent(new CustomEvent('cms:ready', { detail: STATE }));
 })();
