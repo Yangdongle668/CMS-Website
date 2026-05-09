@@ -166,9 +166,16 @@ app.get(['/products/:slug', '/applications/:slug', '/blog/:slug'], async (req, r
   const slug = segments[1];
   if (!slug) return next();
 
-  // 1. SSR detail render based on the URL section.
+  // 1. SSR detail render based on the URL section. Order matters under
+  //    /products/:slug — try the pillar first (the three pillar slugs are
+  //    the canonical product hubs), then fall through to the SKU-level
+  //    renderProduct so individual product detail URLs render fully
+  //    server-side instead of redirecting to /products/.
   try {
-    if (dir === 'products' && await ssrDetail.renderPillar(req, res, slug)) return;
+    if (dir === 'products') {
+      if (await ssrDetail.renderPillar(req, res, slug)) return;
+      if (await ssrDetail.renderProduct(req, res, slug)) return;
+    }
     if (dir === 'blog' && await ssrDetail.renderArticle(req, res, slug)) return;
     if (dir === 'applications' && await ssrDetail.renderApplication(req, res, slug)) return;
   } catch (err) {
