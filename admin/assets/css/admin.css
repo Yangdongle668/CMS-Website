@@ -507,17 +507,21 @@ code, pre, .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, 
   white-space: nowrap;
 }
 
-/* ===== Visual page editor split layout ===== */
-.page-editor-split {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-  gap: 18px;
-  align-items: stretch;
-}
-@media (max-width: 1280px) {
-  .page-editor-split { grid-template-columns: 1fr; }
+/* ===== Visual page editor — full-width form layout =====
+ * The old side-by-side split (form + iframe) made the form column
+ * cramped (tab labels broke into one character per line on common
+ * laptop widths). The visual preview now lives in a dedicated full-
+ * screen page at /admin/visual-edit.html, opened via a button in the
+ * form header. The form here just gets the full panel width.
+ */
+.page-editor-fullform {
+  display: block;
+  max-width: 980px;
+  margin: 0 auto;
 }
 .page-editor-form { min-width: 0; }
+/* Legacy split (kept for backwards compat with any cached page) */
+.page-editor-split { display: block; }
 .page-editor-preview {
   border: 1px solid var(--a-line);
   border-radius: 10px;
