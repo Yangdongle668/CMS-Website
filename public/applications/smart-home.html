@@ -3,19 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Smart Home Battery Manufacturer — Long-Life Cells for Locks, Sensors &amp; Cameras | Zufek</title>
-<meta name="description" content="Long-life Li-Po and primary lithium cells for smart locks, door sensors, leak detectors, security cameras, robot vacuums and connected home devices. 5+ year shelf life, low self-discharge.">
+<title>Smart Home Battery: Li-Po Pouches & Rechargeable Coin Cells | Zufek</title>
+<meta name="description" content="Custom Li-Po pouches for smart locks, video doorbells and battery cameras, plus rechargeable LIR/ML coin cells for energy-harvesting sensors and BLE beacons. UN 38.3 + IEC 62133-2 certified.">
 <link rel="canonical" href="{{CANONICAL_URL}}">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="{{SITE_NAME}}">
-<meta property="og:title" content="Smart Home Battery Manufacturer — Long-Life Cells | Zufek">
-<meta property="og:description" content="Long-life pouch and coin cells for connected home devices: smart locks, sensors, cameras, robot vacuums.">
+<meta property="og:title" content="Smart Home Battery — Li-Po Pouches & Rechargeable Coin Cells | Zufek">
+<meta property="og:description" content="Custom Li-Po pouches for smart locks and doorbells, plus rechargeable LIR/ML coin cells for energy-harvesting sensors.">
 <meta property="og:url" content="{{CANONICAL_URL}}">
 <meta property="og:image" content="https://images.unsplash.com/photo-1558002038-1055907df827?w=1920&q=80">
 <meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Smart Home Battery Manufacturer | Zufek">
-<meta name="twitter:description" content="Long-life pouch and coin cells for connected home devices.">
+<meta name="twitter:title" content="Smart Home Battery | Zufek">
+<meta name="twitter:description" content="Li-Po pouches for smart locks and doorbells, plus rechargeable coin cells for harvesting sensors.">
 <meta name="twitter:image" content="https://images.unsplash.com/photo-1558002038-1055907df827?w=1920&q=80">
 <meta name="theme-color" content="#0b3a82">
 <meta name="format-detection" content="telephone=no">
@@ -37,8 +37,8 @@
   "@type":"WebPage",
   "@id":"{{CANONICAL_BASE}}/applications/smart-home.html#webpage",
   "url":"{{CANONICAL_BASE}}/applications/smart-home.html",
-  "name":"Smart Home Battery Manufacturer | Zufek",
-  "description":"Long-life lithium cells for smart locks, sensors, cameras and robot vacuums.",
+  "name":"Smart Home Battery | Zufek",
+  "description":"Custom Li-Po pouches and rechargeable coin cells for smart locks, doorbells, cameras and connected sensors.",
   "isPartOf":{"@id":"{{CANONICAL_BASE}}/#website"},
   "about":{"@id":"{{CANONICAL_BASE}}/#organization"}
 }</script>
@@ -47,16 +47,16 @@
   "@type":"FAQPage",
   "@id":"{{CANONICAL_BASE}}/applications/smart-home.html#faq",
   "mainEntity":[
-    {"@type":"Question","name":"How long should a smart-lock battery last?",
-     "acceptedAnswer":{"@type":"Answer","text":"Modern Wi-Fi smart locks (with a constantly-listening radio) last 4–8 months on 4×AA primary lithium. Z-Wave or Zigbee locks (which sleep between events) last 12–24 months. We typically design custom Li-Po packs to deliver 18 months of typical use (10 unlocks/day) with a hibernate current under 25 µA — a 4× improvement over off-the-shelf alkaline."}},
-    {"@type":"Question","name":"Primary or rechargeable lithium for door/window sensors?",
-     "acceptedAnswer":{"@type":"Answer","text":"For low-event-count sensors (a window sensor that triggers maybe 8 times/day), primary CR123A or ER14250 lithium gives 5–8 years on a single cell. For higher-traffic devices (motion sensors with PIR + radar), a small rechargeable Li-Po (200–500 mAh) with USB-C top-up port is now the better long-term cost — especially under EU Battery Regulation rules taking effect 2027."}},
-    {"@type":"Question","name":"What battery do video doorbells and security cameras need?",
-     "acceptedAnswer":{"@type":"Answer","text":"Battery-powered cameras typically use 6,000–10,000 mAh Li-Po packs at 3.7V (or 2S 7.4V for higher-resolution streams). The pack must survive -20 °C to +60 °C operating, support fast 1.5C charging from solar trickle, and handle 2A peaks for 1080p H.265 encoding bursts. Self-discharge under 1%/month is critical because owners forget to recharge."}},
+    {"@type":"Question","name":"How long does a Li-Po-powered smart lock last between charges?",
+     "acceptedAnswer":{"@type":"Answer","text":"A modern Z-Wave or Zigbee smart lock with a 1,500-2,500 mAh Li-Po pouch and 10 to 15 unlocks per day delivers 12 to 18 months between charges. Wi-Fi smart locks (always-listening radio) draw more, so the same Li-Po runs 4 to 8 months. We size the pack against the host MCU's deep-sleep current and the radio's wake duty cycle, not the off-the-shelf alkaline replacement number."}},
+    {"@type":"Question","name":"Can I use rechargeable coin cells in low-event sensors?",
+     "acceptedAnswer":{"@type":"Answer","text":"Yes — when the sensor has an energy-harvesting source (small solar panel, kinetic harvesting, or wireless re-charge). LIR2032 and LIR2450 rechargeable coin cells deliver 500+ cycles and integrate cleanly with a sub-2 µA harvesting controller. ML2032 and ML2430 add SMD reflow capability for fully sealed sensor designs. We do not make primary CR coin cells (CR2032, CR2450) — for non-recharging primary applications, your sourcing path is a different supplier."}},
+    {"@type":"Question","name":"What capacity Li-Po do I need for a video doorbell or battery camera?",
+     "acceptedAnswer":{"@type":"Answer","text":"Battery-powered video doorbells and outdoor cameras typically need 4,000 to 10,000 mAh Li-Po at 3.7 V (or 2S 7.4 V for higher-resolution H.265 streams). The pack must support 1.5C fast charging from USB-C or solar, handle 2 A peaks during encoding bursts, and operate -20 to +60 °C. Self-discharge under 1% per month matters because end users forget to recharge."}},
     {"@type":"Question","name":"How do you handle low-temperature operation in northern climates?",
-     "acceptedAnswer":{"@type":"Answer","text":"Standard Li-ion drops 20–35% capacity at -20 °C and refuses to charge below 0 °C without damage. We use low-temperature electrolyte formulations that hold 75% capacity at -20 °C, and add a self-heating BMS for cells installed in unheated outbuildings or on outdoor cameras. For -30 °C deployments we move to BCI 2150 LTO or CR-class primary lithium."}},
-    {"@type":"Question","name":"What approvals do smart-home batteries need to ship into Amazon, Google Home or Apple HomeKit ecosystems?",
-     "acceptedAnswer":{"@type":"Answer","text":"UN 38.3 is mandatory for shipping. UL 2054 (or UL 1642 cell-level) covers North America. CE + UKCA + EU Battery Regulation cover Europe. KC 62133 for Korea. PSE for Japan. Smart-home device certs (Matter 1.4, Apple HomeKit MFi, Google Home registration) ride on the host device, not the battery — but the battery report is part of the device file."}}
+     "acceptedAnswer":{"@type":"Answer","text":"Standard Li-Po loses 20-35% capacity at -20 °C and refuses to charge below 0 °C without damage. We ship a low-temperature electrolyte variant that holds 75% capacity at -20 °C, plus an optional cell-side self-heating BMS for cameras and doorbells installed on shaded or unheated walls. For continuous sub -25 °C deployments we recommend ML coin cells (rated -40 to +85 °C, 70 to 80% capacity at -40 °C) wherever the device's power budget allows."}},
+    {"@type":"Question","name":"What certifications do smart-home batteries need to ship into Amazon, Google or Apple ecosystems?",
+     "acceptedAnswer":{"@type":"Answer","text":"UN 38.3 mandatory globally for transport. IEC 62133-2:2017 + Amendment 1 for cell safety. CE + EU Battery Regulation for Europe, FCC at device level for the US, KC 62133 for Korea. Smart-home device certs (Matter 1.4, Apple HomeKit MFi, Works with Google) ride on the host device, not the battery — but the battery test reports become part of the device-level technical file. Total stack: USD 25 to 40k, 14 to 16 weeks."}}
   ]
 }</script>
 </head>
@@ -67,21 +67,22 @@
   <section class="page-hero" style="background-image:url('https://images.unsplash.com/photo-1558002038-1055907df827?w=1920&q=80');">
     <div class="breadcrumbs"><a href="/">Home</a><span>/</span><a href="/applications/">Applications</a><span>/</span><span>Smart Home</span></div>
     <h1>Smart Home Battery Packs</h1>
-    <p>Long-life cells for devices that have to "just work" for two years between charges.</p>
+    <p>Long-life rechargeable cells for devices that have to "just work" for a year between charges.</p>
   </section>
 
   <div data-page-body>
 
   <section class="section section-light">
     <div class="section-inner">
-      <span class="eyebrow">The challenge</span>
-      <h2>The customer never wants to change a battery.</h2>
-      <p class="lead">Smart-home devices live behind walls, on ceilings, on outdoor doorframes — anywhere a 4 AM low-battery alert is a quality-of-life problem. We ship cells into smart locks, door/window sensors, motion + PIR detectors, leak sensors, smoke alarms, security cameras, video doorbells, robot vacuums, robot mowers, smart shades and connected appliances. Different chemistries, same design rule: the battery must be invisible to the end-user for as long as physics allows.</p>
+      <span class="eyebrow">Where we fit</span>
+      <h2>Rechargeable Li-Po + rechargeable coin — the smart-home that can be re-charged.</h2>
+      <p class="lead">We ship two cell families into the connected-home market: <a href="/products/polymer-lithium-battery">custom Li-Po pouch cells</a> for any rechargeable device — smart locks, video doorbells, battery cameras, smart shades, robot vacuums — and <a href="/products/coin-steel-shell-lithium-battery">rechargeable LIR / ML coin cells</a> for sensors with energy harvesting and SMD-mounted RTC / beacon roles. We do not make primary CR coin cells (CR2032, CR2450), CR123A cylindrical primaries, or 18650 / 21700 Li-ion — for sensor applications dominated by non-rechargeable primary cells (door/window sensors, smoke alarms, leak detectors), your sourcing path is a different supplier.</p>
 
       <div class="content-split">
         <div class="text-col">
           <h3>Long-life <a href="/products/polymer-lithium-battery">Li-Po pouch</a> for high-event devices.</h3>
-          <p>For smart locks, video doorbells and battery-powered cameras, custom Li-Po pouches (500 mAh – 10 Ah) deliver 12–24 months between charges. Our low-self-discharge formulation holds &lt; 1% loss per month, vs. 2–4% for commodity LCO. Standard chemistry: 4.40V LCO with carbon-coated foil; high-voltage 4.48V variant for premium platforms where +8% energy density justifies the cycle-life trade-off.</p>
+          <p>For smart locks, video doorbells, battery-powered cameras and motorised shades, custom Li-Po pouches (500 mAh to 10 Ah) deliver 6 to 18 months between charges. Our low-self-discharge formulation holds &lt; 1% loss per month vs. 2-4% for commodity LCO. Standard chemistry: 4.40 V LCO with carbon-coated foil; high-voltage 4.48 V variant for premium platforms where +8% energy density justifies the cycle-life trade-off.</p>
+          <p>We tune the pack to the host MCU's deep-sleep budget — typically a 25 µA BMS standby for rechargeable platforms, which is roughly 4× better than off-the-shelf alkaline replacement modules.</p>
         </div>
         <div class="img-col">
           <img src="https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=1000&q=80" alt="Smart home dashboard" loading="lazy" decoding="async" width="1000" height="667">
@@ -90,11 +91,12 @@
 
       <div class="content-split reverse">
         <div class="text-col">
-          <h3><a href="/products/coin-steel-shell-lithium-battery">Coin steel-shell</a> for low-event sensors.</h3>
-          <p>For window sensors, motion detectors and leak alarms — devices that fire 5–50 events per day — primary lithium coin (CR2032, CR2450) and rechargeable LIR/ML give 3–8 years of life. The hermetic steel can survives -40 °C to +85 °C with no measurable self-discharge in the first three years. We supply CR-series MnO2 chemistry for true 8+ year deployments and LIR/ML rechargeables for sensors with energy-harvesting trickle charge.</p>
+          <h3><a href="/products/coin-steel-shell-lithium-battery">Rechargeable coin cells</a> for harvesting sensors and beacons.</h3>
+          <p>For sensors with a small solar harvesting panel, kinetic harvesting, or a periodic wireless top-up: LIR2032 / LIR2450 deliver 500+ cycles with a hermetic stainless-steel can rated -40 to +85 °C. For SMD-mounted designs (BLE beacons, RTC retention on the host PCB, sealed environmental sensors): ML2032 / ML2430 survive standard lead-free reflow at 260 °C peak and run 1,000+ cycles.</p>
+          <p>The coin steel-shell platform suits sealed-housing devices that should never need to be opened — and devices with energy-harvesting input that periodically tops up the cell.</p>
         </div>
         <div class="img-col">
-          <img src="https://images.unsplash.com/photo-1561414927-6d86591d0c4f?w=1000&q=80" alt="Smart home sensors" loading="lazy" decoding="async" width="1000" height="667">
+          <img src="https://images.unsplash.com/photo-1561414927-6d86591d0c4f?w=1000&q=80" alt="Connected home sensors" loading="lazy" decoding="async" width="1000" height="667">
         </div>
       </div>
     </div>
@@ -107,13 +109,14 @@
       <table class="spec-table">
         <thead><tr><th>Device</th><th>Cell type</th><th>Capacity</th><th>Battery life target</th><th>Volume</th></tr></thead>
         <tbody>
-          <tr><td>Smart deadbolt (Wi-Fi)</td><td>4× AA primary or 2,000 mAh Li-Po</td><td>5,000 / 2,000 mAh</td><td>4–18 months</td><td>20k pcs/mo</td></tr>
-          <tr><td>Door / window sensor</td><td>CR2032 / CR2450</td><td>225 / 620 mAh</td><td>3–5 years</td><td>80k pcs/mo</td></tr>
-          <tr><td>Battery doorbell camera</td><td>Li-Po 6,500 mAh</td><td>6,500 mAh</td><td>4–6 months</td><td>15k pcs/mo</td></tr>
-          <tr><td>Outdoor security camera</td><td>2S Li-Po 8,000 mAh</td><td>16 Wh</td><td>3–5 months + solar</td><td>10k pcs/mo</td></tr>
-          <tr><td>Robot vacuum</td><td>4S2P Li-Po or 14S 21700 LFP</td><td>5,200 / 6,000 mAh</td><td>800–1,500 cycles</td><td>25k pcs/mo</td></tr>
-          <tr><td>Smoke / CO alarm</td><td>CR123A or 9V Li-MnO2</td><td>1,500 mAh</td><td>10 years (NFPA 72)</td><td>30k pcs/mo</td></tr>
-          <tr><td>Leak sensor</td><td>CR-AA primary</td><td>2,200 mAh</td><td>5–7 years</td><td>40k pcs/mo</td></tr>
+          <tr><td>Smart deadbolt (Z-Wave / Zigbee)</td><td>Li-Po pouch (rechargeable)</td><td>1,500 – 2,500 mAh</td><td>12 – 18 months / charge</td><td>20k pcs/mo</td></tr>
+          <tr><td>Smart deadbolt (Wi-Fi)</td><td>Li-Po pouch (rechargeable)</td><td>2,000 – 4,000 mAh</td><td>4 – 8 months / charge</td><td>15k pcs/mo</td></tr>
+          <tr><td>Battery video doorbell</td><td>Li-Po pouch</td><td>5,000 – 6,500 mAh</td><td>3 – 6 months / charge</td><td>15k pcs/mo</td></tr>
+          <tr><td>Outdoor security camera (battery)</td><td>2S Li-Po, 7.4 V</td><td>6,000 – 10,000 mAh</td><td>3 – 5 months + solar trickle</td><td>10k pcs/mo</td></tr>
+          <tr><td>Robot vacuum (mid-tier)</td><td>4S2P Li-Po</td><td>5,200 mAh / 4S</td><td>800 – 1,500 cycles</td><td>15k pcs/mo</td></tr>
+          <tr><td>Motorised window shade / blind</td><td>Li-Po pouch</td><td>2,000 – 4,000 mAh</td><td>6 – 12 months / charge</td><td>10k pcs/mo</td></tr>
+          <tr><td>BLE beacon (SMD)</td><td>ML2032 reflow-mountable</td><td>65 mAh</td><td>5 yr passive, 1,000+ cycles</td><td>200k pcs/mo</td></tr>
+          <tr><td>Solar-harvesting sensor</td><td>LIR2032 / LIR2450</td><td>40 – 120 mAh</td><td>1,000+ cycles, sealed</td><td>40k pcs/mo</td></tr>
         </tbody>
       </table>
     </div>
@@ -123,15 +126,15 @@
     <div class="section-inner">
       <span class="eyebrow">Design priorities</span>
       <h2>Six rules that make a battery invisible.</h2>
-      <p class="lead">Smart-home devices fail when the battery becomes visible — when it dies early, leaks, swells, or refuses to wake the device on cold mornings. Six engineering decisions decide which one happens.</p>
+      <p class="lead">Smart-home devices fail when the battery becomes visible — when it dies early, swells inside the wall housing, or refuses to wake the device on cold mornings. Six engineering decisions decide which one happens.</p>
 
       <div class="feat-grid">
-        <div class="feat-item"><div class="feat-icon">①</div><h3>Ultra-low self-discharge</h3><p>&lt; 1% per month at 25 °C — twice the industry standard for low-volume LCO. Critical for devices stocked on retail shelves for 6+ months.</p></div>
-        <div class="feat-item"><div class="feat-icon">②</div><h3>Hibernate-current matching</h3><p>BMS standby current under 5 µA for primary-cell platforms, under 25 µA for rechargeable. We tune the protection IC's quiescent draw to the host MCU's deep-sleep budget.</p></div>
-        <div class="feat-item"><div class="feat-icon">③</div><h3>Wide-temperature electrolyte</h3><p>-20 °C to +60 °C operating with 75% capacity retention at -20 °C. -30 °C variant for outdoor cameras and unheated outbuildings.</p></div>
-        <div class="feat-item"><div class="feat-icon">④</div><h3>USB-C / wireless ready</h3><p>Built-in fast-charge BMS for 1.5C re-charge from USB-C PD. Optional Qi-coil interface for inductive-charge cameras and wearables.</p></div>
-        <div class="feat-item"><div class="feat-icon">⑤</div><h3>UL 1642 + UL 2054 + CE</h3><p>Cell + pack-level safety, plus UN 38.3 transport, EU Battery Regulation digital passport (2027-ready) and KC / PSE for Asia-Pacific markets.</p></div>
-        <div class="feat-item"><div class="feat-icon">⑥</div><h3>10-year shelf-life option</h3><p>Primary lithium MnO2 chemistry with hermetic steel can — used by NFPA 72 smoke alarms and EN 14604 CO detectors that legally require a 10-year sealed battery.</p></div>
+        <div class="feat-item"><div class="feat-icon">①</div><h3>Ultra-low self-discharge</h3><p>&lt; 1% per month at 25 °C — twice the industry standard for low-volume LCO. Critical for devices stocked on retail shelves for 6+ months before sale.</p></div>
+        <div class="feat-item"><div class="feat-icon">②</div><h3>Hibernate-current matching</h3><p>BMS standby current under 25 µA on rechargeable Li-Po platforms. We tune the protection IC's quiescent draw to the host MCU's deep-sleep budget rather than ship a generic profile.</p></div>
+        <div class="feat-item"><div class="feat-icon">③</div><h3>Wide-temperature electrolyte</h3><p>-20 °C to +60 °C operating with 75% capacity retention at -20 °C on the standard wearable Li-Po. Optional self-heating BMS for outdoor cameras and unheated outbuildings.</p></div>
+        <div class="feat-item"><div class="feat-icon">④</div><h3>USB-C / wireless ready</h3><p>Built-in 1.5C fast-charge BMS for USB-C PD and Qi-coil interfaces. Charging temperature inhibit below 0 °C prevents lithium plating on cold mornings.</p></div>
+        <div class="feat-item"><div class="feat-icon">⑤</div><h3>UN 38.3 + IEC 62133-2 + CE</h3><p>Cell-level safety, transport compliance, and EU Battery Regulation digital passport (2027-ready). KC, BIS and PSE on request for Asian-market launches.</p></div>
+        <div class="feat-item"><div class="feat-icon">⑥</div><h3>Reflow-mountable coin option</h3><p>For BLE beacons, sealed sensors and SMD RTC retention: ML2032 / ML2430 cells go through standard J-STD-020 lead-free reflow. No second pass or hand soldering needed.</p></div>
       </div>
     </div>
   </section>
@@ -142,24 +145,24 @@
       <h2>What smart-home OEMs ask before they commit.</h2>
 
       <details class="faq-item" open>
-        <summary><strong>How long should a smart lock battery last?</strong></summary>
-        <p>Wi-Fi smart locks (always-listening radio) last 4–8 months on 4×AA primary lithium. Z-Wave / Zigbee locks (sleep between events) last 12–24 months. A custom Li-Po pack tuned to a 25 µA BMS standby current and 10 unlocks/day usage typically delivers 18 months — about 4× longer than commodity alkaline.</p>
+        <summary><strong>How long does a Li-Po-powered smart lock last between charges?</strong></summary>
+        <p>A modern Z-Wave / Zigbee lock with a 1,500-2,500 mAh Li-Po pouch and 10 to 15 unlocks/day delivers 12 to 18 months between charges. Wi-Fi locks (always-listening) run 4 to 8 months. We size the pack against the host MCU deep-sleep current and the radio's wake duty cycle, not against an off-the-shelf alkaline equivalent.</p>
       </details>
       <details class="faq-item">
-        <summary><strong>Primary or rechargeable lithium for sensors?</strong></summary>
-        <p>For low-event sensors (8 events/day or fewer), CR123A or ER14250 primary lithium gives 5–8 years on a single cell. For higher-traffic devices (PIR + radar motion sensors), a 200–500 mAh Li-Po with USB-C top-up port wins on long-term cost — especially under EU Battery Regulation 2027 rules requiring user-replaceable batteries.</p>
+        <summary><strong>Can I use rechargeable coin cells in low-event sensors?</strong></summary>
+        <p>Yes — when the sensor has an energy-harvesting source. LIR2032 / LIR2450 deliver 500+ cycles with a sub-2 µA harvesting controller. ML2032 / ML2430 add SMD reflow capability. We don't make primary CR coin cells — for primary-only sensors (door/window contact, smoke alarms), the sourcing path is a different supplier. See <a href="/blog/lir-vs-ml-coin-cell-which-to-choose">LIR vs ML — choosing the right rechargeable coin</a>.</p>
       </details>
       <details class="faq-item">
-        <summary><strong>What battery for video doorbells and outdoor cameras?</strong></summary>
-        <p>6,000–10,000 mAh Li-Po at 3.7V (or 2S 7.4V for higher-resolution streams). Must survive -20 °C to +60 °C, support fast 1.5C charging from solar trickle, and handle 2A peaks for H.265 encoding bursts. Self-discharge under 1%/month is critical because owners forget to recharge.</p>
+        <summary><strong>What capacity Li-Po for a video doorbell or battery camera?</strong></summary>
+        <p>5,000 to 10,000 mAh Li-Po at 3.7 V (or 2S 7.4 V for higher-resolution H.265 streams). Must support 1.5C fast charging from USB-C or solar, handle 2 A peaks during encoding, operate -20 to +60 °C, and hold &lt; 1% self-discharge per month.</p>
       </details>
       <details class="faq-item">
         <summary><strong>How do you handle northern winters?</strong></summary>
-        <p>Standard Li-ion loses 20–35% capacity at -20 °C and refuses to charge below 0 °C. We use low-temperature electrolyte holding 75% at -20 °C, and add a self-heating BMS for unheated outbuildings or outdoor cameras. For -30 °C deployments we move to LTO or primary lithium.</p>
+        <p>Standard Li-Po loses 20-35% capacity at -20 °C and refuses to charge below 0 °C. Low-temp electrolyte variant holds 75% at -20 °C; optional self-heating BMS for unheated outbuildings or shaded camera locations. For continuous sub -25 °C deployments, switch to ML coin cells (-40 to +85 °C, 70 to 80% at -40 °C) where the device's power budget allows.</p>
       </details>
       <details class="faq-item">
-        <summary><strong>What certifications are needed?</strong></summary>
-        <p>UN 38.3 (transport, mandatory globally). UL 2054 + UL 1642 (North America). CE + UKCA + EU Battery Regulation (Europe). KC 62133 (Korea), PSE (Japan). Smart-home ecosystem certs — Matter, HomeKit MFi, Google Home — sit on the host device, but the battery test reports are part of the device file.</p>
+        <summary><strong>What certifications are needed for global ecosystems?</strong></summary>
+        <p>UN 38.3 globally for transport. IEC 62133-2:2017 + Amendment 1 for cell safety. CE + EU Battery Regulation for Europe, FCC at device level for the US, KC 62133 for Korea. Smart-home ecosystem certs (Matter, HomeKit, Google Home) sit on the host device, not the battery — but battery test reports are part of the device technical file.</p>
       </details>
     </div>
   </section>
@@ -172,19 +175,19 @@
         <a href="/blog/lir-vs-ml-coin-cell-which-to-choose" class="product-card">
           <div class="product-tag">Coin Cells</div>
           <h3>LIR vs ML Coin Cells</h3>
-          <p>Picking the right rechargeable coin chemistry for your sensor or wearable.</p>
+          <p>Picking the right rechargeable coin chemistry for sensor or wearable.</p>
           <span class="news-link">Read the comparison &rarr;</span>
         </a>
         <a href="/blog/cell-sizing" class="product-card">
           <div class="product-tag">Engineering</div>
           <h3>Sizing a Cell from a Power Profile</h3>
-          <p>How to convert a current-vs-time trace into a real-world capacity spec.</p>
+          <p>Convert a current-vs-time trace into a real-world capacity spec.</p>
           <span class="news-link">Read more &rarr;</span>
         </a>
         <a href="/products/coin-steel-shell-lithium-battery" class="product-card">
           <div class="product-tag">Pillar</div>
           <h3>Coin Steel-Shell Lithium</h3>
-          <p>The hermetic-can platform underneath every long-life sensor and smoke alarm.</p>
+          <p>The hermetic-can platform underneath every long-life sensor and beacon.</p>
           <span class="news-link">Explore the pillar &rarr;</span>
         </a>
       </div>
@@ -194,7 +197,7 @@
   <section class="section section-dark cta-band">
     <div class="section-inner">
       <h2>Building the next connected device?</h2>
-      <p class="lead">Send the duty cycle, sleep current, MCU wake budget and target battery life — we'll come back with the cell and BMS that hits the runtime.</p>
+      <p class="lead">Send the duty cycle, sleep current, MCU wake budget and target battery life — we'll come back with the Li-Po pouch or coin cell that hits the runtime, plus the BMS to match.</p>
       <a href="/contact.html" class="btn btn-accent">Request Engineering Review</a>
     </div>
   </section>

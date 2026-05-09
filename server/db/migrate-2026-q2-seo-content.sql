@@ -98,40 +98,27 @@ UPDATE applications SET
   og_description    = 'Low self-discharge cells for IoT sensors and asset trackers. 5+ yr shelf life, -40 °C to +85 °C.'
 WHERE slug = 'iot' AND (focus_keyword = '' OR focus_keyword IS NULL);
 
-UPDATE applications SET
-  focus_keyword     = 'drone battery',
-  secondary_keywords = '["drone lipo","UAV battery","high discharge lithium","40C lipo battery"]'::jsonb,
-  meta_title        = 'Drone Battery: High-Discharge LiPo Packs (40-80C) | Zufek',
-  meta_description  = 'High-discharge lithium polymer packs for drones, UAVs and robotics. 40-80C peak, thermal-runaway hardened pouches, BMS with CAN. Custom voltages from 11.1V to 96V.',
-  og_title          = 'Drone Battery — High-Discharge LiPo Packs',
-  og_description    = '40-80C peak LiPo packs for drones and UAVs. Thermal-runaway hardened pouches. Custom voltages 11.1-96 V.'
-WHERE slug = 'drones' AND (focus_keyword = '' OR focus_keyword IS NULL);
-
-UPDATE applications SET
-  focus_keyword     = 'power tool battery',
-  secondary_keywords = '["21700 battery pack","NMC tool battery","18V tool battery","cordless tool battery"]'::jsonb,
-  meta_title        = 'Power Tool Battery: 21700 NMC & LFP Packs | Zufek',
-  meta_description  = 'Custom 21700 NMC and LFP power tool battery packs. 18V to 60V configurations, bus-bar welded tabs, BMS with cell balancing. UL 2271 + UN 38.3 certified.',
-  og_title          = 'Power Tool Battery — 21700 NMC & LFP Packs',
-  og_description    = '18-60V cordless tool packs with bus-bar welded 21700 cells. UL 2271 + UN 38.3.'
-WHERE slug = 'power-tools' AND (focus_keyword = '' OR focus_keyword IS NULL);
-
-UPDATE applications SET
-  focus_keyword     = 'e-bike battery',
-  secondary_keywords = '["e-scooter battery","e-mobility lithium","36V battery pack","48V e-bike battery"]'::jsonb,
-  meta_title        = 'E-Bike & E-Mobility Battery: 36V to 96V Custom Packs | Zufek',
-  meta_description  = 'Custom 36V, 48V, 72V and 96V lithium battery packs for e-bikes, e-scooters and last-mile delivery vehicles. CAN bus BMS, IP67 housings, 1500+ cycle warranty.',
-  og_title          = 'E-Bike & E-Mobility Battery — 36-96V Custom Packs',
-  og_description    = 'Custom packs for e-bikes, scooters, last-mile vehicles. CAN BMS, IP67 housings, 1500+ cycles.'
-WHERE slug = 'e-mobility' AND (focus_keyword = '' OR focus_keyword IS NULL);
-
--- Remove the legacy energy-storage application row. It was registered
--- in seed.sql for future use but no static landing page was ever
--- written, so any link to /applications/energy-storage[.html] falls
--- through to a near-empty _template.html render. Easier to drop the
--- DB row than ship a stub page; if the program ever wants a real
--- BESS landing page later, re-add the row + the static .html together.
-DELETE FROM applications WHERE slug = 'energy-storage';
+-- Remove application rows for product categories we don't actually
+-- manufacture. Zufek ships polymer Li-Po pouch + coin steel-shell
+-- rechargeable cells only — we do NOT make 18650 / 21700 cylindrical
+-- cells, Li-SOCl2 D-cell primaries, or any other non-pouch / non-coin
+-- format. The four applications below were written around cylindrical
+-- packs that aren't part of our product line, so they were sending
+-- the wrong inquiries:
+--   - drones                21700 + high-rate LiPo (FPV niche only fits)
+--   - power-tools           pure 18650/21700 NMC packs
+--   - e-mobility            36-96V cylindrical e-bike/scooter packs
+--   - industrial-handhelds  smart 21700 packs with SMBus
+--
+-- Plus the legacy energy-storage row that was never paired with a
+-- static landing page and was rendering as an empty template.
+DELETE FROM applications WHERE slug IN (
+  'drones',
+  'power-tools',
+  'e-mobility',
+  'industrial-handhelds',
+  'energy-storage'
+);
 
 -- ---------------------------------------------------------------
 -- STATIC PAGES (homepage, about, contact, faq, …)
@@ -482,14 +469,18 @@ UPDATE articles SET focus_keyword = 'custom shaped battery reliability testing',
  WHERE slug = 'custom-battery-reliability-testing';
 
 -- ---------------------------------------------------------------
--- NAVIGATION setting — refresh on existing deployments to include
--- the 6 new application pages (drones, power-tools, e-mobility,
--- industrial-handhelds, defence-aerospace, smart-home). Idempotent:
--- only updates rows that still hold the old 4-application payload.
+-- NAVIGATION setting — refresh on existing deployments. Restricted
+-- to the 6 applications that match Zufek's product line (polymer
+-- pouch + coin steel-shell): AR/VR, Medical, Wearables, IoT, Smart
+-- Home, Defence & Aerospace. Idempotent: only updates rows that
+-- still reference one of the deleted cylindrical-only categories.
 -- ---------------------------------------------------------------
 UPDATE settings
-   SET value = '{"header":[{"label":"HOME","url":"/","nav":"home"},{"label":"PRODUCTS","url":"/products/","nav":"products","children":[{"label":"Polymer Lithium Battery","url":"/products/polymer-lithium-battery"},{"label":"Custom-Shaped Polymer (Li-Po)","url":"/products/custom-shaped-polymer-lithium-battery"},{"label":"Coin Steel-Shell Lithium","url":"/products/coin-steel-shell-lithium-battery"}]},{"label":"APPLICATIONS","url":"/applications/","nav":"applications","children":[{"label":"AR / VR Glasses","url":"/applications/ar-vr.html"},{"label":"Medical Devices","url":"/applications/medical.html"},{"label":"Wearables","url":"/applications/wearables.html"},{"label":"IoT Devices","url":"/applications/iot.html"},{"label":"Drones & Robotics","url":"/applications/drones.html"},{"label":"Power Tools","url":"/applications/power-tools.html"},{"label":"E-Mobility","url":"/applications/e-mobility.html"},{"label":"Industrial Handhelds","url":"/applications/industrial-handhelds.html"},{"label":"Defence & Aerospace","url":"/applications/defence-aerospace.html"},{"label":"Smart Home","url":"/applications/smart-home.html"}]},{"label":"CUSTOM SOLUTIONS","url":"/solutions/","nav":"solutions","children":[{"label":"Design Support","url":"/solutions/design.html"},{"label":"Prototyping","url":"/solutions/prototyping.html"},{"label":"Mass Production","url":"/solutions/mass-production.html"}]},{"label":"ABOUT US","url":"/about/","nav":"about","children":[{"label":"Company Profile","url":"/about/profile.html"},{"label":"Factory Tour","url":"/about/factory.html"},{"label":"Team","url":"/about/team.html"}]},{"label":"BLOG","url":"/blog/","nav":"blog"},{"label":"FAQ","url":"/faq.html","nav":"faq"},{"label":"CONTACT","url":"/contact.html","nav":"contact"}]}'::jsonb
+   SET value = '{"header":[{"label":"HOME","url":"/","nav":"home"},{"label":"PRODUCTS","url":"/products/","nav":"products","children":[{"label":"Polymer Lithium Battery","url":"/products/polymer-lithium-battery"},{"label":"Custom-Shaped Polymer (Li-Po)","url":"/products/custom-shaped-polymer-lithium-battery"},{"label":"Coin Steel-Shell Lithium","url":"/products/coin-steel-shell-lithium-battery"}]},{"label":"APPLICATIONS","url":"/applications/","nav":"applications","children":[{"label":"AR / VR Glasses","url":"/applications/ar-vr.html"},{"label":"Medical Devices","url":"/applications/medical.html"},{"label":"Wearables","url":"/applications/wearables.html"},{"label":"IoT Devices","url":"/applications/iot.html"},{"label":"Smart Home","url":"/applications/smart-home.html"},{"label":"Defence & Aerospace","url":"/applications/defence-aerospace.html"}]},{"label":"CUSTOM SOLUTIONS","url":"/solutions/","nav":"solutions","children":[{"label":"Design Support","url":"/solutions/design.html"},{"label":"Prototyping","url":"/solutions/prototyping.html"},{"label":"Mass Production","url":"/solutions/mass-production.html"}]},{"label":"ABOUT US","url":"/about/","nav":"about","children":[{"label":"Company Profile","url":"/about/profile.html"},{"label":"Factory Tour","url":"/about/factory.html"},{"label":"Team","url":"/about/team.html"}]},{"label":"BLOG","url":"/blog/","nav":"blog"},{"label":"FAQ","url":"/faq.html","nav":"faq"},{"label":"CONTACT","url":"/contact.html","nav":"contact"}]}'::jsonb
  WHERE key = 'navigation'
-   AND value::text NOT LIKE '%applications/drones.html%';
+   AND (value::text LIKE '%applications/drones.html%'
+     OR value::text LIKE '%applications/power-tools.html%'
+     OR value::text LIKE '%applications/e-mobility.html%'
+     OR value::text LIKE '%applications/industrial-handhelds.html%');
 
 COMMIT;
