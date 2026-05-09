@@ -288,22 +288,47 @@ document.addEventListener('cms:ready', bindSliders);
 if (document.readyState !== 'loading') bindSliders();
 else document.addEventListener('DOMContentLoaded', bindSliders);
 
-// ===== Reveal-on-scroll (refined slide-up) =====
+// ===== Reveal-on-scroll (bidirectional + staggered) =====
+// Enter direction: from-below → fade up + scale ease-in (default)
+// Bidirectional: now we toggle the class instead of unobserving, so
+// scrolling back UP and re-entering an element re-plays the animation
+// (gives the site a more responsive, alive feel).
+// Stagger: items inside the same parent grid get a 60ms-per-child delay
+// applied via CSS variable, so a 3-card row "ripples" rather than
+// snapping in unison.
 const fadeTargets = document.querySelectorAll(
-  '.product-card, .app-card, .step-card, .news-card, .about-tab, .about-stats > div, .contact-card, .faq-list details, .feat-item, [data-reveal]'
+  '.product-card, .app-card, .step-card, .news-card, .about-tab, .about-stats > div, .contact-card, .faq-list details, .feat-item, .blog-card, .pillar-card, .cust-item, .tesla-slide, .feat-grid > *, .pillar-grid > a, .product-grid > a, .blog-grid > *, .news-grid > *, .cert-chip, .about-stats > div, .mfg-stats > div, [data-reveal]'
 );
-fadeTargets.forEach((el) => el.classList.add('reveal'));
+fadeTargets.forEach((el, i) => {
+  el.classList.add('reveal');
+  // Per-element stagger inside its parent. We inspect the position of
+  // the element among its siblings (capped at 8 so very long lists
+  // don't get an excessive delay) and translate that into a CSS
+  // variable consumed by the .reveal animation.
+  const siblings = el.parentElement ? Array.from(el.parentElement.children).filter((c) => c.matches('.reveal')) : null;
+  const idx = siblings ? Math.min(siblings.indexOf(el), 8) : 0;
+  el.style.setProperty('--reveal-delay', (Math.max(0, idx) * 60) + 'ms');
+});
 
 const io = new IntersectionObserver((entries) => {
   entries.forEach((entry) => {
+    // Toggle (not one-shot) so scrolling up replays the animation.
     if (entry.isIntersecting) {
       entry.target.classList.add('is-visible');
-      // also keep the legacy .visible class for fade-in fallback
       entry.target.classList.add('visible');
-      io.unobserve(entry.target);
+    } else {
+      // Only "exit" the reveal when the element is fully off-screen,
+      // not when partially scrolled out — otherwise the animation
+      // re-fires too aggressively as the user reads.
+      const r = entry.boundingClientRect;
+      const off = r.top > window.innerHeight + 80 || r.bottom < -80;
+      if (off) {
+        entry.target.classList.remove('is-visible');
+        entry.target.classList.remove('visible');
+      }
     }
   });
-}, { threshold: 0.12 });
+}, { threshold: [0, 0.12, 0.5], rootMargin: '0px 0px -8% 0px' });
 
 fadeTargets.forEach((el) => io.observe(el));
 
@@ -335,14 +360,57 @@ document.querySelectorAll('a[href^="#"]').forEach((a) => {
   });
 });
 
-// ===== Header hide-on-scroll-down (mobile-friendly nicety) =====
+// ===== Header hide-on-scroll-down + scroll direction tracking =====
+// In addition to hiding the header on downscroll, we expose the current
+// scroll direction as body[data-scroll-dir="up"|"down"]. The reveal
+// animation uses this to come from above when you scroll UP into a
+// previously-seen element, so the page feels like a continuous space
+// instead of a one-shot reveal.
 let lastScroll = 0;
 const headerEl = document.getElementById('site-header');
-if (headerEl) {
-  window.addEventListener('scroll', () => {
-    const y = window.scrollY;
+window.addEventListener('scroll', () => {
+  const y = window.scrollY;
+  if (y > lastScroll + 4) document.body.dataset.scrollDir = 'down';
+  else if (y < lastScroll - 4) document.body.dataset.scrollDir = 'up';
+  if (headerEl) {
     if (y > lastScroll + 8 && y > 200) headerEl.classList.add('is-hidden');
     else if (y < lastScroll - 4) headerEl.classList.remove('is-hidden');
-    lastScroll = y;
-  }, { passive: true });
-}
+  }
+  lastScroll = y;
+}, { passive: true });
+
+// ===== Magnetic hover for primary CTAs (subtle tech-feel touch) =====
+// Buttons follow the cursor by a few px when hovered. Disabled on
+// touch devices and when prefers-reduced-motion is set.
+(function () {
+  if (window.matchMedia('(hover: none)').matches) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const btns = document.querySelectorAll('.btn-primary, .btn-accent, .news-link');
+  btns.forEach((btn) => {
+    btn.addEventListener('pointermove', (ev) => {
+      const r = btn.getBoundingClientRect();
+      const x = ev.clientX - r.left - r.width / 2;
+      const y = ev.clientY - r.top - r.height / 2;
+      btn.style.transform = `translate(${(x * 0.08).toFixed(1)}px, ${(y * 0.12).toFixed(1)}px)`;
+    });
+    btn.addEventListener('pointerleave', () => { btn.style.transform = ''; });
+  });
+})();
+
+// ===== Card 3D tilt on hover (tech-feel; subtle, < 6deg) =====
+(function () {
+  if (window.matchMedia('(hover: none)').matches) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const tiltSelector = '.pillar-card, .product-card, .feat-item, .step-card, .blog-card, .news-card';
+  document.querySelectorAll(tiltSelector).forEach((card) => {
+    card.addEventListener('pointermove', (ev) => {
+      const r = card.getBoundingClientRect();
+      const x = (ev.clientX - r.left) / r.width;
+      const y = (ev.clientY - r.top) / r.height;
+      const rx = ((y - 0.5) * -5).toFixed(2);
+      const ry = ((x - 0.5) *  5).toFixed(2);
+      card.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-3px)`;
+    });
+    card.addEventListener('pointerleave', () => { card.style.transform = ''; });
+  });
+})();

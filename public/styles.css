@@ -1775,19 +1775,33 @@ footer {
    too slow, looks like the hover does nothing. Animations run once
    on .is-visible and don't leave any sticky transform behind, so
    each card's own :hover transition takes over cleanly. */
-.reveal { opacity: 0; }
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.7s cubic-bezier(.2,.8,.2,1) var(--reveal-delay, 0ms),
+    transform 0.7s cubic-bezier(.2,.8,.2,1) var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
 .reveal.is-visible {
   opacity: 1;
-  animation: revealSlide 0.7s cubic-bezier(.2,.8,.2,1);
+  transform: translateY(0);
 }
-@keyframes revealSlide {
-  from { opacity: 0; transform: translateY(30px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
+/* When the user scrolls down past an item then back up, the item
+   re-enters from the OTHER side — we let translate Y sign track scroll
+   direction via a body-level data attr (set by script.js). Tech-feel:
+   the page reads as a continuous 3D space, not a one-shot reveal. */
+body[data-scroll-dir="up"] .reveal:not(.is-visible) { transform: translateY(-28px); }
 .reveal[data-delay="1"] { transition-delay: 0.08s; }
 .reveal[data-delay="2"] { transition-delay: 0.16s; }
 .reveal[data-delay="3"] { transition-delay: 0.24s; }
 .reveal[data-delay="4"] { transition-delay: 0.32s; }
+
+/* Reduced motion: respect the OS preference. */
+@media (prefers-reduced-motion: reduce) {
+  .reveal { transition: opacity 0.2s ease !important; transform: none !important; }
+  body[data-scroll-dir="up"] .reveal:not(.is-visible) { transform: none !important; }
+}
 
 /* Stats animated count-in */
 .about-stats > div { transition: transform 0.6s ease; }
@@ -3553,8 +3567,17 @@ a:hover > .news-link::after,
    beats stylesheet on cascade order).
    ========================================================================= */
 
-/* Inline brand-mark watermark (absolutely-positioned ::after).
-   Drawn as the wordmark "Z" over a blue gradient. */
+/* Image placeholder block.
+   Two-tier approach so we never fight inline background-image:
+     1. The base rule sets ONLY size/position/repeat. These help every
+        card (with or without an image) lay out a cover image cleanly.
+     2. The :not([style*="background-image"]) gradient placeholder fires
+        ONLY when the element has no inline image. It paints a brand-blue
+        gradient with a faint diagonal-line texture and a watermark "Z".
+   The previous version used the `background:` shorthand and then a
+   :is([style*="background-image"]) reset, which clobbered background-
+   size / position / repeat for cards that DID have an inline image —
+   producing the inconsistent crops on /applications/. */
 .blog-card__media,
 .pillar-card__media,
 .app-card,
@@ -3563,33 +3586,42 @@ a:hover > .news-link::after,
 .product-card__media,
 .preview-img-card img,
 .image-picker__preview {
-  background: linear-gradient(135deg, #0b3a82 0%, #1e40af 60%, #f5a623 180%);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  background-color: #f4f4f4;
   position: relative;
 }
-.blog-card__media::before,
-.pillar-card__media::before,
-.app-card::before,
-.blog-featured__media::before {
+/* Placeholder gradient — only when there's no inline background-image. */
+.blog-card__media:not([style*="background-image"]),
+.pillar-card__media:not([style*="background-image"]),
+.app-card:not([style*="background-image"]),
+.blog-featured__media:not([style*="background-image"]),
+.tesla-slide:not([style*="background-image"]),
+.product-card__media:not([style*="background-image"]),
+.image-picker__preview:not([style*="background-image"]) {
+  background-image: linear-gradient(135deg, #0b3a82 0%, #1e40af 60%, #f5a623 180%);
+}
+/* Faint diagonal line texture on the gradient placeholder only. */
+.blog-card__media:not([style*="background-image"])::before,
+.pillar-card__media:not([style*="background-image"])::before,
+.app-card:not([style*="background-image"])::before,
+.blog-featured__media:not([style*="background-image"])::before {
   content: "";
   position: absolute; inset: 0;
-  background:
-    /* faint angular line pattern so the gradient isn't flat */
-    repeating-linear-gradient(
-      45deg,
-      rgba(255,255,255,0.03) 0px,
-      rgba(255,255,255,0.03) 2px,
-      transparent 2px,
-      transparent 22px
-    );
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(255,255,255,0.04) 0px,
+    rgba(255,255,255,0.04) 2px,
+    transparent 2px,
+    transparent 22px
+  );
   pointer-events: none;
 }
-/* The brand mark Z, only shown on the gradient (i.e. when no inline image) */
-.blog-card__media::after,
-.pillar-card__media::after,
-.blog-featured__media::after {
+/* Brand mark "Z" centered watermark, also only on the placeholder. */
+.blog-card__media:not([style*="background-image"])::after,
+.pillar-card__media:not([style*="background-image"])::after,
+.blog-featured__media:not([style*="background-image"])::after {
   content: "Z";
   position: absolute;
   top: 50%; left: 50%;
@@ -3602,31 +3634,18 @@ a:hover > .news-link::after,
   pointer-events: none;
   user-select: none;
 }
-/* Hide the Z and the line pattern when an inline background-image is set
-   (i.e. when the card has a real cover image). The selector below
-   targets elements with style attribute containing 'background-image'.
-   We use [style*="background-image"] and reset both ::before/::after. */
-.blog-card__media[style*="background-image"]::before,
-.blog-card__media[style*="background-image"]::after,
-.pillar-card__media[style*="background-image"]::before,
-.pillar-card__media[style*="background-image"]::after,
-.app-card[style*="background-image"]::before,
-.blog-featured__media[style*="background-image"]::before,
-.blog-featured__media[style*="background-image"]::after,
-.tesla-slide[style*="background-image"]::before {
-  display: none;
-}
-.app-card[style*="background-image"] {
-  background: var(--color-card-overlay, transparent);
-}
 
 /* page-hero placeholder — when no inline background-image, fill with the
    same gradient. */
-.page-hero,
-.hero {
+.page-hero:not([style*="background-image"]),
+.hero:not([style*="background-image"]) {
+  background-image: linear-gradient(135deg, #0b3a82 0%, #1e40af 60%, #1e3a8a 100%);
+}
+.page-hero, .hero {
   background-color: #0b3a82;
   background-size: cover;
   background-position: center;
+  background-repeat: no-repeat;
 }
 
 /* Empty <img> graceful fallback — broken or missing image shows the same
@@ -3690,4 +3709,174 @@ img[src=""] {
   margin: 1.6em auto;
   display: block;
   background: #f5f5f7;
+}
+
+/* =========================================================================
+   Auto-balance grids that would otherwise leave a single orphan card on
+   row 2. Uses :has() (Chrome 105+, Safari 15.4+, Firefox 121+).
+     - feat-grid / product-grid : default 3-column → 2×2 when 4 children
+     - feat-grid : also accept 4-column wide layout when grid is wide
+   The orphan-row case (3-col, 4 items, 1-on-row-2) was the worst offender
+   on /about/profile.html (founders) and the application hubs.
+   ========================================================================= */
+.feat-grid:has(> :nth-child(4):last-child),
+.product-grid:has(> :nth-child(4):last-child) {
+  grid-template-columns: repeat(2, 1fr);
+  max-width: 920px;
+  margin-left: auto;
+  margin-right: auto;
+}
+@media (max-width: 760px) {
+  .feat-grid:has(> :nth-child(4):last-child),
+  .product-grid:has(> :nth-child(4):last-child) {
+    grid-template-columns: 1fr;
+  }
+}
+/* 5-item case: prefer 3+2 (3 on top, 2 centred below) instead of 3+2-edge. */
+.feat-grid:has(> :nth-child(5):last-child) > :nth-child(4),
+.feat-grid:has(> :nth-child(5):last-child) > :nth-child(5) {
+  grid-column: span 1;
+}
+/* The same trick for arbitrary single-orphan cases in 3-col grids:
+   when an item is the 1st of its row AND the very last child, span 3
+   columns and centre its content. */
+.feat-grid:has(> :nth-child(7):last-child) > :nth-child(7),
+.feat-grid:has(> :nth-child(10):last-child) > :nth-child(10) {
+  grid-column: 2 / span 1;     /* centre the lone trailing card */
+}
+
+/* The application page's "Featured Industries" grid uses .app-grid which
+   was already 2×2 by default, so no orphan there. Just preserved. */
+
+/* =========================================================================
+   Tech-feel motion polish — bidirectional reveals, subtle hover tilt,
+   shimmer sweep on accent CTAs, focus pulse on form fields.
+   All effects respect (prefers-reduced-motion: reduce).
+   ========================================================================= */
+
+/* Shimmer sweep on primary / accent CTAs.
+   A diagonal highlight slides from left to right on hover, gives the
+   button a brushed-metal feel without being garish. */
+.btn-primary,
+.btn-accent {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.btn-primary::after,
+.btn-accent::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0) 30%,
+    rgba(255,255,255,0.35) 50%,
+    rgba(255,255,255,0) 70%,
+    rgba(255,255,255,0) 100%
+  );
+  transform: translateX(-100%);
+  transition: transform 0.6s cubic-bezier(.2,.8,.2,1);
+  pointer-events: none;
+  mix-blend-mode: screen;
+  z-index: -1;
+}
+.btn-primary:hover::after,
+.btn-accent:hover::after { transform: translateX(100%); }
+
+/* Card hover lift — generic across cards. The 3D tilt JS sets transform
+   on hover, so this rule only applies the box-shadow. The transition is
+   shorter than on the JS transform so the shadow eases in faster than
+   the tilt to feel responsive. */
+.pillar-card,
+.product-card,
+.feat-item,
+.step-card,
+.blog-card,
+.news-card,
+.app-card {
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+  will-change: transform;
+}
+.pillar-card:hover,
+.feat-item:hover,
+.step-card:hover,
+.blog-card:hover,
+.news-card:hover {
+  box-shadow:
+    0 24px 48px rgba(11, 58, 130, 0.10),
+    0 4px 14px rgba(11, 58, 130, 0.06);
+  border-color: rgba(11, 58, 130, 0.18);
+}
+
+/* Form field focus pulse — accent ring expands then settles. */
+.contact-form input,
+.contact-form textarea,
+.contact-form select {
+  transition: border-color 0.2s ease, box-shadow 0.25s ease;
+}
+.contact-form input:focus,
+.contact-form textarea:focus,
+.contact-form select:focus {
+  outline: none;
+  border-color: rgba(245, 166, 35, 0.6);
+  box-shadow: 0 0 0 4px rgba(245, 166, 35, 0.18);
+}
+
+/* Number counter fade-in stagger — when stats grid enters viewport,
+   each <div> child cascades in with a 0.08s offset. */
+.about-stats.is-visible > div,
+.mfg-stats.is-visible > div {
+  animation: statRise 0.65s cubic-bezier(.2,.8,.2,1) both;
+}
+.about-stats > div:nth-child(1), .mfg-stats > div:nth-child(1) { animation-delay: 0.00s; }
+.about-stats > div:nth-child(2), .mfg-stats > div:nth-child(2) { animation-delay: 0.08s; }
+.about-stats > div:nth-child(3), .mfg-stats > div:nth-child(3) { animation-delay: 0.16s; }
+.about-stats > div:nth-child(4), .mfg-stats > div:nth-child(4) { animation-delay: 0.24s; }
+@keyframes statRise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Eyebrow labels: subtle horizontal underline draws in on reveal. */
+.section.is-visible .eyebrow,
+.eyebrow.reveal.is-visible {
+  position: relative;
+}
+.eyebrow.reveal.is-visible::after {
+  content: '';
+  position: absolute;
+  left: 0; bottom: -6px;
+  height: 2px;
+  width: 36px;
+  background: var(--color-accent, #f5a623);
+  animation: eyebrowGrow 0.5s 0.2s cubic-bezier(.2,.8,.2,1) both;
+  transform-origin: left;
+}
+@keyframes eyebrowGrow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* Cert chips: stagger and gentle scale-in. */
+.cert-wall.is-visible .cert-chip,
+.cert-chip.reveal.is-visible {
+  animation: chipPop 0.4s cubic-bezier(.2,.8,.2,1) both;
+}
+.cert-chip.reveal:nth-child(odd)  { animation-delay: 0.05s; }
+.cert-chip.reveal:nth-child(even) { animation-delay: 0.10s; }
+@keyframes chipPop {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Reduced-motion override — disable everything. */
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary::after,
+  .btn-accent::after { display: none !important; }
+  .about-stats > div,
+  .mfg-stats > div,
+  .eyebrow.reveal::after,
+  .cert-chip.reveal { animation: none !important; }
 }
