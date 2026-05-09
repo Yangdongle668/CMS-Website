@@ -12,14 +12,18 @@
 // ----- Static fallback (used until CMS settings load, or if API fails) -----
 const FALLBACK = {
   site: {
-    name: 'Acme Battery',
+    name: 'Zufek',
+    legal_name: 'Dongguan Zufek Technology Co.,Ltd',
     tagline: 'Custom lithium batteries for AR/VR, medical, wearables and IoT. Founded 2018 in Dongguan.',
-    email: 'sales@example.com',
-    engineering_email: '',
-    phone: '',
-    address: 'Building A, Industrial Park, Shenzhen 518000, China',
+    email: 'info@zufek.com',
+    engineering_email: 'engineering@zufek.com',
+    phone: '+86 153 7772 0020',
+    address: 'Room 432, Building 1, No. 34 Jinniu Road, Guancheng Subdistrict, Dongguan City, Guangdong Province, China',
   },
-  social: { linkedin: '', whatsapp: '' },
+  social: {
+    linkedin: 'https://www.linkedin.com/company/zufek',
+    whatsapp: 'https://wa.me/8615377720020',
+  },
   navigation: {
     header: [
       { label: 'HOME', url: '/', nav: 'home' },
@@ -55,7 +59,7 @@ const FALLBACK = {
 // before script.js binds events on them. We render fallback first, then
 // override with live settings if/when they arrive.
 const STATE = {
-  config: { turnstileSiteKey: '', privacyPolicyVersion: '1.0', siteName: 'Acme Battery', publicUrl: '' },
+  config: { turnstileSiteKey: '', privacyPolicyVersion: '1.0', siteName: 'Zufek', publicUrl: '' },
   settings: FALLBACK,
 };
 
@@ -82,7 +86,7 @@ function navHtml(nav) {
   }).join('');
   return `<header id="site-header">
     <nav class="nav">
-      <a href="/" class="brand">${escapeHtml(STATE.config.siteName || 'Acme Battery')}</a>
+      <a href="/" class="brand">${escapeHtml(STATE.config.siteName || 'Zufek')}</a>
       <ul class="nav-main">${lis}</ul>
       <button class="menu-btn" id="menuBtn" aria-label="Menu">Menu</button>
     </nav>
@@ -150,7 +154,7 @@ function footerHtml(settings) {
   return `<footer>
     <div class="footer-cols">
       <div class="footer-col footer-col--brand">
-        <h5>${escapeHtml(site.name || 'Acme Battery')}</h5>
+        <h5>${escapeHtml(site.name || 'Zufek')}</h5>
         <p>${escapeHtml(site.tagline || '')}</p>
         ${(site.email || site.engineering_email) ? `<p class="footer-contact">
           ${site.email ? `<a href="mailto:${escapeHtml(site.email)}">${escapeHtml(site.email)}</a><br>` : ''}
@@ -178,7 +182,7 @@ function footerHtml(settings) {
         <li><a href="/sitemap.xml">Sitemap</a></li>
         <li><a href="#" id="cookie-settings-link">Cookie Settings</a></li>
       </ul>
-      <p class="copyright">&copy; ${year} ${escapeHtml(site.name || 'Acme Battery')}. All rights reserved.</p>
+      <p class="copyright">&copy; ${year} ${escapeHtml(site.name || 'Zufek')}. All rights reserved.</p>
     </div>
   </footer>`;
 }

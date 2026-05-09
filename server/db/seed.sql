@@ -21,14 +21,14 @@ INSERT INTO pillar_pages (
   'polymer-lithium-battery',
   'Polymer Lithium Battery',
   'Polymer Li-Po',
-  'Polymer Lithium Battery Manufacturer | Custom Li-Po Cells | Acme Battery',
+  'Polymer Lithium Battery Manufacturer | Custom Li-Po Cells | Zufek',
   'Industrial-grade polymer lithium (Li-Po) batteries with custom capacities from 30 mAh to 20 Ah. ISO 9001 certified manufacturer with UN38.3, IEC 62133, CE compliance.',
   'Pillar Series 01',
   'Polymer Lithium Battery',
   'High energy density Li-Po cells engineered for thin, light, and mission-critical applications. From wearables to medical devices, our polymer lithium batteries deliver consistent performance across thousands of cycles.',
   '/assets/img/pillar-polymer.svg',
   'Get a Quote', '/quote', 'Download Datasheet', '/uploads/datasheet-polymer.pdf',
-  '{"title":"What is a Polymer Lithium Battery?","body":"Polymer lithium batteries (Li-Po) use a gel-like polymer electrolyte instead of the liquid electrolyte found in conventional lithium-ion cells. This allows for ultra-thin profiles, flexible form factors, and improved safety under abuse conditions. Acme manufactures Li-Po cells from 30 mAh up to 20 Ah, with thicknesses as low as 0.4 mm."}',
+  '{"title":"What is a Polymer Lithium Battery?","body":"Polymer lithium batteries (Li-Po) use a gel-like polymer electrolyte instead of the liquid electrolyte found in conventional lithium-ion cells. This allows for ultra-thin profiles, flexible form factors, and improved safety under abuse conditions. Zufek manufactures Li-Po cells from 30 mAh up to 20 Ah, with thicknesses as low as 0.4 mm."}',
   '[
     {"name":"Standard Li-Po Cells","summary":"Pre-designed cells with industry-standard footprints, MOQ 500 pcs, lead time 2 weeks.","image":"/assets/img/variant-standard.svg"},
     {"name":"Custom Li-Po Cells","summary":"Bespoke dimensions, capacity, connectors and BMS integration. ODM/OEM from prototype to mass production.","image":"/assets/img/variant-custom.svg"}
@@ -86,7 +86,7 @@ INSERT INTO pillar_pages (
   'When a rectangular cell will not fit, our engineering team designs the battery around your enclosure. Round, curved, stepped or notched – we manufacture polymer lithium cells in any non-standard geometry.',
   '/assets/img/pillar-custom.svg',
   'Start a Custom Project', '/quote', 'See Capabilities', '#capabilities',
-  '{"title":"Why Custom Geometry?","body":"Modern devices leave little room for off-the-shelf cells. By co-designing the battery with your mechanical team, we recover 10-30% more volumetric energy density and remove dead space. Acme has shipped over 200 custom geometries for medical, wearable and defence customers."}',
+  '{"title":"Why Custom Geometry?","body":"Modern devices leave little room for off-the-shelf cells. By co-designing the battery with your mechanical team, we recover 10-30% more volumetric energy density and remove dead space. Zufek has shipped over 200 custom geometries for medical, wearable and defence customers."}',
   '[
     {"name":"Round / Coin-Style","summary":"Discoid Li-Po cells from 8 mm diameter, used in TWS earbuds and smart sensors.","image":"/assets/img/variant-round.svg"},
     {"name":"Curved","summary":"Single or double curvature for wristbands, helmets and curved medical patches.","image":"/assets/img/variant-curved.svg"},
@@ -235,7 +235,7 @@ INSERT INTO applications (slug, name, icon, cover_url, summary, body, sort_order
 ('e-mobility', 'E-Mobility', 'e-mobility',
  'https://images.unsplash.com/photo-1556122071-e404eaedb77f?w=1200&q=80',
  'NMC and LFP cylindrical packs for e-bikes, e-scooters, AGVs and light EVs.',
- 'Acme designs and assembles 36V to 96V battery packs with integrated BMS, CAN bus, and IP67 housings for e-mobility OEMs across Europe and Southeast Asia.',
+ 'Zufek designs and assembles 36V to 96V battery packs with integrated BMS, CAN bus, and IP67 housings for e-mobility OEMs across Europe and Southeast Asia.',
  7),
 ('energy-storage', 'Energy Storage', 'energy-storage',
  'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=1200&q=80',
@@ -291,21 +291,21 @@ INSERT INTO articles (pillar_id, category_id, slug, title, excerpt, content, aut
  'How to Choose Li-Po Battery Capacity for IoT Devices',
  'A practical guide for hardware engineers selecting polymer lithium cells for low-power IoT applications.',
  '<p>Choosing the right polymer lithium (Li-Po) battery for an IoT device is a balance between runtime, form factor and cycle life. In this guide we walk through the four key parameters every hardware engineer should specify before issuing an RFQ.</p><h2>1. Estimate average current draw</h2><p>Compute the average current as the weighted sum of active and sleep currents. For a typical LoRaWAN sensor reporting once per hour, average current is often 50-150 µA.</p><h2>2. Add 25% headroom for ageing</h2><p>Li-Po cells lose ~20% capacity by cycle 500. Spec the nominal capacity 25% above the runtime requirement so the device still meets its target at end-of-life.</p><h2>3. Match the temperature range</h2><p>Standard Li-Po operates -20°C to +60°C in discharge, but charging below 0°C is not allowed. If your device must charge in cold environments, ask for a low-temperature variant.</p>',
- 'Acme Engineering', 6, now() - interval '5 days', 'published'),
+ 'Zufek Engineering', 6, now() - interval '5 days', 'published'),
 ((SELECT id FROM pillar_pages WHERE slug='custom-shaped-polymer-lithium-battery'),
  (SELECT id FROM categories WHERE slug='technology'),
  'designing-curved-batteries-for-wearables',
  'Designing Curved Polymer Batteries for Wearable Devices',
  'How curvature radius, electrode coating and stack geometry affect cycle life in curved Li-Po cells.',
  '<p>Curved batteries unlock 10-30% extra volume in wearable enclosures, but they also introduce manufacturing trade-offs that affect cycle life. This article explains what to ask your battery vendor before committing to a curved design.</p><h2>Minimum curvature radius</h2><p>For single-curvature cells we recommend R ≥ 25 mm to maintain coating integrity over 500 cycles. Tighter radii are achievable but require thinner electrodes and reduce capacity.</p>',
- 'Acme Engineering', 7, now() - interval '12 days', 'published'),
+ 'Zufek Engineering', 7, now() - interval '12 days', 'published'),
 ((SELECT id FROM pillar_pages WHERE slug='coin-steel-shell-lithium-battery'),
  (SELECT id FROM categories WHERE slug='industry-insights'),
  'lir-vs-ml-coin-cell-which-to-choose',
  'LIR vs. ML Coin Cells: Which Rechargeable Chemistry to Choose',
  'A practical decision guide for picking between LIR (Li-ion 3.6 V) and ML (Li-MnO2 3.0 V) rechargeable coin cells.',
  '<p>Most engineers default to LIR2032 because it''s the obvious CR2032 replacement. That''s usually correct — but for an industrial PCB that has to be reflow-mounted or run hot, ML is the only sensible choice. Here is how we steer customers.</p><h2>Voltage and the regulator question</h2><p>LIR (Li-ion) sits at 3.6-4.2 V, ML (Li-MnO2) at 2.8-3.0 V. If your circuit was designed for a CR2032 (3.0 V) and you can''t add a regulator, ML drops in. LIR needs an LDO or boost depending on the load.</p><h2>Reflow compatibility</h2><p>Only ML survives standard lead-free reflow profiles (260 °C peak). LIR cells must be hand-soldered or socket-mounted.</p><h2>Cycle count</h2><p>ML offers 1,000+ cycles vs. LIR''s 500+. For a daily-charge wearable that''s 1.4 vs. 2.7 years of design life — usually a deciding factor for product warranty.</p>',
- 'Acme Engineering', 7, now() - interval '20 days', 'published')
+ 'Zufek Engineering', 7, now() - interval '20 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 
 -- ----- Pages (hero + meta for each static HTML + homepage sections JSON) -----
@@ -473,15 +473,17 @@ ON CONFLICT (slug) DO NOTHING;
 -- ----- Settings -----
 INSERT INTO settings (key, value) VALUES
 ('site',
- '{"name":"Acme Battery","tagline":"Custom lithium batteries for AR/VR, medical, wearables and IoT. Founded 2018 in Dongguan.","email":"sales@example.com","engineering_email":"engineering@example.com","phone":"+86 755 0000 0000","address":"Building A, Industrial Park, Shenzhen 518000, China","founded_year":2008,"factory_size_sqm":18000,"staff_count":420}'),
+ '{"name":"Zufek","legal_name":"Dongguan Zufek Technology Co.,Ltd","tagline":"Custom lithium batteries for AR/VR, medical, wearables and IoT. Founded 2018 in Dongguan.","email":"info@zufek.com","engineering_email":"engineering@zufek.com","phone":"+86 153 7772 0020","address":"Room 432, Building 1, No. 34 Jinniu Road, Guancheng Subdistrict, Dongguan City, Guangdong Province, China","founded_year":2018,"factory_size_sqm":18000,"staff_count":100}'),
 ('social',
- '{"linkedin":"","whatsapp":""}'),
+ '{"linkedin":"https://www.linkedin.com/company/zufek","whatsapp":"https://wa.me/8615377720020"}'),
 ('seo',
- '{"default_meta_description":"OEM/ODM lithium battery manufacturer specialising in polymer Li-Po, custom-shaped Li-Po and cylindrical Li-Ion cells. ISO 9001, UN 38.3, CE compliant.","default_meta_image":"/assets/img/og-default.svg"}'),
+ '{"public_url":"https://zufek.com","default_meta_description":"OEM/ODM lithium battery manufacturer specialising in polymer Li-Po, custom-shaped Li-Po and coin steel-shell lithium cells. ISO 9001, UN 38.3, CE compliant.","default_meta_image":"/assets/img/og-default.png","twitter_handle":"","ga4_measurement_id":"","gsc_verify":"","bing_verify":""}'),
+('organization',
+ '{"legal_name":"Dongguan Zufek Technology Co.,Ltd","brand_name":"Zufek","founding_date":"2018","vat_id":"","duns":"","logo":"/logo.png","sameAs":["https://www.linkedin.com/company/zufek"],"address":{"streetAddress":"Room 432, Building 1, No. 34 Jinniu Road, Guancheng Subdistrict","addressLocality":"Dongguan","addressRegion":"Guangdong","postalCode":"523000","addressCountry":"CN"},"contactPoints":[{"type":"sales","email":"info@zufek.com","telephone":"+86 153 7772 0020","areaServed":"Worldwide","availableLanguage":["en","zh"]},{"type":"technical support","email":"engineering@zufek.com","areaServed":"Worldwide","availableLanguage":["en"]}]}'),
 ('gdpr',
- '{"retention_days":365,"soft_delete_days":30,"policy_version":"1.0","controller":"Acme Battery Co., Ltd.","controller_email":"privacy@example.com","cookie_categories":{"necessary":{"required":true,"label":"Strictly necessary","description":"Required for the site to function (session, security, language preference)."},"analytics":{"required":false,"label":"Analytics","description":"Aggregated traffic statistics to help us improve the site."},"marketing":{"required":false,"label":"Marketing","description":"Used to measure the performance of advertising campaigns."}}}'),
+ '{"retention_days":365,"soft_delete_days":30,"policy_version":"1.0","controller":"Dongguan Zufek Technology Co.,Ltd","controller_email":"info@zufek.com","cookie_categories":{"necessary":{"required":true,"label":"Strictly necessary","description":"Required for the site to function (session, security, language preference)."},"analytics":{"required":false,"label":"Analytics","description":"Aggregated traffic statistics to help us improve the site."},"marketing":{"required":false,"label":"Marketing","description":"Used to measure the performance of advertising campaigns."}}}'),
 ('mail',
- '{"reply_to":"sales@example.com","subject_prefix":"[Inquiry]","auto_reply_enabled":true}'),
+ '{"reply_to":"info@zufek.com","subject_prefix":"[Inquiry]","auto_reply_enabled":true}'),
 ('navigation',
  '{"header":[{"label":"HOME","url":"/","nav":"home"},{"label":"PRODUCTS","url":"/products/","nav":"products","children":[{"label":"Polymer Lithium Battery","url":"/products/polymer-lithium-battery"},{"label":"Custom-Shaped Polymer (Li-Po)","url":"/products/custom-shaped-polymer-lithium-battery"},{"label":"Coin Steel-Shell Lithium","url":"/products/coin-steel-shell-lithium-battery"}]},{"label":"APPLICATIONS","url":"/applications/","nav":"applications","children":[{"label":"AR / VR Glasses","url":"/applications/ar-vr.html"},{"label":"Medical Devices","url":"/applications/medical.html"},{"label":"Wearables","url":"/applications/wearables.html"},{"label":"IoT Devices","url":"/applications/iot.html"}]},{"label":"CUSTOM SOLUTIONS","url":"/solutions/","nav":"solutions","children":[{"label":"Design Support","url":"/solutions/design.html"},{"label":"Prototyping","url":"/solutions/prototyping.html"},{"label":"Mass Production","url":"/solutions/mass-production.html"}]},{"label":"ABOUT US","url":"/about/","nav":"about","children":[{"label":"Company Profile","url":"/about/profile.html"},{"label":"Factory Tour","url":"/about/factory.html"},{"label":"Team","url":"/about/team.html"}]},{"label":"BLOG","url":"/blog/","nav":"blog"},{"label":"FAQ","url":"/faq.html","nav":"faq"},{"label":"CONTACT","url":"/contact.html","nav":"contact"}]}')
 ON CONFLICT (key) DO NOTHING;
@@ -529,7 +531,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/wearable-chemistry.html" class="prev">&larr; Previous: Wearable Chemistry</a>
           <a href="/blog/un-iec-compliance.html" class="next">Next: UN 38.3 &amp; IEC 62133 &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 12, (SELECT id FROM categories WHERE slug='technology'), now() - interval '10 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 12, (SELECT id FROM categories WHERE slug='technology'), now() - interval '10 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('ar-vr-market-2026', $art$The AR/VR Battery Market in 2026$art$, $art$A sober look at AR/VR headset shipment forecasts and what they mean for pouch-cell supply.$art$, 'https://images.unsplash.com/photo-1617802690992-15d93263d3a3?w=1920&q=80', $art$<p class="lede">The AR/VR category enters 2026 with three distinct sub-segments forming, each with its own battery-sourcing reality. For pouch-cell suppliers, these segments are not equally attractive &mdash; and the wrong bet could leave a factory stranded on cell sizes that nobody orders in 2027.</p>
 
@@ -570,7 +572,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/industry.html" class="prev">&larr; Back to Industry Articles</a>
           <a href="/blog/solid-state-reality.html" class="next">Next: Solid-State Reality &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 5, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '13 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 5, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '13 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('bms-pcm-smart', $art$Protection PCM vs Smart Battery: When to Use Which$art$, $art$Cost, complexity and firmware implications of the two main BMS topologies in consumer electronics.$art$, 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1920&q=80', $art$<p class="lede">Every lithium cell needs protection. The question is only how much of it lives on the cell itself versus on the host system. A protection PCM (PCM = protection circuit module) handles the basics for pennies. A smart battery pack negotiates with the host at the cost of dollars. Between those two there is no middle ground worth defending.</p>
 
@@ -627,7 +629,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/cell-sizing.html" class="prev">&larr; Previous: Cell Sizing</a>
           <a href="/blog/wearable-thermal.html" class="next">Next: Skin-Contact Thermal &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 7, (SELECT id FROM categories WHERE slug='technology'), now() - interval '16 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 7, (SELECT id FROM categories WHERE slug='technology'), now() - interval '16 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('cell-sizing', $art$Sizing a Cell From a Power Profile$art$, $art$How to turn a current-vs-time trace into a real-world capacity specification — with a worked IoT example.$art$, 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=1920&q=80', $art$<p class="lede">Most &ldquo;battery dies too fast&rdquo; complaints trace back to the same mistake: picking a cell capacity that matches nameplate runtime, not real-world runtime. The right method is uncomfortable because it forces you to give up capacity on paper to gain it in the field.</p>
 
@@ -680,7 +682,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/un-iec-compliance.html" class="prev">&larr; Previous: UN 38.3 &amp; IEC 62133</a>
           <a href="/blog/bms-pcm-smart.html" class="next">Next: PCM vs Smart Battery &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 9, (SELECT id FROM categories WHERE slug='technology'), now() - interval '19 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 9, (SELECT id FROM categories WHERE slug='technology'), now() - interval '19 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('china-medical-battery', $art$China's Medical Device Battery Landscape$art$, $art$How NMPA-driven localisation is reshaping the supplier base for wearable medical devices in China and globally.$art$, 'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=1920&q=80', $art$<p class="lede">Medical-device batteries sit in a category of their own: small volumes, long qualification cycles, and regulatory exposure that scales with end-device approval rather than with the battery itself. In China, the last three years have brought real consolidation on the supply side, along with policy pressure to localise. The net effect is a supplier base that&rsquo;s more capable but more concentrated than it was.</p>
 
@@ -736,7 +738,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/hv-lco-density.html" class="prev">&larr; Previous: HV LCO at 4.48 V</a>
           <a href="/blog/industry.html" class="next">Back to Industry Articles &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 4, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '22 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 4, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '22 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('cobalt-nickel-lfp', $art$Supply Chain Notes: Cobalt, Nickel, LFP Outlook$art$, $art$Raw-material pricing, geographic concentration risks, and what procurement teams should lock in for 2026–2027.$art$, 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1920&q=80', $art$<p class="lede">Three raw materials dictate lithium-cell pricing: cobalt, nickel, and the lithium compounds themselves. For small-format cells, cobalt is still the structural factor; for bigger-format packs, nickel-heavy NMC chemistries and LFP are competing on total cost of ownership. Here&rsquo;s how we read the next 12&ndash;24 months.</p>
 
@@ -770,7 +772,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/solid-state-reality.html" class="prev">&larr; Previous: Solid-State Reality</a>
           <a href="/blog/eu-battery-passport.html" class="next">Next: EU Battery Passport &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 4, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '25 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 4, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '25 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('cycle-life-curves', $art$Reading a Cycle-Life Curve Honestly$art$, $art$Why$art$, 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&q=80', $art$<p class="lede">When you look at a cell datasheet and see a single cycle-life number, someone has already made four decisions on your behalf &mdash; decisions that determine whether you&rsquo;ll see that number in the field or half of it. Before you trust a cycle-life claim, learn to ask for the conditions.</p>
 
@@ -817,7 +819,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/lithium-shipping.html" class="prev">&larr; Previous: DGR Basics</a>
           <a href="/blog/thermal-runaway.html" class="next">Next: Thermal Runaway &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 10, (SELECT id FROM categories WHERE slug='technology'), now() - interval '28 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 10, (SELECT id FROM categories WHERE slug='technology'), now() - interval '28 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('eu-battery-passport', $art$The EU Battery Passport: Timeline & Data Requirements$art$, $art$What the new EU Battery Regulation asks for, which product categories are in scope, and what OEMs need from their cell suppliers.$art$, 'https://images.unsplash.com/photo-1529421308418-eab98863cee4?w=1920&q=80', $art$<p class="lede">The EU Battery Regulation (2023/1542) introduces the concept of a digital &ldquo;Battery Passport&rdquo; &mdash; a machine-readable record that travels with a battery through its life. For consumer electronics brands this is not yet the same burden as for EV makers, but the data-collection habits you build now determine how painful the 2030 wave will be.</p>
 
@@ -896,7 +898,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/cobalt-nickel-lfp.html" class="prev">&larr; Previous: Cobalt, Nickel, LFP</a>
           <a href="/blog/second-life-cells.html" class="next">Next: Second-Life Cells &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 6, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '31 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 6, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '31 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('hv-lco-density', $art$HV LCO at 4.48 V: Density Gains for Wearables$art$, $art$An update on high-voltage lithium-cobalt-oxide cathode platforms and what they actually buy at the pack level.$art$, 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1920&q=80', $art$<p class="lede">High-voltage lithium-cobalt-oxide is the quiet cathode upgrade that reshaped premium wearables over the last three years. Pushing the charge cut-off from 4.35 V to 4.45 V, and now to 4.48 V, buys roughly 8&ndash;12% more volumetric energy density at the cell. Here&rsquo;s what that looks like in real products.</p>
 
@@ -960,7 +962,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/lithium-air-freight.html" class="prev">&larr; Previous: Lithium Air Freight</a>
           <a href="/blog/china-medical-battery.html" class="next">Next: China Medical Battery &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 6, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '34 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 6, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '34 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('lithium-air-freight', $art$Lithium Air Freight in 2025: New Rules, Higher Costs$art$, $art$IATA's recent updates to lithium-battery air-cargo rules and their real impact on sample shipping and volume logistics for OEMs outside China.$art$, 'https://images.unsplash.com/photo-1583414692941-2dcf8e0e1ea4?w=1920&q=80', $art$<p class="lede">Air-freight pricing for lithium batteries has risen faster than general cargo every year since 2022. The drivers are a mix of genuine safety updates and insurance-market tightening. For OEMs outside China who depend on air for samples and low-volume launches, the change is already reshaping procurement cadence.</p>
 
@@ -1020,7 +1022,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/tws-earbuds-next.html" class="prev">&larr; Previous: TWS Earbuds Next</a>
           <a href="/blog/hv-lco-density.html" class="next">Next: HV LCO at 4.48 V &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 9, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '37 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 9, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '37 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('lithium-shipping', $art$Shipping Lithium: DGR Basics for Product Managers$art$, $art$Class 9 labels, state-of-charge limits, quantity caps per package — what dangerous-goods regs actually require when you ship lithium cells.$art$, 'https://images.unsplash.com/photo-1568057373560-8d71ccf43b26?w=1920&q=80', $art$<p class="lede">Lithium cells and batteries are dangerous goods. Not dangerous in the &ldquo;explodes in your warehouse&rdquo; sense, but dangerous in the regulatory sense: they move under IATA Dangerous Goods Regulations (DGR) for air, IMO IMDG code for sea, and ADR for road in the EU. Get the paperwork wrong and the shipment stops at origin.</p>
 
@@ -1073,7 +1075,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/wearable-thermal.html" class="prev">&larr; Previous: Skin-Contact Thermal</a>
           <a href="/blog/cycle-life-curves.html" class="next">Next: Reading Cycle-Life Curves &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 5, (SELECT id FROM categories WHERE slug='technology'), now() - interval '40 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 5, (SELECT id FROM categories WHERE slug='technology'), now() - interval '40 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('second-life-cells', $art$Second-Life Cells: Who's Buying, Who's Selling$art$, $art$The emerging re-qualification market for used lithium cells, and whether it makes commercial sense for small formats.$art$, 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1920&q=80', $art$<p class="lede">Second-life cells &mdash; lithium cells retired from one application and repurposed for another &mdash; have moved from concept to commercial reality in the last three years, but almost entirely for EV-scale formats. The economics for consumer-electronics cells look different, and mostly don&rsquo;t pencil.</p>
 
@@ -1125,7 +1127,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/eu-battery-passport.html" class="prev">&larr; Previous: EU Battery Passport</a>
           <a href="/blog/tws-earbuds-next.html" class="next">Next: TWS Earbuds Next &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 8, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '43 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 8, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '43 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('solid-state-reality', $art$Solid-State: Hype vs Reality for Consumer Electronics$art$, $art$Where solid-state batteries make sense today, where they don't, and a realistic timeline for wearables adoption.$art$, 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1920&q=80', $art$<p class="lede">Solid-state batteries have been &ldquo;five years away&rdquo; for fifteen years. In 2026 we can finally say with confidence that partial solid-state &mdash; specifically semi-solid and polymer-hybrid designs &mdash; is shipping in limited volumes. Fully sulfide-based solid-state remains a laboratory and prototype technology outside of a handful of EV pilot programs.</p>
 
@@ -1180,7 +1182,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/ar-vr-market-2026.html" class="prev">&larr; Previous: AR/VR Market 2026</a>
           <a href="/blog/cobalt-nickel-lfp.html" class="next">Next: Cobalt, Nickel, LFP &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 7, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '46 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 7, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '46 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('thermal-runaway', $art$Thermal Runaway: What Triggers It, How to Design Against It$art$, $art$Separator shutdown, vent design, cell spacing and the role of BMS early-warning in lithium cell safety.$art$, 'https://images.unsplash.com/photo-1532456745301-b2c645d8b80d?w=1920&q=80', $art$<p class="lede">Thermal runaway is the chain reaction inside a lithium cell where internal temperature rises faster than it can dissipate &mdash; eventually triggering electrolyte decomposition, gas generation, and in the worst case, venting or fire. It is always the result of one of three triggers: mechanical, thermal, or electrical abuse. Design against all three and you&rsquo;ve covered nearly every real-world failure mode.</p>
 
@@ -1238,7 +1240,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/cycle-life-curves.html" class="prev">&larr; Previous: Cycle-Life Curves</a>
           <a href="/blog/guides.html" class="next">Back to Battery Guides &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 8, (SELECT id FROM categories WHERE slug='technology'), now() - interval '49 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 8, (SELECT id FROM categories WHERE slug='technology'), now() - interval '49 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('tws-earbuds-next', $art$Why TWS Earbuds Plateaued — And What Comes Next$art$, $art$Battery form factor and acoustic volume are in direct conflict. Here's how the next generation of earbuds can break past it.$art$, 'https://images.unsplash.com/photo-1590658006821-04f4008d5717?w=1920&q=80', $art$<p class="lede">True-wireless earbuds have stopped getting smaller. The last three generations of flagship TWS from the major brands are within a few tenths of a gram of each other. That plateau is not a design choice &mdash; it&rsquo;s a physical limit dictated by the conflict between battery volume and acoustic chamber volume inside the earbud shell.</p>
 
@@ -1290,7 +1292,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/second-life-cells.html" class="prev">&larr; Previous: Second-Life Cells</a>
           <a href="/blog/lithium-air-freight.html" class="next">Next: Lithium Air Freight 2025 &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 5, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '52 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 5, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '52 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('un-iec-compliance', $art$UN 38.3 & IEC 62133: What OEMs Need to Know$art$, $art$A plain-English walkthrough of the two safety standards every lithium cell has to pass before it can ship.$art$, 'https://images.unsplash.com/photo-1618477388954-7852f32655ec?w=1920&q=80', $art$<p class="lede">Every lithium cell that ships by air, sea, road, or rail has to clear UN 38.3. Every cell sold for portable consumer use has to clear IEC 62133-2. Miss either and the shipment stops at customs. Plan for both from week one of a program.</p>
 
@@ -1353,7 +1355,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/ar-thin-battery.html" class="prev">&larr; Previous: Ultra-Thin for AR</a>
           <a href="/blog/cell-sizing.html" class="next">Next: Sizing a Cell from Power Profile &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 6, (SELECT id FROM categories WHERE slug='technology'), now() - interval '55 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 6, (SELECT id FROM categories WHERE slug='technology'), now() - interval '55 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('wearable-chemistry', $art$Choosing Between LiPo, Li-ion and LiFePO4 for Wearables$art$, $art$A decision framework for picking the right lithium chemistry for wearables: energy density, safety, cycle life and form factor.$art$, 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1920&q=80', $art$<p class="lede">When a product manager asks &ldquo;which chemistry should we use?&rdquo;, the honest first answer is almost always a counter-question: how small, how long, and how safe does it have to be? Those three constraints collapse the choice faster than any spec sheet.</p>
 
@@ -1404,7 +1406,7 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/guides.html" class="prev">← Back to Battery Guides</a>
           <a href="/blog/ar-thin-battery.html" class="next">Next: Ultra-Thin Battery for AR Glasses →</a>
-        </nav>$art$, 'Acme Engineering', 8, (SELECT id FROM categories WHERE slug='technology'), now() - interval '58 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 8, (SELECT id FROM categories WHERE slug='technology'), now() - interval '58 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('wearable-thermal', $art$Managing Skin-Contact Temperature on Wearables$art$, $art$Why 41 °C is an industrial-design problem, and what the BMS can do to stay under it without ruining runtime.$art$, 'https://images.unsplash.com/photo-1510017098667-27dfc7150acb?w=1920&q=80', $art$<p class="lede">A wearable is a heater strapped to a person. The battery is one source of that heat; the SoC, display driver, and charging circuit are others. The design goal isn&rsquo;t to minimise temperature &mdash; it&rsquo;s to keep the skin-facing surface below a threshold the user&rsquo;s nerves won&rsquo;t complain about.</p>
 
@@ -1450,5 +1452,5 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <nav class="article-nav">
           <a href="/blog/bms-pcm-smart.html" class="prev">&larr; Previous: PCM vs Smart Battery</a>
           <a href="/blog/lithium-shipping.html" class="next">Next: Lithium Shipping Basics &rarr;</a>
-        </nav>$art$, 'Acme Engineering', 11, (SELECT id FROM categories WHERE slug='technology'), now() - interval '61 days', 'published')
+        </nav>$art$, 'Zufek Engineering', 11, (SELECT id FROM categories WHERE slug='technology'), now() - interval '61 days', 'published')
 ON CONFLICT (slug) DO NOTHING;

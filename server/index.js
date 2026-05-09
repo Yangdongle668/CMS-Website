@@ -67,7 +67,7 @@ app.use('/api/', apiLimiter);
 // ----- Public env (Turnstile site key for client) -----
 app.get('/api/public/config', (_req, res) => {
   res.json({
-    siteName: process.env.SITE_NAME || 'Acme Battery',
+    siteName: process.env.SITE_NAME || 'Zufek',
     publicUrl: process.env.PUBLIC_URL || '',
     turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || '',
     privacyPolicyVersion: process.env.PRIVACY_POLICY_VERSION || '1.0',

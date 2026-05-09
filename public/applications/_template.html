@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title data-meta="title">Application | Acme Battery</title>
+<title data-meta="title">Application | Zufek</title>
 <meta name="description" data-meta="description" content=""/>
 <link rel="canonical" data-canonical href=""/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
@@ -53,7 +53,7 @@
   try { data = await fetchJson('/api/applications/' + encodeURIComponent(slug)); }
   catch (_) { location.href = '/404.html'; return; }
   const a = data.application;
-  document.title = (a.meta_title || a.name) + ' | Acme Battery';
+  document.title = (a.meta_title || a.name) + ' | Zufek';
   document.querySelector('[data-meta="description"]').setAttribute('content', a.meta_description || a.summary);
   document.querySelector('[data-canonical]').setAttribute('href', '/applications/' + a.slug);
   document.querySelector('[data-app-name]').textContent = a.name;

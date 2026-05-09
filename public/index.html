@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Custom Lithium Batteries for AR/VR, Medical, Wearables &amp; IoT</title>
-<meta name="description" content="OEM/ODM lithium battery manufacturer specialising in polymer Li-Po, custom-shaped Li-Po and cylindrical Li-Ion cells. ISO 9001 certified, UN 38.3 / IEC 62133 / CE compliant.">
+<meta name="description" content="OEM/ODM lithium battery manufacturer specialising in polymer Li-Po, custom-shaped Li-Po and coin steel-shell lithium cells. ISO 9001 certified, UN 38.3 / IEC 62133 / CE compliant.">
 <link rel="stylesheet" href="/styles.css?v=16">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -53,7 +53,7 @@
       <div class="section-inner">
         <span class="eyebrow">Product Lines</span>
         <h2>Three pillar lines, one quality system.</h2>
-        <p class="lead">Polymer pouch for thin form factors, custom-shaped polymer for non-standard envelopes, and cylindrical steel-shell for high-cycle applications &mdash; all manufactured under one ISO 9001 roof.</p>
+        <p class="lead">Polymer pouch for thin form factors, custom-shaped polymer for non-standard envelopes, and coin steel-shell for hermetic, reflow-mountable applications &mdash; all manufactured under one ISO 9001 roof.</p>
 
         <div class="pillar-grid">
           <a class="pillar-card" href="/products/polymer-lithium-battery">
@@ -84,16 +84,16 @@
               <span class="news-link">Start a custom project &rarr;</span>
             </div>
           </a>
-          <a class="pillar-card" href="/products/cylindrical-steel-shell-lithium-battery">
-            <div class="pillar-card__media" style="background-image:url('https://images.unsplash.com/photo-1569466896818-335b1bedfcce?w=1200&q=80');"></div>
+          <a class="pillar-card" href="/products/coin-steel-shell-lithium-battery">
+            <div class="pillar-card__media" style="background-image:url('https://images.unsplash.com/photo-1580407195669-d0c11ee3c1c2?w=1200&q=80');"></div>
             <div class="pillar-card__body">
-              <span class="pillar-card__pill">Cylindrical</span>
-              <h3>Cylindrical Steel-Shell</h3>
-              <p>14500, 18650, 21700, 26650, 32700 in INR (NMC) and IFR (LFP). Cells, welded packs and BMS-integrated modules.</p>
+              <span class="pillar-card__pill">Coin Cell</span>
+              <h3>Coin Steel-Shell Lithium</h3>
+              <p>Rechargeable LIR (Li-ion 3.6&nbsp;V) and ML (Li-MnO₂ 3.0&nbsp;V) coin cells in hermetic stainless-steel cases. Reflow-mountable for hearing aids, wearables and industrial RTC backup.</p>
               <div class="pillar-card__specs">
-                <span><strong>1,500 - 6,500</strong>mAh</span>
-                <span><strong>≥ 3,000</strong>LFP cycles</span>
-                <span><strong>30 A</strong>peak</span>
+                <span><strong>10 - 180</strong>mAh</span>
+                <span><strong>500 - 1,000</strong>cycles</span>
+                <span><strong>SMD</strong>reflow OK</span>
               </div>
               <span class="news-link">Compare formats &rarr;</span>
             </div>
@@ -210,7 +210,7 @@
         <div class="content-split" style="margin-top: 40px;">
           <div class="text-col">
             <h3>Three lines, one quality system.</h3>
-            <p>Polymer Li-Po, custom-shaped Li-Po and cylindrical Li-Ion run on automated equipment with in-line OCV/IR/CCD inspection. Every cell is graded into A/B grades with serial-number traceability.</p>
+            <p>Polymer Li-Po, custom-shaped Li-Po and coin steel-shell lithium cells run on automated equipment with in-line OCV/IR/CCD inspection. Every cell is graded into A/B grades with serial-number traceability.</p>
             <p>For medical and aerospace customers we operate a separate cleanroom assembly line with full ISO 13485 documentation.</p>
             <a href="/about/factory.html" class="news-link">Take the factory tour &rarr;</a>
 
@@ -378,7 +378,7 @@ const escape = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&
           <span class="blog-card__pill">${escape(cat)}</span>
           <h3 class="blog-card__title">${escape(a.title)}</h3>
           <p class="blog-card__excerpt">${escape((a.excerpt || '').slice(0, 130))}</p>
-          <div class="blog-card__byline">${escape(a.author || 'Acme Engineering')} &middot; ${a.reading_minutes || 5} min${date ? ' &middot; ' + date : ''}</div>
+          <div class="blog-card__byline">${escape(a.author || 'Zufek Engineering')} &middot; ${a.reading_minutes || 5} min${date ? ' &middot; ' + date : ''}</div>
         </div>
       </a>`;
     }).join('');

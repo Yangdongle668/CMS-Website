@@ -92,7 +92,7 @@ async function sendInquiryEmails(inq, attachments) {
   let auto = null;
   const autoEnabled = String(process.env.AUTO_REPLY_ENABLED || 'true') === 'true';
   if (autoEnabled) {
-    const siteName = process.env.SITE_NAME || 'Acme Battery';
+    const siteName = process.env.SITE_NAME || 'Zufek';
     const autoHtml = `
       <div style="font-family:Inter,Arial,sans-serif;max-width:640px;margin:0 auto;color:#0f172a;">
         <h2 style="color:#0b3a82;margin:0 0 16px;">Thank you for your inquiry</h2>

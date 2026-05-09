@@ -6,7 +6,7 @@ const { trimStr, asJson } = require('../utils/validate');
 
 const router = express.Router();
 
-const PUBLIC_KEYS = new Set(['site', 'social', 'seo', 'gdpr', 'navigation']);
+const PUBLIC_KEYS = new Set(['site', 'social', 'seo', 'gdpr', 'navigation', 'organization']);
 
 router.get('/public', async (_req, res) => {
   const rows = await many(`SELECT key, value FROM settings WHERE key = ANY($1::text[])`, [

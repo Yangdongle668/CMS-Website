@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -180,7 +180,7 @@
   const p = data.pillar;
 
   // ----- Meta + OG -----
-  const title = p.meta_title || `${p.name} | Acme Battery`;
+  const title = p.meta_title || `${p.name} | Zufek`;
   const desc = p.meta_description || p.hero_subtitle || '';
   document.title = title;
   document.querySelector('[data-meta-title]').textContent = title;
@@ -195,7 +195,7 @@
     { "@context":"https://schema.org","@type":"Product",
       "name": p.name, "description": desc,
       "image": p.hero_image || '',
-      "brand": {"@type":"Brand","name":"Acme Battery"},
+      "brand": {"@type":"Brand","name":"Zufek"},
       "category": "Lithium Battery" },
     { "@context":"https://schema.org","@type":"BreadcrumbList",
       "itemListElement":[

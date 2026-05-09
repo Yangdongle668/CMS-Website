@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -87,7 +87,7 @@
     <h1 data-art-title>Article</h1>
     <p class="article-hero__subtitle" data-art-subtitle></p>
     <div class="article-hero__meta">
-      <strong data-art-author>Acme Engineering</strong>
+      <strong data-art-author>Zufek Engineering</strong>
       <span class="dot">&middot;</span>
       <span data-art-reading>5 min read</span>
       <span class="dot">&middot;</span>
@@ -117,7 +117,7 @@
         <div class="article-author">
           <div class="article-author__avatar" data-author-initial>A</div>
           <div>
-            <div class="article-author__name" data-author-name>Acme Engineering</div>
+            <div class="article-author__name" data-author-name>Zufek Engineering</div>
             <div class="article-author__role" data-author-role>Cell engineering team</div>
           </div>
         </div>
@@ -200,7 +200,7 @@
   const a = data.article;
 
   // ------- Meta + OG + canonical -------
-  const title = (a.meta_title || a.title) + ' | Acme Battery';
+  const title = (a.meta_title || a.title) + ' | Zufek';
   document.title = title;
   document.querySelector('[data-meta-title]').textContent = title;
   const desc = a.meta_description || a.excerpt || '';
@@ -215,8 +215,8 @@
     { "@context":"https://schema.org","@type":"Article",
       "headline": a.title, "description": desc,
       "image": a.hero_image || a.cover_url || '',
-      "author": {"@type":"Organization","name": a.author || 'Acme Battery'},
-      "publisher":{"@type":"Organization","name":"Acme Battery"},
+      "author": {"@type":"Organization","name": a.author || 'Zufek'},
+      "publisher":{"@type":"Organization","name":"Zufek"},
       "datePublished": a.published_at || a.created_at,
       "dateModified": a.updated_at,
       "mainEntityOfPage": "/blog/" + a.slug,
@@ -241,12 +241,12 @@
   document.querySelector('[data-art-pill]').textContent = a.category_name || a.pillar_short_name || 'Article';
   document.querySelector('[data-art-title]').textContent = a.title;
   document.querySelector('[data-art-subtitle]').textContent = a.excerpt || '';
-  document.querySelector('[data-art-author]').textContent = a.author || 'Acme Engineering';
+  document.querySelector('[data-art-author]').textContent = a.author || 'Zufek Engineering';
   document.querySelector('[data-art-reading]').textContent = (a.reading_minutes || 5) + ' min read';
   document.querySelector('[data-art-date]').textContent = fmtDate(a.published_at);
 
   // ------- Author block -------
-  const authorName = a.author || 'Acme Engineering';
+  const authorName = a.author || 'Zufek Engineering';
   document.querySelector('[data-author-name]').textContent = authorName;
   document.querySelector('[data-author-initial]').textContent = (authorName.charAt(0) || 'A').toUpperCase();
   document.querySelector('[data-author-role]').textContent = a.pillar_name
