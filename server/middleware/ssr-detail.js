@@ -31,6 +31,52 @@ function abs(u, base) {
   return /^https?:\/\//.test(u) ? u : base + u;
 }
 
+/* Image-position fragment: a URL like "/uploads/foo.jpg#pos=top-left&fit=cover"
+   carries display preferences chosen in the admin image-picker. We split
+   them off here so renderers can:
+     * use the bare URL for src=/href= attributes (no fragment leaks to OG image)
+     * apply the position as background-position / object-position
+     * apply the fit as background-size / object-fit. */
+const POSITION_VALUES = new Set(['center','top','bottom','left','right','top-left','top-right','bottom-left','bottom-right']);
+function parseImageUrl(rawUrl) {
+  if (!rawUrl) return { url: '', position: 'center', fit: 'cover' };
+  const hashIdx = rawUrl.indexOf('#');
+  if (hashIdx === -1) return { url: rawUrl, position: 'center', fit: 'cover' };
+  const url = rawUrl.slice(0, hashIdx);
+  const frag = rawUrl.slice(hashIdx + 1);
+  const params = {};
+  for (const part of frag.split('&')) {
+    const [k, v = ''] = part.split('=');
+    if (k) {
+      try { params[decodeURIComponent(k)] = decodeURIComponent(v); }
+      catch (_) { params[k] = v; }
+    }
+  }
+  return {
+    url,
+    position: POSITION_VALUES.has(params.pos) ? params.pos : 'center',
+    fit: params.fit === 'contain' ? 'contain' : 'cover',
+  };
+}
+function cssPosition(p) { return (p || 'center').replace(/-/g, ' '); }
+function backgroundStyle(rawUrl) {
+  const { url, position, fit } = parseImageUrl(rawUrl);
+  if (!url) return '';
+  const bgSize = fit === 'contain' ? 'contain' : 'cover';
+  const safe = String(url).replace(/'/g, "\\'");
+  return `background-image:url('${safe}'); background-position:${cssPosition(position)}; background-size:${bgSize}; background-repeat:no-repeat;`;
+}
+function imgStyle(rawUrl) {
+  const { url, position, fit } = parseImageUrl(rawUrl);
+  if (!url) return '';
+  return `object-position:${cssPosition(position)}; object-fit:${fit === 'contain' ? 'contain' : 'cover'};`;
+}
+function urlOnly(rawUrl) {
+  if (!rawUrl) return '';
+  const i = rawUrl.indexOf('#');
+  return i === -1 ? rawUrl : rawUrl.slice(0, i);
+}
+
 // Replace the template's placeholder <head> markers with rendered values.
 // We anchor on existing tokens so the same _template.html stays
 // developer-friendly: opening it directly in a browser still loads
@@ -120,9 +166,10 @@ function injectIntoBody(html, body) {
   }
   function setBackground(html, attrName, url) {
     if (!url) return html;
-    const safe = String(url).replace(/'/g, "\\'");
-    // Replace the entire <tag ... data-attrName ...> opening to inject
-    // the background-image style. Preserves all other attributes.
+    // backgroundStyle() honours #pos=... &fit=... fragment so the operator's
+    // image-picker focal-point choice carries through to the rendered hero.
+    const styleStr = backgroundStyle(url);
+    if (!styleStr) return html;
     const re = new RegExp(
       `<([a-z0-9]+)\\b([^>]*\\sdata-${attrName}\\b[^>]*?)>`,
       'i'
@@ -131,7 +178,7 @@ function injectIntoBody(html, body) {
       // Strip any existing inline style="background-image:..." so we don't
       // end up with two competing values.
       const cleaned = attrs.replace(/\s*style="[^"]*"/i, '');
-      return `<${tag}${cleaned} style="background-image:url('${safe}');">`;
+      return `<${tag}${cleaned} style="${styleStr}">`;
     });
   }
   function setAttr(html, attrName, attr, value) {
@@ -172,7 +219,7 @@ async function renderPillar(req, res, slug) {
   // Build per-pillar head.
   const title = pillar.meta_title || `${pillar.name} | ${ctx.siteName}`;
   const description = pillar.meta_description || pillar.hero_subtitle || '';
-  const ogImage = abs(pillar.hero_image || ctx.defaultOgImage, ctx.canonicalBase);
+  const ogImage = abs(urlOnly(pillar.hero_image) || ctx.defaultOgImage, ctx.canonicalBase);
   const canonicalUrl = ctx.canonicalBase + req.path;
 
   // Sibling pillars (Compare lines strip — was JS-only and visibly empty
@@ -290,7 +337,7 @@ async function renderPillar(req, res, slug) {
     : '<p style="text-align:center; color:#5c5e62;">FAQ not configured.</p>';
 
   const appsHtml = appRows.map((a) => {
-    const bg = a.cover_url ? ` style="background-image:url('${String(a.cover_url).replace(/'/g, "\\'")}');"` : '';
+    const bg = a.cover_url ? ` style="${backgroundStyle(a.cover_url)}"` : '';
     return `<a class="app-card" href="/applications/${escapeHtml(a.slug)}.html"${bg}>
       <div class="app-overlay"><h3>${escapeHtml(a.name)}</h3><p>${escapeHtml((a.summary || '').slice(0, 110))}</p></div>
     </a>`;
@@ -381,7 +428,7 @@ async function renderProduct(req, res, slug) {
 
   const title = row.meta_title || `${row.name} | ${ctx.siteName}`;
   const description = row.meta_description || row.tagline || row.description || '';
-  const ogImage = abs(row.cover_url || ctx.defaultOgImage, ctx.canonicalBase);
+  const ogImage = abs(urlOnly(row.cover_url) || ctx.defaultOgImage, ctx.canonicalBase);
   const canonicalUrl = ctx.canonicalBase + req.path;
 
   const ld = [
@@ -460,7 +507,7 @@ async function renderArticle(req, res, slug) {
   const includesBrand = new RegExp(`\\|\\s*${ctx.siteName}\\s*$`, 'i').test(baseTitle);
   const title = includesBrand ? baseTitle : `${baseTitle} | ${ctx.siteName}`;
   const description = article.meta_description || article.excerpt || '';
-  const ogImage = abs(article.hero_image || article.cover_url || ctx.defaultOgImage, ctx.canonicalBase);
+  const ogImage = abs(urlOnly(article.hero_image || article.cover_url) || ctx.defaultOgImage, ctx.canonicalBase);
   const canonicalUrl = ctx.canonicalBase + req.path;
 
   // Build a fully-described Person node when an authors row is linked.
@@ -651,7 +698,7 @@ async function renderApplication(req, res, slug) {
 
   const title = app.meta_title || `${app.name} | ${ctx.siteName}`;
   const description = app.meta_description || app.summary || '';
-  const ogImage = abs(app.cover_url || ctx.defaultOgImage, ctx.canonicalBase);
+  const ogImage = abs(urlOnly(app.cover_url) || ctx.defaultOgImage, ctx.canonicalBase);
   const canonicalUrl = ctx.canonicalBase + req.path;
 
   const ld = [
@@ -755,7 +802,7 @@ async function renderHomepage(req, res) {
       const date = fmtD(a.published_at);
       const author = a.author || `${ctx.siteName} Engineering`;
       return `<a class="blog-card" href="/blog/${escapeHtml(a.slug)}">
-        <div class="blog-card__media"${cover ? ` style="background-image:url('${escapeHtml(cover)}');"` : ''}></div>
+        <div class="blog-card__media"${cover ? ` style="${backgroundStyle(cover)}"` : ''}></div>
         <div class="blog-card__body">
           <span class="blog-card__pill">${escapeHtml(cat)}</span>
           <h3 class="blog-card__title">${escapeHtml(a.title)}</h3>
@@ -876,7 +923,7 @@ async function renderBlogIndex(req, res) {
     const date = fmtD(a.published_at);
     const author = a.author || `${ctx.siteName} Engineering`;
     return `<a class="blog-card" href="/blog/${escapeHtml(a.slug)}">
-      <div class="blog-card__media"${cover ? ` style="background-image:url('${escapeHtml(cover)}');"` : ''}></div>
+      <div class="blog-card__media"${cover ? ` style="${backgroundStyle(cover)}"` : ''}></div>
       <div class="blog-card__body">
         <span class="blog-card__pill">${escapeHtml(cat)}</span>
         <h3 class="blog-card__title">${escapeHtml(a.title)}</h3>
@@ -898,7 +945,7 @@ async function renderBlogIndex(req, res) {
     );
     html = injectIntoBody(html, [
       { kind: 'attr', attr: 'featured-link', htmlAttr: 'href', value: '/blog/' + featured.slug },
-      ...(cover ? [{ kind: 'attr', attr: 'featured-media', htmlAttr: 'style', value: `background-image:url('${cover}');` }] : []),
+      ...(cover ? [{ kind: 'attr', attr: 'featured-media', htmlAttr: 'style', value: backgroundStyle(cover) }] : []),
       { kind: 'text', attr: 'featured-pill', value: cat },
       { kind: 'text', attr: 'featured-title', value: featured.title },
       { kind: 'text', attr: 'featured-excerpt', value: (featured.excerpt || '').slice(0, 240) },

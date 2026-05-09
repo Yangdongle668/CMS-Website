@@ -613,3 +613,74 @@ code, pre, .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, 
   padding: 2px 8px;
   font-weight: 600;
 }
+
+/* ===== Image position picker (3×3 grid + cover/contain) ===== */
+.img-pos {
+  margin-top: 14px;
+  padding: 14px 16px;
+  background: #fafafa;
+  border: 1px solid var(--a-line);
+  border-radius: 8px;
+}
+.img-pos__head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px; gap: 12px; flex-wrap: wrap;
+}
+.img-pos__title {
+  font-size: 12.5px; font-weight: 500; color: var(--a-text);
+}
+.img-pos__title code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px; padding: 2px 7px; background: #fff;
+  border: 1px solid var(--a-line); border-radius: 4px; margin-left: 4px;
+}
+.img-pos__fit { display: inline-flex; gap: 0; }
+.img-pos__fit-btn {
+  appearance: none; background: #fff; border: 1px solid var(--a-line);
+  font-size: 11.5px; padding: 5px 10px; cursor: pointer;
+  color: var(--a-mute2); font-family: inherit;
+}
+.img-pos__fit-btn:first-child { border-radius: 4px 0 0 4px; border-right: none; }
+.img-pos__fit-btn:last-child  { border-radius: 0 4px 4px 0; }
+.img-pos__fit-btn.is-active { background: var(--a-accent); color: #fff; border-color: var(--a-accent); }
+
+.img-pos__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 30px);
+  grid-template-rows: repeat(3, 30px);
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.img-pos__cell {
+  appearance: none;
+  background: #fff;
+  border: 1px solid var(--a-line);
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s ease;
+}
+.img-pos__cell::after {
+  content: '';
+  position: absolute;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--a-mute2);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.img-pos__cell:hover { border-color: var(--a-accent); }
+.img-pos__cell:hover::after { background: var(--a-accent); }
+.img-pos__cell.is-active {
+  background: var(--a-accent);
+  border-color: var(--a-accent);
+  box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.18);
+}
+.img-pos__cell.is-active::after { background: #fff; transform: translate(-50%, -50%) scale(1.15); }
+.img-pos__hint {
+  margin: 0; font-size: 11.5px; color: var(--a-mute2); line-height: 1.5;
+}
+.img-pos__hint code {
+  background: #fff; padding: 1px 5px; border-radius: 3px;
+  border: 1px solid var(--a-line); font-size: 11px;
+}
