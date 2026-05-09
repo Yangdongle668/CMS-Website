@@ -2042,7 +2042,7 @@ INSERT INTO articles (pillar_id, author_id, category_id, slug, title, excerpt, c
  (SELECT id FROM categories WHERE slug='certifications'),
  'iec-62133-2-full-walkthrough',
  'IEC 62133-2:2017 + Amendment 1: The Complete Test Walkthrough',
- 'A compliance lead's plain-English guide to every mandatory and conditional test in IEC 62133-2, with cost estimates, timelines and how it fits alongside UN 38.3.',
+ 'A compliance lead''s plain-English guide to every mandatory and conditional test in IEC 62133-2, with cost estimates, timelines and how it fits alongside UN 38.3.',
  'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=1200&q=80',
  'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=1920&q=80',
  $art$<p class="lede">IEC 62133-2 is the global safety baseline for secondary lithium cells and batteries in portable equipment. Miss it and your product stops at customs, gets returned by a tier-1 OEM, or triggers a recall. But the standard is 80 pages of dense normative text. This walkthrough covers what actually matters for a typical small-format LiPo program.</p>
