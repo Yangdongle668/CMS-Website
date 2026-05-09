@@ -255,11 +255,16 @@ async function renderPillar(req, res, slug) {
     [Array.isArray(pillar.applications) ? pillar.applications : []]
   ); } catch (_) {}
 
+  // Pillar cluster articles. The pillar page is the topic-hub for SEO,
+  // so we surface every cluster article we have rather than capping at
+  // the first few — a low limit silently buries the rest of the cluster.
+  // 24 is generous enough for the current pillars (polymer ~16, custom
+  // ~13, coin ~9) and still safe if a pillar grows to many more.
   let articleRows = [];
   try { articleRows = await many(
     `SELECT slug, title, excerpt, reading_minutes, published_at, cover_url, hero_image
        FROM articles WHERE pillar_id = $1 AND status='published'
-       ORDER BY published_at DESC NULLS LAST LIMIT 3`,
+       ORDER BY published_at DESC NULLS LAST LIMIT 24`,
     [pillar.id]
   ); } catch (_) {}
 
