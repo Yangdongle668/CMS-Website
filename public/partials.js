@@ -163,6 +163,15 @@ function footerHtml(settings) {
 
   return `<footer>
     <div class="footer-cols">
+      ${listColumn('Products', products)}
+      ${listColumn('Applications', applications)}
+      ${listColumn('Solutions', solutions)}
+      <div class="footer-col">
+        <h5>Company</h5>
+        ${aboutChildren.map((c) => `<a href="${escapeHtml(c.url)}">${escapeHtml(c.label)}</a>`).join('')}
+        ${flatExtras.map((c) => `<a href="${escapeHtml(c.url)}">${escapeHtml(c.label)}</a>`).join('')}
+        <a href="/contact.html">Contact</a>
+      </div>
       <div class="footer-col footer-col--brand">
         <h5>${escapeHtml(site.name || 'Zufek')}</h5>
         <p>${escapeHtml(site.tagline || '')}</p>
@@ -173,15 +182,6 @@ function footerHtml(settings) {
         ${site.phone ? `<p>${escapeHtml(site.phone)}</p>` : ''}
         ${site.address ? `<p>${escapeHtml(site.address)}</p>` : ''}
         ${(linkedin || whatsapp) ? `<div class="footer-social">${linkedin}${whatsapp}</div>` : ''}
-      </div>
-      ${listColumn('Products', products)}
-      ${listColumn('Applications', applications)}
-      ${listColumn('Solutions', solutions)}
-      <div class="footer-col">
-        <h5>Company</h5>
-        ${aboutChildren.map((c) => `<a href="${escapeHtml(c.url)}">${escapeHtml(c.label)}</a>`).join('')}
-        ${flatExtras.map((c) => `<a href="${escapeHtml(c.url)}">${escapeHtml(c.label)}</a>`).join('')}
-        <a href="/contact.html">Contact</a>
       </div>
     </div>
     <div class="footer-bottom">
