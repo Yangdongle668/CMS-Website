@@ -246,9 +246,153 @@ function buildContext(req, canonicalPathOverride) {
   };
 }
 
-// Reads and serves a public/ HTML file with token replacement.
-// Returns true if a file was served, false if no candidate matched.
-function tryServeHtml(req, res, candidates, options) {
+// Apply admin-managed pages-table overrides to a static HTML file before
+// it's sent. Mirrors the cms-page.js client-side hydration logic so the
+// initial HTML the visitor receives already contains the operator's
+// edits — no JS-driven post-load flash where the page text changes
+// from the static fallback to the DB-driven version.
+async function applyPageOverrides(html) {
+  // The body's data-page="<slug>" attribute identifies which CMS row,
+  // if any, governs this page. /admin/pages.html lets the operator
+  // manage hero/breadcrumbs/body for that slug.
+  const m = html.match(/<body[^>]*\sdata-page=["']([^"']+)["']/i);
+  if (!m) return html;
+  const slug = m[1];
+  if (!slug) return html;
+
+  let page;
+  try {
+    const { one } = require('../db/client');
+    page = await one(
+      `SELECT slug, nav, title, meta_title, meta_description,
+              hero_eyebrow, hero_title, hero_subtitle, hero_image,
+              hero_breadcrumbs, body_html, sections, status
+         FROM pages WHERE slug = $1 AND status = 'published'`,
+      [slug]
+    );
+  } catch (_) { return html; /* DB unavailable or no pages table */ }
+  if (!page) return html;
+
+  // ----- title + meta description -----
+  if (page.meta_title || page.title) {
+    const t = page.meta_title || page.title;
+    html = html.replace(/<title[^>]*>[\s\S]*?<\/title>/i, `<title>${escapeAttr(t)}</title>`);
+  }
+  if (page.meta_description) {
+    const d = escapeAttr(page.meta_description);
+    html = html.replace(
+      /<meta\s+name=["']description["']\s+content=["'][^"']*["']/i,
+      `<meta name="description" content="${d}"`
+    );
+    // Also patch og:description / twitter:description so social cards stay in sync.
+    html = html.replace(
+      /<meta\s+property=["']og:description["']\s+content=["'][^"']*["']/i,
+      `<meta property="og:description" content="${d}"`
+    );
+    html = html.replace(
+      /<meta\s+name=["']twitter:description["']\s+content=["'][^"']*["']/i,
+      `<meta name="twitter:description" content="${d}"`
+    );
+  }
+  if (page.meta_title) {
+    const t = escapeAttr(page.meta_title);
+    html = html.replace(
+      /<meta\s+property=["']og:title["']\s+content=["'][^"']*["']/i,
+      `<meta property="og:title" content="${t}"`
+    );
+    html = html.replace(
+      /<meta\s+name=["']twitter:title["']\s+content=["'][^"']*["']/i,
+      `<meta name="twitter:title" content="${t}"`
+    );
+  }
+  if (page.hero_image) {
+    const u = /^https?:\/\//.test(page.hero_image)
+      ? page.hero_image
+      : ((settingsCache.seo && settingsCache.seo.public_url) || '') + page.hero_image;
+    html = html.replace(
+      /<meta\s+property=["']og:image["']\s+content=["'][^"']*["']/i,
+      `<meta property="og:image" content="${escapeAttr(u)}"`
+    );
+    html = html.replace(
+      /<meta\s+name=["']twitter:image["']\s+content=["'][^"']*["']/i,
+      `<meta name="twitter:image" content="${escapeAttr(u)}"`
+    );
+  }
+
+  // ----- hero block: background image + h1 + first <p> + breadcrumbs -----
+  // Anchor on the first <section class="page-hero"> or <section class="hero">
+  // so we don't accidentally rewrite content inside other sections that
+  // share the same tag types.
+  const heroOpenRe = /(<section\s+class="(?:page-)?hero"[^>]*?)>/i;
+  const heroOpenMatch = html.match(heroOpenRe);
+  if (heroOpenMatch) {
+    const heroStart = heroOpenMatch.index;
+    const closeIdx = html.indexOf('</section>', heroStart);
+    if (closeIdx !== -1) {
+      let heroBlock = html.slice(heroStart, closeIdx + '</section>'.length);
+
+      // Background image (replace existing inline style="background-image:...").
+      if (page.hero_image) {
+        const safeBg = String(page.hero_image).replace(/'/g, "\\'");
+        heroBlock = heroBlock.replace(
+          /(<section\s+class="(?:page-)?hero"[^>]*?)\sstyle="[^"]*"/i,
+          `$1 style="background-image:url('${safeBg}');"`
+        );
+      }
+
+      // Breadcrumbs.
+      if (Array.isArray(page.hero_breadcrumbs) && page.hero_breadcrumbs.length) {
+        const crumbsHtml = page.hero_breadcrumbs.map((c, i, arr) => {
+          const sep = i < arr.length - 1 ? '<span>/</span>' : '';
+          if (c.url && i < arr.length - 1) {
+            return `<a href="${escapeAttr(c.url)}">${escapeAttr(c.label)}</a>${sep}`;
+          }
+          return `<span>${escapeAttr(c.label)}</span>${sep}`;
+        }).join('');
+        heroBlock = heroBlock.replace(
+          /<div class="breadcrumbs"[^>]*>([\s\S]*?)<\/div>/i,
+          `<div class="breadcrumbs">${crumbsHtml}</div>`
+        );
+      }
+
+      // First <h1> inside the hero — usually the page title.
+      if (page.hero_title) {
+        const escapedTitle = escapeAttr(page.hero_title).replace(/\n/g, '<br>');
+        heroBlock = heroBlock.replace(
+          /<h1([^>]*)>([\s\S]*?)<\/h1>/i,
+          `<h1$1>${escapedTitle}</h1>`
+        );
+      }
+
+      // First <p> AFTER the h1 — usually the subtitle.
+      if (page.hero_subtitle) {
+        heroBlock = heroBlock.replace(
+          /(<h1[^>]*>[\s\S]*?<\/h1>[\s\S]*?<p\b[^>]*>)([\s\S]*?)(<\/p>)/i,
+          `$1${escapeAttr(page.hero_subtitle)}$3`
+        );
+      }
+
+      html = html.slice(0, heroStart) + heroBlock + html.slice(closeIdx + '</section>'.length);
+    }
+  }
+
+  // ----- body override: replace [data-page-body] innerHTML -----
+  if (page.body_html && String(page.body_html).trim()) {
+    const bodyRe = /(<([a-z0-9]+)\b[^>]*\sdata-page-body\b[^>]*>)([\s\S]*?)(<\/\2>)/i;
+    if (bodyRe.test(html)) {
+      html = html.replace(bodyRe, (_m, open, _tag, _inner, close) =>
+        open + page.body_html + close
+      );
+    }
+  }
+
+  return html;
+}
+
+// Reads and serves a public/ HTML file with token replacement + pages-
+// table overrides. Returns true if a file was served, false if no
+// candidate matched. Async because applyPageOverrides hits the DB.
+async function tryServeHtml(req, res, candidates, options) {
   const opts = options || {};
   for (const f of candidates) {
     if (!fs.existsSync(f) || !f.endsWith('.html')) continue;
@@ -256,7 +400,10 @@ function tryServeHtml(req, res, candidates, options) {
     try { html = fs.readFileSync(f, 'utf8'); }
     catch (_) { return false; }
     const ctx = buildContext(req, opts.canonicalPath);
-    const out = replaceTokens(html, ctx);
+    let out = replaceTokens(html, ctx);
+    // Apply admin pages-table overrides AFTER tokens so the operator's
+    // edits beat both the source-file defaults and the {{TOKEN}} fallbacks.
+    out = await applyPageOverrides(out);
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     if (!res.getHeader('Cache-Control')) res.setHeader('Cache-Control', 'no-cache');
     if (opts.status) res.status(opts.status);
@@ -268,7 +415,7 @@ function tryServeHtml(req, res, candidates, options) {
 
 // Express middleware: intercept HTML requests under /public/ before
 // express.static runs. Ignores admin/* (CMS UI) and assets.
-function htmlTokenMiddleware(req, res, next) {
+async function htmlTokenMiddleware(req, res, next) {
   if (req.method !== 'GET' && req.method !== 'HEAD') return next();
   if (req.path.startsWith('/api/')) return next();
   if (req.path.startsWith('/admin')) return next();
@@ -290,7 +437,11 @@ function htmlTokenMiddleware(req, res, next) {
     candidates.push(path.join(PUBLIC_DIR, p, 'index.html'));
   }
 
-  if (tryServeHtml(req, res, candidates)) return;
+  try {
+    if (await tryServeHtml(req, res, candidates)) return;
+  } catch (err) {
+    return next(err);
+  }
   return next();
 }
 
