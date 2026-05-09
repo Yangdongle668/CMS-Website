@@ -72,11 +72,42 @@ async function hydrate() {
   }
   can.setAttribute('href', location.origin + location.pathname);
 
+  // ----- Image-URL fragment parser -----
+  // Mirrors admin/assets/js/image-picker.js so URL fragments (#pos=top-
+  // left&fit=cover) round-trip through this hydration step. Without this
+  // we'd strip the position information when applying the override and
+  // the visitor would see the centred crop after JS hydration even when
+  // the operator picked a different focal point in the admin.
+  function parseImageUrl(rawUrl) {
+    if (!rawUrl) return { url: '', position: 'center', fit: 'cover' };
+    const i = rawUrl.indexOf('#');
+    if (i === -1) return { url: rawUrl, position: 'center', fit: 'cover' };
+    const url = rawUrl.slice(0, i);
+    const params = {};
+    for (const part of rawUrl.slice(i + 1).split('&')) {
+      const [k, v = ''] = part.split('=');
+      if (k) {
+        try { params[decodeURIComponent(k)] = decodeURIComponent(v); }
+        catch (_) { params[k] = v; }
+      }
+    }
+    return {
+      url,
+      position: params.pos || 'center',
+      fit: params.fit === 'contain' ? 'contain' : 'cover',
+    };
+  }
+
   // Hero — works for both .hero (homepage) and .page-hero (subpages)
   const hero = document.querySelector('.page-hero, .hero');
   if (hero) {
     if (page.hero_image) {
-      hero.style.backgroundImage = `url('${page.hero_image.replace(/'/g, "\\'")}')`;
+      const parsed = parseImageUrl(page.hero_image);
+      const safe = parsed.url.replace(/'/g, "\\'");
+      hero.style.backgroundImage = `url('${safe}')`;
+      hero.style.backgroundPosition = parsed.position.replace(/-/g, ' ');
+      hero.style.backgroundSize = parsed.fit;
+      hero.style.backgroundRepeat = 'no-repeat';
     }
     // Breadcrumbs
     const crumbs = hero.querySelector('.breadcrumbs');

@@ -3639,3 +3639,55 @@ img[src=""] {
   position: relative;
   min-height: 80px;
 }
+
+/* =========================================================================
+   Fixed-size image slots — lock every card-media container to its native
+   aspect-ratio and force any <img> inside a card or hero column to
+   object-fit: cover so an uploaded portrait can never grow the layout.
+   The admin image-picker exposes a 9-direction position grid that writes
+   #pos=top-left&fit=cover into the saved URL; the SSR + cms-page.js
+   parsers translate that into background-position / object-position so
+   the chosen focal point shows on the public page.
+   ========================================================================= */
+.blog-card__media,
+.pillar-card__media,
+.app-card,
+.blog-featured__media,
+.tesla-slide,
+.product-card__media {
+  background-repeat: no-repeat;        /* default; SSR may override */
+}
+/* Card / split-section <img> elements default to fill+cover so the slot
+   stays at its design dimensions regardless of upload aspect ratio. */
+.content-split .img-col img,
+.feat-item img,
+.product-card img:not([src*="logo"]):not([src*=".svg"]),
+.blog-card img,
+.pillar-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+/* The 2-col content-split image column gets a fixed aspect-ratio so the
+   visible slot is consistent across pages where copy length differs. */
+.content-split .img-col {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 12px;
+}
+.content-split .img-col img {
+  width: 100%;
+  height: 100%;
+}
+/* Article in-body images (Quill output) cap to container width and
+   maintain their natural aspect-ratio rather than stretching. */
+.article-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  margin: 1.6em auto;
+  display: block;
+  background: #f5f5f7;
+}
