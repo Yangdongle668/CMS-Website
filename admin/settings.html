@@ -21,6 +21,140 @@
   // Helper that returns a deep clone-ish object so direct binding works.
   const s = (k) => (settings[k] && typeof settings[k] === 'object') ? settings[k] : {};
 
+  // ---- AI provider tab ---------------------------------------------
+  // Each provider entry comes back from /api/settings with its api_key
+  // already masked to "••••XXXX" (server-side, in routes/settings.js).
+  // The save flow in routes/settings.js detects the mask prefix and
+  // preserves the existing DB value, so the user can save without
+  // re-typing every key.
+  const AI_PROVIDERS = [
+    { id: 'anthropic',     label: 'Anthropic Claude',    helpUrl: 'https://console.anthropic.com/settings/keys',         models: 'claude-sonnet-4-6 / claude-opus-4-7 / claude-haiku-4-5' },
+    { id: 'openai',        label: 'OpenAI',              helpUrl: 'https://platform.openai.com/api-keys',                models: 'gpt-4o-mini / gpt-4o / gpt-5' },
+    { id: 'deepseek',      label: 'DeepSeek (国内)',     helpUrl: 'https://platform.deepseek.com/api_keys',              models: 'deepseek-chat / deepseek-reasoner' },
+    { id: 'moonshot',      label: '月之暗面 Kimi (国内)', helpUrl: 'https://platform.moonshot.cn/console/api-keys',       models: 'moonshot-v1-32k / moonshot-v1-128k' },
+    { id: 'zhipu',         label: '智谱 GLM (国内)',     helpUrl: 'https://open.bigmodel.cn/usercenter/apikeys',         models: 'glm-4-plus / glm-4-air' },
+    { id: 'qwen',          label: '通义千问 (国内)',     helpUrl: 'https://bailian.console.aliyun.com/?apiKey=1',        models: 'qwen-plus / qwen-max / qwen-turbo' },
+    { id: 'openai_compat', label: 'OpenAI 兼容 (自定义)', helpUrl: '',                                                    models: '私有部署 vLLM / Ollama / OneAPI 网关' },
+  ];
+
+  function renderAiPane() {
+    const ai = s('ai_providers');
+    const provs = (ai.providers && typeof ai.providers === 'object') ? ai.providers : {};
+    const cur = (id) => (provs[id] && typeof provs[id] === 'object') ? provs[id] : {};
+    return `
+      <div data-pane="ai" style="display:none;">
+        <div class="panel">
+          <h2 style="margin-top:0;">AI 文章生成 — Provider 接入</h2>
+          <p style="font-size:13px; color:var(--a-mute2); margin-top:0;">
+            填好 API Key 后点底部"保存全部设置"即可生效（无需重启服务器）。
+            已存在的 Key 显示为 <code>••••XXXX</code>，留着不动表示沿用旧值；要替换就直接覆盖。
+          </p>
+
+          <h3 style="margin:18px 0 10px; font-size:14px;">默认 Provider</h3>
+          <div class="field-row">
+            <div class="field">
+              <label>默认 Provider <span class="hint">— /admin/ai-generate.html 打开时预选这一个</span></label>
+              <select data-key="ai_providers.default_provider">
+                <option value="">— 自动（首个已配置的）—</option>
+                ${AI_PROVIDERS.map((p) => `
+                  <option value="${p.id}" ${ai.default_provider === p.id ? 'selected' : ''}>${escapeHtml(p.label)}</option>
+                `).join('')}
+              </select>
+            </div>
+            <div class="field">
+              <label>单次最大 Tokens</label>
+              <input type="number" data-key="ai_providers.max_tokens" value="${ai.max_tokens || 4096}" min="512" max="32000"/>
+            </div>
+          </div>
+
+          ${AI_PROVIDERS.map((p) => {
+            const c = cur(p.id);
+            const linkBtn = p.helpUrl
+              ? `<a href="${escapeHtml(p.helpUrl)}" target="_blank" rel="noopener" style="color:var(--a-accent); font-size:12px; margin-left:8px;">获取 API Key ↗</a>`
+              : '';
+            const baseUrlField = p.id === 'openai_compat'
+              ? `<div class="field">
+                   <label>Base URL <span class="hint">— 例如 https://api.example.com 或带 /v1/chat/completions 的完整地址</span></label>
+                   <input data-key="ai_providers.providers.openai_compat.base_url" value="${escapeHtml(c.base_url || '')}" placeholder="https://api.example.com"/>
+                 </div>`
+              : '';
+            return `
+              <div style="border-top:1px solid var(--a-line); padding-top:18px; margin-top:18px;">
+                <h3 style="margin:0 0 10px; font-size:14px;">
+                  ${escapeHtml(p.label)}${linkBtn}
+                  ${c.api_key ? '<span class="pill pill--read" style="margin-left:8px; font-size:11px; padding:2px 8px;">已配置</span>' : ''}
+                </h3>
+                <div class="field-row">
+                  <div class="field">
+                    <label>API Key <span class="hint">— ${c.api_key ? '已存储，留空字段则保留原值' : '尚未配置'}</span></label>
+                    <input type="text" data-key="ai_providers.providers.${p.id}.api_key"
+                      value="${escapeHtml(c.api_key || '')}"
+                      placeholder="${c.api_key ? '不修改' : '粘贴 API Key 后保存'}"
+                      autocomplete="off" spellcheck="false"
+                      style="font-family: 'JetBrains Mono', monospace; font-size:12px;"/>
+                  </div>
+                  <div class="field">
+                    <label>默认模型 <span class="hint">— ${escapeHtml(p.models)}</span></label>
+                    <input data-key="ai_providers.providers.${p.id}.model"
+                      value="${escapeHtml(c.model || '')}"
+                      placeholder="留空使用 provider 默认"
+                      style="font-family: 'JetBrains Mono', monospace; font-size:12px;"/>
+                  </div>
+                </div>
+                ${baseUrlField}
+              </div>
+            `;
+          }).join('')}
+
+          <h3 style="margin:24px 0 10px; font-size:14px; padding-top:18px; border-top:1px solid var(--a-line);">AI 内容查重</h3>
+          <p style="font-size:12.5px; color:var(--a-mute2); margin-top:0;">
+            <strong>heuristic</strong> 是内置启发式（免费，无外部调用）：句长方差 + AI 套话词典 + em-dash 密度 + 词汇多样性 + 段落均匀度。
+            <strong>GPTZero</strong> 与 <strong>Sapling</strong> 是付费 API，配上 Key 后会优先走它们，失败自动回退到启发式。
+          </p>
+          <div class="field-row">
+            <div class="field">
+              <label>检测方式</label>
+              <select data-key="ai_providers.detect_provider">
+                <option value="heuristic" ${(ai.detect_provider || 'heuristic') === 'heuristic' ? 'selected' : ''}>启发式（免费 / 无外部调用）</option>
+                <option value="gptzero" ${ai.detect_provider === 'gptzero' ? 'selected' : ''}>GPTZero (付费)</option>
+                <option value="sapling" ${ai.detect_provider === 'sapling' ? 'selected' : ''}>Sapling (付费)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>触发降AI 的分数阈值 (0-100)</label>
+              <input type="number" data-key="ai_providers.detect_threshold" value="${ai.detect_threshold || 45}" min="0" max="100"/>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>GPTZero API Key <span class="hint">— <a href="https://app.gptzero.me/app/api" target="_blank" style="color:var(--a-accent);">获取 ↗</a></span></label>
+              <input type="text" data-key="ai_providers.gptzero_key"
+                value="${escapeHtml(ai.gptzero_key || '')}"
+                placeholder="${ai.gptzero_key ? '不修改' : '可选：粘贴 GPTZero Key'}"
+                autocomplete="off" spellcheck="false"
+                style="font-family: 'JetBrains Mono', monospace; font-size:12px;"/>
+            </div>
+            <div class="field">
+              <label>Sapling API Key <span class="hint">— <a href="https://sapling.ai/dashboard/credentials" target="_blank" style="color:var(--a-accent);">获取 ↗</a></span></label>
+              <input type="text" data-key="ai_providers.sapling_key"
+                value="${escapeHtml(ai.sapling_key || '')}"
+                placeholder="${ai.sapling_key ? '不修改' : '可选：粘贴 Sapling Key'}"
+                autocomplete="off" spellcheck="false"
+                style="font-family: 'JetBrains Mono', monospace; font-size:12px;"/>
+            </div>
+          </div>
+
+          <div style="margin-top:18px; padding:12px 14px; background:var(--a-brand-soft); border-radius:8px; font-size:12.5px;">
+            <strong>提示：</strong>
+            保存后立即生效 — 不必重启服务器。前往
+            <a href="/admin/ai-generate.html" style="color:var(--a-brand); font-weight:600;">AI 文章生成 ↗</a>
+            会看到刚配置的 provider 已经亮起。
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   // Pre-extract address & contact_points from organization for nicer UI.
   const org = s('organization');
   const orgAddr = org.address || {};
@@ -35,6 +169,7 @@
       <button class="tabs__btn" data-tab="social">社交</button>
       <button class="tabs__btn" data-tab="gdpr">GDPR</button>
       <button class="tabs__btn" data-tab="mail">邮件</button>
+      <button class="tabs__btn" data-tab="ai">AI 接入</button>
     </div>
 
     <div data-pane="site">
@@ -192,6 +327,8 @@ https://twitter.com/zufek">${escapeHtml((org.sameAs || []).join('\n'))}</textare
         <div class="field field--check"><input type="checkbox" id="auto-reply" ${s('mail').auto_reply_enabled !== false ? 'checked' : ''}/><label for="auto-reply">给询盘提交者发送自动回复</label></div>
       </div>
     </div>
+
+    ${renderAiPane()}
 
     <div class="form-actions" style="position:sticky; bottom:0; background:#fff; border-top:1px solid var(--a-line);">
       <button class="btn" id="save-all">保存全部设置</button>

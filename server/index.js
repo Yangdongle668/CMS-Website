@@ -406,6 +406,16 @@ async function autoMigrate() {
   } catch (err) {
     console.error('[migrate] error:', err);
   }
+  // Hydrate AI provider snapshot from settings table. ai-generator.js
+  // reads from this snapshot synchronously so we don't have to await a
+  // DB hop on every LLM call. PUT /api/settings/ai_providers refreshes it.
+  try {
+    const aiSettings = require('./services/ai-settings');
+    await aiSettings.reload();
+    console.log('[ai-settings] snapshot loaded');
+  } catch (err) {
+    console.error('[ai-settings] initial load failed:', err.message);
+  }
   app.listen(PORT, () => {
     console.log(`[battery-cms] running on http://localhost:${PORT}`);
   });
