@@ -209,7 +209,7 @@
           </a>
 
           <a class="tesla-slide" href="/applications/e-mobility.html"
-             style="background-image:url('https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=1600&q=80');">
+             style="background-image:url('https://images.unsplash.com/photo-1556122071-e404eaedb77f?w=1600&q=80');">
             <div class="tesla-slide__label">Application 07 · E-Mobility</div>
             <div class="tesla-slide__bottom">
               <h3 class="tesla-slide__title">E-Mobility</h3>
@@ -222,7 +222,7 @@
           </a>
 
           <a class="tesla-slide" href="/applications/industrial-handhelds.html"
-             style="background-image:url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1600&q=80');">
+             style="background-image:url('https://images.unsplash.com/photo-1580674684081-7617fbf3d745?w=1600&q=80');">
             <div class="tesla-slide__label">Application 08 · Industrial Handhelds</div>
             <div class="tesla-slide__bottom">
               <h3 class="tesla-slide__title">Industrial Handhelds</h3>
@@ -235,7 +235,7 @@
           </a>
 
           <a class="tesla-slide" href="/applications/defence-aerospace.html"
-             style="background-image:url('https://images.unsplash.com/photo-1581092335397-9583eb92d232?w=1600&q=80');">
+             style="background-image:url('https://images.unsplash.com/photo-1559131397-f94da358f7ca?w=1600&q=80');">
             <div class="tesla-slide__label">Application 09 · Defence &amp; Aerospace</div>
             <div class="tesla-slide__bottom">
               <h3 class="tesla-slide__title">Defence / Aerospace</h3>
@@ -488,13 +488,15 @@ const escape = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&
   if (!track) return;
   fetch('/api/applications').then((r) => (r.ok ? r.json() : null)).then((d) => {
     if (!d || !Array.isArray(d.items) || !d.items.length) return;
-    track.innerHTML = d.items.map((a, i) => {
+    // Only render rows that have a cover_url — without an image, the
+    // tesla-slide renders as an empty grey rectangle which looks broken.
+    // Falling back to the static slides for these applications is better.
+    const rows = d.items.filter((a) => a && a.cover_url);
+    if (!rows.length) return;
+    track.innerHTML = rows.map((a, i) => {
       const idx = String(i + 1).padStart(2, '0');
-      const cover = a.cover_url || '';
       const sub = a.summary || '';
-      return `<a class="tesla-slide" href="/applications/${escape(a.slug)}.html"${
-        cover ? ` style="background-image:url('${escape(cover)}');"` : ''
-      }>
+      return `<a class="tesla-slide" href="/applications/${escape(a.slug)}.html" style="background-image:url('${escape(a.cover_url)}');">
         <div class="tesla-slide__label">Application ${idx} · ${escape(a.name)}</div>
         <div class="tesla-slide__bottom">
           <h3 class="tesla-slide__title">${escape(a.name)}</h3>
