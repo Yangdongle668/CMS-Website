@@ -386,6 +386,69 @@ async function applyPageOverrides(html) {
     }
   }
 
+  // ----- sections override: rewrite every [data-section="<key>"] node -----
+  // Mirrors the client-side logic in cms-page.js so visitors see the
+  // operator's edits in the initial HTML — no static-then-DB flash on the
+  // homepage hero CTAs / why-us / cta-band labels etc.
+  //   string value          → replace textContent
+  //   { text, link } object  → replace textContent; if the element is an
+  //                            <a>, also rewrite its href
+  if (page.sections && typeof page.sections === 'object' && !Array.isArray(page.sections)) {
+    // Build a normalised sections map. Two supported shapes:
+    //   * Modern:  { hero_cta_primary: { text, link } } — element-keyed
+    //   * Legacy:  { hero_cta_primary_text, hero_cta_primary_link } —
+    //              two string siblings whose <base>_text / <base>_link
+    //              names map to a single [data-section="<base>"] element
+    // We collapse the legacy form into the modern shape before applying so
+    // both formats end up in the rendered HTML on first paint.
+    const merged = {};
+    for (const [k, v] of Object.entries(page.sections)) {
+      if (!k) continue;
+      const matchTextSuffix = k.match(/^(.+)_text$/);
+      const matchLinkSuffix = k.match(/^(.+)_link$/);
+      if (matchTextSuffix && typeof v === 'string') {
+        const base = matchTextSuffix[1];
+        merged[base] = Object.assign({}, merged[base], { text: v });
+      } else if (matchLinkSuffix && typeof v === 'string') {
+        const base = matchLinkSuffix[1];
+        merged[base] = Object.assign({}, merged[base], { link: v });
+      } else {
+        merged[k] = v;
+      }
+    }
+
+    for (const [key, value] of Object.entries(merged)) {
+      if (!key) continue;
+      // Escape regex specials in the key (slug-ish keys typically only have
+      // [a-z0-9_-], but defend against the general case).
+      const safeKey = key.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const re = new RegExp(
+        `(<([a-z0-9]+)\\b[^>]*\\sdata-section=["']${safeKey}["'][^>]*>)([\\s\\S]*?)(</\\2>)`,
+        'i'
+      );
+      if (typeof value === 'string') {
+        html = html.replace(re, (_m, open, _tag, _inner, close) =>
+          open + escapeAttr(value) + close
+        );
+      } else if (value && typeof value === 'object' && (value.text != null || value.link != null)) {
+        html = html.replace(re, (_m, open, _tag, _inner, close) => {
+          // If this is an anchor and value.link is set, swap the href.
+          if (value.link && /^<a\b/i.test(open)) {
+            if (/href="[^"]*"/i.test(open)) {
+              open = open.replace(/href="[^"]*"/i, `href="${escapeAttr(value.link)}"`);
+            } else {
+              open = open.replace(/^(<a\b)/i, `$1 href="${escapeAttr(value.link)}"`);
+            }
+          }
+          const text = value.text != null ? escapeAttr(value.text) : _inner;
+          return open + text + close;
+        });
+      }
+      // Array / nested-object values are still left for cms-page.js to
+      // dispatch as page:section events (e.g. products_cards arrays).
+    }
+  }
+
   return html;
 }
 
@@ -450,6 +513,7 @@ module.exports = {
   tryServeHtml,
   buildContext,
   replaceTokens,
+  applyPageOverrides,
   invalidateSettingsCache,
   loadSettingsCache,
 };
