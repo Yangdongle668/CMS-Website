@@ -52,8 +52,16 @@ const cspDirectives = {
     'https://*.google-analytics.com',
     'https://*.analytics.google.com',
     'https://*.googletagmanager.com',
+    // jsdelivr serves Quill's .map sourcemaps when devtools is open;
+    // also any future CDN-hosted lib lookups.
+    'https://cdn.jsdelivr.net',
   ],
-  'frame-src': ['https://challenges.cloudflare.com'],
+  // 'self' allows the live preview iframe in /admin/pages.html to load
+  // the same-origin public pages (about/, products/, etc.). Without
+  // this, frame-src defaults to 'self' restrictions but Helmet's
+  // useDefaults flips it to "none". Explicit 'self' fixes the
+  // SecurityError: cross-origin frame visitor saw in /admin/pages.html.
+  'frame-src': ["'self'", 'https://challenges.cloudflare.com'],
   'object-src': ["'none'"],
   'base-uri': ["'self'"],
   'form-action': ["'self'"],
