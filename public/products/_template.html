@@ -105,12 +105,16 @@
   </section>
 
   <!-- 9. Related Insights (cluster articles) -->
+  <!-- Top 6 articles render as visual cards. Any remaining cluster -->
+  <!-- articles render as a compact link list — keeps the page clean -->
+  <!-- while preserving every internal link for topical authority. -->
   <section class="section section-light">
     <div class="section-inner">
       <span class="eyebrow">Insights</span>
       <h2>Articles in this topic cluster.</h2>
       <p class="lead">Engineering deep-dives that help your hardware team specify the right cell, the first time.</p>
       <div class="news-grid" data-articles style="display:grid;"></div>
+      <div class="cluster-more-links" data-article-links></div>
       <div style="margin-top: 32px;"><a href="/blog/" class="news-link">Browse all insights &rarr;</a></div>
     </div>
   </section>
