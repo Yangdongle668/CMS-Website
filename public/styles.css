@@ -2761,19 +2761,44 @@ a:hover .news-link, .news-link:hover { color: #f5a623; }
   border-top: 1px solid #ececec;
 }
 .mfg-stat strong {
-  display: block;
-  font-size: 28px;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-size: clamp(40px, 4vw, 52px);
   font-weight: 300;
   color: #171a20;
-  letter-spacing: -1px;
+  letter-spacing: -1.5px;
   line-height: 1;
+  font-feature-settings: "tnum" 1, "lnum" 1;
 }
-.mfg-stat span {
+/* Counter inherits the big strong style (no override). */
+.mfg-stat strong > .counter {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+/* The unit (m², +, etc.) sits inline next to the big number, smaller + amber. */
+.mfg-stat strong > .unit,
+.mfg-stat strong > span:not(.counter) {
+  display: inline;
+  margin-top: 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  color: #f5a623;
+  letter-spacing: -0.3px;
+}
+/* The label below the strong (small uppercase) */
+.mfg-stat > span {
   display: block;
-  margin-top: 6px;
-  font-size: 13px;
+  margin-top: 12px;
+  font-size: 12px;
+  font-weight: 600;
   color: #5c5e62;
-  letter-spacing: 0.3px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
 }
 
 /* Animated counter */
@@ -3277,35 +3302,12 @@ a:hover > .news-link::after,
    v15 — nav slide animation + redesigned stat counters
    ============================================================= */
 
-/* Animated underline on top-level nav links — sleek + subtle. */
-.nav-main > li > a {
-  position: relative;
-}
-.nav-main > li > a::after {
-  content: '';
-  position: absolute;
-  left: 14px; right: 14px;
-  bottom: 2px;
-  height: 2px;
-  background: #f5a623;
-  border-radius: 2px;
-  transform: scaleX(0);
-  transform-origin: center;
-  transition: transform 0.3s cubic-bezier(.2,.8,.2,1);
-  pointer-events: none;
-}
-.nav-main > li > a:hover::after,
-.nav-main > li.active-nav > a::after,
-.nav-main > li.has-dropdown.is-open > a::after,
-.nav-main > li.has-dropdown:hover > a::after {
-  transform: scaleX(1);
-}
-/* Slightly darker hover bg, no warm cream (per user request) */
+/* Nav: simple background tint on hover (animated underline reverted per user request). */
 .nav-main > li > a:hover {
-  background: rgba(0, 0, 0, 0.05) !important;
+  background: rgba(0, 0, 0, 0.06) !important;
 }
 #site-header:not(.scrolled) .nav-main > li > a:hover {
-  background: rgba(255, 255, 255, 0.10) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
 }
 
 /* =============================================================
@@ -3340,16 +3342,18 @@ a:hover > .news-link::after,
   border-radius: 2px;
 }
 
-/* Big display number — gradient text on light, amber-tinted on dark */
+/* Big display number — uniform size across all four cells, fits on one
+   line (including text-only values like "ISO 9001"). */
 .about-stats strong {
   display: flex !important;
   align-items: baseline;
   font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
-  font-size: clamp(48px, 6vw, 76px) !important;
+  font-size: clamp(40px, 4.6vw, 56px) !important;
   font-weight: 300 !important;
-  letter-spacing: -2.5px !important;
-  line-height: 0.95 !important;
+  letter-spacing: -1.8px !important;
+  line-height: 1.05 !important;
   margin: 0;
+  white-space: nowrap;
   font-feature-settings: "tnum" 1, "lnum" 1;  /* tabular numbers */
   color: #171a20 !important;
   background: linear-gradient(135deg, #171a20 0%, #5c5e62 100%);
@@ -3363,18 +3367,37 @@ a:hover > .news-link::after,
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
-.about-stats strong > span {
+/* Counter span inherits the big style from strong (gradient, size, weight). */
+.about-stats strong > .counter {
+  font: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  letter-spacing: inherit !important;
+  color: inherit !important;
+  -webkit-text-fill-color: inherit;
+  background: none;
+  -webkit-background-clip: initial;
+  margin: 0 !important;
+  padding: 0 !important;
+  align-self: auto;
+}
+/* Unit suffix (yrs, +, m², k / mo, K class) — small + amber, baseline-aligned. */
+.about-stats strong > span:not(.counter) {
   font-family: 'Inter', sans-serif;
-  font-size: 22px !important;
+  font-size: 18px !important;
   font-weight: 500 !important;
-  margin-left: 8px !important;
-  letter-spacing: -0.4px;
+  margin-left: 6px !important;
+  letter-spacing: -0.2px;
   color: #f5a623 !important;
   -webkit-text-fill-color: #f5a623;
   background: none;
   -webkit-background-clip: initial;
   align-self: flex-end;
   padding-bottom: 8px;
+}
+/* Empty unit spans should not occupy space. */
+.about-stats strong > span:not(.counter):empty {
+  display: none;
 }
 .about-stats em {
   font-style: normal !important;
