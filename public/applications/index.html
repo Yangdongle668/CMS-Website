@@ -195,8 +195,13 @@
   const escape = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   fetch('/api/applications').then((r) => (r.ok ? r.json() : null)).then((d) => {
     if (!d || !Array.isArray(d.items) || !d.items.length) return;
+    // Require the API to return at least as many cover_url-having rows
+    // as the static fallback already shows. If the live DB is partial
+    // (cover_url missing on some rows), keep the static cards rather
+    // than collapsing the grid.
+    const staticCount = grid.querySelectorAll('.app-card').length;
     const rows = d.items.filter((a) => a && a.cover_url);
-    if (!rows.length) return;
+    if (rows.length < Math.max(3, staticCount)) return;
     grid.innerHTML = rows.map((a) => {
       const summary = a.summary || '';
       return `<a href="/applications/${escape(a.slug)}.html" class="app-card" style="background-image:url('${escape(a.cover_url)}');">

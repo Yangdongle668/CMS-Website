@@ -121,6 +121,54 @@ DELETE FROM applications WHERE slug IN (
 );
 
 -- ---------------------------------------------------------------
+-- Backfill cover_url on existing applications. The original seed
+-- (before fab81271) inserted some application rows without a
+-- cover_url, which causes the homepage Tesla slider hydration and
+-- the /applications/ grid hydration to filter them out — leaving
+-- a broken 2-slide slider on deployments that started before this
+-- audit batch. This UPDATE only fires on rows where cover_url is
+-- blank, so operator-uploaded covers stay intact.
+-- ---------------------------------------------------------------
+UPDATE applications SET cover_url = 'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=1200&q=80'
+ WHERE slug = 'medical' AND COALESCE(cover_url, '') = '';
+
+UPDATE applications SET cover_url = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1200&q=80'
+ WHERE slug = 'wearables' AND COALESCE(cover_url, '') = '';
+
+UPDATE applications SET cover_url = 'https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=1200&q=80'
+ WHERE slug = 'iot' AND COALESCE(cover_url, '') = '';
+
+UPDATE applications SET cover_url = 'https://images.unsplash.com/photo-1592478411213-6153e4ebc07d?w=1200&q=80'
+ WHERE slug = 'ar-vr' AND COALESCE(cover_url, '') = '';
+
+UPDATE applications SET cover_url = 'https://images.unsplash.com/photo-1558002038-1055907df827?w=1200&q=80'
+ WHERE slug = 'smart-home' AND COALESCE(cover_url, '') = '';
+
+UPDATE applications SET cover_url = 'https://images.unsplash.com/photo-1559131397-f94da358f7ca?w=1200&q=80'
+ WHERE slug = 'defence-aerospace' AND COALESCE(cover_url, '') = '';
+
+-- Same defensive pattern for summary — without it the slider sub-text
+-- renders empty on rows that were inserted by an earlier seed that
+-- left summary blank.
+UPDATE applications SET summary = 'IEC 60601-aligned Li-Po pouches and coin cells for hearing aids, CGM patches, ECG monitors and infusion pumps.'
+ WHERE slug = 'medical' AND COALESCE(summary, '') = '';
+
+UPDATE applications SET summary = 'Ultra-small round and curved Li-Po cells for TWS earbuds, smart bands, smart rings and patches.'
+ WHERE slug = 'wearables' AND COALESCE(summary, '') = '';
+
+UPDATE applications SET summary = 'Custom Li-Po pouches for high-event IoT devices, plus rechargeable coin cells for RTC backup and sensor maintenance.'
+ WHERE slug = 'iot' AND COALESCE(summary, '') = '';
+
+UPDATE applications SET summary = 'Ultra-thin and curved Li-Po pouches for slim AR temples and VR headsets.'
+ WHERE slug = 'ar-vr' AND COALESCE(summary, '') = '';
+
+UPDATE applications SET summary = 'Long-life Li-Po pouches and rechargeable coin cells for smart locks, doorbells, sensors and connected home devices.'
+ WHERE slug = 'smart-home' AND COALESCE(summary, '') = '';
+
+UPDATE applications SET summary = 'Selectively-engaged Li-Po and coin-cell programs for dismounted electronics. ITAR-free BOM, MIL-PRF-32383, AS9100D-aligned.'
+ WHERE slug = 'defence-aerospace' AND COALESCE(summary, '') = '';
+
+-- ---------------------------------------------------------------
 -- STATIC PAGES (homepage, about, contact, faq, …)
 -- ---------------------------------------------------------------
 UPDATE pages SET
