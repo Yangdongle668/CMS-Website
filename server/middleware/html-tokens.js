@@ -85,7 +85,10 @@ function resolveOrgLegalName() {
 }
 
 function resolveDefaultOgImage(canonicalBase) {
-  const fromSeo = (settingsCache.seo && settingsCache.seo.default_meta_image) || '/assets/img/og-default.png';
+  // Default points to /logo.png (1024×1024 PNG that already exists in /public).
+  // Operators should upload a 1200×630 brand-aligned image and set
+  // settings.seo.default_meta_image to it for best LinkedIn/X rendering.
+  const fromSeo = (settingsCache.seo && settingsCache.seo.default_meta_image) || '/logo.png';
   return /^https?:\/\//.test(fromSeo) ? fromSeo : canonicalBase + fromSeo;
 }
 

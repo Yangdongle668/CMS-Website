@@ -477,7 +477,7 @@ INSERT INTO settings (key, value) VALUES
 ('social',
  '{"linkedin":"https://www.linkedin.com/company/zufek","whatsapp":"https://wa.me/8615377720020"}'),
 ('seo',
- '{"public_url":"https://zufek.com","default_meta_description":"OEM/ODM lithium battery manufacturer specialising in polymer Li-Po, custom-shaped Li-Po and coin steel-shell lithium cells. ISO 9001, UN 38.3, CE compliant.","default_meta_image":"/assets/img/og-default.png","twitter_handle":"","ga4_measurement_id":"","gsc_verify":"","bing_verify":""}'),
+ '{"public_url":"https://zufek.com","default_meta_description":"OEM/ODM lithium battery manufacturer specialising in polymer Li-Po, custom-shaped Li-Po and coin steel-shell lithium cells. ISO 9001, UN 38.3, CE compliant.","default_meta_image":"/logo.png","twitter_handle":"","ga4_measurement_id":"","gsc_verify":"","bing_verify":""}'),
 ('organization',
  '{"legal_name":"Dongguan Zufek Technology Co.,Ltd","brand_name":"Zufek","founding_date":"2018","vat_id":"","duns":"","logo":"/logo.png","sameAs":["https://www.linkedin.com/company/zufek"],"address":{"streetAddress":"Room 432, Building 1, No. 34 Jinniu Road, Guancheng Subdistrict","addressLocality":"Dongguan","addressRegion":"Guangdong","postalCode":"523000","addressCountry":"CN"},"contactPoints":[{"type":"sales","email":"info@zufek.com","telephone":"+86 153 7772 0020","areaServed":"Worldwide","availableLanguage":["en","zh"]},{"type":"technical support","email":"engineering@zufek.com","areaServed":"Worldwide","availableLanguage":["en"]}]}'),
 ('gdpr',
