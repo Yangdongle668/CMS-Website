@@ -7,6 +7,48 @@
 
 ---
 
+## 修复进度（截至 2026-05-09）
+
+| Sprint | 内容 | 状态 |
+|---|---|---|
+| Step 1 | 品牌统一为 Zufek（含法律实体 Dongguan Zufek Technology Co.,Ltd）；10 个公共页面 lang 改回 en；首页第 3 个 pillar 链接修正 (`coin-steel-shell-lithium-battery`)；seed 设置默认值用 Zufek | ✅ 完成 (`8e33b1d0`) |
+| Step 2 | HTML token 中间件 (`server/middleware/html-tokens.js`)；新增 `seo` / `organization` settings keys；后台新增 SEO + Organization tab；partials.js 注入 Organization + WebSite JSON-LD；GA4 (consent-gated) + GSC/Bing 验证 meta 自动注入 | ✅ 完成 (`1454543e`) |
+| Step 3 | 22 个静态页面统一注入 canonical + OG + Twitter card + theme-color；homepage `<h1>` 加入 head term；OG 默认图改为 `/logo.png` | ✅ 完成 (`b3cb693d`) |
+| Step 4 | `/public/404.html` 真实页面（品牌 head + 6 个入口 + 最近 6 篇文章）；server 404 handler 走 token 中间件返回正确 404 状态码 | ✅ 完成 (`07026c97`) |
+| Step 5 | sitemap.xml：绝对 URL、移除 priority/changefreq、加 ISO 8601 lastmod、加 image-sitemap、补全 22 条静态 baseline；robots.txt 加绝对 Sitemap、显式 Allow GPTBot/Google-Extended/PerplexityBot | ✅ 完成 (`07026c97`) |
+| Step 6 | `server/middleware/ssr-detail.js` 新模块：pillar/blog/applications 详情页服务端从 DB 读取后注入 title / description / canonical / OG / Twitter / JSON-LD（Product/Article/WebPage + BreadcrumbList + FAQPage）。客户端 JS 不再覆盖 head；只 hydrate body | ✅ 完成 (`07026c97`) |
+| Step 7 | 全部 `<img>` 加 `loading=lazy` `decoding=async` `width=1000` `height=667` `alt`；hero CDN preconnect；首页 hero `<link rel=preload>` + `fetchpriority=high` | ✅ 完成 (`008656f9`) |
+| Step 8 | 新增 `authors` 表 + `articles.author_id` 外键；`/api/authors` CRUD；admin 作者档案页 (`/admin/authors.html`) 完整 UI（slug/avatar/bio/knowsAbout/sameAs/active）；admin 文章编辑页加 author 下拉；SSR Article schema 用 Person (`worksFor` 指向 Organization)；hub 页全部加 BreadcrumbList + ItemList/Service/AboutPage/ContactPage/FAQPage/Blog schema；OG 默认 SVG brand 文字改为 Zufek + Coin Steel-Shell；admin sidebar brand "Zufek CMS" | ✅ 完成 (`72acae77`) |
+
+### 通过 grep / curl 验证
+
+- 0 个 `Acme` 引用残留（`grep -rE "\\bAcme\\b" public admin server` → 空）
+- 0 个 `lang="zh-CN"` 在 public 页面
+- 0 个 public 页面缺 canonical
+- 26 个 HTML 包含 `{{CANONICAL` 占位符（中间件解析）
+- 9 个 hub/static 页面带原生 JSON-LD（中间件渲染时 token 替换）
+- robots.txt 输出绝对 Sitemap URL，含 GPTBot/Google-Extended/PerplexityBot 段
+- sitemap.xml `xmlns:image` 已加，`<priority>` `<changefreq>` 全部移除
+- 烟囱测试 `curl /` → canonical=`https://zufek.com/`、og:image=`https://zufek.com/logo.png`、og:site_name=Zufek（皆从 PUBLIC_URL/SITE_NAME env 解析）
+- 烟囱测试 `curl /this-does-not-exist` → 真正的 404 状态 + 品牌 404 页（含 canonical/title/JSON-LD）
+- 烟囱测试 `curl /about/` → 输出 AboutPage + BreadcrumbList JSON-LD
+
+### 后台同步对应（"前后端字段都对得上"）
+
+| 前端可见 | 后台编辑入口 | 数据流 |
+|---|---|---|
+| header / footer 品牌名、地址、电话、社媒 | 设置 → 站点 / 社交 | `settings.site` / `settings.social` 走 `/api/settings/public` → `partials.js` 注入 |
+| Organization JSON-LD（每页头部） | 设置 → Organization 结构化数据 | `settings.organization` (legal_name/sameAs/address/contactPoints) → `partials.js.injectOrganizationSchema` |
+| canonical / OG image / Twitter handle / GA4 / GSC / Bing | 设置 → SEO | `settings.seo` (`public_url` / `default_meta_image` 等) → `html-tokens` 中间件 + `/api/public/config` |
+| 文章作者 + Person schema | 内容 → 作者档案 / 内容 → 博客文章（作者下拉） | `authors` 表 ↔ `articles.author_id` ↔ `ssr-detail.renderArticle` 渲染的 Person node |
+| Pillar 全字段（title/desc/variants/spec/FAQ） | 内容 → 支柱页 | `pillar_pages` ↔ `ssr-detail.renderPillar` |
+| Application 内容 + 关联 pillar | 内容 → 应用行业 | `applications` ↔ `ssr-detail.renderApplication` |
+| Blog 文章模板（standard/guide/case-study）+ pillar 关联 | 内容 → 博客文章 | `articles` ↔ SSR + Article schema |
+| Pages（首页 sections、自定义页面） | 内容 → 页面 | `pages` 表 ↔ sitemap 自动包含 |
+| 询盘 / 邮件 / GDPR | 设置 → 邮件 / GDPR; 收件箱 / GDPR 请求 | 已有功能不变，brand 引用统一为 Zufek |
+
+---
+
 ## 0. 摘要（TL;DR）
 
 整体架构合理（pillar + cluster 模型已在 DB 模式中表达），但**实现层有 8 个 P0 级缺陷直接导致索引失败或品牌混乱**：
