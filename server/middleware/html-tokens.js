@@ -538,6 +538,15 @@ async function tryServeHtml(req, res, candidates, options) {
     // Apply admin pages-table overrides AFTER tokens so the operator's
     // edits beat both the source-file defaults and the {{TOKEN}} fallbacks.
     out = await applyPageOverrides(out);
+    // FINAL pass: re-apply text_overrides AFTER applyPageOverrides so an
+    // operator's inline-edited string ("click the H1 in the preview iframe
+    // → save") wins over pages.hero_title from the DB. Without this pass,
+    // applyPageOverrides re-injects the page row's stale hero_title and
+    // the operator's edit silently disappears.
+    const textOverrides = settingsCache.text_overrides || {};
+    if (Object.keys(textOverrides).length) {
+      out = applyTextOverrides(out, textOverrides);
+    }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     if (!res.getHeader('Cache-Control')) res.setHeader('Cache-Control', 'no-cache');
     if (opts.status) res.status(opts.status);
@@ -579,12 +588,22 @@ async function htmlTokenMiddleware(req, res, next) {
   return next();
 }
 
+// Re-apply the saved text_overrides map to a final HTML string. Called
+// by SSR detail renderers after injectIntoBody so the operator's
+// inline-edited copy wins over entity-row data.
+function applySavedTextOverrides(html) {
+  const map = settingsCache.text_overrides || {};
+  if (!Object.keys(map).length) return html;
+  return applyTextOverrides(html, map);
+}
+
 module.exports = {
   htmlTokenMiddleware,
   tryServeHtml,
   buildContext,
   replaceTokens,
   applyPageOverrides,
+  applySavedTextOverrides,
   invalidateSettingsCache,
   loadSettingsCache,
 };
