@@ -70,12 +70,16 @@
     </div>
   </section>
 
-  <!-- Featured 4 (existing grid) -->
+  <!-- All industries — single unified grid with all published applications. -->
+  <!-- The static cards below are the SEO-friendly fallback. After page    -->
+  <!-- load, the inline script at the bottom of this file replaces them    -->
+  <!-- with whatever /api/applications returns, so new apps added via the  -->
+  <!-- admin auto-appear here without editing this HTML.                    -->
   <section class="section section-grey">
     <div class="section-inner">
-      <span class="eyebrow">Featured Industries</span>
-      <h2>Four domains we ship into every week.</h2>
-      <div class="app-grid">
+      <span class="eyebrow">All Industries</span>
+      <h2>Where we ship today.</h2>
+      <div class="app-grid" data-app-grid>
         <a href="/applications/ar-vr.html" class="app-card" style="background-image:url('https://images.unsplash.com/photo-1592478411213-6153e4ebc07d?w=1200&q=80');">
           <div class="app-overlay"><h3>AR / VR Glasses</h3><p>Ultra-thin cells that fit inside slim temples and headsets without adding weight.</p></div>
         </a>
@@ -87,6 +91,24 @@
         </a>
         <a href="/applications/iot.html" class="app-card" style="background-image:url('https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=1200&q=80');">
           <div class="app-overlay"><h3>IoT Devices</h3><p>Long-life cells for sensors, trackers and asset-monitoring edge devices.</p></div>
+        </a>
+        <a href="/applications/drones.html" class="app-card" style="background-image:url('https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=1200&q=80');">
+          <div class="app-overlay"><h3>Drones &amp; Robotics</h3><p>High-discharge LiPo packs (40-80C peak), thermal-runaway hardened pouches, BMS with CAN.</p></div>
+        </a>
+        <a href="/applications/power-tools.html" class="app-card" style="background-image:url('https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=1200&q=80');">
+          <div class="app-overlay"><h3>Power Tools</h3><p>21700 NMC and LFP packs with bus-bar welded tabs, 18-60V configurations.</p></div>
+        </a>
+        <a href="/applications/e-mobility.html" class="app-card" style="background-image:url('https://images.unsplash.com/photo-1556122071-e404eaedb77f?w=1200&q=80');">
+          <div class="app-overlay"><h3>E-Mobility</h3><p>Pouch and prismatic packs for e-scooters, e-bikes and last-mile delivery vehicles.</p></div>
+        </a>
+        <a href="/applications/industrial-handhelds.html" class="app-card" style="background-image:url('https://images.unsplash.com/photo-1580674684081-7617fbf3d745?w=1200&q=80');">
+          <div class="app-overlay"><h3>Industrial Handhelds</h3><p>Smart-battery packs with SMBus, hot-swap and authentication for scanners, terminals.</p></div>
+        </a>
+        <a href="/applications/defence-aerospace.html" class="app-card" style="background-image:url('https://images.unsplash.com/photo-1559131397-f94da358f7ca?w=1200&q=80');">
+          <div class="app-overlay"><h3>Defence &amp; Aerospace</h3><p>ITAR-free BOM where required, MIL-PRF-32383 abuse stack, AS9100D-aligned, dual-use only.</p></div>
+        </a>
+        <a href="/applications/smart-home.html" class="app-card" style="background-image:url('https://images.unsplash.com/photo-1558002038-1055907df827?w=1200&q=80');">
+          <div class="app-overlay"><h3>Smart Home</h3><p>Long-life pouch cells for door locks, sensors, cameras, robot vacuums.</p></div>
         </a>
       </div>
     </div>
@@ -128,21 +150,13 @@
     </div>
   </section>
 
-  <!-- We also ship into / not in featured 4 -->
+  <!-- "Don't see your category" prompt (lightweight, no longer a card grid). -->
   <section class="section section-light">
-    <div class="section-inner">
-      <span class="eyebrow">Other domains</span>
-      <h2>Don&rsquo;t see your category?</h2>
-      <p class="lead">We also actively ship into these adjacent categories. Send a spec &mdash; we will tell you which of our cell platforms fits before you commit.</p>
-
-      <div class="feat-grid">
-        <a class="feat-item feat-item--link" href="/applications/drones.html"><div class="feat-icon">⌖</div><h3>Drones &amp; Robotics</h3><p>High-discharge LiPo packs (40-80C peak), thermal-runaway hardened pouches, BMS with CAN.</p><span class="feat-cta">Read more &rarr;</span></a>
-        <a class="feat-item feat-item--link" href="/applications/power-tools.html"><div class="feat-icon">⚡</div><h3>Power Tools</h3><p>21700 NMC and LFP packs with bus-bar welded tabs, 18-60V configurations.</p><span class="feat-cta">Read more &rarr;</span></a>
-        <a class="feat-item feat-item--link" href="/applications/e-mobility.html"><div class="feat-icon">⌬</div><h3>E-Mobility</h3><p>Pouch and prismatic packs for e-scooters, e-bikes and last-mile delivery vehicles.</p><span class="feat-cta">Read more &rarr;</span></a>
-        <a class="feat-item feat-item--link" href="/applications/industrial-handhelds.html"><div class="feat-icon">▣</div><h3>Industrial Handhelds</h3><p>Smart-battery packs with SMBus, hot-swap and authentication for scanners, terminals.</p><span class="feat-cta">Read more &rarr;</span></a>
-        <a class="feat-item feat-item--link" href="/applications/defence-aerospace.html"><div class="feat-icon">◬</div><h3>Defence / Aerospace</h3><p>Selective engagement after security review. ITAR-free BOM where required.</p><span class="feat-cta">Read more &rarr;</span></a>
-        <a class="feat-item feat-item--link" href="/applications/smart-home.html"><div class="feat-icon">▲</div><h3>Smart Home</h3><p>Long-life pouch cells for door locks, sensors, cameras, robot vacuums.</p><span class="feat-cta">Read more &rarr;</span></a>
-      </div>
+    <div class="section-inner" style="text-align:center;">
+      <span class="eyebrow">Don&rsquo;t see your category?</span>
+      <h2>Send a spec &mdash; we&rsquo;ll tell you which platform fits.</h2>
+      <p class="lead">We engage with categories outside the list above when the engineering profile maps to one of our three cell platforms (polymer Li-Po, custom-shape pouch, coin steel-shell). Battery feasibility note returned in 24 hours.</p>
+      <a href="/contact.html" class="btn btn-primary" style="margin-top: 24px;">Discuss Your Device</a>
     </div>
   </section>
 
@@ -184,6 +198,27 @@
     entries.forEach((e) => { if (e.isIntersecting) { animate(e.target); io.unobserve(e.target); } });
   }, { threshold: 0.4 });
   counters.forEach((c) => io.observe(c));
+})();
+
+// Hydrate the application grid from /api/applications. The static cards
+// above act as the SEO + no-JS fallback; if the fetch returns rows with
+// a cover_url, we replace the grid contents so adding a new application
+// in the admin auto-appears here without editing this HTML.
+(function () {
+  const grid = document.querySelector('[data-app-grid]');
+  if (!grid) return;
+  const escape = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  fetch('/api/applications').then((r) => (r.ok ? r.json() : null)).then((d) => {
+    if (!d || !Array.isArray(d.items) || !d.items.length) return;
+    const rows = d.items.filter((a) => a && a.cover_url);
+    if (!rows.length) return;
+    grid.innerHTML = rows.map((a) => {
+      const summary = a.summary || '';
+      return `<a href="/applications/${escape(a.slug)}.html" class="app-card" style="background-image:url('${escape(a.cover_url)}');">
+        <div class="app-overlay"><h3>${escape(a.name)}</h3><p>${escape(summary)}</p></div>
+      </a>`;
+    }).join('');
+  }).catch(() => { /* keep static fallback */ });
 })();
 </script>
 </body>

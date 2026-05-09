@@ -3,26 +3,63 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IoT Device Batteries — Zufek</title>
-<meta name="description" content="Long-life primary and rechargeable cells for sensors, asset trackers, smart meters and edge devices.">
+<title>IoT Battery: Long-Life Lithium Cells for Sensors & Trackers | Zufek</title>
+<meta name="description" content="Low self-discharge lithium cells for IoT trackers, asset monitors and remote sensors. 5+ year shelf life, -40 to +85 °C, Li-SOCl₂ + LiFePO4 + Li-MnO₂ chemistries, custom pouch and coin formats.">
 <link rel="canonical" href="{{CANONICAL_URL}}">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="{{SITE_NAME}}">
-<meta property="og:title" content="IoT Device Batteries — Zufek">
-<meta property="og:description" content="Long-life primary and rechargeable cells for sensors, asset trackers, smart meters and edge devices.">
+<meta property="og:title" content="IoT Battery — Long-Life Cells for Sensors & Trackers | Zufek">
+<meta property="og:description" content="Low self-discharge cells for IoT sensors and asset trackers. 5+ yr shelf life, -40 to +85 °C, Li-SOCl₂ + LiFePO4 + Li-MnO₂.">
 <meta property="og:url" content="{{CANONICAL_URL}}">
-<meta property="og:image" content="{{DEFAULT_OG_IMAGE}}">
+<meta property="og:image" content="https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=1920&q=80">
 <meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="IoT Device Batteries — Zufek">
-<meta name="twitter:description" content="Long-life primary and rechargeable cells for sensors, asset trackers, smart meters and edge devices.">
-<meta name="twitter:image" content="{{DEFAULT_OG_IMAGE}}">
+<meta name="twitter:title" content="IoT Battery | Zufek">
+<meta name="twitter:description" content="Low self-discharge cells for IoT sensors and asset trackers. 5+ yr shelf, -40 to +85 °C operating.">
+<meta name="twitter:image" content="https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=1920&q=80">
 <meta name="theme-color" content="#0b3a82">
 <meta name="format-detection" content="telephone=no">
 <link rel="stylesheet" href="/styles.css">
 <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script type="application/ld+json">{
+  "@context":"https://schema.org",
+  "@type":"BreadcrumbList",
+  "itemListElement":[
+    {"@type":"ListItem","position":1,"name":"Home","item":"{{CANONICAL_BASE}}/"},
+    {"@type":"ListItem","position":2,"name":"Applications","item":"{{CANONICAL_BASE}}/applications/"},
+    {"@type":"ListItem","position":3,"name":"IoT Devices","item":"{{CANONICAL_BASE}}/applications/iot.html"}
+  ]
+}</script>
+<script type="application/ld+json">{
+  "@context":"https://schema.org",
+  "@type":"WebPage",
+  "@id":"{{CANONICAL_BASE}}/applications/iot.html#webpage",
+  "url":"{{CANONICAL_BASE}}/applications/iot.html",
+  "name":"IoT Battery | Zufek",
+  "description":"Long-life primary and rechargeable lithium cells for IoT sensors, asset trackers and edge devices.",
+  "isPartOf":{"@id":"{{CANONICAL_BASE}}/#website"},
+  "about":{"@id":"{{CANONICAL_BASE}}/#organization"},
+  "image":"https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=1920&q=80"
+}</script>
+<script type="application/ld+json">{
+  "@context":"https://schema.org",
+  "@type":"FAQPage",
+  "@id":"{{CANONICAL_BASE}}/applications/iot.html#faq",
+  "mainEntity":[
+    {"@type":"Question","name":"How do you achieve 10-year IoT battery life?",
+     "acceptedAnswer":{"@type":"Answer","text":"Three things have to line up: ultra-low self-discharge chemistry (Li-SOCl₂ at &lt; 1% per year is the practical winner), a low-leakage charge protection circuit (sub-2 µA quiescent), and a duty cycle low enough that the device's own current draw stays under the cell's effective capacity divided by 10 years. For most LoRa / NB-IoT trackers reporting once per hour, average draw of 50 to 150 µA puts a 17 Ah Li-SOCl₂ D-cell at exactly that 10-year target."}},
+    {"@type":"Question","name":"How do you handle high-pulse current with a low-current chemistry?",
+     "acceptedAnswer":{"@type":"Answer","text":"Li-SOCl₂ is excellent for low constant draw but cannot deliver the 1 to 2 A pulses LoRa, NB-IoT and LTE-M radios need during transmission. The standard fix is a hybrid: Li-SOCl₂ primary cell + a hybrid pulse capacitor (HPC) or supercapacitor sized for the burst. The capacitor sources the pulse, the primary cell recharges the capacitor between transmissions. Net effect: 10-year life with cellular-radio bursts."}},
+    {"@type":"Question","name":"What changes for cold-chain or sub-zero IoT deployments?",
+     "acceptedAnswer":{"@type":"Answer","text":"Below 0 °C, Li-SOCl₂ capacity drops sharply — down to 30 to 40% at −40 °C. For cold-chain loggers and Arctic asset trackers we typically switch to Li-MnO₂ (better cold-temp curve, accepts higher pulse current, shorter shelf life of 5 to 7 years). Capacity at −40 °C: 70 to 80% of nominal. We also de-rate the duty cycle calculation for the actual deployment temperature distribution rather than the nominal 25 °C number."}},
+    {"@type":"Question","name":"When does a rechargeable IoT battery beat a primary?",
+     "acceptedAnswer":{"@type":"Answer","text":"When the device has a meaningful energy-harvesting input — typically solar above 100 cm² panel area or vibration-harvesting in industrial environments. LiFePO4 (3,000 to 6,000 cycles) is the standard pair for solar IoT. Without harvesting, primary cells almost always beat rechargeable on total cost of ownership over 10+ year deployments because rechargeable cells age calendar-wise even when unused, and the BMS adds a quiescent draw."}},
+    {"@type":"Question","name":"Do you support ATEX and hazardous-area certifications?",
+     "acceptedAnswer":{"@type":"Answer","text":"Yes — for cells used in industrial sensors deployed in oil/gas, chemical or grain-handling sites. ATEX Zone 2 and IECEx certification require specific cell variants (no vent membrane, hermetic seal, intrinsically-safe terminals) and pack-level integration testing. Lead time runs 16 to 22 weeks for a fully ATEX-certified pack. UL Class I Div 2 (the US equivalent) ships in similar timeframe with the same underlying cell."}}
+  ]
+}</script>
 </head>
 <body data-nav="applications" data-page="applications/iot">
 <div id="header-mount"></div>
@@ -30,7 +67,7 @@
 <main>
   <section class="page-hero" style="background-image:url('https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=1920&q=80');">
     <div class="breadcrumbs"><a href="/">Home</a><span>/</span><a href="/applications/">Applications</a><span>/</span><span>IoT Devices</span></div>
-    <h1>IoT Devices</h1>
+    <h1>IoT Device Battery</h1>
     <p>Deployed once, replaced rarely. The battery is the uptime.</p>
   </section>
 
@@ -40,34 +77,120 @@
     <div class="section-inner">
       <span class="eyebrow">The Reality</span>
       <h2>An IoT node is only as reliable as its cell.</h2>
-      <p class="lead">Half of IoT field failures trace back to battery behaviour under edge conditions — cold storage rooms, rooftop heat, high-humidity containers, decade-long asset tags. We build cells sized for the environment, not the datasheet.</p>
+      <p class="lead">Half of IoT field failures trace back to battery behaviour under edge conditions — cold storage rooms, rooftop heat, high-humidity shipping containers, decade-long buried asset tags. We build cells sized for the environment, not the datasheet, and we de-rate the duty cycle calculation for the actual deployment temperature distribution rather than the convenient 25 °C number.</p>
 
       <div class="feat-grid">
-        <div class="feat-item"><div class="feat-icon">❆</div><h3>Wide Temperature</h3><p>−40 °C to +85 °C variants for cold-chain, outdoor and industrial deployments.</p></div>
-        <div class="feat-item"><div class="feat-icon">⌛</div><h3>Long Shelf Life</h3><p>Li-SOCl₂ primaries with 10+ year passive life. Li-MnO₂ for higher pulse current.</p></div>
-        <div class="feat-item"><div class="feat-icon">⚡</div><h3>High-Pulse Ready</h3><p>Hybrid cell + supercap modules for LoRa, NB-IoT and LTE-M transmission bursts.</p></div>
-        <div class="feat-item"><div class="feat-icon">↻</div><h3>Rechargeable Options</h3><p>LiFePO4 and Li-ion for solar-harvesting or wired backup configurations.</p></div>
-        <div class="feat-item"><div class="feat-icon">▣</div><h3>IP67 / IP68 Packs</h3><p>Sealed enclosures with gas-vent membranes for outdoor and underground use.</p></div>
-        <div class="feat-item"><div class="feat-icon">✓</div><h3>UN 38.3 &amp; ATEX</h3><p>Certification support for hazardous-area, aerospace and maritime deployments.</p></div>
+        <div class="feat-item"><div class="feat-icon">❆</div><h3>Wide Temperature</h3><p>−40 °C to +85 °C variants for cold-chain, outdoor and industrial deployments. Li-MnO₂ chemistry for the cold corner; Li-SOCl₂ for the hot corner.</p></div>
+        <div class="feat-item"><div class="feat-icon">⌛</div><h3>Long Shelf Life</h3><p>Li-SOCl₂ primaries with 10 to 15 year passive life at &lt; 1% / year self-discharge. Li-MnO₂ for higher pulse current with 5 to 7 year shelf life.</p></div>
+        <div class="feat-item"><div class="feat-icon">⚡</div><h3>High-Pulse Ready</h3><p>Hybrid cell + HPC modules for LoRa, NB-IoT and LTE-M transmission bursts. Pulse current up to 4 A from a primary that draws &lt; 50 µA average.</p></div>
+        <div class="feat-item"><div class="feat-icon">↻</div><h3>Rechargeable Options</h3><p>LiFePO4 for solar-harvesting and wired-backup configurations. 3,000 to 6,000 cycle life, &lt; 1% self-discharge per month.</p></div>
+        <div class="feat-item"><div class="feat-icon">▣</div><h3>IP67 / IP68 Packs</h3><p>Sealed enclosures with gas-vent membranes for outdoor and underground use. Pressure-tested to 1 m water column for 30 minutes.</p></div>
+        <div class="feat-item"><div class="feat-icon">✓</div><h3>UN 38.3 &amp; ATEX</h3><p>Certification support for hazardous-area, aerospace and maritime deployments. ATEX Zone 2 / IECEx variants in 16 to 22 weeks.</p></div>
       </div>
     </div>
   </section>
 
   <section class="section section-grey">
     <div class="section-inner">
+      <span class="eyebrow">Chemistry decision tree</span>
+      <h2>Two architectures cover 95% of IoT deployments.</h2>
+      <p class="lead">Most IoT battery selection mistakes come from picking the wrong chemistry for the duty cycle. The split is binary: low-event vs high-event devices.</p>
+
+      <div class="content-split">
+        <div class="text-col">
+          <h3>Low-event: water meter, smart agriculture, asset tag.</h3>
+          <p>Devices that wake once per hour or less, draw 50 to 150 µA average, and need 10+ year passive life. Ultra-low self-discharge Li-SOCl₂ (&lt; 1% per year, &lt; 0.5% with passivation) is the only chemistry that mathematically supports the target. Capacity: 1.2 Ah (½AA) to 19 Ah (DD).</p>
+          <p>For LoRa, NB-IoT or LTE-M radios, add a hybrid pulse capacitor (HPC) sized for the worst-case transmit burst. The HPC sources the 1 to 4 A pulse; the Li-SOCl₂ recharges the HPC between transmissions. Net: 10-year life with cellular-radio capability. Read our <a href="/blog/cell-sizing">cell-sizing from a power profile</a> guide for the worked LoRa example.</p>
+        </div>
+        <div class="img-col">
+          <img src="https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=1000&q=80" alt="Industrial IoT sensor mounted outdoors" loading="lazy" decoding="async" width="1000" height="667">
+        </div>
+      </div>
+
+      <div class="content-split reverse">
+        <div class="text-col">
+          <h3>High-event: cold-chain logger, PoC tracker, smart lock.</h3>
+          <p>Devices that wake every few minutes or constantly stream data — too high a duty cycle for primary chemistry to last 10 years cost-effectively. Use rechargeable LiFePO4 with solar harvesting (10+ year life, 3,000+ cycles) for outdoor deployments, or replaceable Li-MnO₂ coin/CR-series cells (1 to 3 year life, accept low cost) for indoor.</p>
+          <p>For sub-zero cold-chain (−40 °C continuous), Li-MnO₂ wins both on cold-temp capacity (70 to 80% at −40 °C) and pulse-current capability. Capacity: 100 mAh coin to 1.7 Ah CR123. We qualify each lot through a 30-cycle thermal cycling test before release.</p>
+        </div>
+        <div class="img-col">
+          <img src="https://images.unsplash.com/photo-1607968565043-36af90dde238?w=1000&q=80" alt="Cold-chain logistics with sensor" loading="lazy" decoding="async" width="1000" height="667">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-light">
+    <div class="section-inner">
       <span class="eyebrow">Typical Deployments</span>
       <h2>What we've powered in the field.</h2>
       <table class="spec-table">
         <thead><tr><th>Application</th><th>Chemistry</th><th>Target Life</th><th>Notes</th></tr></thead>
         <tbody>
-          <tr><td>Water / gas smart meter</td><td>Li-SOCl₂</td><td>15 – 20 yrs</td><td>Ultra-low self-discharge</td></tr>
-          <tr><td>Asset tracker (LoRa)</td><td>Li-SOCl₂ + HPC</td><td>5 – 10 yrs</td><td>Pulse-ready hybrid</td></tr>
-          <tr><td>Cold-chain logger</td><td>Li-MnO₂</td><td>1 – 3 yrs</td><td>−40 °C operation</td></tr>
-          <tr><td>Smart lock</td><td>Alkaline / Li-AA</td><td>1 – 2 yrs</td><td>Drop-in replacements</td></tr>
-          <tr><td>Solar edge node</td><td>LiFePO4</td><td>10+ yrs</td><td>3,000+ cycle rechargeable</td></tr>
-          <tr><td>Industrial PLC backup</td><td>Li-MnO₂ coin</td><td>5 – 10 yrs</td><td>High reliability, low cost</td></tr>
+          <tr><td>Water / gas smart meter</td><td>Li-SOCl₂</td><td>15 – 20 yrs</td><td>Ultra-low self-discharge, &lt; 1% / yr</td></tr>
+          <tr><td>LoRa / NB-IoT asset tracker</td><td>Li-SOCl₂ + HPC</td><td>5 – 10 yrs</td><td>Pulse-ready hybrid, 1 to 4 A bursts</td></tr>
+          <tr><td>Cold-chain logger</td><td>Li-MnO₂</td><td>1 – 3 yrs</td><td>−40 °C operation, 70 to 80% capacity at cold</td></tr>
+          <tr><td>Smart lock</td><td>Li-AA primary / LiFePO4 rechargeable</td><td>1 – 2 yrs / 5+ yrs</td><td>Drop-in 1.5V or 3.7V module</td></tr>
+          <tr><td>Solar edge node</td><td>LiFePO4 + 200 cm² panel</td><td>10+ yrs</td><td>3,000 to 6,000 cycle rechargeable</td></tr>
+          <tr><td>Industrial PLC backup</td><td>Li-MnO₂ coin (CR2032/2450)</td><td>5 – 10 yrs</td><td>High reliability, low cost, hot-swap</td></tr>
+          <tr><td>Buried infrastructure sensor</td><td>Li-SOCl₂ DD-cell + IP68 pack</td><td>10 – 15 yrs</td><td>1 m water column tested, ATEX Zone 2 option</td></tr>
         </tbody>
       </table>
+    </div>
+  </section>
+
+  <section class="section section-grey">
+    <div class="section-inner">
+      <span class="eyebrow">Common questions</span>
+      <h2>What IoT teams ask before they commit.</h2>
+
+      <details class="faq-item" open>
+        <summary><strong>How do you actually get 10-year IoT battery life?</strong></summary>
+        <p>Three constraints have to line up: ultra-low self-discharge chemistry (Li-SOCl₂ at &lt; 1% per year), low-leakage protection circuit (sub-2 µA quiescent), and a duty cycle that keeps device average draw at or below cell capacity divided by 10 years. For LoRa / NB-IoT trackers reporting hourly with 50 to 150 µA average, a 17 Ah Li-SOCl₂ D-cell hits the math exactly. See <a href="/blog/cell-sizing">sizing a lithium cell from a power profile</a>.</p>
+      </details>
+      <details class="faq-item">
+        <summary><strong>How do you support cellular-radio bursts on a low-current chemistry?</strong></summary>
+        <p>Hybrid: Li-SOCl₂ primary + hybrid pulse capacitor (HPC) sized for the burst. The HPC sources the 1 to 4 A transmit pulse; the primary recharges the HPC between transmissions. Most LTE-M and NB-IoT trackers we ship use this architecture with a 1 to 5 F supercap and a 2 to 10 ms transmit window.</p>
+      </details>
+      <details class="faq-item">
+        <summary><strong>What changes for cold-chain (−40 °C) deployments?</strong></summary>
+        <p>Switch from Li-SOCl₂ to Li-MnO₂. Li-SOCl₂ capacity drops to 30 to 40% at −40 °C; Li-MnO₂ holds 70 to 80%. Trade-off: shorter shelf life (5 to 7 years vs 15 to 20). De-rate the duty cycle calculation for the actual deployment temperature distribution, not the nominal 25 °C.</p>
+      </details>
+      <details class="faq-item">
+        <summary><strong>When is rechargeable cheaper than primary over 10 years?</strong></summary>
+        <p>Only when there's meaningful energy harvesting (typically &gt; 100 cm² solar). LiFePO4 with solar wins on TCO above that threshold. Without harvesting, primary cells almost always beat rechargeable because the BMS adds quiescent draw and the cell ages calendar-wise even unused. See <a href="/blog/how-to-choose-li-po-capacity-iot">how to choose Li-Po capacity for IoT devices</a>.</p>
+      </details>
+      <details class="faq-item">
+        <summary><strong>Do you support ATEX hazardous-area deployments?</strong></summary>
+        <p>Yes — ATEX Zone 2 and IECEx for industrial sensors in oil/gas and chemical sites. Requires specific cell variants (no vent membrane, hermetic seal, intrinsically-safe terminals). Lead time 16 to 22 weeks for a fully certified pack. UL Class I Div 2 ships in similar timeframe.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="section section-light">
+    <div class="section-inner">
+      <span class="eyebrow">Related reading</span>
+      <h2>Engineering deep-dives.</h2>
+      <div class="product-grid" style="grid-template-columns:repeat(3,1fr);">
+        <a href="/blog/cell-sizing" class="product-card">
+          <div class="product-tag">Engineering</div>
+          <h3>Sizing a Cell From a Power Profile</h3>
+          <p>Worked LoRa IoT example: from current trace to capacity spec.</p>
+          <span class="news-link">Read the deep-dive &rarr;</span>
+        </a>
+        <a href="/blog/how-to-choose-li-po-capacity-iot" class="product-card">
+          <div class="product-tag">IoT</div>
+          <h3>Choose Li-Po Capacity for IoT</h3>
+          <p>4-step practical guide for IoT hardware engineers.</p>
+          <span class="news-link">Read more &rarr;</span>
+        </a>
+        <a href="/blog/lithium-shipping" class="product-card">
+          <div class="product-tag">Logistics</div>
+          <h3>Shipping Lithium: DGR Basics</h3>
+          <p>UN 38.3, IATA labels, what stops at customs.</p>
+          <span class="news-link">Read more &rarr;</span>
+        </a>
+      </div>
     </div>
   </section>
 
