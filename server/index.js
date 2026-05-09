@@ -25,13 +25,27 @@ app.set('trust proxy', 1);
 // HTTPS and gets ERR_SSL_PROTOCOL_ERROR.
 const forceHttps = String(process.env.FORCE_HTTPS || 'false') === 'true';
 
+// CSP allows the analytics + tag-manager hosts so a configured GA4 ID
+// can actually load gtag.js + report events. Only Google-owned hosts
+// are whitelisted; Hotjar / Mixpanel etc. would need a future opt-in.
 const cspDirectives = {
   'default-src': ["'self'"],
-  'script-src': ["'self'", "'unsafe-inline'", 'https://challenges.cloudflare.com'],
+  'script-src': [
+    "'self'", "'unsafe-inline'",
+    'https://challenges.cloudflare.com',
+    'https://www.googletagmanager.com',
+    'https://*.googletagmanager.com',
+  ],
   'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
   'font-src': ["'self'", 'https://fonts.gstatic.com', 'data:'],
   'img-src': ["'self'", 'data:', 'blob:', 'http:', 'https:'],
-  'connect-src': ["'self'", 'https://challenges.cloudflare.com'],
+  'connect-src': [
+    "'self'",
+    'https://challenges.cloudflare.com',
+    'https://*.google-analytics.com',
+    'https://*.analytics.google.com',
+    'https://*.googletagmanager.com',
+  ],
   'frame-src': ['https://challenges.cloudflare.com'],
   'object-src': ["'none'"],
   'base-uri': ["'self'"],
@@ -102,6 +116,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/pages', require('./routes/pages'));
 app.use('/api/authors', require('./routes/authors'));
 app.use('/api/media/overrides', require('./routes/media-overrides'));
+app.use('/api/seo-check', require('./routes/seo-check'));
 
 // ----- SEO endpoints -----
 app.use('/', require('./routes/seo'));

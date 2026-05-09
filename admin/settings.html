@@ -69,15 +69,47 @@
         <div class="field"><label>公开 URL <span class="hint">（如 https://zufek.com，无尾斜杠）</span></label><input data-key="seo.public_url" value="${escapeHtml(s('seo').public_url || '')}" placeholder="https://zufek.com"/></div>
         <div class="field"><label>默认 Meta 描述 <span class="hint">（160 字符内）</span></label><textarea data-key="seo.default_meta_description" rows="3" maxlength="200">${escapeHtml(s('seo').default_meta_description || '')}</textarea></div>
         <div class="field"><label>默认 OG 图 URL <span class="hint">（推荐 1200×630 PNG/JPG）</span></label><input data-key="seo.default_meta_image" value="${escapeHtml(s('seo').default_meta_image || '')}" placeholder="/assets/img/og-default.png"/></div>
-        <div class="field-row">
-          <div class="field"><label>Twitter / X 账号 <span class="hint">（如 @zufek）</span></label><input data-key="seo.twitter_handle" value="${escapeHtml(s('seo').twitter_handle || '')}" placeholder="@zufek"/></div>
-          <div class="field"><label>GA4 测量 ID <span class="hint">（G-XXXXXXX）</span></label><input data-key="seo.ga4_measurement_id" value="${escapeHtml(s('seo').ga4_measurement_id || '')}" placeholder="G-..."/></div>
+
+        <h3 style="margin:24px 0 12px; font-size:14px; padding-top:18px; border-top:1px solid var(--a-line);">Google Search Console 验证</h3>
+        <div style="font-size:12.5px; color:var(--a-mute2); line-height:1.6; margin-bottom:10px;">
+          <strong>怎么拿这个值：</strong><br>
+          1. 打开 <a href="https://search.google.com/search-console" target="_blank" style="color:var(--a-accent);">Google Search Console</a>，添加资源 → 选 <strong>"网域"</strong>（推荐）或 <strong>"网址前缀"</strong>。<br>
+          2. 选 <strong>"HTML 标签"</strong> 验证方式（不是 DNS、不是上传文件）。<br>
+          3. 复制 <code>&lt;meta name="google-site-verification" content="<strong>这一长串</strong>"&gt;</code> 里 content 的那一长串。<br>
+          4. 粘贴到下面的输入框 → 保存 → 回到 GSC 点击"验证"。
+        </div>
+        <div class="field"><label>Google Search Console 验证码 <span class="hint">（仅 content 部分，不要包含 &lt;meta&gt; 标签）</span></label><input data-key="seo.gsc_verify" value="${escapeHtml(s('seo').gsc_verify || '')}" placeholder="abc123def456ghi789..."/></div>
+
+        <h3 style="margin:24px 0 12px; font-size:14px; padding-top:18px; border-top:1px solid var(--a-line);">Bing Webmaster 验证</h3>
+        <div style="font-size:12.5px; color:var(--a-mute2); line-height:1.6; margin-bottom:10px;">
+          <strong>怎么拿这个值：</strong><br>
+          1. 打开 <a href="https://www.bing.com/webmasters" target="_blank" style="color:var(--a-accent);">Bing Webmaster Tools</a>，添加站点。<br>
+          2. 选 <strong>"Meta Tag"</strong> 验证方式 → 复制 <code>&lt;meta name="msvalidate.01" content="<strong>这一串</strong>"&gt;</code> 里 content 部分。<br>
+          3. 粘贴到下面 → 保存 → Bing 点击"验证"。
+        </div>
+        <div class="field"><label>Bing Webmaster 验证码 <span class="hint">（仅 content 部分）</span></label><input data-key="seo.bing_verify" value="${escapeHtml(s('seo').bing_verify || '')}" placeholder="ABCDEF1234567890..."/></div>
+
+        <h3 style="margin:24px 0 12px; font-size:14px; padding-top:18px; border-top:1px solid var(--a-line);">Google Analytics 4</h3>
+        <div style="font-size:12.5px; color:var(--a-mute2); line-height:1.6; margin-bottom:10px;">
+          <strong>怎么拿这个值：</strong><br>
+          1. 在 <a href="https://analytics.google.com" target="_blank" style="color:var(--a-accent);">Google Analytics</a> 创建 GA4 媒体资源 → 添加"网站"数据流。<br>
+          2. 复制 <strong>"测量 ID"</strong>（格式 <code>G-XXXXXXXXXX</code>）。<br>
+          3. 粘贴到下面 → 保存。
+        </div>
+        <div style="font-size:12.5px; color:var(--a-mute2); line-height:1.6; padding:10px 14px; background:#f0fdf4; border-left:3px solid #22c55e; border-radius:4px; margin-bottom:10px;">
+          <strong>✓ 自动遵守 GDPR：</strong> 默认所有 cookie 类别为 "denied"，访客在 cookie 横幅勾选 analytics 后立即（无需刷新页面）通过 Consent Mode v2 切换为 "granted"。GA4 自动启用 IP 匿名化。
         </div>
         <div class="field-row">
-          <div class="field"><label>Google Search Console 验证码</label><input data-key="seo.gsc_verify" value="${escapeHtml(s('seo').gsc_verify || '')}" placeholder="abc123..."/></div>
-          <div class="field"><label>Bing Webmaster 验证码</label><input data-key="seo.bing_verify" value="${escapeHtml(s('seo').bing_verify || '')}" placeholder="ABCDEF..."/></div>
+          <div class="field"><label>GA4 测量 ID</label><input data-key="seo.ga4_measurement_id" value="${escapeHtml(s('seo').ga4_measurement_id || '')}" placeholder="G-XXXXXXXXXX"/></div>
+          <div class="field"><label>Twitter / X 账号 <span class="hint">（用于社交分享卡片，如 @zufek）</span></label><input data-key="seo.twitter_handle" value="${escapeHtml(s('seo').twitter_handle || '')}" placeholder="@zufek"/></div>
         </div>
-        <p style="font-size:12px; color:var(--a-mute2);">⚠️ GA4 仅在访客同意 analytics cookie 后加载，自动启用 IP 匿名化。</p>
+
+        <h3 style="margin:24px 0 12px; font-size:14px; padding-top:18px; border-top:1px solid var(--a-line);">一键自检</h3>
+        <p style="font-size:12.5px; color:var(--a-mute2); margin-top:0;">
+          保存后点这里，服务器会以 Google 爬虫的身份抓取首页，确认所有 SEO meta / 验证码 / sitemap / robots.txt 都正确就位。
+        </p>
+        <button type="button" class="btn btn--ghost" id="seo-check-run">▶ 运行 SEO 自检</button>
+        <div id="seo-check-result" style="margin-top:12px;"></div>
       </div>
     </div>
 
@@ -214,6 +246,58 @@ https://twitter.com/zufek">${escapeHtml((org.sameAs || []).join('\n'))}</textare
       toast('设置已保存', 'success');
     } catch (err) { toast('保存 failed: ' + err.message, 'error'); }
   });
+
+  // SEO 一键自检：抓取首页，看看每项 SEO meta / 验证码是否已落地
+  const seoCheckBtn = document.getElementById('seo-check-run');
+  if (seoCheckBtn) {
+    seoCheckBtn.addEventListener('click', async () => {
+      const out = document.getElementById('seo-check-result');
+      out.innerHTML = '<div style="padding:14px; color:var(--a-mute2);">正在抓取首页…</div>';
+      seoCheckBtn.disabled = true;
+      try {
+        const r = await api('/api/seo-check');
+        const c = r.checks;
+        const row = (label, val, hint) => {
+          const present = val === true || (typeof val === 'string' && val);
+          const icon = present ? '<span style="color:#16a34a;">✓</span>' : '<span style="color:#dc2626;">✗</span>';
+          const valTxt = typeof val === 'string' ? `<code style="font-size:12px; color:var(--a-mute2); margin-left:8px;">${escapeHtml(val.length > 60 ? val.slice(0, 57) + '…' : val)}</code>` : '';
+          return `<tr><td style="padding:6px 12px;">${icon}</td><td style="padding:6px 12px;"><strong>${label}</strong>${valTxt}<div style="font-size:11.5px; color:var(--a-mute2);">${hint || ''}</div></td></tr>`;
+        };
+        out.innerHTML = `
+          <div style="padding:14px; background:#f8fafc; border:1px solid var(--a-line); border-radius:8px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:12.5px;">
+              <span><strong>抓取目标：</strong> <code>${escapeHtml(r.target)}</code></span>
+              <span style="color:var(--a-mute2);">HTTP ${r.httpStatus} · ${(r.bodySize/1024).toFixed(1)} KB</span>
+            </div>
+            <table style="width:100%; border-collapse:collapse; font-size:13px;">
+              ${row('Canonical URL', c.canonical, '应该指向公开 URL + 当前路径')}
+              ${row('OG image', c.og_image, '社交分享卡片缩略图')}
+              ${row('Twitter card', c.twitter_card, '应为 summary_large_image')}
+              ${row('Organization 结构化数据', c.organization_schema, 'Knowledge Panel + AI Overviews 引用基础')}
+              ${row('WebSite 结构化数据', c.website_schema, '让搜索框出现在站点结果上')}
+              ${row('Google Search Console 验证', c.google_site_verification, c.google_site_verification ? '已就位，可在 GSC 点击"验证"' : '未配置（在上方 GSC 字段填值后再来）')}
+              ${row('Bing Webmaster 验证', c.bing_msvalidate, c.bing_msvalidate ? '已就位' : '未配置（可选）')}
+              ${row('Twitter @ 账号', c.twitter_site, c.twitter_site ? '已注入' : '未配置（可选）')}
+              ${row('GA4 gtag.js 已加载', c.ga4_tag, c.ga4_tag ? '测量 ID: ' + c.ga4_tag : '未配置 GA4 ID')}
+              ${row('GA4 Consent Mode v2', c.ga4_consent_default, c.ga4_consent_default ? '默认 denied，等访客同意 cookie 后转为 granted' : (c.ga4_tag ? '⚠️ Consent default 缺失！' : '需要先配置 GA4 ID'))}
+            </table>
+            ${r.sitemap ? `
+              <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--a-line); font-size:12.5px;">
+                <strong>sitemap.xml：</strong> HTTP ${r.sitemap.status} · 绝对 URL ${r.sitemap.abs_url_count} 条 · image-sitemap ${r.sitemap.has_image_ns ? '✓' : '✗'}
+              </div>` : ''}
+            ${r.robots ? `
+              <div style="font-size:12.5px;">
+                <strong>robots.txt：</strong> HTTP ${r.robots.status} · Sitemap 绝对 URL ${r.robots.has_absolute_sitemap ? '✓' : '✗'} · 允许 AI 爬虫 ${r.robots.allows_ai_bots ? '✓' : '✗'}
+              </div>` : ''}
+          </div>
+        `;
+      } catch (err) {
+        out.innerHTML = `<div style="padding:14px; color:#dc2626; background:#fef2f2; border-radius:8px;">自检失败：${escapeHtml(err.message)}</div>`;
+      } finally {
+        seoCheckBtn.disabled = false;
+      }
+    });
+  }
 })();
 </script>
 </body>
