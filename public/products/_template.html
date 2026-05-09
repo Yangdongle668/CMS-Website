@@ -82,7 +82,7 @@
       <span class="eyebrow">Customisation</span>
       <h2>Bespoke design service.</h2>
       <p class="lead">Send a 3D model and target spec — we return a feasibility study within 5 working days, including capacity estimate, cycle-life model and BOM cost.</p>
-      <div class="feat-grid" data-customization></div>
+      <div class="cust-grid" data-customization></div>
     </div>
   </section>
 
@@ -286,13 +286,14 @@
   // ----- Customisation -----
   if (p.customization && p.customization.enabled && Array.isArray(p.customization.items) && p.customization.items.length) {
     document.querySelector('[data-customization-section]').style.display = '';
-    document.querySelector('[data-customization]').innerHTML = p.customization.items.map((c) =>
-      `<div class="feat-item">
-        <div class="feat-icon">+</div>
-        <h3>${escape(c.label || '')}</h3>
-        <p>${escape(c.value || '')}</p>
-      </div>`
-    ).join('');
+    document.querySelector('[data-customization]').innerHTML = p.customization.items.map((c, i) => {
+      const num = String(i + 1).padStart(2, '0');
+      return `<div class="cust-item">
+        <span class="cust-item__num">${num}</span>
+        <p class="cust-item__label">${escape(c.label || '')}</p>
+        <p class="cust-item__value">${escape(c.value || '')}</p>
+      </div>`;
+    }).join('');
   }
 
   // ----- Manufacturing -----

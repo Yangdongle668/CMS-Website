@@ -3482,3 +3482,160 @@ a:hover > .news-link::after,
   .about-stats { grid-template-columns: 1fr; gap: 24px; }
 }
 
+
+/* =========================================================================
+   Pillar — customisation grid (refined)
+   The default .feat-item was a generic "+" card grid which read poorly when
+   used to list customisation parameters (Dimensions / Capacity / Connectors
+   …). The cust-grid below is purpose-built for spec-style content: a clean
+   2-up grid with numbered amber accents, brand-blue label, and large body
+   text. Drops the "+" icon entirely.
+   ========================================================================= */
+.cust-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0;
+  border-top: 1px solid #ececec;
+  margin-top: 32px;
+}
+@media (max-width: 760px) {
+  .cust-grid { grid-template-columns: 1fr; }
+}
+.cust-item {
+  padding: 26px 28px 28px;
+  border-bottom: 1px solid #ececec;
+  border-right: 1px solid #ececec;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #fff;
+  transition: background 0.15s ease;
+}
+@media (max-width: 760px) {
+  .cust-item { border-right: none; }
+}
+.cust-item:nth-child(2n) { border-right: none; }
+.cust-item:hover { background: #fafafa; }
+.cust-item__num {
+  position: absolute;
+  top: 22px;
+  right: 24px;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 300;
+  letter-spacing: -1px;
+  color: #f5a623;
+  line-height: 1;
+  opacity: 0.85;
+}
+.cust-item__label {
+  font-size: 11px;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: #0b3a82;
+  font-weight: 600;
+  margin: 0 70px 0 0;       /* leave room for the numbered badge */
+}
+.cust-item__value {
+  font-size: 15.5px;
+  line-height: 1.55;
+  color: #171a20;
+  margin: 0;
+  max-width: 60ch;
+}
+
+/* =========================================================================
+   Image placeholders — every page card / hero / media slot gets a default
+   brand-blue gradient so a missing cover_url / hero_image renders as a
+   visible block instead of an empty rectangle. Inline style="background-
+   image:url(...)" still wins (CSS specificity is the same, but inline
+   beats stylesheet on cascade order).
+   ========================================================================= */
+
+/* Inline brand-mark watermark (absolutely-positioned ::after).
+   Drawn as the wordmark "Z" over a blue gradient. */
+.blog-card__media,
+.pillar-card__media,
+.app-card,
+.blog-featured__media,
+.tesla-slide,
+.product-card__media,
+.preview-img-card img,
+.image-picker__preview {
+  background: linear-gradient(135deg, #0b3a82 0%, #1e40af 60%, #f5a623 180%);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+.blog-card__media::before,
+.pillar-card__media::before,
+.app-card::before,
+.blog-featured__media::before {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    /* faint angular line pattern so the gradient isn't flat */
+    repeating-linear-gradient(
+      45deg,
+      rgba(255,255,255,0.03) 0px,
+      rgba(255,255,255,0.03) 2px,
+      transparent 2px,
+      transparent 22px
+    );
+  pointer-events: none;
+}
+/* The brand mark Z, only shown on the gradient (i.e. when no inline image) */
+.blog-card__media::after,
+.pillar-card__media::after,
+.blog-featured__media::after {
+  content: "Z";
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 64px;
+  font-weight: 300;
+  color: rgba(255,255,255,0.16);
+  letter-spacing: -3px;
+  pointer-events: none;
+  user-select: none;
+}
+/* Hide the Z and the line pattern when an inline background-image is set
+   (i.e. when the card has a real cover image). The selector below
+   targets elements with style attribute containing 'background-image'.
+   We use [style*="background-image"] and reset both ::before/::after. */
+.blog-card__media[style*="background-image"]::before,
+.blog-card__media[style*="background-image"]::after,
+.pillar-card__media[style*="background-image"]::before,
+.pillar-card__media[style*="background-image"]::after,
+.app-card[style*="background-image"]::before,
+.blog-featured__media[style*="background-image"]::before,
+.blog-featured__media[style*="background-image"]::after,
+.tesla-slide[style*="background-image"]::before {
+  display: none;
+}
+.app-card[style*="background-image"] {
+  background: var(--color-card-overlay, transparent);
+}
+
+/* page-hero placeholder — when no inline background-image, fill with the
+   same gradient. */
+.page-hero,
+.hero {
+  background-color: #0b3a82;
+  background-size: cover;
+  background-position: center;
+}
+
+/* Empty <img> graceful fallback — broken or missing image shows the same
+   gradient instead of the browser's default broken-image icon. */
+img:where([alt=""]) { background: linear-gradient(135deg, #0b3a82 0%, #1e40af 100%); }
+img.broken,
+img:not([src]),
+img[src=""] {
+  background: linear-gradient(135deg, #0b3a82 0%, #1e40af 100%);
+  position: relative;
+  min-height: 80px;
+}

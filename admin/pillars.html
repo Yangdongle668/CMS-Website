@@ -11,11 +11,15 @@
 <body>
 <div data-admin-shell></div>
 <script src="/admin/assets/js/admin.js"></script>
+<script src="/admin/assets/js/image-picker.js"></script>
+<script src="/admin/assets/js/iframe-text-editor.js"></script>
 <script>
 (async function () {
   const { api, escapeHtml, toast, bootShell } = window.AdminAPI;
   const shell = await bootShell({ title: '支柱页', crumbs: '内容 / 支柱页' });
   if (!shell) return;
+  let heroPicker = null;
+  let previewIframe = null;
 
   const wantSlug = new URLSearchParams(location.search).get('slug');
 
@@ -54,15 +58,20 @@
   function renderEditor(p) {
     document.getElementById('list-panel').style.display = 'none';
     const panel = document.getElementById('edit-panel');
+    const previewUrl = '/products/' + encodeURIComponent(p.slug);
     panel.innerHTML = `
       <div class="panel">
         <div class="panel__head">
           <h2>正在编辑： ${escapeHtml(p.name)}</h2>
           <div style="display:flex; gap:8px;">
-            <a href="/products/${encodeURIComponent(p.slug)}" target="_blank" class="btn btn--ghost btn--sm">预览 ↗</a>
+            <a href="${previewUrl}" target="_blank" class="btn btn--ghost btn--sm">在新窗口打开 ↗</a>
             <a href="/admin/pillars.html" class="btn btn--ghost btn--sm">返回列表</a>
           </div>
         </div>
+
+        <div class="page-editor-split">
+          <!-- LEFT: form -->
+          <div class="page-editor-form">
         <div class="tabs" id="tabs">
           <button class="tabs__btn is-active" data-tab="general">基本</button>
           <button class="tabs__btn" data-tab="hero">Hero</button>
@@ -90,7 +99,7 @@
           <div class="field"><label>Eyebrow（标题前小字）</label><input id="f-eyebrow" value="${escapeHtml(p.hero_eyebrow)}"/></div>
           <div class="field"><label>标题 (H1)</label><input id="f-htitle" value="${escapeHtml(p.hero_title)}"/></div>
           <div class="field"><label>副标题</label><textarea id="f-hsub">${escapeHtml(p.hero_subtitle)}</textarea></div>
-          <div class="field"><label>Hero 大图 URL</label><input id="f-himg" value="${escapeHtml(p.hero_image)}"/></div>
+          <div class="field"><label>Hero 大图</label><div id="f-himg-mount"></div></div>
           <div class="field-row">
             <div class="field"><label>主 CTA 文字</label><input id="f-cta1t" value="${escapeHtml(p.primary_cta_text)}"/></div>
             <div class="field"><label>主 CTA 链接</label><input id="f-cta1l" value="${escapeHtml(p.primary_cta_link)}"/></div>
@@ -153,8 +162,52 @@
           <button class="btn" id="save">保存修改</button>
           <a href="/admin/pillars.html" class="btn btn--ghost">取消</a>
         </div>
+          </div><!-- /.page-editor-form -->
+
+          <!-- RIGHT: live preview -->
+          <div class="page-editor-preview">
+            <div class="page-editor-preview__bar">
+              <code>${escapeHtml(previewUrl)}</code>
+              <button type="button" class="btn btn--ghost btn--sm" id="reload-frame">↻ 刷新</button>
+            </div>
+            <iframe class="page-editor-preview__frame" id="preview-frame" src="${escapeHtml(previewUrl)}" loading="lazy"></iframe>
+            <div class="page-editor-preview__images">
+              <h4>本页图片 — 点击替换 <span style="font-weight:400; text-transform:none; letter-spacing:0; color:var(--a-mute2);" id="img-count">扫描中…</span></h4>
+              <div class="preview-img-grid" id="preview-img-grid"></div>
+            </div>
+          </div>
+        </div><!-- /.page-editor-split -->
       </div>
     `;
+
+    // Hero image picker (replaces the plain URL input).
+    try {
+      heroPicker = window.ImagePicker.mount('f-himg-mount', {
+        initialUrl: p.hero_image || '',
+      });
+    } catch (err) {
+      const host = panel.querySelector('#f-himg-mount');
+      if (host) host.innerHTML = `<input id="f-himg-fallback" value="${escapeHtml(p.hero_image || '')}" placeholder="/uploads/hero.webp"/>`;
+    }
+
+    // Live iframe preview: scan images on load + enable click-to-edit text.
+    previewIframe = panel.querySelector('#preview-frame');
+    if (previewIframe) {
+      previewIframe.addEventListener('load', async () => {
+        await scanIframeImages();
+        try {
+          let overrides = {};
+          try {
+            const r = await fetch('/api/text-overrides', { credentials: 'include' });
+            if (r.ok) overrides = (await r.json()).overrides || {};
+          } catch (_) {}
+          window.IframeTextEditor.enable(previewIframe, { overrides });
+        } catch (_) { /* non-fatal */ }
+      });
+      panel.querySelector('#reload-frame').addEventListener('click', () => {
+        previewIframe.contentWindow.location.reload();
+      });
+    }
 
     // Tabs
     panel.querySelectorAll('.tabs__btn').forEach((b) => b.addEventListener('click', () => {
@@ -212,7 +265,7 @@
         hero_eyebrow: panel.querySelector('#f-eyebrow').value,
         hero_title: panel.querySelector('#f-htitle').value,
         hero_subtitle: panel.querySelector('#f-hsub').value,
-        hero_image: panel.querySelector('#f-himg').value,
+        hero_image: heroPicker ? heroPicker.getValue() : (panel.querySelector('#f-himg-fallback') ? panel.querySelector('#f-himg-fallback').value : (p.hero_image || '')),
         primary_cta_text: panel.querySelector('#f-cta1t').value,
         primary_cta_link: panel.querySelector('#f-cta1l').value,
         secondary_cta_text: panel.querySelector('#f-cta2t').value,
@@ -232,11 +285,103 @@
       try {
         await api('/api/pillars/' + p.id, { method: 'PUT', body: JSON.stringify(payload) });
         toast('支柱页已保存', 'success');
-        setTimeout(() => location.href = '/admin/pillars.html', 600);
+        // Reload the iframe so the operator sees their changes immediately.
+        if (previewIframe) previewIframe.contentWindow.location.reload();
       } catch (err) {
         toast('保存 failed: ' + err.message, 'error');
       }
     });
+  }
+
+  /* Scan the iframe DOM for every <img> + background-image:url() and
+     present them as clickable thumbnails. Clicking uploads a new file →
+     saves a media_overrides entry → reloads the iframe. Same pattern as
+     /admin/pages.html. */
+  async function scanIframeImages() {
+    const grid = document.getElementById('preview-img-grid');
+    const counter = document.getElementById('img-count');
+    if (!grid || !previewIframe) return;
+    let doc;
+    try { doc = previewIframe.contentDocument; }
+    catch (_) { grid.innerHTML = '<p style="color:var(--a-mute2); font-size:12px;">预览跨源不可读</p>'; return; }
+    if (!doc) return;
+    const found = new Map();
+    function add(url) {
+      if (!url) return;
+      if (/^(data:|blob:)/i.test(url)) return;
+      if (/\.(css|js|woff2?|ttf|otf)(\?|$)/i.test(url)) return;
+      const isExternal = /^https?:\/\//.test(url);
+      const isImg = /\.(png|jpe?g|gif|webp|avif|svg)(\?|$)/i.test(url)
+        || /images\.unsplash\.com|cloudfront\.net|imgix\.net|cdn\./i.test(url);
+      if (!isImg) return;
+      if (found.has(url)) found.get(url).count++;
+      else found.set(url, { count: 1, isExternal });
+    }
+    doc.querySelectorAll('img[src]').forEach((el) => add(el.getAttribute('src')));
+    doc.querySelectorAll('[style*="background-image"]').forEach((el) => {
+      const m = (el.getAttribute('style') || '').match(/background-image\s*:\s*url\(\s*['"]?([^'")]+)['"]?\s*\)/i);
+      if (m) add(m[1]);
+    });
+
+    let overrideMap = {};
+    try { const r = await api('/api/media/overrides'); overrideMap = r.overrides || {}; }
+    catch (_) {}
+    const reverseMap = {};
+    for (const [src, dst] of Object.entries(overrideMap)) {
+      if (!reverseMap[dst]) reverseMap[dst] = [];
+      reverseMap[dst].push(src);
+    }
+    const items = Array.from(found.entries()).map(([url, meta]) => ({
+      renderedUrl: url,
+      sourceUrl: (reverseMap[url] && reverseMap[url][0]) || null,
+      count: meta.count,
+      isExternal: meta.isExternal,
+      isMapped: !!(reverseMap[url] && reverseMap[url][0]),
+    }));
+    counter.textContent = `${items.length} 张图片`;
+    if (!items.length) { grid.innerHTML = '<p style="color:var(--a-mute2); font-size:12px;">本页没有图片。</p>'; return; }
+    grid.innerHTML = items.map((it) => {
+      const replaceable = it.isExternal || it.isMapped;
+      return `<div class="preview-img-card${it.isMapped ? ' is-mapped' : ''}"
+                  data-rendered="${escapeHtml(it.renderedUrl)}"
+                  data-source="${escapeHtml(it.sourceUrl || it.renderedUrl)}"
+                  data-replaceable="${replaceable ? '1' : '0'}"
+                  title="${escapeHtml(it.renderedUrl)}">
+        <img src="${escapeHtml(it.renderedUrl)}" alt="" loading="lazy" onerror="this.style.display='none'"/>
+        ${replaceable ? '<div class="preview-img-card__overlay">📤 点击替换</div>'
+                      : '<div class="preview-img-card__overlay" style="background:rgba(80,80,80,0.85)">本地图片</div>'}
+        ${it.isMapped ? '<span class="preview-img-card__badge">已替换</span>' : ''}
+      </div>`;
+    }).join('');
+    grid.querySelectorAll('.preview-img-card').forEach((card) => {
+      card.addEventListener('click', () => onPickImage(card));
+    });
+  }
+  async function onPickImage(card) {
+    if (card.dataset.replaceable !== '1') return;
+    const sourceUrl = card.dataset.source;
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*'; inp.style.display = 'none';
+    document.body.appendChild(inp);
+    inp.addEventListener('change', async () => {
+      const file = inp.files && inp.files[0];
+      inp.remove();
+      if (!file) return;
+      try {
+        const fd = new FormData(); fd.append('file', file);
+        fd.append('alt_text', file.name.replace(/\.[a-z0-9]+$/i, '').replace(/[-_]+/g, ' '));
+        const up = await fetch('/api/media', { method: 'POST', credentials: 'include', body: fd });
+        const upJson = await up.json();
+        if (!up.ok || !upJson.url) throw new Error(upJson.error || ('HTTP ' + up.status));
+        const cur = await api('/api/media/overrides');
+        const map = Object.assign({}, cur.overrides || {});
+        map[sourceUrl] = upJson.url;
+        await api('/api/media/overrides', { method: 'PUT', body: JSON.stringify({ overrides: map }) });
+        toast('已替换该图片，刷新预览…', 'success');
+        if (previewIframe) previewIframe.contentWindow.location.reload();
+      } catch (err) { toast('替换失败：' + err.message, 'error'); }
+    });
+    inp.click();
   }
 })();
 </script>
