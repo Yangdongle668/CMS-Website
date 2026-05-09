@@ -64,13 +64,26 @@ const apiLimiter = rateLimit({
 });
 app.use('/api/', apiLimiter);
 
-// ----- Public env (Turnstile site key for client) -----
-app.get('/api/public/config', (_req, res) => {
+// ----- Public env (Turnstile site key + SEO defaults for the client) -----
+app.get('/api/public/config', async (_req, res) => {
+  // Read latest seo settings so the SPA can populate analytics/verification
+  // tags without a separate fetch and without staleness vs. /api/settings/public.
+  let seo = {};
+  try {
+    const { many } = require('./db/client');
+    const rows = await many(`SELECT key, value FROM settings WHERE key = 'seo'`);
+    seo = (rows[0] && rows[0].value) || {};
+  } catch (_) { /* DB might not be ready during early boot */ }
   res.json({
     siteName: process.env.SITE_NAME || 'Zufek',
-    publicUrl: process.env.PUBLIC_URL || '',
+    publicUrl: process.env.PUBLIC_URL || seo.public_url || '',
     turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || '',
     privacyPolicyVersion: process.env.PRIVACY_POLICY_VERSION || '1.0',
+    ga4: seo.ga4_measurement_id || '',
+    gscVerify: seo.gsc_verify || '',
+    bingVerify: seo.bing_verify || '',
+    twitterHandle: seo.twitter_handle || '',
+    defaultOgImage: seo.default_meta_image || '/assets/img/og-default.png',
   });
 });
 
@@ -91,6 +104,12 @@ app.use('/api/pages', require('./routes/pages'));
 // ----- SEO endpoints -----
 app.use('/', require('./routes/seo'));
 
+// ----- HTML token replacement (canonical, OG, SITE_NAME, etc.) -----
+// Mounted BEFORE express.static so .html files flow through replaceTokens.
+// Static assets (CSS/JS/images) are short-circuited inside the middleware.
+const { htmlTokenMiddleware, tryServeHtml } = require('./middleware/html-tokens');
+app.use(htmlTokenMiddleware);
+
 // ----- Static uploads -----
 app.use('/uploads', express.static(path.join(ROOT, 'uploads'), { maxAge: '7d', index: false }));
 
@@ -103,7 +122,7 @@ app.get('/admin/*', (req, res, next) => {
   return res.sendFile(path.join(ROOT, 'admin', 'index.html'));
 });
 
-// ----- Static public site -----
+// ----- Static public site (assets only — HTML already handled above) -----
 app.use(
   express.static(path.join(ROOT, 'public'), {
     extensions: ['html'],
@@ -114,6 +133,9 @@ app.use(
 );
 
 // ----- Pretty URLs for products / blog / applications -----
+// When a per-slug .html file exists it has already been served by the
+// token middleware. We fall here only for DB-backed slugs, where the
+// matching _template.html is rendered with the request path as canonical.
 app.get(['/products/:slug', '/applications/:slug', '/blog/:slug'], (req, res, next) => {
   const segments = req.path.split('/').filter(Boolean);
   const dir = segments[0];
@@ -122,13 +144,9 @@ app.get(['/products/:slug', '/applications/:slug', '/blog/:slug'], (req, res, ne
   const candidates = [
     path.join(ROOT, 'public', dir, `${slug}.html`),
     path.join(ROOT, 'public', dir, slug, 'index.html'),
+    path.join(ROOT, 'public', dir, '_template.html'),
   ];
-  for (const f of candidates) {
-    if (fs.existsSync(f)) return res.sendFile(f);
-  }
-  // Fallback to template that fetches via API
-  const tpl = path.join(ROOT, 'public', dir, '_template.html');
-  if (fs.existsSync(tpl)) return res.sendFile(tpl);
+  if (tryServeHtml(req, res, candidates, { canonicalPath: req.path })) return;
   return next();
 });
 
@@ -137,8 +155,8 @@ app.use((req, res) => {
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ error: 'not_found' });
   }
-  const file = path.join(ROOT, 'public', '404.html');
-  if (fs.existsSync(file)) return res.status(404).sendFile(file);
+  const candidates = [path.join(ROOT, 'public', '404.html')];
+  if (tryServeHtml(req, res, candidates, { status: 404, canonicalPath: req.path })) return;
   res.status(404).send('Not found');
 });
 

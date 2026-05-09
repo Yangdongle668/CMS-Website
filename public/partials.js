@@ -59,7 +59,17 @@ const FALLBACK = {
 // before script.js binds events on them. We render fallback first, then
 // override with live settings if/when they arrive.
 const STATE = {
-  config: { turnstileSiteKey: '', privacyPolicyVersion: '1.0', siteName: 'Zufek', publicUrl: '' },
+  config: {
+    turnstileSiteKey: '',
+    privacyPolicyVersion: '1.0',
+    siteName: 'Zufek',
+    publicUrl: '',
+    ga4: '',
+    gscVerify: '',
+    bingVerify: '',
+    twitterHandle: '',
+    defaultOgImage: '/assets/img/og-default.png',
+  },
   settings: FALLBACK,
 };
 
@@ -329,6 +339,113 @@ async function loadSettings() {
   } catch (_) { /* keep fallback */ }
 }
 
+// ===== Organization + WebSite JSON-LD =====
+// One shared @id keyed off the canonical home URL so every page references
+// the same Organization node (Schema.org graph best practice).
+function injectOrganizationSchema() {
+  if (document.querySelector('script[data-jsonld="organization"]')) return;
+  const base = (STATE.config.publicUrl || (location.protocol + '//' + location.host)).replace(/\/$/, '');
+  const site = STATE.settings.site || {};
+  const org = STATE.settings.organization || {};
+  const social = STATE.settings.social || {};
+  const sameAs = []
+    .concat(Array.isArray(org.sameAs) ? org.sameAs : [])
+    .concat(social.linkedin ? [social.linkedin] : [])
+    .concat(social.youtube ? [social.youtube] : [])
+    .concat(social.x ? [social.x] : [])
+    .filter(Boolean);
+  const logo = (() => {
+    const v = org.logo || '/logo.png';
+    return /^https?:\/\//.test(v) ? v : base + v;
+  })();
+  const address = org.address ? {
+    '@type': 'PostalAddress',
+    streetAddress: org.address.streetAddress || '',
+    addressLocality: org.address.addressLocality || '',
+    addressRegion: org.address.addressRegion || '',
+    postalCode: org.address.postalCode || '',
+    addressCountry: org.address.addressCountry || '',
+  } : undefined;
+  const contactPoint = Array.isArray(org.contactPoints) && org.contactPoints.length
+    ? org.contactPoints.map((cp) => Object.assign({ '@type': 'ContactPoint', contactType: cp.type || 'sales' }, {
+        email: cp.email,
+        telephone: cp.telephone,
+        areaServed: cp.areaServed || 'Worldwide',
+        availableLanguage: cp.availableLanguage || ['en'],
+      }))
+    : undefined;
+  const orgNode = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    '@id': base + '/#organization',
+    name: org.brand_name || site.name || 'Zufek',
+    legalName: org.legal_name || site.legal_name || '',
+    url: base + '/',
+    logo: logo,
+    foundingDate: org.founding_date || (site.founded_year ? String(site.founded_year) : undefined),
+    sameAs: sameAs.length ? sameAs : undefined,
+    address: address,
+    contactPoint: contactPoint,
+    vatID: org.vat_id || undefined,
+    duns: org.duns || undefined,
+  };
+  // WebSite node (enables sitelinks searchbox + AI graph anchoring)
+  const websiteNode = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': base + '/#website',
+    url: base + '/',
+    name: org.brand_name || site.name || 'Zufek',
+    publisher: { '@id': base + '/#organization' },
+    inLanguage: 'en',
+  };
+  const s1 = document.createElement('script');
+  s1.type = 'application/ld+json';
+  s1.dataset.jsonld = 'organization';
+  s1.textContent = JSON.stringify(orgNode);
+  document.head.appendChild(s1);
+  const s2 = document.createElement('script');
+  s2.type = 'application/ld+json';
+  s2.dataset.jsonld = 'website';
+  s2.textContent = JSON.stringify(websiteNode);
+  document.head.appendChild(s2);
+}
+
+// ===== Search-engine verification meta + analytics =====
+function injectVerificationAndAnalytics() {
+  const c = STATE.config || {};
+  const head = document.head;
+  function ensureMeta(name, content) {
+    if (!content) return;
+    const sel = `meta[name="${name}"]`;
+    let m = head.querySelector(sel);
+    if (!m) {
+      m = document.createElement('meta');
+      m.setAttribute('name', name);
+      head.appendChild(m);
+    }
+    m.setAttribute('content', content);
+  }
+  ensureMeta('google-site-verification', c.gscVerify);
+  ensureMeta('msvalidate.01', c.bingVerify);
+  if (c.twitterHandle) ensureMeta('twitter:site', c.twitterHandle);
+  // GA4 — gated on user consent (analytics category). Defaults to "off" to
+  // satisfy GDPR. The cookie banner flips it via window.__gaConsentGranted.
+  if (c.ga4 && !document.querySelector('script[data-ga4]')) {
+    const consent = (function () { try { return JSON.parse(localStorage.getItem(CONSENT_KEY) || 'null'); } catch (_) { return null; } })();
+    if (consent && consent.categories && consent.categories.analytics) {
+      const s = document.createElement('script');
+      s.async = true;
+      s.dataset.ga4 = c.ga4;
+      s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(c.ga4);
+      head.appendChild(s);
+      const inline = document.createElement('script');
+      inline.textContent = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${c.ga4}',{anonymize_ip:true});`;
+      head.appendChild(inline);
+    }
+  }
+}
+
 // Floating "Quick Quote" button (sitewide) — appears after the user has
 // scrolled past the hero. Hidden on /contact.html and on the admin shell.
 function injectFloatingQuote() {
@@ -369,9 +486,19 @@ function injectFloatingQuote() {
   document.body.insertAdjacentHTML('beforeend', COOKIE_BANNER_HTML);
   bindCookieBanner();
   injectFloatingQuote();
-  // 3. Live load and re-render
+  // 3. Inject Organization + WebSite JSON-LD with FALLBACK values now so
+  //    even a JS-rendering scraper that snapshots immediately sees them.
+  //    They get re-injected (idempotent) after live settings arrive.
+  injectOrganizationSchema();
+  // 4. Live load and re-render
   await loadSettings();
   renderAll();
+  // Refresh schema with live data (no-op if already present, since the
+  // data-jsonld guard short-circuits — but we explicitly remove the fallback
+  // first so the live values overwrite cleanly).
+  document.querySelectorAll('script[data-jsonld="organization"], script[data-jsonld="website"]').forEach((n) => n.remove());
+  injectOrganizationSchema();
+  injectVerificationAndAnalytics();
   // Re-fire any consumers that wanted live data
   document.dispatchEvent(new CustomEvent('cms:ready', { detail: STATE }));
 })();
