@@ -80,14 +80,75 @@
     transform: translate(-50%, -120%); display: none; white-space: nowrap;
   }
 
-  /* ==== World hex map ==== */
-  .world-hex-map path { transition: fill 0.2s ease; cursor: default; }
-  .world-hex-map path:hover { fill: var(--a-accent) !important; }
-  .world-hex-legend {
-    display: flex; gap: 6px; align-items: center;
-    margin-top: 12px; font-size: 11.5px; color: var(--a-mute2);
+  /* ==== World choropleth map ==== */
+  .wm-shell { position: relative; width: 100%; }
+  .wm-svg { width: 100%; height: auto; display: block; background: #fafbfc; border-radius: 6px; }
+  .wm-svg path { transition: fill 0.15s ease, stroke-width 0.15s ease; }
+  .wm-svg path[data-iso2]:hover {
+    fill: var(--a-accent) !important;
+    stroke: #fff;
+    stroke-width: 1;
+    cursor: default;
   }
-  .world-hex-legend .lh { width: 14px; height: 14px; border-radius: 2px; }
+  .wm-tooltip {
+    position: absolute; display: none;
+    background: #0f1115; color: #fff;
+    padding: 8px 12px; border-radius: 6px;
+    font-size: 12px; line-height: 1.4;
+    pointer-events: none; z-index: 10;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+    white-space: nowrap;
+  }
+  .wm-tooltip code { color: #f5a623; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+  .wm-tooltip strong { font-weight: 500; }
+  .wm-tooltip span { color: #cbd5e1; }
+  .wm-legend {
+    display: flex; gap: 8px; align-items: center;
+    margin-top: 10px; font-size: 11.5px; color: var(--a-mute2);
+  }
+  .wm-legend__bar {
+    flex: 1;
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #e9ecef 0%, rgba(11,58,130,0.18) 8%, rgba(11,58,130,0.6) 60%, rgba(11,58,130,1) 100%);
+    max-width: 280px;
+  }
+
+  /* ==== Recent visitors table ==== */
+  .a-visitor-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+  .a-visitor-table th, .a-visitor-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: left;
+    vertical-align: top;
+  }
+  .a-visitor-table th {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--a-mute2);
+    font-weight: 600;
+  }
+  .a-visitor-table tbody tr:hover { background: #fafafa; }
+  .a-visitor-table .ip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    color: var(--a-mute2);
+  }
+  .a-visitor-table .path {
+    color: var(--a-text);
+    text-decoration: none;
+    word-break: break-all;
+  }
+  .a-visitor-table .path:hover { color: var(--a-accent); }
+  .a-visitor-pager {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 12px; font-size: 12.5px; color: var(--a-mute2);
+  }
 
   /* ==== Heatmap (DOW × hour) ==== */
   .a-heatmap { display: grid; grid-template-columns: 30px repeat(24, 1fr); gap: 2px; }
@@ -185,7 +246,7 @@
       </div>
     </div>
 
-    <div class="a-row">
+    <div class="a-row" style="grid-template-columns: 2fr 1fr;">
       <div class="a-card">
         <h3>访客地理分布 <span class="hint">悬停查看具体国家</span></h3>
         <div id="world-map"></div>
@@ -193,6 +254,44 @@
       <div class="a-card">
         <h3>国家排行</h3>
         <div class="a-bar-list" id="top-countries"></div>
+      </div>
+    </div>
+
+    <div class="a-row" style="grid-template-columns: 1fr;">
+      <div class="a-card">
+        <h3>最近访客 <span class="hint">最新访问的 IP / 国家 / 页面 / 浏览器（仅管理员可见）</span>
+          <button type="button" class="btn btn--ghost btn--sm" id="visitors-refresh" style="float:right; margin-top:-4px;">↻ 刷新</button>
+        </h3>
+        <div id="visitors-filter" style="display:flex; gap:8px; margin-bottom:10px; font-size:12.5px;">
+          <input type="text" id="filter-country" placeholder="国家代码 (US/CN/...)" style="padding:6px 10px; border:1px solid var(--a-line); border-radius:4px; width:160px;"/>
+          <input type="text" id="filter-ip" placeholder="精确 IP" style="padding:6px 10px; border:1px solid var(--a-line); border-radius:4px; width:200px;"/>
+          <input type="text" id="filter-path" placeholder="路径 (如 /products/...)" style="padding:6px 10px; border:1px solid var(--a-line); border-radius:4px; flex:1;"/>
+          <button type="button" class="btn btn--ghost btn--sm" id="filter-apply">应用筛选</button>
+          <button type="button" class="btn btn--ghost btn--sm" id="filter-clear">清除</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="a-visitor-table" id="visitors-table">
+            <thead>
+              <tr>
+                <th style="width:140px;">时间</th>
+                <th style="width:120px;">IP</th>
+                <th style="width:80px;">国家</th>
+                <th>页面</th>
+                <th style="width:120px;">浏览器 / OS</th>
+                <th style="width:120px;">来源</th>
+              </tr>
+            </thead>
+            <tbody id="visitors-body"><tr><td colspan="6" class="a-empty">加载中…</td></tr></tbody>
+          </table>
+        </div>
+        <div class="a-visitor-pager">
+          <span id="visitors-meta">–</span>
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="btn btn--ghost btn--sm" id="visitors-prev">上一页</button>
+            <button type="button" class="btn btn--ghost btn--sm" id="visitors-next">下一页</button>
+            <button type="button" class="btn btn--ghost btn--sm" id="visitors-purge" style="margin-left:24px; color:var(--a-mute2);" title="清除所有 30 天前的旧 IP（保留聚合统计）">🧹 30 天前 IP 匿名化</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -361,8 +460,10 @@
         (it) => `${flagEmoji(it.country)} <span style="margin-left:6px;">${escapeHtml(COUNTRY_NAMES[it.country] || it.country)}</span> <code>${escapeHtml(it.country)}</code>`
       );
       const ccData = {};
-      for (const r of data.top_countries) ccData[r.country] = r.hits;
-      window.WorldHexMap.render('world-map', ccData);
+      for (const r of data.top_countries) {
+        if (r.country && r.country !== 'XX') ccData[r.country] = r.hits;
+      }
+      window.WorldMap.render('world-map', ccData);
 
       renderHeatmap(data.heatmap || []);
     } catch (err) {
@@ -403,8 +504,118 @@
     } catch (_) { /* silent — keep last known state */ }
   }
 
+  /* ===== Recent visitors table ===== */
+  const VISITORS_PER_PAGE = 50;
+  let visitorsOffset = 0;
+  let visitorsFilter = { country: '', ip: '', path: '' };
+
+  function fmtTs(s) {
+    if (!s) return '';
+    const d = new Date(s);
+    if (isNaN(d)) return '';
+    return d.toLocaleString('zh-CN', { hour12: false, month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+
+  async function loadVisitors() {
+    const body = document.getElementById('visitors-body');
+    if (!body) return;
+    body.innerHTML = '<tr><td colspan="6" class="a-empty">加载中…</td></tr>';
+    const params = new URLSearchParams();
+    params.set('limit', VISITORS_PER_PAGE);
+    params.set('offset', visitorsOffset);
+    if (visitorsFilter.country) params.set('country', visitorsFilter.country);
+    if (visitorsFilter.ip)      params.set('ip', visitorsFilter.ip);
+    if (visitorsFilter.path)    params.set('path', visitorsFilter.path);
+    let r;
+    try { r = await api('/api/analytics/visitors?' + params.toString()); }
+    catch (err) { body.innerHTML = `<tr><td colspan="6" class="a-empty" style="color:var(--a-danger);">加载失败：${escapeHtml(err.message)}</td></tr>`; return; }
+    if (!r.items.length) {
+      body.innerHTML = '<tr><td colspan="6" class="a-empty">没有匹配的记录</td></tr>';
+    } else {
+      body.innerHTML = r.items.map((v) => {
+        const cc = (v.country || '').toUpperCase();
+        const flag = (cc && cc.length === 2 && cc !== 'XX')
+          ? String.fromCodePoint(0x1F1E6 + cc.charCodeAt(0) - 65, 0x1F1E6 + cc.charCodeAt(1) - 65)
+          : '🌐';
+        const country = cc ? `${flag} ${escapeHtml(COUNTRY_NAMES[cc] || cc)}` : '<span style="color:var(--a-mute2);">未知</span>';
+        const ip = v.ip_text ? `<span class="ip">${escapeHtml(v.ip_text)}</span>` : '<span class="ip" style="opacity:0.4;">已匿名化</span>';
+        const path = `<a class="path" href="${escapeHtml(v.path)}" target="_blank">${escapeHtml(v.path)}</a>`;
+        const ua = `${escapeHtml(v.browser || '?')} <span style="color:var(--a-mute2);">/ ${escapeHtml(v.os || '?')}</span>`;
+        const ref = v.referer_host ? escapeHtml(v.referer_host) : '<span style="color:var(--a-mute2);">直接</span>';
+        return `<tr>
+          <td style="white-space:nowrap; color:var(--a-mute2);">${escapeHtml(fmtTs(v.ts))}</td>
+          <td>${ip}</td>
+          <td style="white-space:nowrap;">${country}</td>
+          <td>${path}</td>
+          <td style="white-space:nowrap;">${ua}</td>
+          <td style="white-space:nowrap;">${ref}</td>
+        </tr>`;
+      }).join('');
+    }
+    const meta = document.getElementById('visitors-meta');
+    if (meta) {
+      const from = r.total === 0 ? 0 : visitorsOffset + 1;
+      const to = Math.min(visitorsOffset + VISITORS_PER_PAGE, r.total);
+      meta.textContent = `${from}–${to} / 共 ${fmt(r.total)} 条`;
+    }
+    document.getElementById('visitors-prev').disabled = visitorsOffset === 0;
+    document.getElementById('visitors-next').disabled = visitorsOffset + VISITORS_PER_PAGE >= r.total;
+  }
+
+  document.getElementById('visitors-refresh').addEventListener('click', loadVisitors);
+  document.getElementById('visitors-prev').addEventListener('click', () => {
+    visitorsOffset = Math.max(0, visitorsOffset - VISITORS_PER_PAGE);
+    loadVisitors();
+  });
+  document.getElementById('visitors-next').addEventListener('click', () => {
+    visitorsOffset += VISITORS_PER_PAGE;
+    loadVisitors();
+  });
+  document.getElementById('filter-apply').addEventListener('click', () => {
+    visitorsFilter = {
+      country: document.getElementById('filter-country').value.trim().toUpperCase(),
+      ip: document.getElementById('filter-ip').value.trim(),
+      path: document.getElementById('filter-path').value.trim(),
+    };
+    visitorsOffset = 0;
+    loadVisitors();
+  });
+  document.getElementById('filter-clear').addEventListener('click', () => {
+    document.getElementById('filter-country').value = '';
+    document.getElementById('filter-ip').value = '';
+    document.getElementById('filter-path').value = '';
+    visitorsFilter = { country: '', ip: '', path: '' };
+    visitorsOffset = 0;
+    loadVisitors();
+  });
+  document.getElementById('visitors-purge').addEventListener('click', async () => {
+    if (!confirm('确认匿名化所有 30 天前的访客 IP？聚合统计保留，但具体 IP 字段会清空。')) return;
+    try {
+      const r = await api('/api/analytics/purge-ips', { method: 'POST', body: JSON.stringify({ days: 30 }) });
+      toast(`已匿名化 ${r.anonymized} 条记录`, 'success');
+      loadVisitors();
+    } catch (err) { toast('清理失败：' + err.message, 'error'); }
+  });
+
+  // Allow clicking a country path on the world map to filter the
+  // visitors table by that country. Wire after the map renders.
+  document.addEventListener('click', (ev) => {
+    const path = ev.target.closest('.wm-svg path[data-iso2]');
+    if (!path) return;
+    const iso2 = path.getAttribute('data-iso2');
+    if (!iso2) return;
+    document.getElementById('filter-country').value = iso2;
+    visitorsFilter = { country: iso2, ip: '', path: '' };
+    document.getElementById('filter-ip').value = '';
+    document.getElementById('filter-path').value = '';
+    visitorsOffset = 0;
+    loadVisitors();
+    document.getElementById('visitors-table').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
   loadSummary();
   pollRealtime();
+  loadVisitors();
   setInterval(pollRealtime, 15 * 1000);
 })();
 </script>

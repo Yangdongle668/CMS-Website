@@ -1,121 +1,182 @@
-/* Compact world choropleth map. Each country is a hex tile positioned
-   in approximate geographic location — accurate enough to communicate
-   "Europe heavy / Asia heavy" without shipping a 200 KB TopoJSON.
-   Each tile carries data-country="ISO2" so we can colour them by
-   visit count from the analytics dashboard. */
+/* World choropleth map using TopoJSON world-atlas (CC0) loaded from
+   jsdelivr at runtime. Produces a real Mercator-projected SVG map with
+   country borders, coloured by visit count.
+
+   Footprint: ~10 KB topojson-client + ~85 KB countries-110m.json,
+   fetched once and cached by the browser. No build step, no D3.
+
+   Usage:
+     await window.WorldMap.render('container-id', { US: 233, CN: 41, ... });
+
+   The data object uses ISO 3166-1 alpha-2 codes; we map them to the
+   numeric IDs that world-atlas uses internally.
+*/
 (function () {
   'use strict';
 
-  // (col, row, ISO2, name) — laid out on a 24×11 hex grid.
-  // Curated to cover ~80 countries that account for 99% of B2B web traffic.
-  const TILES = [
-    // Row 0 — Arctic / Russia north / Canada / Alaska
-    [3,0,'AK','Alaska'], [4,0,'CA','Canada'], [5,0,'CA','Canada'],
-    [12,0,'RU','Russia'], [13,0,'RU','Russia'], [14,0,'RU','Russia'], [15,0,'RU','Russia'], [16,0,'RU','Russia'],
+  const TOPO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
+  const TOPOJSON_LIB = 'https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js';
 
-    // Row 1
-    [3,1,'CA','Canada'], [4,1,'CA','Canada'], [5,1,'CA','Canada'], [6,1,'CA','Canada'],
-    [10,1,'IS','Iceland'], [11,1,'NO','Norway'], [12,1,'SE','Sweden'], [13,1,'FI','Finland'],
-    [14,1,'RU','Russia'], [15,1,'RU','Russia'], [16,1,'RU','Russia'],
+  // ISO 3166-1 alpha-2 → numeric (3-digit). Covers ~250 territories.
+  // Source: ISO 3166-1 (public domain). Trimmed to those world-atlas knows.
+  const ISO2_TO_NUM = {
+    AD:'020',AE:'784',AF:'004',AG:'028',AL:'008',AM:'051',AO:'024',AR:'032',AT:'040',AU:'036',
+    AZ:'031',BA:'070',BB:'052',BD:'050',BE:'056',BF:'854',BG:'100',BH:'048',BI:'108',BJ:'204',
+    BN:'096',BO:'068',BR:'076',BS:'044',BT:'064',BW:'072',BY:'112',BZ:'084',CA:'124',CD:'180',
+    CF:'140',CG:'178',CH:'756',CI:'384',CL:'152',CM:'120',CN:'156',CO:'170',CR:'188',CU:'192',
+    CV:'132',CY:'196',CZ:'203',DE:'276',DJ:'262',DK:'208',DM:'212',DO:'214',DZ:'012',EC:'218',
+    EE:'233',EG:'818',EH:'732',ER:'232',ES:'724',ET:'231',FI:'246',FJ:'242',FK:'238',FR:'250',
+    GA:'266',GB:'826',GE:'268',GF:'254',GH:'288',GL:'304',GM:'270',GN:'324',GQ:'226',GR:'300',
+    GT:'320',GW:'624',GY:'328',HK:'344',HN:'340',HR:'191',HT:'332',HU:'348',ID:'360',IE:'372',
+    IL:'376',IN:'356',IQ:'368',IR:'364',IS:'352',IT:'380',JM:'388',JO:'400',JP:'392',KE:'404',
+    KG:'417',KH:'116',KP:'408',KR:'410',KW:'414',KZ:'398',LA:'418',LB:'422',LK:'144',LR:'430',
+    LS:'426',LT:'440',LU:'442',LV:'428',LY:'434',MA:'504',MD:'498',ME:'499',MG:'450',MK:'807',
+    ML:'466',MM:'104',MN:'496',MR:'478',MW:'454',MX:'484',MY:'458',MZ:'508',NA:'516',NC:'540',
+    NE:'562',NG:'566',NI:'558',NL:'528',NO:'578',NP:'524',NZ:'554',OM:'512',PA:'591',PE:'604',
+    PG:'598',PH:'608',PK:'586',PL:'616',PR:'630',PS:'275',PT:'620',PY:'600',QA:'634',RO:'642',
+    RS:'688',RU:'643',RW:'646',SA:'682',SB:'090',SD:'729',SE:'752',SG:'702',SI:'705',SK:'703',
+    SL:'694',SN:'686',SO:'706',SR:'740',SS:'728',SV:'222',SY:'760',SZ:'748',TD:'148',TF:'260',
+    TG:'768',TH:'764',TJ:'762',TL:'626',TM:'795',TN:'788',TR:'792',TT:'780',TW:'158',TZ:'834',
+    UA:'804',UG:'800',US:'840',UY:'858',UZ:'860',VE:'862',VN:'704',VU:'548',YE:'887',ZA:'710',
+    ZM:'894',ZW:'716',
+  };
 
-    // Row 2 — US / EU
-    [3,2,'US','United States'], [4,2,'US','United States'], [5,2,'US','United States'], [6,2,'US','United States'], [7,2,'US','United States'],
-    [10,2,'GB','United Kingdom'], [11,2,'NL','Netherlands'], [12,2,'DE','Germany'], [13,2,'PL','Poland'],
-    [14,2,'BY','Belarus'], [15,2,'RU','Russia'], [16,2,'KZ','Kazakhstan'], [17,2,'MN','Mongolia'],
+  const NUM_TO_ISO2 = Object.fromEntries(Object.entries(ISO2_TO_NUM).map(([k, v]) => [v, k]));
 
-    // Row 3 — North-Central
-    [4,3,'US','United States'], [5,3,'US','United States'], [6,3,'US','United States'], [7,3,'US','United States'], [8,3,'US','United States'],
-    [10,3,'IE','Ireland'], [11,3,'FR','France'], [12,3,'CH','Switzerland'], [13,3,'AT','Austria'], [14,3,'UA','Ukraine'],
-    [15,3,'RU','Russia'], [16,3,'KZ','Kazakhstan'], [17,3,'CN','China'], [18,3,'CN','China'], [19,3,'JP','Japan'],
+  let topoCache = null;
+  let scriptLoadPromise = null;
 
-    // Row 4 — Mid latitudes
-    [4,4,'MX','Mexico'], [5,4,'MX','Mexico'],
-    [10,4,'PT','Portugal'], [11,4,'ES','Spain'], [12,4,'IT','Italy'], [13,4,'GR','Greece'], [14,4,'TR','Turkey'],
-    [15,4,'GE','Georgia'], [16,4,'IR','Iran'], [17,4,'CN','China'], [18,4,'CN','China'], [19,4,'KR','South Korea'], [20,4,'JP','Japan'],
-
-    // Row 5 — Sahara / Gulf / SE-Asia
-    [11,5,'MA','Morocco'], [12,5,'DZ','Algeria'], [13,5,'EG','Egypt'], [14,5,'SA','Saudi Arabia'],
-    [15,5,'AE','UAE'], [16,5,'PK','Pakistan'], [17,5,'IN','India'], [18,5,'IN','India'], [19,5,'CN','China'], [20,5,'TW','Taiwan'],
-
-    // Row 6 — Sahel / India / SE Asia
-    [4,6,'CO','Colombia'], [5,6,'VE','Venezuela'],
-    [11,6,'NG','Nigeria'], [12,6,'NG','Nigeria'], [13,6,'SD','Sudan'], [14,6,'ET','Ethiopia'],
-    [15,6,'YE','Yemen'], [17,6,'IN','India'], [18,6,'BD','Bangladesh'], [19,6,'TH','Thailand'], [20,6,'VN','Vietnam'], [21,6,'PH','Philippines'],
-
-    // Row 7 — South America / Africa / SE-Asia
-    [4,7,'BR','Brazil'], [5,7,'BR','Brazil'], [6,7,'BR','Brazil'],
-    [12,7,'CD','DR Congo'], [13,7,'KE','Kenya'], [14,7,'TZ','Tanzania'],
-    [18,7,'MY','Malaysia'], [19,7,'ID','Indonesia'], [20,7,'ID','Indonesia'], [21,7,'PH','Philippines'],
-
-    // Row 8
-    [4,8,'BR','Brazil'], [5,8,'BR','Brazil'], [6,8,'BR','Brazil'],
-    [12,8,'AO','Angola'], [13,8,'ZA','South Africa'], [14,8,'MZ','Mozambique'],
-    [19,8,'ID','Indonesia'], [20,8,'AU','Australia'], [21,8,'AU','Australia'],
-
-    // Row 9 — Southern Cone / South Africa / Australia
-    [4,9,'AR','Argentina'], [5,9,'AR','Argentina'], [6,9,'UY','Uruguay'],
-    [13,9,'ZA','South Africa'],
-    [19,9,'AU','Australia'], [20,9,'AU','Australia'], [21,9,'NZ','New Zealand'],
-
-    // Row 10 — Far south
-    [5,10,'CL','Chile'],
-    [21,10,'NZ','New Zealand'],
-  ];
-
-  // Hex layout constants — use an "odd-r" offset coord system so
-  // even rows are flush left and odd rows shift right by half a hex.
-  const HEX_W = 22;
-  const HEX_H = 24;
-  const HEX_GAP = 2;
-
-  function hexPath(cx, cy, r) {
-    // Flat-top hex (so rows are horizontal). 6 vertices.
-    const pts = [];
-    for (let i = 0; i < 6; i++) {
-      const a = (Math.PI / 3) * i + Math.PI / 6;
-      pts.push((cx + r * Math.cos(a)).toFixed(1) + ',' + (cy + r * Math.sin(a)).toFixed(1));
-    }
-    return 'M' + pts.join(' L') + ' Z';
+  function loadScript(src) {
+    if (window.topojson) return Promise.resolve();
+    if (scriptLoadPromise) return scriptLoadPromise;
+    scriptLoadPromise = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error('topojson_load_failed'));
+      document.head.appendChild(s);
+    });
+    return scriptLoadPromise;
   }
 
-  function render(containerId, dataByCountry, opts) {
-    opts = opts || {};
+  async function loadTopo() {
+    if (topoCache) return topoCache;
+    await loadScript(TOPOJSON_LIB);
+    const r = await fetch(TOPO_URL);
+    if (!r.ok) throw new Error('topo_fetch_failed:' + r.status);
+    const world = await r.json();
+    const features = window.topojson.feature(world, world.objects.countries).features;
+    topoCache = features;
+    return features;
+  }
+
+  /* Equirectangular projection — flat, simple, looks like the WP Stats
+     reference screenshot. Mercator distorts polar regions but is more
+     web-mappy; equirectangular reads better at this small size. */
+  function project(lng, lat, w, h) {
+    const x = ((lng + 180) / 360) * w;
+    const y = ((90 - lat) / 180) * h;
+    return [x, y];
+  }
+
+  function geomToPath(geometry, w, h) {
+    if (!geometry) return '';
+    const out = [];
+    function ring(pts) {
+      if (!pts || !pts.length) return;
+      out.push('M');
+      pts.forEach((p, i) => {
+        const [x, y] = project(p[0], p[1], w, h);
+        out.push(x.toFixed(1) + ',' + y.toFixed(1));
+        if (i < pts.length - 1) out.push('L');
+      });
+      out.push('Z');
+    }
+    if (geometry.type === 'Polygon') {
+      geometry.coordinates.forEach(ring);
+    } else if (geometry.type === 'MultiPolygon') {
+      geometry.coordinates.forEach((poly) => poly.forEach(ring));
+    }
+    return out.join(' ');
+  }
+
+  /* Heat colour ramp: greys for unmapped, soft → strong blue for mapped.
+     Returns CSS rgb / rgba string. */
+  function heatColor(hits, max) {
+    if (!hits || max <= 0) return '#e9ecef';
+    const t = Math.min(1, hits / max);
+    // Quadratic ramp so a few outliers don't wash out everyone else.
+    const eased = Math.pow(t, 0.55);
+    const alpha = (0.18 + eased * 0.82).toFixed(2);
+    return `rgba(11, 58, 130, ${alpha})`;
+  }
+
+  async function render(containerId, dataByIso2) {
     const host = document.getElementById(containerId);
     if (!host) return;
-    const max = Math.max(1, ...Object.values(dataByCountry || {}));
+    host.innerHTML = `<div style="padding:60px 20px; text-align:center; color:#5c5e62; font-size:13px;">正在加载世界地图…</div>`;
 
-    const cols = 24, rows = 11;
-    const w = cols * (HEX_W + HEX_GAP) + HEX_W;
-    const h = rows * (HEX_H * 0.78 + HEX_GAP) + HEX_H;
+    let features;
+    try { features = await loadTopo(); }
+    catch (err) {
+      host.innerHTML = `<div style="padding:24px; text-align:center; color:#dc2626; font-size:13px;">
+        地图数据加载失败：${err.message}<br>
+        <span style="color:#5c5e62; font-size:12px;">可能 CSP 拦截了 cdn.jsdelivr.net，请检查 connect-src。</span>
+      </div>`;
+      return;
+    }
 
-    const tilePaths = TILES.map(([col, row, code, name]) => {
-      const cx = col * (HEX_W + HEX_GAP) + HEX_W / 2 + (row % 2 ? (HEX_W + HEX_GAP) / 2 : 0);
-      const cy = row * (HEX_H * 0.78 + HEX_GAP) + HEX_H / 2;
-      const hits = (dataByCountry[code] || 0);
-      const intensity = max > 0 ? hits / max : 0;
-      // Linearly interpolate between two brand colours for the heat scale.
-      const fill = hits === 0
-        ? '#e4e7ed'
-        : `rgba(11, 58, 130, ${0.18 + intensity * 0.82})`;
-      const tip = hits ? `${name} — ${hits} hits` : name;
-      return `<path d="${hexPath(cx, cy, HEX_W / 2)}" fill="${fill}" stroke="#fff" stroke-width="1" data-country="${code}" data-hits="${hits}"><title>${tip}</title></path>`;
+    const W = 1000, H = 500;
+    const max = Math.max(0, ...Object.values(dataByIso2 || {}));
+
+    // Build paths once.
+    const paths = features.map((f) => {
+      const numId = String(f.id).padStart(3, '0');
+      const iso2 = NUM_TO_ISO2[numId] || '';
+      const hits = (iso2 && dataByIso2[iso2]) || 0;
+      const fill = heatColor(hits, max);
+      const d = geomToPath(f.geometry, W, H);
+      const name = (f.properties && f.properties.name) || iso2 || '';
+      return `<path d="${d}" fill="${fill}" stroke="#cfd4dc" stroke-width="0.4"
+                   data-iso2="${iso2}" data-num="${numId}" data-hits="${hits}" data-name="${name.replace(/"/g, '&quot;')}"/>`;
     }).join('');
 
     host.innerHTML = `
-      <svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" class="world-hex-map" style="width:100%;height:auto;">
-        ${tilePaths}
-      </svg>
-      <div class="world-hex-legend">
-        <span>少</span>
-        <span class="lh" style="background:#e4e7ed"></span>
-        <span class="lh" style="background:rgba(11,58,130,0.36)"></span>
-        <span class="lh" style="background:rgba(11,58,130,0.6)"></span>
-        <span class="lh" style="background:rgba(11,58,130,0.85)"></span>
-        <span class="lh" style="background:rgba(11,58,130,1)"></span>
-        <span>多</span>
+      <div class="wm-shell">
+        <svg class="wm-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+          <rect width="${W}" height="${H}" fill="#fafbfc"/>
+          ${paths}
+        </svg>
+        <div class="wm-tooltip" data-tooltip></div>
+        <div class="wm-legend">
+          <span class="wm-legend__label">0</span>
+          <div class="wm-legend__bar"></div>
+          <span class="wm-legend__label">${max.toLocaleString()}</span>
+        </div>
       </div>
     `;
+
+    bindHover(host);
   }
 
-  window.WorldHexMap = { render };
+  function bindHover(host) {
+    const svg = host.querySelector('.wm-svg');
+    const tip = host.querySelector('[data-tooltip]');
+    if (!svg || !tip) return;
+    svg.addEventListener('mousemove', (ev) => {
+      const target = ev.target.closest('path[data-iso2]');
+      if (!target) { tip.style.display = 'none'; return; }
+      const name = target.getAttribute('data-name') || '?';
+      const iso2 = target.getAttribute('data-iso2') || '';
+      const hits = parseInt(target.getAttribute('data-hits') || '0', 10);
+      tip.style.display = 'block';
+      const r = host.getBoundingClientRect();
+      tip.style.left = (ev.clientX - r.left + 12) + 'px';
+      tip.style.top  = (ev.clientY - r.top  + 12) + 'px';
+      tip.innerHTML = `<strong>${name}</strong>${iso2 ? ' <code>' + iso2 + '</code>' : ''}<br><span>${hits.toLocaleString()} 次访问</span>`;
+    });
+    svg.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+  }
+
+  window.WorldMap = { render };
 })();
