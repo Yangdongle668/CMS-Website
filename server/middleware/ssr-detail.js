@@ -378,8 +378,17 @@ async function renderPillar(req, res, slug) {
     try { return new Date(d).toLocaleDateString('en-GB', { year:'numeric', month:'short', day:'2-digit' }); }
     catch (_) { return ''; }
   };
-  const articlesHtml = articleRows.length
-    ? articleRows.map((a) => {
+  // Two-tier article display: top 6 render as visual cards, the
+  // remaining cluster articles render as a compact link list. Both
+  // groups produce real <a href> links, so PageRank flows from the
+  // pillar to every cluster article — but the page only carries the
+  // visual weight of 6 cards instead of a 16-card wall.
+  const FEATURED_ARTICLE_COUNT = 6;
+  const featuredArticles = articleRows.slice(0, FEATURED_ARTICLE_COUNT);
+  const moreArticles = articleRows.slice(FEATURED_ARTICLE_COUNT);
+
+  const articlesHtml = featuredArticles.length
+    ? featuredArticles.map((a) => {
         const date = fmtArticleDate(a.published_at);
         return `<article class="news-card">
           <div class="news-date">${escapeHtml(pillar.short_name || pillar.name)} · ${a.reading_minutes || 5} min${date ? ' · ' + date : ''}</div>
@@ -389,6 +398,13 @@ async function renderPillar(req, res, slug) {
         </article>`;
       }).join('')
     : '<p style="grid-column:1/-1; text-align:center; color:#5c5e62;">No related articles yet.</p>';
+
+  const articleLinksHtml = moreArticles.length
+    ? `<p class="cluster-more-links__lead">More in this cluster:</p>
+       <ul class="cluster-more-links__list">${moreArticles.map((a) =>
+         `<li><a href="/blog/${escapeHtml(a.slug)}">${escapeHtml(a.title)}</a></li>`
+       ).join('')}</ul>`
+    : '';
 
   const siblingsHtml = siblings.map((s) =>
     `<a class="news-link" style="color:#171a20; padding:6px 12px; border-radius:20px; background:#fff; border:1px solid #e4e4e4;" href="/products/${escapeHtml(s.slug)}">${escapeHtml(s.short_name || s.name)} &rarr;</a>`
@@ -413,6 +429,7 @@ async function renderPillar(req, res, slug) {
     { kind: 'text', attr: 'mfg-body',  value: (pillar.manufacturing && pillar.manufacturing.body)  || '' },
     { kind: 'html', attr: 'applications', value: appsHtml },
     { kind: 'html', attr: 'articles', value: articlesHtml },
+    { kind: 'html', attr: 'article-links', value: articleLinksHtml },
     { kind: 'html', attr: 'certifications', value: certsHtml },
     { kind: 'html', attr: 'faq', value: faqHtml },
     { kind: 'text', attr: 'cta-title', value: 'Ready for a feasibility review?' },

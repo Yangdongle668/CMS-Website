@@ -715,6 +715,59 @@ ul {
   .news-grid { grid-template-columns: 1fr; }
 }
 
+/* ===== Cluster: compact link list under the featured cards ===== */
+/* Used on pillar pages to surface the long-tail of cluster articles  */
+/* without painting another wall of cards. Internal links flow to     */
+/* every article for SEO; visual weight stays on the top 6 cards.     */
+.cluster-more-links {
+  margin-top: 32px;
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.cluster-more-links:empty { display: none; }
+.cluster-more-links__lead {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #5c5e62;
+  margin: 0 0 12px;
+}
+.cluster-more-links__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 28px;
+}
+.cluster-more-links__list li {
+  font-size: 14px;
+  line-height: 1.45;
+  position: relative;
+  padding-left: 16px;
+}
+.cluster-more-links__list li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: #0b3a82;
+  font-weight: 600;
+}
+.cluster-more-links__list a {
+  color: #171a20;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+.cluster-more-links__list a:hover {
+  color: #0b3a82;
+  border-bottom-color: currentColor;
+}
+@media (max-width: 700px) {
+  .cluster-more-links__list { grid-template-columns: 1fr; }
+}
+
 /* ===== FAQ ===== */
 .faq-list {
   max-width: 860px;
