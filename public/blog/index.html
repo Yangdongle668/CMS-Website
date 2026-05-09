@@ -102,90 +102,12 @@
 <script src="/partials.js?v=18"></script>
 <script src="/script.js?v=18"></script>
 <script src="/cms-page.js?v=18"></script>
-<script>
-(async function () {
-  const escape = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: '2-digit' }) : '';
-
-  const grid = document.querySelector('[data-grid]');
-  const filtersEl = document.querySelector('[data-filters]');
-  let activeCategory = '';
-
-  function renderCard(a) {
-    const cover = a.cover_url || a.hero_image || '';
-    const cat = a.category_name || a.pillar_short_name || 'Article';
-    const date = fmtDate(a.published_at);
-    return `<a class="blog-card" href="/blog/${escape(a.slug)}">
-      <div class="blog-card__media"${cover ? ` style="background-image:url('${escape(cover)}');"` : ''}></div>
-      <div class="blog-card__body">
-        <span class="blog-card__pill">${escape(cat)}</span>
-        <h3 class="blog-card__title">${escape(a.title)}</h3>
-        <p class="blog-card__excerpt">${escape((a.excerpt || '').slice(0, 140))}</p>
-        <div class="blog-card__byline">${escape(a.author || 'Zufek Engineering')} &middot; ${a.reading_minutes || 5} min${date ? ' &middot; ' + date : ''}</div>
-      </div>
-    </a>`;
-  }
-
-  function renderFeatured(a) {
-    if (!a) {
-      document.querySelector('[data-featured-section]').style.display = 'none';
-      return;
-    }
-    const sec = document.querySelector('[data-featured-section]');
-    sec.style.display = '';
-    document.querySelector('[data-featured-link]').setAttribute('href', '/blog/' + a.slug);
-    const media = document.querySelector('[data-featured-media]');
-    const cover = a.cover_url || a.hero_image || '';
-    if (cover) media.style.backgroundImage = `url('${cover.replace(/'/g, "\\'")}')`;
-    document.querySelector('[data-featured-pill]').textContent = a.category_name || a.pillar_short_name || 'Featured';
-    document.querySelector('[data-featured-title]').textContent = a.title;
-    document.querySelector('[data-featured-excerpt]').textContent = (a.excerpt || '').slice(0, 240);
-    const date = fmtDate(a.published_at);
-    document.querySelector('[data-featured-byline]').innerHTML =
-      `<strong>${escape(a.author || 'Zufek Engineering')}</strong> &middot; ${a.reading_minutes || 5} min read${date ? ' &middot; ' + date : ''}`;
-  }
-
-  async function loadCategories() {
-    try {
-      const j = await (await fetch('/api/articles/categories/list')).json();
-      if (!j.items) return;
-      const html = j.items.map((c) =>
-        `<button class="chip" data-filter="${escape(c.slug)}">${escape(c.name)}</button>`
-      ).join('');
-      filtersEl.insertAdjacentHTML('beforeend', html);
-    } catch (_) {}
-    filtersEl.addEventListener('click', (ev) => {
-      const btn = ev.target.closest('.chip');
-      if (!btn) return;
-      filtersEl.querySelectorAll('.chip').forEach((c) => c.classList.toggle('is-active', c === btn));
-      activeCategory = btn.dataset.filter;
-      loadGrid();
-    });
-  }
-
-  async function loadGrid() {
-    grid.innerHTML = '<div class="blog-empty">Loading&hellip;</div>';
-    const url = '/api/articles?limit=18' + (activeCategory ? '&category=' + encodeURIComponent(activeCategory) : '');
-    let items = [];
-    try { items = (await (await fetch(url)).json()).items || []; } catch (_) {}
-
-    // First load only: pluck the most recent article into the featured slot.
-    if (!activeCategory && !window.__featuredRendered && items.length) {
-      window.__featuredRendered = true;
-      renderFeatured(items[0]);
-      items = items.slice(1);
-    }
-
-    if (!items.length) {
-      grid.innerHTML = '<div class="blog-empty">No articles in this category yet.</div>';
-      return;
-    }
-    grid.innerHTML = items.map(renderCard).join('');
-  }
-
-  await loadCategories();
-  await loadGrid();
-})();
-</script>
+<!--
+  /blog/ is fully server-rendered now — featured + grid + filter chips +
+  pager are all populated by middleware/ssr-detail.js renderBlogIndex().
+  Filter chips and pager links navigate via plain anchors (?category=…,
+  ?page=…), so the server renders the right slice on each request and
+  the visitor sees the final page on first paint, no fetch flash.
+-->
 </body>
 </html>

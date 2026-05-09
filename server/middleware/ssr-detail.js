@@ -775,32 +775,90 @@ async function renderBlogIndex(req, res) {
   const ctx = buildContext(req, '/blog/');
   html = replaceTokens(html, ctx);
 
-  // 18 most-recent published articles + the categories list.
-  let items = [];
+  // ----- Parse query params -----
+  // Pagination: 9 articles per page. On page 1 with no category filter,
+  // the newest article is shown as a "featured" card at the top, leaving
+  // 8 in the grid (still 9 articles surfaced on page 1). Pages 2+ show
+  // 9 cards in the grid with no featured. Same logic for category-
+  // filtered views — the FIRST page of a filtered view also pulls the
+  // newest article into the featured slot.
+  const PER_PAGE = 9;
+  const rawPage = parseInt(String(req.query.page || '1'), 10);
+  const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+  const category = String(req.query.category || '').trim().toLowerCase();
+  const isFiltered = category !== '';
+
+  // ----- DB queries -----
   let cats = [];
-  try { items = await many(
-    `SELECT a.slug, a.title, a.excerpt, a.cover_url, a.hero_image, a.author,
-            a.reading_minutes, a.published_at,
-            c.name AS category_name, p.short_name AS pillar_short_name
-       FROM articles a
-       LEFT JOIN categories c ON c.id = a.category_id
-       LEFT JOIN pillar_pages p ON p.id = a.pillar_id
-      WHERE a.status='published'
-      ORDER BY a.published_at DESC NULLS LAST
-      LIMIT 18`
-  ); } catch (_) {}
   try { cats = await many(`SELECT slug, name FROM categories ORDER BY name`); }
   catch (_) {}
 
-  const fmtD = (d) => d ? new Date(d).toLocaleDateString('en-GB', { year:'numeric', month:'short', day:'2-digit' }) : '';
+  // Total count for the current view (filtered or not). We need this to
+  // size the pager and to decide whether to show "no articles" copy.
+  let total = 0;
+  try {
+    const totalRow = isFiltered
+      ? await one(
+          `SELECT count(*)::int AS n FROM articles a
+             LEFT JOIN categories c ON c.id = a.category_id
+            WHERE a.status='published' AND c.slug = $1`,
+          [category]
+        )
+      : await one(
+          `SELECT count(*)::int AS n FROM articles
+            WHERE status='published'`
+        );
+    total = (totalRow && totalRow.n) || 0;
+  } catch (_) {}
 
-  // Featured = newest article. Grid = the rest.
+  const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+  // Featured exists only on page 1; offset the grid by 1 in that case so
+  // the featured article isn't duplicated in the card grid.
+  const featuredOffset = (page === 1 && total > 0) ? 1 : 0;
+  const gridLimit = page === 1 ? PER_PAGE - 1 : PER_PAGE;
+  const gridOffset = (page === 1) ? 1 : (page - 1) * PER_PAGE;
+
+  // Fetch the newest article (for featured) + the grid slice.
   let featured = null;
-  let gridItems = items;
-  if (items.length) {
-    featured = items[0];
-    gridItems = items.slice(1);
+  let gridItems = [];
+  if (total > 0) {
+    try {
+      // Page 1: pull featured + grid in two separate queries so the
+      // featured isn't repeated. Pages 2+: just the grid slice.
+      if (page === 1) {
+        featured = await one(
+          `SELECT a.slug, a.title, a.excerpt, a.cover_url, a.hero_image, a.author,
+                  a.reading_minutes, a.published_at,
+                  c.name AS category_name, p.short_name AS pillar_short_name
+             FROM articles a
+             LEFT JOIN categories c ON c.id = a.category_id
+             LEFT JOIN pillar_pages p ON p.id = a.pillar_id
+            WHERE a.status='published'
+              ${isFiltered ? 'AND c.slug = $1' : ''}
+            ORDER BY a.published_at DESC NULLS LAST
+            LIMIT 1`,
+          isFiltered ? [category] : []
+        );
+      }
+      const params = isFiltered ? [category, gridLimit, gridOffset] : [gridLimit, gridOffset];
+      const placeholderShift = isFiltered ? 1 : 0;
+      gridItems = await many(
+        `SELECT a.slug, a.title, a.excerpt, a.cover_url, a.hero_image, a.author,
+                a.reading_minutes, a.published_at,
+                c.name AS category_name, p.short_name AS pillar_short_name
+           FROM articles a
+           LEFT JOIN categories c ON c.id = a.category_id
+           LEFT JOIN pillar_pages p ON p.id = a.pillar_id
+          WHERE a.status='published'
+            ${isFiltered ? `AND c.slug = $1` : ''}
+          ORDER BY a.published_at DESC NULLS LAST
+          LIMIT $${placeholderShift + 1} OFFSET $${placeholderShift + 2}`,
+        params
+      );
+    } catch (_) {}
   }
+
+  const fmtD = (d) => d ? new Date(d).toLocaleDateString('en-GB', { year:'numeric', month:'short', day:'2-digit' }) : '';
 
   function renderCard(a) {
     const cover = a.cover_url || a.hero_image || '';
@@ -818,13 +876,12 @@ async function renderBlogIndex(req, res) {
     </a>`;
   }
 
-  // Inject featured (un-hide the section + populate fields).
+  // ----- Featured -----
   if (featured) {
     const cover = featured.cover_url || featured.hero_image || '';
     const cat = featured.category_name || featured.pillar_short_name || 'Featured';
     const date = fmtD(featured.published_at);
     const author = featured.author || `${ctx.siteName} Engineering`;
-    // Un-hide the section.
     html = html.replace(
       /<section class="blog-featured-section" data-featured-section style="display:none;">/i,
       '<section class="blog-featured-section" data-featured-section>'
@@ -836,7 +893,6 @@ async function renderBlogIndex(req, res) {
       { kind: 'text', attr: 'featured-title', value: featured.title },
       { kind: 'text', attr: 'featured-excerpt', value: (featured.excerpt || '').slice(0, 240) },
     ]);
-    // Byline contains <strong>; use raw HTML.
     html = injectIntoBody(html, [{
       kind: 'html',
       attr: 'featured-byline',
@@ -844,21 +900,119 @@ async function renderBlogIndex(req, res) {
     }]);
   }
 
-  // Inject the grid (or empty state).
+  // ----- Grid -----
   const gridHtml = gridItems.length
     ? gridItems.map(renderCard).join('')
-    : '<div class="blog-empty">No articles in this category yet.</div>';
+    : (page === 1
+        ? `<div class="blog-empty">No articles in this category yet.</div>`
+        : `<div class="blog-empty">This page is past the end. <a href="/blog/${isFiltered ? '?category=' + encodeURIComponent(category) : ''}" style="color:var(--brand);">Back to page 1</a>.</div>`);
   html = injectIntoBody(html, [{ kind: 'html', attr: 'grid', value: gridHtml }]);
 
-  // Inject category filter chips (the JS appends after the "All" chip).
-  if (cats.length) {
-    const chipsHtml = cats.map((c) =>
-      `<button class="chip" data-filter="${escapeHtml(c.slug)}">${escapeHtml(c.name)}</button>`
-    ).join('');
+  // ----- Category chips with active state from URL -----
+  const chipsAllActive = isFiltered ? '' : ' is-active';
+  const allHref = '/blog/';
+  const chipsHtml = cats.map((c) => {
+    const active = c.slug === category ? ' is-active' : '';
+    const href = `/blog/?category=${encodeURIComponent(c.slug)}`;
+    return `<a class="chip${active}" href="${escapeHtml(href)}">${escapeHtml(c.name)}</a>`;
+  }).join('');
+  html = html.replace(
+    /<div class="blog-filters" data-filters>([\s\S]*?)<\/div>/i,
+    `<div class="blog-filters" data-filters><a class="chip${chipsAllActive}" href="${escapeHtml(allHref)}">All articles</a>${chipsHtml}</div>`
+  );
+
+  // ----- Pager (Prev / 1 2 3 / Next) -----
+  // Build before/after relative URLs that preserve the current category.
+  function urlFor(p) {
+    const params = [];
+    if (isFiltered) params.push('category=' + encodeURIComponent(category));
+    if (p > 1) params.push('page=' + p);
+    return '/blog/' + (params.length ? '?' + params.join('&') : '');
+  }
+  let pagerHtml = '';
+  if (totalPages > 1) {
+    const prevHref = page > 1 ? urlFor(page - 1) : '';
+    const nextHref = page < totalPages ? urlFor(page + 1) : '';
+    // Numbered links: show all when totalPages <= 7, otherwise window
+    // around current page with ellipses on both ends.
+    const nums = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) nums.push(i);
+    } else {
+      const pushNum = (n) => { if (!nums.includes(n)) nums.push(n); };
+      pushNum(1);
+      if (page > 3) nums.push('…');
+      for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) pushNum(i);
+      if (page < totalPages - 2) nums.push('…');
+      pushNum(totalPages);
+    }
+    pagerHtml = `
+      <nav class="blog-pager" aria-label="Pagination">
+        ${prevHref
+          ? `<a class="blog-pager__btn" rel="prev" href="${escapeHtml(prevHref)}">&larr; Previous</a>`
+          : `<span class="blog-pager__btn is-disabled">&larr; Previous</span>`}
+        <div class="blog-pager__nums">
+          ${nums.map((n) => {
+            if (n === '…') return `<span class="blog-pager__ellipsis">…</span>`;
+            if (n === page) return `<span class="blog-pager__num is-active" aria-current="page">${n}</span>`;
+            return `<a class="blog-pager__num" href="${escapeHtml(urlFor(n))}">${n}</a>`;
+          }).join('')}
+        </div>
+        ${nextHref
+          ? `<a class="blog-pager__btn" rel="next" href="${escapeHtml(nextHref)}">Next &rarr;</a>`
+          : `<span class="blog-pager__btn is-disabled">Next &rarr;</span>`}
+      </nav>
+      <p class="blog-pager__meta">Page ${page} of ${totalPages} · ${total} article${total === 1 ? '' : 's'}${isFiltered ? ' in “' + escapeHtml(cats.find((c) => c.slug === category)?.name || category) + '”' : ''}</p>
+    `;
+  } else if (total > PER_PAGE) {
+    pagerHtml = ''; // unreachable
+  }
+  // Inject the pager after the .blog-grid block (right before its closing
+  // </section>). Using a marker comment so we don't have to anchor on the
+  // outer section's class chain.
+  if (pagerHtml) {
     html = html.replace(
-      /<div class="blog-filters" data-filters>([\s\S]*?)<\/div>/i,
-      `<div class="blog-filters" data-filters><button class="chip is-active" data-filter="">All articles</button>${chipsHtml}</div>`
+      /(<div class="blog-grid"[^>]*data-grid[^>]*>[\s\S]*?<\/div>)(\s*<\/div>\s*<\/section>)/i,
+      `$1${pagerHtml}$2`
     );
+  }
+
+  // ----- Update title / canonical / breadcrumbs to reflect filter+page -----
+  // SEO: every paged URL is its own canonical; pages 2+ get a meta robots
+  // hint that prefers the filter root for indexing (avoids thin-content
+  // pages 2/3/4 outranking page 1).
+  if (isFiltered || page > 1) {
+    const catName = cats.find((c) => c.slug === category)?.name || category;
+    const titleParts = ['Insights'];
+    if (isFiltered) titleParts.push(catName);
+    if (page > 1) titleParts.push(`Page ${page}`);
+    const newTitle = `${titleParts.join(' — ')} — ${ctx.siteName}`;
+    html = html.replace(/<title[^>]*>[\s\S]*?<\/title>/i, `<title>${escapeHtml(newTitle)}</title>`);
+    // Canonical for paged variants reflects the filter+page.
+    html = html.replace(
+      /<link\s+rel="canonical"\s+href="[^"]*"/i,
+      `<link rel="canonical" href="${escapeHtml(ctx.canonicalBase + req.path + (req._parsedUrl?.search || ''))}"`
+    );
+    // Pages 2+: tell Google not to index thin internal-pager pages.
+    if (page > 1) {
+      html = html.replace(/<\/head>/i, `<meta name="robots" content="noindex,follow">\n</head>`);
+    }
+    // rel=prev/next link tags (still useful for sitelink behaviour and
+    // helps some scrapers walk the archive).
+    const linkTags = [];
+    if (page > 1) {
+      const prev = page - 1 === 1
+        ? '/blog/' + (isFiltered ? `?category=${encodeURIComponent(category)}` : '')
+        : `/blog/?${isFiltered ? `category=${encodeURIComponent(category)}&` : ''}page=${page - 1}`;
+      linkTags.push(`<link rel="prev" href="${escapeHtml(ctx.canonicalBase + prev)}">`);
+    }
+    if (page < totalPages) {
+      const next = `/blog/?${isFiltered ? `category=${encodeURIComponent(category)}&` : ''}page=${page + 1}`;
+      linkTags.push(`<link rel="next" href="${escapeHtml(ctx.canonicalBase + next)}">`);
+    }
+    if (linkTags.length) {
+      html = html.replace(/<\/head>/i, `${linkTags.join('\n')}\n</head>`);
+    }
   }
 
   res.type('html').send(html);

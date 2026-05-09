@@ -473,7 +473,7 @@ ON CONFLICT (slug) DO NOTHING;
 -- ----- Settings -----
 INSERT INTO settings (key, value) VALUES
 ('site',
- '{"name":"Zufek","legal_name":"Dongguan Zufek Technology Co.,Ltd","tagline":"Custom lithium batteries for AR/VR, medical, wearables and IoT. Founded 2018 in Dongguan.","email":"info@zufek.com","engineering_email":"engineering@zufek.com","phone":"+86 153 7772 0020","address":"Room 432, Building 1, No. 34 Jinniu Road, Guancheng Subdistrict, Dongguan City, Guangdong Province, China","founded_year":2018,"factory_size_sqm":18000,"staff_count":100}'),
+ '{"name":"Zufek","legal_name":"Dongguan Zufek Technology Co.,Ltd","tagline":"R&D-led lithium-cell maker for AR/VR, medical, wearables and IoT. A 100-person Dongguan team that has shipped 300+ custom programs worldwide since 2018.","email":"info@zufek.com","engineering_email":"engineering@zufek.com","phone":"+86 153 7772 0020","address":"Room 432, Building 1, No. 34 Jinniu Road, Guancheng Subdistrict, Dongguan City, Guangdong Province, China","founded_year":2018,"factory_size_sqm":5000,"staff_count":100}'),
 ('social',
  '{"linkedin":"https://www.linkedin.com/company/zufek","whatsapp":"https://wa.me/8615377720020"}'),
 ('seo',
