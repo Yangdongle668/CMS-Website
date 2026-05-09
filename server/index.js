@@ -133,14 +133,33 @@ app.use(
 );
 
 // ----- Pretty URLs for products / blog / applications -----
-// When a per-slug .html file exists it has already been served by the
-// token middleware. We fall here only for DB-backed slugs, where the
-// matching _template.html is rendered with the request path as canonical.
-app.get(['/products/:slug', '/applications/:slug', '/blog/:slug'], (req, res, next) => {
+// Order:
+//   1. Per-slug .html file (already handled by token middleware above for
+//      static pages like /applications/medical.html).
+//   2. SSR detail render — server reads DB and injects title/meta/canonical
+//      /OG/JSON-LD into _template.html before sending. Required for SEO so
+//      Googlebot, social-card scrapers and AI parsers see the head in the
+//      initial HTML.
+//   3. Final fallback: ship _template.html with token replacement only
+//      (JS will hydrate body, but head is already populated by tokens).
+const ssrDetail = require('./middleware/ssr-detail');
+app.get(['/products/:slug', '/applications/:slug', '/blog/:slug'], async (req, res, next) => {
   const segments = req.path.split('/').filter(Boolean);
   const dir = segments[0];
   const slug = segments[1];
   if (!slug) return next();
+
+  // 1. SSR detail render based on the URL section.
+  try {
+    if (dir === 'products' && await ssrDetail.renderPillar(req, res, slug)) return;
+    if (dir === 'blog' && await ssrDetail.renderArticle(req, res, slug)) return;
+    if (dir === 'applications' && await ssrDetail.renderApplication(req, res, slug)) return;
+  } catch (err) {
+    console.error('[ssr] %s %s failed:', dir, slug, err && err.message);
+    // Fall through to token-only rendering rather than 500ing.
+  }
+
+  // 2. Token-only fallback (per-slug .html or _template.html with placeholders).
   const candidates = [
     path.join(ROOT, 'public', dir, `${slug}.html`),
     path.join(ROOT, 'public', dir, slug, 'index.html'),

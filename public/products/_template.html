@@ -3,14 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title data-meta-title>Pillar Lithium Battery</title>
-<meta name="description" data-meta-description content="">
-<meta property="og:type" content="product.group">
-<meta property="og:title" data-og-title content="">
-<meta property="og:description" data-og-description content="">
-<meta property="og:image" data-og-image content="">
+<title>Lithium Battery Product Line | {{SITE_NAME}}</title>
+<meta name="description" content="">
+<link rel="canonical" href="{{CANONICAL_URL}}">
+<meta property="og:type" content="product">
+<meta property="og:site_name" content="{{SITE_NAME}}">
+<meta property="og:title" content="">
+<meta property="og:description" content="">
+<meta property="og:url" content="{{CANONICAL_URL}}">
+<meta property="og:image" content="{{DEFAULT_OG_IMAGE}}">
+<meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="canonical" data-canonical href="">
+<meta name="twitter:title" content="">
+<meta name="twitter:description" content="">
+<meta name="twitter:image" content="{{DEFAULT_OG_IMAGE}}">
+<meta name="theme-color" content="#0b3a82">
 <link rel="stylesheet" href="/styles.css?v=16">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -179,18 +186,19 @@
   if (!data || !data.pillar) { location.href = '/products/'; return; }
   const p = data.pillar;
 
-  // ----- Meta + OG -----
+  // ----- Meta + OG (fallback only when SSR didn't run) -----
+  // The server-side renderer in middleware/ssr-detail.js injects title,
+  // description, canonical, OG, Twitter and JSON-LD before this script
+  // executes. We only patch document.title for browser tab fidelity in
+  // case the SSR path was bypassed (e.g. legacy /api/products/<slug>
+  // fallback below).
   const title = p.meta_title || `${p.name} | Zufek`;
   const desc = p.meta_description || p.hero_subtitle || '';
-  document.title = title;
-  document.querySelector('[data-meta-title]').textContent = title;
-  document.querySelector('[data-meta-description]').setAttribute('content', desc);
-  document.querySelector('[data-og-title]').setAttribute('content', title);
-  document.querySelector('[data-og-description]').setAttribute('content', desc);
-  document.querySelector('[data-og-image]').setAttribute('content', p.hero_image || '');
-  document.querySelector('[data-canonical]').setAttribute('href', '/products/' + p.slug);
+  if (!document.title || /\{\{SITE_NAME\}\}/.test(document.title)) document.title = title;
 
-  // ----- JSON-LD: Product + BreadcrumbList + FAQPage -----
+  // Keep client-side JSON-LD only as a redundancy for the legacy
+  // /api/products/<slug> fallback path (when a product has no pillar row).
+  // SSR handles the canonical pillar case server-side.
   const ld = [
     { "@context":"https://schema.org","@type":"Product",
       "name": p.name, "description": desc,
@@ -211,7 +219,14 @@
         "acceptedAnswer": { "@type":"Answer","text": f.a }
       })) });
   }
-  document.querySelector('[data-jsonld]').textContent = JSON.stringify(ld);
+  // Inject only if no SSR JSON-LD exists yet (legacy fallback path).
+  if (!document.querySelector('script[type="application/ld+json"][data-jsonld]')) {
+    const s = document.createElement('script');
+    s.type = 'application/ld+json';
+    s.dataset.jsonld = '';
+    s.textContent = JSON.stringify(ld);
+    document.head.appendChild(s);
+  }
 
   // ----- Hero -----
   const hero = document.querySelector('[data-pillar-hero]');

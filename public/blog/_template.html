@@ -3,14 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title data-meta-title>Article</title>
-<meta name="description" data-meta-description content="">
+<title>Engineering Insight | {{SITE_NAME}}</title>
+<meta name="description" content="">
+<link rel="canonical" href="{{CANONICAL_URL}}">
 <meta property="og:type" content="article">
-<meta property="og:title" data-og-title content="">
-<meta property="og:description" data-og-description content="">
-<meta property="og:image" data-og-image content="">
+<meta property="og:site_name" content="{{SITE_NAME}}">
+<meta property="og:title" content="">
+<meta property="og:description" content="">
+<meta property="og:url" content="{{CANONICAL_URL}}">
+<meta property="og:image" content="{{DEFAULT_OG_IMAGE}}">
+<meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="canonical" data-canonical href="">
+<meta name="twitter:title" content="">
+<meta name="twitter:description" content="">
+<meta name="twitter:image" content="{{DEFAULT_OG_IMAGE}}">
+<meta name="theme-color" content="#0b3a82">
 <link rel="stylesheet" href="/styles.css?v=16">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -199,38 +206,17 @@
   if (!data || !data.article) { location.href = '/blog/'; return; }
   const a = data.article;
 
-  // ------- Meta + OG + canonical -------
-  const title = (a.meta_title || a.title) + ' | Zufek';
-  document.title = title;
-  document.querySelector('[data-meta-title]').textContent = title;
+  // ------- Meta + OG + canonical (fallback only when SSR did not run) -------
+  // Server-side rendering (middleware/ssr-detail.js) injects title,
+  // description, canonical, OG/Twitter and JSON-LD before this script
+  // executes. We only patch the visible browser title in case the SSR
+  // path was bypassed (e.g. running this template on a CDN edge cache
+  // before the server is reachable).
+  const baseTitle = a.meta_title || a.title;
+  const titleHasBrand = /\|\s*Zufek\s*$/i.test(baseTitle);
+  const title = titleHasBrand ? baseTitle : (baseTitle + ' | Zufek');
+  if (!document.title || /\{\{SITE_NAME\}\}/.test(document.title)) document.title = title;
   const desc = a.meta_description || a.excerpt || '';
-  document.querySelector('[data-meta-description]').setAttribute('content', desc);
-  document.querySelector('[data-og-title]').setAttribute('content', a.meta_title || a.title);
-  document.querySelector('[data-og-description]').setAttribute('content', desc);
-  document.querySelector('[data-og-image]').setAttribute('content', a.hero_image || a.cover_url || '');
-  document.querySelector('[data-canonical]').setAttribute('href', '/blog/' + a.slug);
-
-  // ------- JSON-LD (Article + BreadcrumbList) -------
-  const ld = [
-    { "@context":"https://schema.org","@type":"Article",
-      "headline": a.title, "description": desc,
-      "image": a.hero_image || a.cover_url || '',
-      "author": {"@type":"Organization","name": a.author || 'Zufek'},
-      "publisher":{"@type":"Organization","name":"Zufek"},
-      "datePublished": a.published_at || a.created_at,
-      "dateModified": a.updated_at,
-      "mainEntityOfPage": "/blog/" + a.slug,
-      "articleSection": a.category_name || ''
-    },
-    { "@context":"https://schema.org","@type":"BreadcrumbList",
-      "itemListElement":[
-        {"@type":"ListItem","position":1,"name":"Home","item":"/"},
-        {"@type":"ListItem","position":2,"name":"Insights","item":"/blog/"},
-        {"@type":"ListItem","position":3,"name": a.title,"item":"/blog/" + a.slug}
-      ]
-    }
-  ];
-  document.querySelector('[data-jsonld]').textContent = JSON.stringify(ld);
 
   // ------- Hero -------
   const hero = document.querySelector('[data-hero]');
