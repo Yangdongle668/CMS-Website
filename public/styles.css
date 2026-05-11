@@ -3441,7 +3441,7 @@ a:hover .news-link, .news-link:hover { color: #f5a623; }
   transition: opacity 0.2s ease, transform 0.18s ease, background 0.2s ease;
   font-family: inherit;
 }
-.tesla-slider__arrow:hover {
+.tesla-slider__arrow:not(:disabled):not([aria-disabled="true"]):hover {
   background: #fff;
   transform: translateY(-50%) scale(1.06);
 }
@@ -3449,7 +3449,11 @@ a:hover .news-link, .news-link:hover { color: #f5a623; }
 .tesla-slider__arrow[aria-disabled="true"] {
   opacity: 0.35;
   cursor: default;
-  pointer-events: none;
+  /* Do NOT add `pointer-events: none` here. A native <button disabled>
+     already absorbs the click without firing it; pointer-events: none
+     would instead make the arrow transparent to mouse events, so the
+     click passes through to the <a class="tesla-slide"> sitting behind
+     it and navigates the visitor into the last card by accident. */
 }
 .tesla-slider__arrow--prev { left: 16px; }
 .tesla-slider__arrow--next { right: 16px; }
