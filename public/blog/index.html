@@ -19,7 +19,7 @@
 <meta name="twitter:image" content="{{DEFAULT_OG_IMAGE}}">
 <meta name="theme-color" content="#0b3a82">
 <meta name="format-detection" content="telephone=no">
-<link rel="stylesheet" href="/styles.css?v=19">
+<link rel="stylesheet" href="/styles.css?v=20">
 <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -72,6 +72,24 @@
     <!-- Filter chips ----------------------------------------------------- -->
     <section class="blog-filters-section">
       <div class="section-inner">
+        <!-- Search box. Server-rendered with the current ?q= value injected
+             into data-current-q so the input shows what the visitor
+             searched. Submits as a plain <form> so the result URL is
+             shareable and SEO-friendly. The inline JS adds debounced live
+             filtering once typing starts. -->
+        <form class="blog-search" data-search role="search" action="/blog/" method="get">
+          <input type="search" name="q" data-search-input
+            placeholder="Search articles — try ‘LFP cycle life’ or ‘BMS’"
+            autocomplete="off"
+            data-current-q=""/>
+          <button type="submit" class="blog-search__btn" aria-label="Search">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/>
+              <line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <a class="blog-search__clear" data-search-clear href="/blog/" style="display:none;">Clear</a>
+        </form>
         <div class="blog-filters" data-filters>
           <button class="chip is-active" data-filter="">All articles</button>
         </div>
@@ -99,9 +117,9 @@
 
 <div id="footer-mount"></div>
 <div id="sidemenu-mount"></div>
-<script src="/partials.js?v=19"></script>
-<script src="/script.js?v=19"></script>
-<script src="/cms-page.js?v=19"></script>
+<script src="/partials.js?v=20"></script>
+<script src="/script.js?v=20"></script>
+<script src="/cms-page.js?v=20"></script>
 <!--
   /blog/ is fully server-rendered now — featured + grid + filter chips +
   pager are all populated by middleware/ssr-detail.js renderBlogIndex().
@@ -109,5 +127,149 @@
   ?page=…), so the server renders the right slice on each request and
   the visitor sees the final page on first paint, no fetch flash.
 -->
+<script>
+// =====================================================================
+// Live blog search — progressively enhances the server-rendered grid.
+//
+// The <form data-search> already submits as a plain GET to /blog/?q=…
+// so visitors without JS still get the SSR results page. With JS we
+// debounce typing and call /api/articles?q=… to update the grid in
+// place, and also push the URL via history.replaceState so refresh /
+// share still works. The featured section is hidden when results are
+// being shown.
+// =====================================================================
+(function () {
+  const form = document.querySelector('[data-search]');
+  if (!form) return;
+  const input = form.querySelector('[data-search-input]');
+  const clear = form.querySelector('[data-search-clear]');
+  const grid = document.querySelector('[data-grid]');
+  const featured = document.querySelector('[data-featured-section]');
+  const filtersBlock = document.querySelector('.blog-filters');
+  if (!input || !grid) return;
+
+  // The SSR layer seeds data-current-q. If the page already arrived
+  // with a search applied, set the input value from it; the clear
+  // link visibility is also already toggled server-side.
+  if (input.dataset.currentQ && !input.value) input.value = input.dataset.currentQ;
+  let lastQ = input.value || '';
+
+  function categoryFromUrl() {
+    const m = location.search.match(/[?&]category=([^&]+)/);
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+
+  function fmtDate(s) {
+    if (!s) return '';
+    const d = new Date(s);
+    if (isNaN(d)) return '';
+    return d.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: '2-digit' });
+  }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  function bgStyle(url) {
+    return url ? `background-image:url('${esc(url)}');` : '';
+  }
+  function cardHtml(a) {
+    const cover = a.cover_url || a.hero_image || '';
+    const cat = a.category_name || a.pillar_short_name || 'Article';
+    const author = a.author_name || a.author || 'Engineering';
+    const date = fmtDate(a.published_at);
+    return `<a class="blog-card" href="/blog/${esc(a.slug)}">
+      <div class="blog-card__media"${cover ? ` style="${bgStyle(cover)}"` : ''}></div>
+      <div class="blog-card__body">
+        <span class="blog-card__pill">${esc(cat)}</span>
+        <h3 class="blog-card__title">${esc(a.title)}</h3>
+        <p class="blog-card__excerpt">${esc((a.excerpt || '').slice(0, 140))}</p>
+        <div class="blog-card__byline">${esc(author)} &middot; ${a.reading_minutes || 5} min${date ? ' &middot; ' + date : ''}</div>
+      </div>
+    </a>`;
+  }
+  function headerHtml(q, total, cat) {
+    const backHref = cat ? '/blog/?category=' + encodeURIComponent(cat) : '/blog/';
+    return `<div class="blog-search-header">
+      <p><strong>${total}</strong> result${total === 1 ? '' : 's'} for
+        <span class="blog-search-header__q">“${esc(q)}”</span>${cat ? ' in <em>' + esc(cat) + '</em>' : ''}
+      </p>
+      <a class="blog-search-header__back" href="${esc(backHref)}">&larr; Clear search</a>
+    </div>`;
+  }
+  function emptyHtml(q, cat) {
+    const backHref = cat ? '/blog/?category=' + encodeURIComponent(cat) : '/blog/';
+    return `<div class="blog-empty">No articles match <strong>“${esc(q)}”</strong>${cat ? ' in this category' : ''}. Try a broader keyword or <a href="${esc(backHref)}" style="color:var(--brand);">clear the search</a>.</div>`;
+  }
+
+  let timer = null;
+  let inflight = null;
+
+  async function runSearch(q) {
+    if (q === lastQ) return;
+    lastQ = q;
+    // Update the URL bar so refresh / share works.
+    const url = new URL(location.href);
+    if (q) url.searchParams.set('q', q); else url.searchParams.delete('q');
+    url.searchParams.delete('page'); // any search resets pagination
+    history.replaceState(null, '', url.pathname + (url.search || '') + url.hash);
+    if (clear) clear.style.display = q ? '' : 'none';
+
+    if (!q) {
+      // Empty query — clearest UX is to just reload the SSR page so
+      // featured + pager etc. all reset properly.
+      location.href = '/blog/' + (categoryFromUrl() ? '?category=' + encodeURIComponent(categoryFromUrl()) : '');
+      return;
+    }
+
+    if (inflight) inflight.abort();
+    inflight = new AbortController();
+    form.classList.add('is-busy');
+    try {
+      const cat = categoryFromUrl();
+      const params = new URLSearchParams({ q, limit: '24' });
+      if (cat) params.set('category', cat);
+      const res = await fetch('/api/articles?' + params.toString(), { signal: inflight.signal });
+      if (!res.ok) throw new Error('search_failed');
+      const json = await res.json();
+      // Hide the featured card while showing search results.
+      if (featured) featured.style.display = 'none';
+      const items = json.items || [];
+      const cards = items.length ? items.map(cardHtml).join('') : emptyHtml(q, cat);
+      grid.innerHTML = headerHtml(q, json.total || items.length, cat) + cards;
+      // Remove any SSR-rendered pager (search hits the API not the SSR pager).
+      const oldPager = document.querySelector('.blog-pager');
+      if (oldPager) oldPager.remove();
+      const oldMeta = document.querySelector('.blog-pager__meta');
+      if (oldMeta) oldMeta.remove();
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      // Fall back to a full form submit if AJAX fails for any reason.
+      form.submit();
+    } finally {
+      form.classList.remove('is-busy');
+    }
+  }
+
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    // Debounce — 220ms is responsive but doesn't slam the API on every keystroke.
+    timer = setTimeout(() => runSearch(q), 220);
+  });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      clearTimeout(timer);
+      runSearch(input.value.trim());
+    }
+    if (e.key === 'Escape') {
+      input.value = '';
+      runSearch('');
+    }
+  });
+  // Native form submit (no-JS path) still works — just lets the browser
+  // navigate to /blog/?q=… which renders server-side.
+})();
+</script>
 </body>
 </html>

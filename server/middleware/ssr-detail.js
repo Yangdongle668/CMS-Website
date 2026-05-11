@@ -921,49 +921,78 @@ async function renderBlogIndex(req, res) {
   const rawPage = parseInt(String(req.query.page || '1'), 10);
   const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
   const category = String(req.query.category || '').trim().toLowerCase();
+  // ?q= full-text search across title + excerpt + content. Capped at 80
+  // chars so a malicious actor can't ship a 10 KB regex param. Empty / -
+  // whitespace-only queries are treated as no-search.
+  const searchRaw = String(req.query.q || '').trim().slice(0, 80);
+  const search = searchRaw;
+  const isSearching = search.length > 0;
   const isFiltered = category !== '';
+  // When searching, we hide the featured card — search results should be a
+  // flat ranked grid, not "featured + grid" (the featured card implies
+  // editorial choice, not "best match").
+  const showFeatured = !isSearching;
 
   // ----- DB queries -----
   let cats = [];
   try { cats = await many(`SELECT slug, name FROM categories ORDER BY name`); }
   catch (_) {}
 
-  // Total count for the current view (filtered or not). We need this to
-  // size the pager and to decide whether to show "no articles" copy.
+  // Build a shared WHERE clause used by both the COUNT query and the
+  // grid SELECT. Category filter and free-text search (q) compose
+  // independently: searching "LFP" inside the "engineering" category
+  // narrows on both axes. Multi-word queries AND each whitespace-split
+  // token together, so "LFP cycle life" only matches articles
+  // containing all three substrings.
+  const whereClauses = [`a.status = 'published'`];
+  const whereParams = [];
+  if (isFiltered) {
+    whereParams.push(category);
+    whereClauses.push(`c.slug = $${whereParams.length}`);
+  }
+  if (isSearching) {
+    const tokens = search.split(/\s+/).filter(Boolean).slice(0, 6);
+    for (const tok of tokens) {
+      whereParams.push('%' + tok + '%');
+      const i = whereParams.length;
+      whereClauses.push(`(a.title ILIKE $${i} OR a.excerpt ILIKE $${i} OR a.content ILIKE $${i})`);
+    }
+  }
+  const whereSql = whereClauses.join(' AND ');
+
+  // Total count for the current view (filtered + searched or not). We
+  // need this to size the pager and to decide whether to show the
+  // "no results" copy.
   let total = 0;
   try {
-    const totalRow = isFiltered
-      ? await one(
-          `SELECT count(*)::int AS n FROM articles a
-             LEFT JOIN categories c ON c.id = a.category_id
-            WHERE a.status='published' AND c.slug = $1`,
-          [category]
-        )
-      : await one(
-          `SELECT count(*)::int AS n FROM articles
-            WHERE status='published'`
-        );
+    const totalRow = await one(
+      `SELECT count(*)::int AS n FROM articles a
+         LEFT JOIN categories c ON c.id = a.category_id
+        WHERE ${whereSql}`,
+      whereParams
+    );
     total = (totalRow && totalRow.n) || 0;
   } catch (_) {}
 
   // Page 1 covers (1 featured + FEATURED_GRID grid) = 10 articles; pages
-  // 2+ cover PER_PAGE each. Compute totalPages accordingly so the pager
-  // matches the visible card distribution.
-  const PAGE_1_COUNT = 1 + FEATURED_GRID;
+  // 2+ cover PER_PAGE each. When searching we hide the featured card, so
+  // page 1 just shows PER_PAGE grid items like every other page.
+  const PAGE_1_COUNT = showFeatured ? (1 + FEATURED_GRID) : PER_PAGE;
   const totalPages = total <= PAGE_1_COUNT
     ? 1
     : 1 + Math.max(1, Math.ceil((total - PAGE_1_COUNT) / PER_PAGE));
-  const gridLimit = page === 1 ? FEATURED_GRID : PER_PAGE;
-  const gridOffset = page === 1 ? 1 : PAGE_1_COUNT + (page - 2) * PER_PAGE;
+  const gridLimit = (page === 1 && showFeatured) ? FEATURED_GRID : PER_PAGE;
+  const gridOffset = page === 1
+    ? (showFeatured ? 1 : 0)
+    : PAGE_1_COUNT + (page - 2) * PER_PAGE;
 
-  // Fetch the newest article (for featured) + the grid slice.
+  // Fetch the newest article (for featured, unless searching) + the
+  // grid slice.
   let featured = null;
   let gridItems = [];
   if (total > 0) {
     try {
-      // Page 1: pull featured + grid in two separate queries so the
-      // featured isn't repeated. Pages 2+: just the grid slice.
-      if (page === 1) {
+      if (page === 1 && showFeatured) {
         featured = await one(
           `SELECT a.slug, a.title, a.excerpt, a.cover_url, a.hero_image, a.author,
                   a.reading_minutes, a.published_at,
@@ -973,15 +1002,14 @@ async function renderBlogIndex(req, res) {
              LEFT JOIN categories c ON c.id = a.category_id
              LEFT JOIN pillar_pages p ON p.id = a.pillar_id
              LEFT JOIN authors au ON au.id = a.author_id
-            WHERE a.status='published'
-              ${isFiltered ? 'AND c.slug = $1' : ''}
+            WHERE ${whereSql}
             ORDER BY a.published_at DESC NULLS LAST
             LIMIT 1`,
-          isFiltered ? [category] : []
+          whereParams
         );
       }
-      const params = isFiltered ? [category, gridLimit, gridOffset] : [gridLimit, gridOffset];
-      const placeholderShift = isFiltered ? 1 : 0;
+      const limitIdx = whereParams.length + 1;
+      const offsetIdx = whereParams.length + 2;
       gridItems = await many(
         `SELECT a.slug, a.title, a.excerpt, a.cover_url, a.hero_image, a.author,
                 a.reading_minutes, a.published_at,
@@ -991,11 +1019,10 @@ async function renderBlogIndex(req, res) {
            LEFT JOIN categories c ON c.id = a.category_id
            LEFT JOIN pillar_pages p ON p.id = a.pillar_id
            LEFT JOIN authors au ON au.id = a.author_id
-          WHERE a.status='published'
-            ${isFiltered ? `AND c.slug = $1` : ''}
+          WHERE ${whereSql}
           ORDER BY a.published_at DESC NULLS LAST
-          LIMIT $${placeholderShift + 1} OFFSET $${placeholderShift + 2}`,
-        params
+          LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
+        [...whereParams, gridLimit, gridOffset]
       );
     } catch (_) {}
   }
@@ -1045,20 +1072,64 @@ async function renderBlogIndex(req, res) {
     }]);
   }
 
+  // ----- Search header (only when ?q= is set) -----
+  // A small "Showing N results for ‘…’" banner above the grid + a back
+  // link that clears the search but preserves the category. This keeps
+  // the visitor oriented when results count is unexpected.
+  let searchHeaderHtml = '';
+  if (isSearching) {
+    const backHref = isFiltered ? '/blog/?category=' + encodeURIComponent(category) : '/blog/';
+    searchHeaderHtml = `
+      <div class="blog-search-header">
+        <p><strong>${total}</strong> result${total === 1 ? '' : 's'} for
+          <span class="blog-search-header__q">“${escapeHtml(search)}”</span>${isFiltered ? ' in <em>' + escapeHtml(cats.find((c) => c.slug === category)?.name || category) + '</em>' : ''}
+        </p>
+        <a class="blog-search-header__back" href="${escapeHtml(backHref)}">&larr; Clear search</a>
+      </div>
+    `;
+  }
+
   // ----- Grid -----
   const gridHtml = gridItems.length
     ? gridItems.map(renderCard).join('')
     : (page === 1
-        ? `<div class="blog-empty">No articles in this category yet.</div>`
-        : `<div class="blog-empty">This page is past the end. <a href="/blog/${isFiltered ? '?category=' + encodeURIComponent(category) : ''}" style="color:var(--brand);">Back to page 1</a>.</div>`);
-  html = injectIntoBody(html, [{ kind: 'html', attr: 'grid', value: gridHtml }]);
+        ? `<div class="blog-empty">${isSearching
+            ? `No articles match <strong>“${escapeHtml(search)}”</strong>${isFiltered ? ' in this category' : ''}. Try a broader keyword or <a href="${escapeHtml(isFiltered ? '/blog/?category=' + encodeURIComponent(category) : '/blog/')}" style="color:var(--brand);">clear the search</a>.`
+            : 'No articles in this category yet.'}</div>`
+        : `<div class="blog-empty">This page is past the end. <a href="/blog/${isFiltered || isSearching ? '?' + [isFiltered ? 'category=' + encodeURIComponent(category) : '', isSearching ? 'q=' + encodeURIComponent(search) : ''].filter(Boolean).join('&') : ''}" style="color:var(--brand);">Back to page 1</a>.</div>`);
+  html = injectIntoBody(html, [{ kind: 'html', attr: 'grid', value: searchHeaderHtml + gridHtml }]);
+
+  // ----- Search input — inject the current ?q= value so the input
+  //       reflects what the visitor searched. The inline JS in the
+  //       template handles live filtering on top of this.
+  html = html.replace(
+    /(<input[^>]*data-search-input[^>]*data-current-q=")[^"]*(")/i,
+    (_m, pre, post) => pre + escapeHtml(search) + post
+  );
+  // Also seed the value attribute itself so the input is pre-populated.
+  if (isSearching) {
+    html = html.replace(
+      /(<input[^>]*data-search-input[^>]*?)(\/?>)/i,
+      (_m, pre, end) => `${pre} value="${escapeHtml(search)}"${end}`
+    );
+    // Show the "Clear" link next to the search box.
+    html = html.replace(
+      /(data-search-clear[^>]*style=")display:none;(")/i,
+      '$1$2'
+    );
+  }
 
   // ----- Category chips with active state from URL -----
+  // Chips preserve the current ?q= so a visitor can refine "LFP" by
+  // narrowing to a category without losing their search.
   const chipsAllActive = isFiltered ? '' : ' is-active';
-  const allHref = '/blog/';
+  const qParam = isSearching ? '?q=' + encodeURIComponent(search) : '';
+  const allHref = '/blog/' + qParam;
   const chipsHtml = cats.map((c) => {
     const active = c.slug === category ? ' is-active' : '';
-    const href = `/blog/?category=${encodeURIComponent(c.slug)}`;
+    const params = ['category=' + encodeURIComponent(c.slug)];
+    if (isSearching) params.push('q=' + encodeURIComponent(search));
+    const href = '/blog/?' + params.join('&');
     return `<a class="chip${active}" href="${escapeHtml(href)}">${escapeHtml(c.name)}</a>`;
   }).join('');
   html = html.replace(
@@ -1067,10 +1138,11 @@ async function renderBlogIndex(req, res) {
   );
 
   // ----- Pager (Prev / 1 2 3 / Next) -----
-  // Build before/after relative URLs that preserve the current category.
+  // Build before/after relative URLs that preserve category AND search.
   function urlFor(p) {
     const params = [];
     if (isFiltered) params.push('category=' + encodeURIComponent(category));
+    if (isSearching) params.push('q=' + encodeURIComponent(search));
     if (p > 1) params.push('page=' + p);
     return '/blog/' + (params.length ? '?' + params.join('&') : '');
   }
@@ -1126,20 +1198,29 @@ async function renderBlogIndex(req, res) {
   // SEO: every paged URL is its own canonical; pages 2+ get a meta robots
   // hint that prefers the filter root for indexing (avoids thin-content
   // pages 2/3/4 outranking page 1).
-  if (isFiltered || page > 1) {
+  if (isFiltered || page > 1 || isSearching) {
     const catName = cats.find((c) => c.slug === category)?.name || category;
     const titleParts = ['Insights'];
+    if (isSearching) titleParts.push(`Search “${search}”`);
     if (isFiltered) titleParts.push(catName);
     if (page > 1) titleParts.push(`Page ${page}`);
     const newTitle = `${titleParts.join(' — ')} — ${ctx.siteName}`;
     html = html.replace(/<title[^>]*>[\s\S]*?<\/title>/i, `<title>${escapeHtml(newTitle)}</title>`);
-    // Canonical for paged variants reflects the filter+page.
+    // Canonical for paged variants reflects the filter+page. Search
+    // results pages canonicalise back to the unsearched blog root —
+    // they're inherently transient/personalised and shouldn't compete
+    // for ranking against the editorial archive.
+    const canonicalHref = isSearching
+      ? ctx.canonicalBase + '/blog/' + (isFiltered ? '?category=' + encodeURIComponent(category) : '')
+      : ctx.canonicalBase + req.path + (req._parsedUrl?.search || '');
     html = html.replace(
       /<link\s+rel="canonical"\s+href="[^"]*"/i,
-      `<link rel="canonical" href="${escapeHtml(ctx.canonicalBase + req.path + (req._parsedUrl?.search || ''))}"`
+      `<link rel="canonical" href="${escapeHtml(canonicalHref)}"`
     );
-    // Pages 2+: tell Google not to index thin internal-pager pages.
-    if (page > 1) {
+    // Pages 2+ AND search-results pages: tell Google not to index.
+    // Search results are inherently thin/duplicate; the editorial archive
+    // and individual article pages already cover the same content.
+    if (page > 1 || isSearching) {
       html = html.replace(/<\/head>/i, `<meta name="robots" content="noindex,follow">\n</head>`);
     }
     // rel=prev/next link tags (still useful for sitelink behaviour and
