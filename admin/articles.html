@@ -28,13 +28,18 @@
   const cats = (await api('/api/articles/categories/list')).items;
   const authors = (await api('/api/authors?all=1')).items;
 
+  // Cache the most recent admin-list payload so the row-level "查重"
+  // button can find article content by id without re-fetching.
+  let LAST_ITEMS = [];
+
   async function refresh() {
     const wantId = new URLSearchParams(location.search).get('id');
     const { items } = await api('/api/articles/admin/list');
+    LAST_ITEMS = items;
     shell.content.innerHTML = `
       <div class="panel" id="list-panel">
         <table class="table">
-          <thead><tr><th>标题</th><th>支柱</th><th>状态</th><th>更新于</th><th></th></tr></thead>
+          <thead><tr><th>标题</th><th>支柱</th><th>状态</th><th>更新于</th><th style="text-align:right;">操作</th></tr></thead>
           <tbody>
             ${items.length ? items.map((a) => `
               <tr>
@@ -42,7 +47,10 @@
                 <td>${escapeHtml(a.pillar_short_name || '-')}</td>
                 <td><span class="pill pill--${a.status}">${a.status}</span></td>
                 <td>${formatDate(a.updated_at)}</td>
-                <td><a class="btn btn--ghost btn--sm" href="?id=${a.id}">编辑</a></td>
+                <td style="text-align:right; white-space:nowrap;">
+                  <button class="btn btn--ghost btn--sm" data-detect-id="${a.id}" title="对正文内容运行 AI 查重">◌ 查重</button>
+                  <a class="btn btn--ghost btn--sm" href="?id=${a.id}">编辑</a>
+                </td>
               </tr>
             `).join('') : '<tr><td colspan="5"><div class="empty">还没有文章。</div></td></tr>'}
           </tbody>
@@ -56,6 +64,81 @@
     }
   }
 
+  // ----- AI 查重 modal -----
+  // Opens a small overlay, calls /api/ai-generate/detect with the
+  // supplied text, and renders the score + signals. The modal is
+  // created/torn down on demand so multiple opens don't stack.
+  async function runDetect(text, title) {
+    if (!text || !text.trim()) return toast('文章正文为空，无法查重', 'error');
+    let modal = document.getElementById('detect-modal');
+    if (modal) modal.remove();
+    modal = document.createElement('div');
+    modal.id = 'detect-modal';
+    modal.style.cssText = 'position:fixed; inset:0; background:rgba(15,23,42,0.55); display:flex; align-items:center; justify-content:center; z-index:1000;';
+    modal.innerHTML = `
+      <div style="background:#fff; border-radius:12px; padding:22px 24px; max-width:520px; width:92%; box-shadow:0 30px 60px rgba(15,23,42,0.35);">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;">
+          <div>
+            <div style="font-size:11px; color:var(--a-mute2); text-transform:uppercase; letter-spacing:0.6px;">AI 查重</div>
+            <div style="font-size:15px; font-weight:600; margin-top:2px;">${escapeHtml(title || '文章正文')}</div>
+          </div>
+          <button class="btn btn--ghost btn--sm" id="detect-close" aria-label="Close">✕</button>
+        </div>
+        <div id="detect-body" style="min-height:80px;">
+          <div style="display:flex; align-items:center; gap:10px; padding:18px 0;">
+            <span style="display:inline-block; width:14px; height:14px; border:2px solid rgba(11,58,130,0.25); border-top-color:var(--a-brand); border-radius:50%; animation:detect-sp 0.6s linear infinite;"></span>
+            <span style="font-size:13px; color:var(--a-mute2);">正在分析（句长方差 / AI 套话 / em-dash 密度 / 词汇多样性）…</span>
+          </div>
+          <style>@keyframes detect-sp { to { transform: rotate(360deg); } }</style>
+        </div>
+        <div style="margin-top:14px; display:flex; justify-content:flex-end; gap:8px;">
+          <a class="btn btn--ghost btn--sm" href="/admin/ai-generate.html" target="_blank">打开 AI 工作台 ↗</a>
+          <button class="btn btn--sm" id="detect-ok">关闭</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    const close = () => modal.remove();
+    document.getElementById('detect-close').addEventListener('click', close);
+    document.getElementById('detect-ok').addEventListener('click', close);
+    modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+
+    try {
+      const out = await api('/api/ai-generate/detect', {
+        method: 'POST',
+        body: JSON.stringify({ text }),
+      });
+      const colour = out.level === 'high' ? '#dc2626' : out.level === 'medium' ? '#d97706' : '#16a34a';
+      const levelText = out.level === 'high' ? '高' : out.level === 'medium' ? '中' : '低';
+      const body = document.getElementById('detect-body');
+      if (!body) return;
+      body.innerHTML = `
+        <div style="display:flex; gap:14px; align-items:center; padding:10px 0;">
+          <div style="width:72px; height:72px; border-radius:50%; background:${colour}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:800; flex-shrink:0;">${out.score}</div>
+          <div>
+            <div style="font-size:13px; color:var(--a-fg);"><strong>AI 风险等级: ${levelText}</strong></div>
+            <div style="font-size:12px; color:var(--a-mute2); margin-top:4px;">
+              检测方式: <code>${escapeHtml(out.provider)}</code>${out.score >= 45 ? ' · 建议到 AI 工作台执行降AI 微调' : ' · 风险可接受'}
+            </div>
+          </div>
+        </div>
+        ${out.signals && out.signals.length ? `
+          <ul style="margin:12px 0 0; padding-left:20px; font-size:12.5px; color:var(--a-mute2); line-height:1.7;">
+            ${out.signals.map((s) => `<li>${escapeHtml(s)}</li>`).join('')}
+          </ul>
+        ` : ''}
+        ${out.suspectSpans && out.suspectSpans.length ? `
+          <div style="margin-top:12px; font-size:12px; color:var(--a-mute2);">
+            可疑短语: ${out.suspectSpans.slice(0, 8).map((s) => '<code style="background:#fef3c7; padding:1px 6px; border-radius:3px;">' + escapeHtml(s) + '</code>').join(' ')}
+          </div>
+        ` : ''}
+      `;
+    } catch (err) {
+      const body = document.getElementById('detect-body');
+      if (body) body.innerHTML = `<div style="color:#dc2626; font-size:13px;">查重失败：${escapeHtml(err.message)}</div>`;
+    }
+  }
+
   function renderEditor(a) {
     a = a || { reading_minutes: 5, status: 'draft' };
     const isNew = !a.id;
@@ -66,6 +149,7 @@
         <div class="panel__head">
           <h2>${isNew ? '新建文章' : '编辑: ' + escapeHtml(a.title)}</h2>
           <div style="display:flex; gap:8px;">
+            <button class="btn btn--ghost btn--sm" id="editor-detect" title="对当前编辑器中的正文（未保存草稿也行）运行 AI 查重">◌ 查重</button>
             ${!isNew ? `<a target="_blank" class="btn btn--ghost btn--sm" href="/blog/${escapeHtml(a.slug)}">预览 ↗</a>` : ''}
             <a href="/admin/articles.html" class="btn btn--ghost btn--sm">返回</a>
           </div>
@@ -178,6 +262,15 @@
     }
     panel.addEventListener('input', () => seoPanel && seoPanel.repaint());
 
+    // 查重 — pulls the live editor content (handles unsaved drafts too),
+    // not the row's last-saved value.
+    panel.querySelector('#editor-detect').addEventListener('click', () => {
+      const fallback = panel.querySelector('#f-content-fallback');
+      const content = contentEditor ? contentEditor.getHtml() : (fallback ? fallback.value : '');
+      const title = (panel.querySelector('#f-title') || {}).value || a.title || '新文章';
+      runDetect(content, title);
+    });
+
     panel.querySelector('#save').addEventListener('click', async () => {
       const fallback = panel.querySelector('#f-content-fallback');
       const content = contentEditor ? contentEditor.getHtml()
@@ -219,6 +312,15 @@
 
   document.addEventListener('click', (ev) => {
     if (ev.target.id === 'new') renderEditor();
+    // Row-level 查重 button — reads from the cached list, no extra fetch.
+    const detectBtn = ev.target.closest('[data-detect-id]');
+    if (detectBtn) {
+      ev.preventDefault();
+      const id = String(detectBtn.dataset.detectId);
+      const a = LAST_ITEMS.find((x) => String(x.id) === id);
+      if (!a) return toast('找不到文章', 'error');
+      runDetect(a.content || '', a.title);
+    }
   });
   refresh();
 })();

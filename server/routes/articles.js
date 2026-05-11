@@ -32,6 +32,20 @@ router.get('/', async (req, res) => {
     params.push(String(req.query.category));
     where.push(`c.slug = $${params.length}`);
   }
+  // ?q= full-text search across title / excerpt / content. Multi-word
+  // queries split on whitespace and each token must appear somewhere
+  // (AND). Capped at 80 chars + 6 tokens so a noisy client can't ship a
+  // 10 KB regex. Used by the blog page's live-search AJAX layer on top
+  // of the SSR results.
+  const searchRaw = trimStr(req.query.q, 80);
+  if (searchRaw) {
+    const tokens = searchRaw.split(/\s+/).filter(Boolean).slice(0, 6);
+    for (const tok of tokens) {
+      params.push('%' + tok + '%');
+      const i = params.length;
+      where.push(`(a.title ILIKE $${i} OR a.excerpt ILIKE $${i} OR a.content ILIKE $${i})`);
+    }
+  }
   params.push(limit);
   params.push(offset);
   const rows = await many(
