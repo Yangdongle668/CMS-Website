@@ -16,12 +16,28 @@ process.on('uncaughtException', (err) => {
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
+const compression = require('compression');
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const ROOT = path.join(__dirname, '..');
 
 app.set('trust proxy', 1);
+
+// ----- Response compression -----
+// gzip everything textual (HTML/CSS/JS/JSON) above ~1KB. Skips already
+// compressed types like images. Brotli would be 15-20% smaller but
+// requires nginx/cloudflare in front; gzip works out of the box.
+//
+// We deliberately skip compression for SSE / streaming responses by
+// honoring the standard `x-no-compression` request header.
+app.use(compression({
+  threshold: 1024,
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) return false;
+    return compression.filter(req, res);
+  },
+}));
 
 // ----- Security headers -----
 // HTTPS enforcement (HSTS + upgrade-insecure-requests) is only enabled when
@@ -223,11 +239,43 @@ app.get(['/blog/', '/blog/index.html'], async (req, res, next) => {
 
 app.use(htmlTokenMiddleware);
 
+// ----- Static caching strategy -----
+// HTML:     no-cache (so admin edits go live immediately on next visit)
+// Uploads:  30 days (filenames already include a hash; safe to long-cache)
+// Assets:   1 day default; query-string-versioned files get 1 year + immutable
+// Fonts:    1 year
+const staticHeaders = (res, filePath) => {
+  if (filePath.endsWith('.html')) {
+    res.setHeader('Cache-Control', 'no-cache');
+    return;
+  }
+  if (/\.(woff2?|ttf|otf|eot)$/i.test(filePath)) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    return;
+  }
+  if (/\.(png|jpe?g|webp|avif|gif|svg|ico)$/i.test(filePath)) {
+    res.setHeader('Cache-Control', 'public, max-age=2592000');   // 30 days
+    return;
+  }
+  // CSS/JS/etc. — short cache by default; partials.js / cms-page.js etc.
+  // pull `?v=` cache-busters from query strings so browsers revalidate
+  // when admin pushes new content.
+  res.setHeader('Cache-Control', 'public, max-age=86400');       // 1 day
+};
+
 // ----- Static uploads -----
-app.use('/uploads', express.static(path.join(ROOT, 'uploads'), { maxAge: '7d', index: false }));
+// Uploads use UUID-style filenames so the URL itself is the cache key.
+app.use('/uploads', express.static(path.join(ROOT, 'uploads'), {
+  maxAge: '30d',
+  immutable: false,
+  index: false,
+}));
 
 // ----- Static admin -----
-app.use('/admin', express.static(path.join(ROOT, 'admin'), { extensions: ['html'] }));
+app.use('/admin', express.static(path.join(ROOT, 'admin'), {
+  extensions: ['html'],
+  setHeaders: staticHeaders,
+}));
 app.get('/admin/*', (req, res, next) => {
   // Serve admin/index.html for client-side route fallback only when file doesn't exist
   const filePath = path.join(ROOT, 'admin', req.path.replace(/^\/admin\//, ''));
@@ -239,9 +287,7 @@ app.get('/admin/*', (req, res, next) => {
 app.use(
   express.static(path.join(ROOT, 'public'), {
     extensions: ['html'],
-    setHeaders: (res, filePath) => {
-      if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache');
-    },
+    setHeaders: staticHeaders,
   })
 );
 
@@ -448,6 +494,33 @@ async function autoMigrate() {
        ON mail_outbox(related_type, related_id)`,
     `CREATE INDEX IF NOT EXISTS idx_outbox_status_created
        ON mail_outbox(status, created_at DESC)`,
+    // ----- Composite & partial indexes for hot read paths (Sprint 1) -----
+    `CREATE INDEX IF NOT EXISTS idx_articles_pillar_pub
+       ON articles(pillar_id, published_at DESC)
+       WHERE status = 'published'`,
+    `CREATE INDEX IF NOT EXISTS idx_articles_published
+       ON articles(published_at DESC)
+       WHERE status = 'published'`,
+    `CREATE INDEX IF NOT EXISTS idx_pillar_published_sort
+       ON pillar_pages(sort_order, id)
+       WHERE status = 'published'`,
+    `CREATE INDEX IF NOT EXISTS idx_products_pillar_published
+       ON products(pillar_id, sort_order, id)
+       WHERE status = 'published'`,
+    `CREATE INDEX IF NOT EXISTS idx_applications_published_sort
+       ON applications(sort_order, id)
+       WHERE status = 'published'`,
+    `CREATE INDEX IF NOT EXISTS idx_pages_published_slug
+       ON pages(slug)
+       WHERE status = 'published'`,
+    `CREATE INDEX IF NOT EXISTS idx_inquiries_active_score
+       ON inquiries(score DESC, created_at DESC)
+       WHERE is_deleted = FALSE`,
+    `CREATE INDEX IF NOT EXISTS idx_analytics_path_ts
+       ON analytics_hits(path, ts DESC)`,
+    `CREATE INDEX IF NOT EXISTS idx_analytics_country_ts
+       ON analytics_hits(country, ts DESC)
+       WHERE country <> ''`,
     // ----- Acme → Zufek cleanup (legacy seed data) -----
     `UPDATE articles SET author = 'Zufek Engineering' WHERE author ILIKE '%acme%' OR author = '' OR author IS NULL`,
     `UPDATE articles SET content = REPLACE(content, 'Acme Engineering', 'Zufek Engineering') WHERE content LIKE '%Acme%'`,

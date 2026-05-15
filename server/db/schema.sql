@@ -352,3 +352,59 @@ CREATE TABLE IF NOT EXISTS navigation (
   sort_order INT NOT NULL DEFAULT 0,
   location   VARCHAR(40) NOT NULL DEFAULT 'header'  -- header|footer
 );
+
+-- =====================================================================
+-- Composite & partial indexes for hot read paths (Sprint 1 — perf)
+--
+-- All idempotent (IF NOT EXISTS). Each one targets a real query in the
+-- codebase. Partial indexes (WHERE status='published') keep index size
+-- small since drafts make up only a few % of rows but bloat full-table
+-- indexes. Verified target queries:
+--
+--   • articles related-posts widget
+--     SELECT ... FROM articles WHERE pillar_id=$1 AND status='published'
+--       ORDER BY published_at DESC LIMIT 3
+--   • applications/pillars dropdown / nav
+--     SELECT slug,name FROM applications WHERE status='published'
+--       ORDER BY sort_order, id
+--   • analytics top-paths
+--     SELECT path, count(*) FROM analytics_hits
+--       WHERE ts > now()-interval '7 days' GROUP BY path
+-- =====================================================================
+CREATE INDEX IF NOT EXISTS idx_articles_pillar_pub
+  ON articles(pillar_id, published_at DESC)
+  WHERE status = 'published';
+
+CREATE INDEX IF NOT EXISTS idx_articles_published
+  ON articles(published_at DESC)
+  WHERE status = 'published';
+
+CREATE INDEX IF NOT EXISTS idx_pillar_published_sort
+  ON pillar_pages(sort_order, id)
+  WHERE status = 'published';
+
+CREATE INDEX IF NOT EXISTS idx_products_pillar_published
+  ON products(pillar_id, sort_order, id)
+  WHERE status = 'published';
+
+CREATE INDEX IF NOT EXISTS idx_applications_published_sort
+  ON applications(sort_order, id)
+  WHERE status = 'published';
+
+CREATE INDEX IF NOT EXISTS idx_pages_published_slug
+  ON pages(slug)
+  WHERE status = 'published';
+
+CREATE INDEX IF NOT EXISTS idx_inquiries_active_score
+  ON inquiries(score DESC, created_at DESC)
+  WHERE is_deleted = FALSE;
+
+-- analytics_hits is the hottest table once traffic ramps up. The path
+-- index serves "top pages" panels; the (visitor_hash, ts) one already
+-- exists for unique-visitor counts.
+CREATE INDEX IF NOT EXISTS idx_analytics_path_ts
+  ON analytics_hits(path, ts DESC);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_country_ts
+  ON analytics_hits(country, ts DESC)
+  WHERE country <> '';
