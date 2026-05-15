@@ -1138,6 +1138,343 @@ function termsBlocks() {
   ];
 }
 
+// =============================================================================
+//  Six new vertical application landing pages.
+//  Re-applied after the 2026-05-15 rollback. See LOST_FEATURES.md (H).
+//  Each builds the same shape: page-hero + "three jobs" intro split + spec
+//  table of typical platforms + 6-card design-rules feat-grid + cta-band.
+// =============================================================================
+
+function applicationsDronesBlocks() {
+  return [
+    blk('page-hero', {
+      image: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=1920&q=80',
+      title: 'Drone & UAV Battery Packs',
+      subtitle: 'High-discharge LiPo and 21700 cylindrical packs engineered for the real flight envelope.',
+      breadcrumbs: [{ label: 'Home', url: '/' }, { label: 'Applications', url: '/applications/' }, { label: 'Drones & UAV' }],
+    }),
+    blk('content-split', {
+      background: 'light',
+      eyebrow: 'How we approach it',
+      title: 'A drone battery has three jobs at once.',
+      paragraphs: [
+        'Deliver burst current for takeoff, climb and wind-recovery without sagging below the BEC cutoff.',
+        'Sustain cruise for the longest mission window the platform allows, without thermal runaway as ambient heats up.',
+        'Survive the abuse profile — vibration, drops, deep discharges from forgotten packs left on the bench — that recreational and commercial fleets all see.',
+      ],
+      image: 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=1000&q=80',
+      imagePosition: 'right',
+    }),
+    blk('spec-table', {
+      background: 'grey',
+      eyebrow: 'Real platforms',
+      title: 'Real platforms, real specs.',
+      headers: ['Class', 'Cell', 'Capacity', 'Peak C-rate', 'Notes'],
+      rows: [
+        ['Sub-250g consumer', 'Li-Po pouch 3S',          '1500 mAh',    '50C',  'Slim 7-9 mm pouch, JST-XT30 standard'],
+        ['Cinematic / mapping', 'Li-Po pouch 6S',        '5000-10000 mAh','40C', 'Smart-battery PCM with SMBus telemetry'],
+        ['Endurance / VTOL',   '21700 NMC 6S2P',         '8000 mAh',    '15C',   'Laser-welded interconnects, fan cooling slots'],
+        ['Heavy lift',          'Li-Po pouch 12S',       '22000 mAh',   '30C',   'XT90-S anti-spark, redundant series strings'],
+      ],
+    }),
+    blk('feat-grid', {
+      background: 'light',
+      eyebrow: 'Design rules',
+      title: 'Failure-tolerant, by design.',
+      columns: 3,
+      items: [
+        { icon: '①', title: 'Cell-level screening',   desc: 'Every cell logged by serial through formation, IR test at 25 °C and 80 °C, and 50-cycle burn-in. ≥ 4σ outliers rejected before tab welding.' },
+        { icon: '②', title: 'Pack-level isolation',   desc: 'Mica or PI sheet between cells, intumescent fire-block coating on top plate, vent paths sized for worst-case single-cell event.' },
+        { icon: '③', title: 'BMS abuse cutoffs',      desc: 'Per-cell V/T monitoring, hardware OVP/UVP, software cutoff at 65 °C cell or 5 °C/min rise rate, brown-out hold-up for telemetry before disconnect.' },
+        { icon: '④', title: 'UN 38.3 + UL 2054',      desc: 'Every program ships with the test report stack required for IATA air freight, EU Battery Regulation and FAA SFAR-88 (US > 100 Wh).' },
+        { icon: '⑤', title: 'CAN / SMBus telemetry',  desc: 'Per-cell voltage, pack current, dual-NTC temperatures, cycle count, SOH, 32-event fault log — over the same bus the flight controller already uses.' },
+        { icon: '⑥', title: 'Field-replaceable design', desc: 'Modular pack housings with documented connector pinouts and fuse-protected charge contacts — hot-swappable in the field without recalibration.' },
+      ],
+    }),
+    blk('cta-band', {
+      background: 'dark',
+      title: 'Building the next drone platform?',
+      subtitle: 'Send specs + flight envelope. Engineering responds with a feasibility note in 5 working days.',
+      button: { label: 'Talk to an Engineer', url: '/contact.html' },
+    }),
+  ];
+}
+
+function applicationsPowerToolsBlocks() {
+  return [
+    blk('page-hero', {
+      image: 'https://images.unsplash.com/photo-1581147036324-c1c89c2c8b5c?w=1920&q=80',
+      title: 'Cordless Power Tool Battery Packs',
+      subtitle: '21700 NMC packs that survive the brutal life of a job-site tool — high discharge, sustained heat, dropped on concrete.',
+      breadcrumbs: [{ label: 'Home', url: '/' }, { label: 'Applications', url: '/applications/' }, { label: 'Power Tools' }],
+    }),
+    blk('content-split', {
+      background: 'light',
+      eyebrow: 'How we approach it',
+      title: 'A power tool pack lives a brutal life.',
+      paragraphs: [
+        'Continuous 20-40A discharge under impact load with thermal pulses that would kill a consumer pack inside 50 cycles.',
+        'Vibration, dust, transient short-circuit risk from foreign objects in the tool — every connection must survive 5+ years on a job site.',
+        'Fast charging (typically 1C or higher) without compromising cycle life. End-users expect 500+ deep cycles with < 20% capacity fade.',
+      ],
+      image: 'https://images.unsplash.com/photo-1530124566582-a618bc2615dc?w=1000&q=80',
+      imagePosition: 'right',
+    }),
+    blk('spec-table', {
+      background: 'grey',
+      eyebrow: 'Real platforms',
+      title: 'Real platforms, real specs.',
+      headers: ['Tool class', 'Configuration', 'Capacity', 'Discharge', 'Notes'],
+      rows: [
+        ['18V drill / impact',     '21700 NMC 5S1P', '4.0-5.0 Ah',  '25A continuous, 40A peak',  'Bus-bar welded, NTC per parallel group'],
+        ['18V circular / recip',   '21700 NMC 5S2P', '8.0-10.0 Ah', '35A continuous, 60A peak',  'Forced-air cooling slots in housing'],
+        ['36V outdoor / OPE',      '21700 LFP 10S2P','6.0 Ah',      '30A continuous, 50A peak',  'LFP for thermal safety + 3000+ cycles'],
+        ['60V chainsaw / blower',  '21700 NMC 16S2P','5.0-6.0 Ah',  '50A continuous, 80A peak',  'Heavy-gauge welds + bottom-plate heat sink'],
+      ],
+    }),
+    blk('feat-grid', {
+      background: 'light',
+      eyebrow: 'What matters',
+      title: 'What separates a good tool pack from a recall.',
+      columns: 3,
+      items: [
+        { icon: '①', title: 'High-current cell selection', desc: 'INR21700-50G/40T-class cells with verified Ri < 13 mΩ. We reject any incoming lot above the supplier datasheet maximum.' },
+        { icon: '②', title: 'Bus-bar welding',             desc: 'Laser or capacitor-discharge welding for resistance below 0.2 mΩ per joint. Spot-welded tabs reserved for low-current accessory packs only.' },
+        { icon: '③', title: 'Drop-rated housing',          desc: 'Polycarbonate / glass-fiber-filled nylon enclosures qualified to 2 m drop on concrete. Inner foam dampens cell movement.' },
+        { icon: '④', title: 'Thermal cutoff layers',       desc: 'NTC per parallel group + bimetal failsafe + software shutoff at 70 °C cell. Triple-redundant on premium SKUs.' },
+        { icon: '⑤', title: 'UL 2054 + CE compliance',     desc: 'Every pack passes UL 2054 abuse + IEC 62133. CE marking and UN 38.3 test summary travel with each shipment.' },
+        { icon: '⑥', title: 'Charger handshake',           desc: 'Optional 1-wire / SMBus charger interlock + cycle counter so the end-user sees pack age in the tool display.' },
+      ],
+    }),
+    blk('cta-band', {
+      background: 'dark',
+      title: 'Building the next tool platform?',
+      subtitle: 'NDA in 24 hours. First samples in 4-6 weeks. Send us the tool spec + your charging requirements.',
+      button: { label: 'Start a Tool Program', url: '/contact.html' },
+    }),
+  ];
+}
+
+function applicationsEMobilityBlocks() {
+  return [
+    blk('page-hero', {
+      image: 'https://images.unsplash.com/photo-1571333250630-f0230c320b6d?w=1920&q=80',
+      title: 'E-Mobility Battery Packs',
+      subtitle: 'E-bike, e-scooter and last-mile delivery LEV packs from 36V to 72V — UN 38.3 + EN 50604 compliant.',
+      breadcrumbs: [{ label: 'Home', url: '/' }, { label: 'Applications', url: '/applications/' }, { label: 'E-Mobility' }],
+    }),
+    blk('content-split', {
+      background: 'light',
+      eyebrow: 'How we approach it',
+      title: 'From e-bikes to last-mile fleets.',
+      paragraphs: [
+        'Continuous discharge profiles for urban riding sit at 1-2C, but the real test is hill-start surge and regenerative-charging spikes that pulse the pack across its entire SOC range every commute.',
+        'Outdoor temperature swings from -10 °C to +50 °C, plus rain, dust and the occasional pothole impact, demand IP65 enclosures with proper potting and shock-absorbing internal foam.',
+        'Fleet operators care most about cycle life at depth-of-discharge ≥ 80%. We design for 1500+ cycles to 80% SOH using LFP chemistry where the weight budget allows.',
+      ],
+      image: 'https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=1000&q=80',
+      imagePosition: 'right',
+    }),
+    blk('spec-table', {
+      background: 'grey',
+      eyebrow: 'Real platforms',
+      title: 'Real platforms, real specs.',
+      headers: ['Vehicle class', 'Configuration', 'Capacity', 'Range', 'Notes'],
+      rows: [
+        ['City e-bike',         '36V / 10S4P 18650 NMC', '14 Ah / 504 Wh',   '60-80 km',  'EN 50604 + IEC 62133 stack'],
+        ['E-MTB',               '48V / 13S5P 21700 NMC', '17.5 Ah / 840 Wh', '90-120 km', 'High-rate cells for hill-start surge'],
+        ['Delivery scooter',    '60V / 16S3P 21700 LFP', '12 Ah / 720 Wh',   '70-90 km',  'LFP — 3000+ cycles for daily fleet use'],
+        ['Last-mile cargo',     '72V / 20S4P 21700 LFP', '20 Ah / 1440 Wh',  '110-140 km','CAN bus telemetry to fleet dashboard'],
+      ],
+    }),
+    blk('feat-grid', {
+      background: 'light',
+      eyebrow: 'Pack design',
+      title: 'Pack design that survives the real world.',
+      columns: 3,
+      items: [
+        { icon: '①', title: 'IP65 enclosure',              desc: 'PC/ABS housing with EPDM gasket + pressure-relief vent. Bottom drain channel so condensation can never pool against the BMS.' },
+        { icon: '②', title: 'Cycle-life optimised charging',desc: 'Default 0.5C charge, optional 1C fast-charge profile. Cell-level balancing during the CV phase keeps cells within 10 mV.' },
+        { icon: '③', title: 'CAN / Bluetooth telemetry',   desc: 'Real-time SOC, SOH, cycle count, temperature streamed to vehicle display or fleet management app.' },
+        { icon: '④', title: 'EN 50604 + UN 38.3',          desc: 'Test stack for European LEV directives. CE marking, RoHS, REACH SVHC — full documentation pack on every shipment.' },
+        { icon: '⑤', title: 'Theft-deterrent locking',     desc: 'Optional keyed lock or NFC unlock built into pack-to-frame mount. End-customers can deactivate stolen packs over BLE.' },
+        { icon: '⑥', title: 'Swap-station compatible',      desc: 'Compliant connector and signaling for major Asian swap-station networks (Gogoro standard available on request).' },
+      ],
+    }),
+    blk('cta-band', {
+      background: 'dark',
+      title: 'Launching an LEV platform?',
+      subtitle: 'Engineering team responds within 24h with a chemistry recommendation and a feasibility note in 5 working days.',
+      button: { label: 'Start an LEV Program', url: '/contact.html' },
+    }),
+  ];
+}
+
+function applicationsSmartHomeBlocks() {
+  return [
+    blk('page-hero', {
+      image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=1920&q=80',
+      title: 'Smart Home Battery Packs',
+      subtitle: 'Long-life cells for connected locks, sensors, cameras and doorbells — engineered so the end-customer forgets the battery exists.',
+      breadcrumbs: [{ label: 'Home', url: '/' }, { label: 'Applications', url: '/applications/' }, { label: 'Smart Home' }],
+    }),
+    blk('content-split', {
+      background: 'light',
+      eyebrow: 'How we approach it',
+      title: 'The customer never wants to change a battery.',
+      paragraphs: [
+        'A smart-home battery that fails in 6 months becomes a 1-star Amazon review. Our targets are 18+ months of typical use for sensors, 12+ months for cameras, and 3-year shelf life for backup-only devices.',
+        'Power profiles look idle most of the time, then spike for a few hundred ms during a wake-on-motion event or a WiFi reassociation. We size the cell for the spike, not the average.',
+        'Form factor matters: locks need flat pouches, doorbells need 18650 cylindrical, sensors fit AA-replacement primaries. We support all three with the same MES-tracked production line.',
+      ],
+      image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=1000&q=80',
+      imagePosition: 'right',
+    }),
+    blk('spec-table', {
+      background: 'grey',
+      eyebrow: 'Real platforms',
+      title: 'Real platforms, real specs.',
+      headers: ['Device class', 'Cell', 'Typical life', 'Profile', 'Notes'],
+      rows: [
+        ['Door / window sensor',    'CR2032 primary / Li-MnO₂',        '3-5 years',  'Idle + occasional Tx',  'Magnetic reed + Zigbee'],
+        ['Smart lock',              'Custom Li-Po pouch 3.7V',          '12-18 months','Motor pulse + idle BLE','Pouch designed for the door cavity'],
+        ['Doorbell camera',         '18650 Li-Po 3500mAh + supercap',   '6-12 months','High-current Tx pulses','Solar trickle-charge option'],
+        ['Backup / hub',            'LFP 14500 + LDO',                  '5+ years on standby','Always-on BLE',     'Survives 100% mains-loss scenarios'],
+      ],
+    }),
+    blk('feat-grid', {
+      background: 'light',
+      eyebrow: 'Design rules',
+      title: 'Six rules that make a battery invisible.',
+      columns: 3,
+      items: [
+        { icon: '①', title: 'Low self-discharge',     desc: 'Specialised separator + chemistry kept under 2% per month at 25 °C. Devices ship with > 95% SOC after 6 months on a warehouse shelf.' },
+        { icon: '②', title: 'Wide temperature',       desc: 'Pouches qualified -20 °C to +60 °C so doorbell cams survive both Phoenix summers and Toronto winters.' },
+        { icon: '③', title: 'High-pulse capability',   desc: 'Optional hybrid (Li-Po cell + supercap) for WiFi reassociation pulses that would brown out a thin cell.' },
+        { icon: '④', title: 'Form-factor flexible',    desc: 'Pouch, 14500, 18650, AA — we support whichever fits the device. Tooling for custom geometries delivered in 25-35 days.' },
+        { icon: '⑤', title: 'Solar / harvest ready',    desc: 'LFP or LTO chemistries optimised for partial-state-of-charge cycling typical of solar-trickle scenarios.' },
+        { icon: '⑥', title: 'Tamper-resistant',         desc: 'Glued housings or specialised triangle screws so the customer cannot open and replace with cheap pouches that might short.' },
+      ],
+    }),
+    blk('cta-band', {
+      background: 'dark',
+      title: 'Building the next connected device?',
+      subtitle: 'Send the duty cycle and the runtime target. We come back with a chemistry recommendation and a battery-life calculator tuned to your numbers.',
+      button: { label: 'Start a Smart-Home Program', url: '/contact.html' },
+    }),
+  ];
+}
+
+function applicationsIndustrialHandheldsBlocks() {
+  return [
+    blk('page-hero', {
+      image: 'https://images.unsplash.com/photo-1605810230434-7631ac76ec81?w=1920&q=80',
+      title: 'Industrial Handheld Battery Packs',
+      subtitle: 'Smart packs for barcode scanners, payment terminals and warehouse RF guns — built for shift-long use and pool-replacement workflows.',
+      breadcrumbs: [{ label: 'Home', url: '/' }, { label: 'Applications', url: '/applications/' }, { label: 'Industrial Handhelds' }],
+    }),
+    blk('content-split', {
+      background: 'light',
+      eyebrow: 'How we approach it',
+      title: 'Built for the warehouse floor.',
+      paragraphs: [
+        'These devices run 12-16 hour shifts. The customer pool is 10-50 packs that rotate through a charging cradle, so cycle life and accurate state-of-health reporting matter more than peak energy density.',
+        'Drop, dust and chemical exposure are constants. The pack housing typically lives outside the device — sliding into the bottom or back — so it takes the impact directly.',
+        'Field IT teams expect smart-pack SMBus telemetry: voltage, current, SOH, cycle count, manufacturer date, error log. A pack that just says "low" without context is a logistics nightmare at fleet scale.',
+      ],
+      image: 'https://images.unsplash.com/photo-1605810230434-7631ac76ec81?w=1000&q=80',
+      imagePosition: 'right',
+    }),
+    blk('spec-table', {
+      background: 'grey',
+      eyebrow: 'Real platforms',
+      title: 'Real platforms, real specs.',
+      headers: ['Device class', 'Configuration', 'Capacity', 'Cycle life', 'Notes'],
+      rows: [
+        ['Barcode scanner',          'Li-Po pouch 1S1P',     '2000-3500 mAh', '500+ cycles',   'SMBus pin-pad on housing'],
+        ['Warehouse RF gun',         'Li-Po pouch 2S1P',     '4000-6000 mAh', '800+ cycles',   'Includes manufacturer-date EEPROM'],
+        ['Payment terminal',         '18650 NMC 1S1P',       '2600 mAh',      '500+ cycles',   'EMVCo-certified housing'],
+        ['Rugged tablet (10")',      '18650 NMC 2S2P',       '7000 mAh',      '1000+ cycles',  'Hot-swap secondary supported'],
+      ],
+    }),
+    blk('feat-grid', {
+      background: 'light',
+      eyebrow: 'Why field IT picks smart',
+      title: 'Why field IT chooses smart over dumb packs.',
+      columns: 3,
+      items: [
+        { icon: '①', title: 'SMBus / I²C telemetry',  desc: 'Per-pack SOH, cycle count, manufacturer date, last-charge timestamp visible to the host OS — diagnostic tools can flag packs nearing EOL before they fail.' },
+        { icon: '②', title: 'Pool-rotation friendly',  desc: 'Aging characteristics matched within ± 3% so a freshly-loaded device gets the same shift length whether it picked pack 3 or pack 47 from the cradle.' },
+        { icon: '③', title: 'Drop-rated housing',     desc: 'PC + 30% glass fibre, qualified to 1.5 m drop on industrial floor. Internal cell potted in shock-absorbent foam.' },
+        { icon: '④', title: 'Hot-swap supported',     desc: 'Optional ultracap-buffered internal backup so the device stays alive during a pack swap without rebooting the OS.' },
+        { icon: '⑤', title: 'Field-replaceable',      desc: 'Captive screws + clear positive/negative markings + colour-coded label for the model number. Field replacement < 30 seconds.' },
+        { icon: '⑥', title: 'Anti-counterfeit ID',    desc: 'Optional cryptographic challenge-response between pack and host so cheap copies that might brown out the device cannot be passed off as OEM.' },
+      ],
+    }),
+    blk('cta-band', {
+      background: 'dark',
+      title: 'Building or replacing a handheld platform?',
+      subtitle: 'Send the device spec + your pool size. We design for the rotation model, not the single-pack runtime.',
+      button: { label: 'Start a Handheld Program', url: '/contact.html' },
+    }),
+  ];
+}
+
+function applicationsDefenceAerospaceBlocks() {
+  return [
+    blk('page-hero', {
+      image: 'https://images.unsplash.com/photo-1517976547714-720226b864c1?w=1920&q=80',
+      title: 'Defence & Aerospace Battery Programs',
+      subtitle: 'ITAR-free BOM construction, full materials traceability, and audit-ready documentation for unclassified defence + civil aerospace work.',
+      breadcrumbs: [{ label: 'Home', url: '/' }, { label: 'Applications', url: '/applications/' }, { label: 'Defence & Aerospace' }],
+    }),
+    blk('content-split', {
+      background: 'light',
+      eyebrow: 'Scope',
+      title: 'We say no first, and yes carefully.',
+      paragraphs: [
+        'We don\'t do ITAR or weapon-system batteries. We do unclassified defence procurement (training, comms, surveillance), civil aerospace (UAV, ground-support, cabin equipment) and dual-use platforms where the same pack ships into both commercial and government channels.',
+        'Every program starts with a written confirmation of the end use and end customer. If the answer is ambiguous, we pass.',
+        'For programs that meet our scope, we provide the documentation stack typical of an aerospace supplier audit: PPAP-equivalent first-article, materials traceability to incoming CoA, FAI report, and Conformity Certificate per lot.',
+      ],
+      image: 'https://images.unsplash.com/photo-1517976547714-720226b864c1?w=1000&q=80',
+      imagePosition: 'right',
+    }),
+    blk('spec-table', {
+      background: 'grey',
+      eyebrow: 'Anonymised platforms',
+      title: 'Real platforms (anonymised).',
+      headers: ['Platform class', 'Configuration', 'Capacity', 'Tested to', 'Notes'],
+      rows: [
+        ['Tactical handheld',     'Li-Po pouch 3S1P',   '4000 mAh',  'MIL-STD-810G',           'Vacuum test + altitude'],
+        ['Surveillance drone',    '21700 NMC 6S2P',     '8000 mAh',  'DO-160G section 16',     'Anti-counterfeit cryptographic ID'],
+        ['Ground-support tester', 'LFP 26650 4S6P',     '18000 mAh', 'IEC 62133 + UN 38.3',    'BMS log retained 10 years'],
+        ['Avionics backup',       'Li-SOCl₂ primary',   '13000 mAh', 'DO-311 + RTCA DO-227',   '10-yr storage life'],
+      ],
+    }),
+    blk('feat-grid', {
+      background: 'light',
+      eyebrow: 'Documentation stack',
+      title: 'The audit-ready six.',
+      columns: 3,
+      items: [
+        { icon: '①', title: 'Materials traceability',   desc: 'Every cell links to its winding machine, shift, supplier lot and CoA. Retention 10 years per IATF guidance.' },
+        { icon: '②', title: 'PPAP-equivalent FAI',      desc: 'First-article inspection report including dimensional CMM, electrical characterisation and abuse-test summary.' },
+        { icon: '③', title: 'Conformity per lot',       desc: 'Every shipped lot has a sealed Certificate of Conformity referencing the master FAI + any deviations explicitly listed.' },
+        { icon: '④', title: 'DO-160G compatibility',     desc: 'Pack-level qualification report covering temperature, altitude, vibration, EMC, radio susceptibility for civil aerospace use.' },
+        { icon: '⑤', title: 'MIL-STD-810G envelope',     desc: 'For tactical / portable handhelds we run shock, drop, immersion, fungus and humidity per the applicable methods.' },
+        { icon: '⑥', title: 'Export-control screening',  desc: 'Every program reviewed against PRC dual-use lists + customer-side ECCN/HTS. Shipments include the relevant export licence references.' },
+      ],
+    }),
+    blk('cta-band', {
+      background: 'dark',
+      title: 'Have a program to discuss?',
+      subtitle: 'NDA + end-use letter first. Initial engineering call within 1 week of those being signed.',
+      button: { label: 'Initiate a Program', url: '/contact.html' },
+    }),
+  ];
+}
+
 function legalBlocks() {
   return [
     blk('page-hero', {
@@ -1197,11 +1534,17 @@ const MIGRATIONS = {
   'about/factory':            aboutFactoryBlocks,
   'about/team':               aboutTeamBlocks,
 
-  'applications/index':       applicationsIndexBlocks,
-  'applications/ar-vr':       applicationsArVrBlocks,
-  'applications/medical':     applicationsMedicalBlocks,
-  'applications/wearables':   applicationsWearablesBlocks,
-  'applications/iot':         applicationsIotBlocks,
+  'applications/index':              applicationsIndexBlocks,
+  'applications/ar-vr':              applicationsArVrBlocks,
+  'applications/medical':            applicationsMedicalBlocks,
+  'applications/wearables':          applicationsWearablesBlocks,
+  'applications/iot':                applicationsIotBlocks,
+  'applications/drones':             applicationsDronesBlocks,
+  'applications/power-tools':        applicationsPowerToolsBlocks,
+  'applications/e-mobility':         applicationsEMobilityBlocks,
+  'applications/smart-home':         applicationsSmartHomeBlocks,
+  'applications/industrial-handhelds':applicationsIndustrialHandheldsBlocks,
+  'applications/defence-aerospace':  applicationsDefenceAerospaceBlocks,
 
   'solutions/index':          solutionsIndexBlocks,
   'solutions/design':         solutionsDesignBlocks,
@@ -1214,9 +1557,65 @@ const MIGRATIONS = {
   'legal':                    legalBlocks,
 };
 
+// Page row metadata for slugs that DIDN'T exist in seed.sql at original
+// rollout time. These pages need a row created before blocks can be filled.
+// If you add new entries to MIGRATIONS that aren't in the seed, add their
+// title / nav / meta here too — otherwise the migration ends up with a row
+// whose meta_title is empty.
+const NEW_PAGE_METADATA = {
+  'applications/drones': {
+    nav: 'applications', title: 'Drones & UAV',
+    meta_title: 'Drone & UAV Battery Manufacturer — High-Discharge LiPo & 21700 Packs',
+    meta_description: 'High-discharge LiPo and 21700 cylindrical packs engineered for drones and UAVs. UN 38.3 + UL 2054, CAN/SMBus telemetry, field-replaceable design.',
+    hero_image: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=1920&q=80',
+  },
+  'applications/power-tools': {
+    nav: 'applications', title: 'Power Tools',
+    meta_title: 'Cordless Power Tool Battery Manufacturer — 21700 NMC Packs',
+    meta_description: '21700 NMC packs for cordless drills, saws, OPE and high-amperage power tools. Bus-bar welded, drop-rated, UL 2054 + CE.',
+    hero_image: 'https://images.unsplash.com/photo-1581147036324-c1c89c2c8b5c?w=1920&q=80',
+  },
+  'applications/e-mobility': {
+    nav: 'applications', title: 'E-Mobility',
+    meta_title: 'E-Mobility Battery Manufacturer — E-Bike, E-Scooter & LEV Packs',
+    meta_description: 'E-bike, e-scooter and last-mile LEV battery packs from 36V to 72V. EN 50604 + IEC 62133 + UN 38.3, IP65 housing, CAN/Bluetooth telemetry.',
+    hero_image: 'https://images.unsplash.com/photo-1571333250630-f0230c320b6d?w=1920&q=80',
+  },
+  'applications/smart-home': {
+    nav: 'applications', title: 'Smart Home',
+    meta_title: 'Smart Home Battery Manufacturer — Long-Life Cells for Locks, Sensors & Cameras',
+    meta_description: 'Long-life cells for connected locks, sensors, cameras and doorbells. Low self-discharge, wide temperature, high-pulse hybrid options.',
+    hero_image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=1920&q=80',
+  },
+  'applications/industrial-handhelds': {
+    nav: 'applications', title: 'Industrial Handhelds',
+    meta_title: 'Industrial Handheld Battery Manufacturer — Smart Packs for Scanners & Terminals',
+    meta_description: 'Smart packs for barcode scanners, payment terminals and warehouse RF guns. SMBus telemetry, pool-rotation friendly, drop-rated.',
+    hero_image: 'https://images.unsplash.com/photo-1605810230434-7631ac76ec81?w=1920&q=80',
+  },
+  'applications/defence-aerospace': {
+    nav: 'applications', title: 'Defence & Aerospace',
+    meta_title: 'Defence & Aerospace Battery Manufacturer — ITAR-Free BOM',
+    meta_description: 'ITAR-free BOM construction for unclassified defence + civil aerospace battery programs. MIL-STD-810G + DO-160G + materials traceability.',
+    hero_image: 'https://images.unsplash.com/photo-1517976547714-720226b864c1?w=1920&q=80',
+  },
+};
+
 async function run() {
-  // Find rows whose blocks are still empty. Don't touch rows an operator
-  // has already started editing.
+  // Step 1: insert page rows for slugs that don't exist yet (new pages that
+  // weren't in seed.sql). ON CONFLICT DO NOTHING keeps this idempotent.
+  for (const slug of Object.keys(NEW_PAGE_METADATA)) {
+    const m = NEW_PAGE_METADATA[slug];
+    await query(
+      `INSERT INTO pages (slug, nav, title, meta_title, meta_description, hero_image, status, blocks)
+       VALUES ($1, $2, $3, $4, $5, $6, 'published', '[]'::jsonb)
+       ON CONFLICT (slug) DO NOTHING`,
+      [slug, m.nav || '', m.title || '', m.meta_title || '', m.meta_description || '', m.hero_image || '']
+    );
+  }
+
+  // Step 2: find target rows whose blocks are still empty and fill them.
+  // Skip any rows an operator has already started editing.
   const rows = await many(
     `SELECT id, slug FROM pages
       WHERE slug = ANY($1)
