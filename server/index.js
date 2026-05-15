@@ -423,6 +423,20 @@ async function autoMigrate() {
     `ALTER TABLE media ADD COLUMN IF NOT EXISTS width INT`,
     `ALTER TABLE media ADD COLUMN IF NOT EXISTS height INT`,
     `ALTER TABLE media ADD COLUMN IF NOT EXISTS variants JSONB NOT NULL DEFAULT '[]'::jsonb`,
+
+    // Page version history — append-only snapshots. Created automatically on
+    // every page save (POST/PUT/PATCH). An operator can browse the timeline
+    // and restore any past snapshot from the admin builder.
+    `CREATE TABLE IF NOT EXISTS page_versions (
+       id           SERIAL PRIMARY KEY,
+       page_id      INT     NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+       snapshot     JSONB   NOT NULL,
+       summary      TEXT    NOT NULL DEFAULT '',
+       created_by   INT REFERENCES users(id) ON DELETE SET NULL,
+       creator_email VARCHAR(190) NOT NULL DEFAULT '',
+       created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+     )`,
+    `CREATE INDEX IF NOT EXISTS idx_page_versions_page ON page_versions (page_id, created_at DESC)`,
   ];
   for (const sql of stmts) {
     try { await query(sql); }

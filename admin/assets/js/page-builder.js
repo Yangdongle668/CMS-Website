@@ -417,6 +417,7 @@
     // Topbar action: discard, save buttons
     shell.actions.innerHTML = `
       <button class="btn btn--ghost btn--sm" id="back-to-list">← 返回列表</button>
+      <button class="btn btn--ghost btn--sm" id="open-history">⏱ 历史</button>
       <button class="btn btn--ghost btn--sm" id="open-preview">前台预览 ↗</button>
       <button class="btn btn--sm" id="save-btn">保存</button>
     `;
@@ -473,6 +474,7 @@
     document.getElementById('open-preview').addEventListener('click', () => {
       window.open(slugToUrl(state.page.slug), '_blank');
     });
+    document.getElementById('open-history').addEventListener('click', openHistory);
 
     // Viewport toggle
     const vpD = document.getElementById('vp-desktop');
@@ -1609,6 +1611,103 @@
         hint: 'Markdown 风格：## 标题；### 子标题；- 列表项；空行分段；**加粗**；[文字](链接)。' });
     },
   };
+
+  /* ---------- Version history ---------------------------------------------
+     Modal that lists every saved snapshot of the current page. Each row is
+     previewable (loads into the right-side iframe without committing) and
+     restorable. Restore replaces the live row with the snapshot data after
+     confirming.
+  ------------------------------------------------------------------------- */
+  async function openHistory() {
+    if (!state.page || !state.page.id) return;
+    const pageId = state.page.id;
+    const mask = document.createElement('div');
+    mask.className = 'picker-mask is-open';
+    mask.innerHTML = `
+      <div class="picker" onclick="event.stopPropagation()" style="max-width: 720px;">
+        <h3>页面历史版本</h3>
+        <p>每次保存自动留快照，最近 50 次保留。点"预览"在右侧预览该版本（不会改线上）；点"回滚"才会真正覆盖当前内容。回滚之前会自动再存一个快照，所以也能撤销回滚。</p>
+        <div id="history-list" style="max-height: 56vh; overflow-y: auto; margin: 0 -8px;">
+          <div class="empty" style="padding: 30px;">加载中…</div>
+        </div>
+        <div style="text-align: right; margin-top: 14px;">
+          <button class="btn btn--ghost btn--sm" id="history-cancel">关闭</button>
+        </div>
+      </div>`;
+    document.body.appendChild(mask);
+    function close() { mask.remove(); pushPreview(); /* restore live preview */ }
+    mask.addEventListener('click', close);
+    mask.querySelector('#history-cancel').addEventListener('click', close);
+
+    const list = mask.querySelector('#history-list');
+    try {
+      const r = await api(`/api/pages/${pageId}/versions`);
+      const items = r.items || [];
+      if (!items.length) {
+        list.innerHTML = '<div class="empty" style="padding: 30px;">这个页面还没有历史快照。下次保存就会出现一条。</div>';
+        return;
+      }
+      list.innerHTML = items.map((v, i) => `
+        <div data-version-row="${v.id}" style="display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--a-line);">
+          <div>
+            <div style="font-weight: 600; font-size: 13px;">
+              ${i === 0 ? '<span class="status-pill published" style="margin-right: 6px;">当前</span>' : ''}
+              v${v.id}: ${escapeHtml(v.summary || '保存')}
+            </div>
+            <div style="font-size: 11.5px; color: var(--a-mute2); margin-top: 2px;">
+              ${escapeHtml(v.creator_email || '系统')} · ${formatDate(v.created_at)} · ${v.block_count || 0} 块
+            </div>
+          </div>
+          <button class="btn btn--ghost btn--sm" data-preview="${v.id}">预览</button>
+          <button class="btn btn--ghost btn--sm" data-restore="${v.id}" ${i === 0 ? 'disabled style="opacity:.4;cursor:not-allowed;"' : ''}>${i === 0 ? '当前' : '回滚到此'}</button>
+        </div>
+      `).join('');
+
+      list.querySelectorAll('[data-preview]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const vid = btn.dataset.preview;
+          try {
+            const r2 = await api(`/api/pages/${pageId}/versions/${vid}`);
+            const snap = r2.version && r2.version.snapshot;
+            const blocks = (snap && Array.isArray(snap.blocks)) ? snap.blocks : [];
+            // Push snapshot's blocks to the preview iframe — does NOT touch
+            // the live state.page.blocks, so closing the modal restores the
+            // current draft (see close() above).
+            const frame = document.getElementById('preview-frame');
+            if (frame && frame.contentWindow) {
+              frame.contentWindow.postMessage({ type: 'render', blocks }, '*');
+            }
+            // Visual feedback
+            list.querySelectorAll('[data-preview]').forEach((b) => { b.textContent = '预览'; b.style.fontWeight = ''; });
+            btn.textContent = '✓ 预览中';
+            btn.style.fontWeight = '700';
+          } catch (err) { toast('加载失败：' + err.message, 'error'); }
+        });
+      });
+
+      list.querySelectorAll('[data-restore]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const vid = btn.dataset.restore;
+          if (!confirm(`确认回滚到 v${vid}？\n\n当前内容会先存一个快照（可以撤销回滚）。`)) return;
+          btn.disabled = true;
+          btn.textContent = '回滚中…';
+          try {
+            await api(`/api/pages/${pageId}/versions/${vid}/restore`, { method: 'POST' });
+            toast('已回滚，正在重新加载…', 'success');
+            // Hard refresh so all in-memory state (state.page, drawer, etc.)
+            // gets the restored row.
+            setTimeout(() => location.reload(), 400);
+          } catch (err) {
+            btn.disabled = false;
+            btn.textContent = '回滚到此';
+            toast('回滚失败：' + err.message, 'error');
+          }
+        });
+      });
+    } catch (err) {
+      list.innerHTML = `<div class="empty" style="padding: 30px; color: #cf1322;">加载失败：${escapeHtml(err.message)}</div>`;
+    }
+  }
 
   /* ---------- Save -------------------------------------------------------- */
   async function save() {
