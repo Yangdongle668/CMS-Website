@@ -6,11 +6,11 @@
 <meta name="robots" content="noindex"/>
 <title>站点设置 | 后台管理</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+<link rel="stylesheet" href="/admin/assets/css/admin.css?v=2"/>
 </head>
 <body>
 <div data-admin-shell></div>
-<script src="/admin/assets/js/admin.js"></script>
+<script src="/admin/assets/js/admin.js?v=2"></script>
 <script>
 (async function () {
   const { api, escapeHtml, toast, bootShell } = window.AdminAPI;
@@ -60,7 +60,7 @@
     <div data-pane="navigation" style="display:none;">
       <div class="panel">
         <h2 style="margin-top:0;">导航</h2>
-        <p style="font-size:13px; color:var(--a-mute2); margin-top:0;">编辑 as JSON. Header items support nested children.</p>
+        <p style="font-size:13px; color:var(--a-mute2); margin-top:0;">直接编辑 JSON。顶部导航支持嵌套子项（用 <code>children</code> 数组）。</p>
         <div class="field"><label>顶部导航 (JSON)</label><textarea class="mono" data-key="navigation.header" rows="14">${escapeHtml(JSON.stringify(s('navigation').header || [], null, 2))}</textarea></div>
         <div class="field"><label>页脚导航 (JSON)</label><textarea class="mono" data-key="navigation.footer" rows="6">${escapeHtml(JSON.stringify(s('navigation').footer || [], null, 2))}</textarea></div>
       </div>

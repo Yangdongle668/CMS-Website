@@ -6,11 +6,11 @@
 <meta name="robots" content="noindex"/>
 <title>GDPR 请求 | 后台管理</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+<link rel="stylesheet" href="/admin/assets/css/admin.css?v=2"/>
 </head>
 <body>
 <div data-admin-shell></div>
-<script src="/admin/assets/js/admin.js"></script>
+<script src="/admin/assets/js/admin.js?v=2"></script>
 <script>
 (async function () {
   const { api, escapeHtml, formatDate, toast, bootShell } = window.AdminAPI;
@@ -47,7 +47,7 @@
     `;
     document.querySelectorAll('[data-complete]').forEach((b) => b.addEventListener('click', async () => {
       const t = b.dataset.type;
-      const msg = t === 'delete' ? 'Mark this delete request as completed? This will soft-delete all inquiries with the requester\'s email address.' : '确认完成此请求？';
+      const msg = t === 'delete' ? '确认完成此删除请求？这会软删除该邮箱地址下的所有询盘。' : '确认完成此请求？';
       if (!confirm(msg)) return;
       await api('/api/gdpr/' + b.dataset.complete + '/complete', { method: 'POST' });
       toast('请求已完成', 'success');

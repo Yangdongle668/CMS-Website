@@ -18,7 +18,7 @@
    =========================================================================== */
 (async function () {
   'use strict';
-  const { api, escapeHtml, formatDate, toast, bootShell } = window.AdminAPI;
+  const { api, escapeHtml, formatDate, toast, bootShell, bindSave, markDirty: globalMarkDirty, markClean, withLoading } = window.AdminAPI;
   const shell = await bootShell({ title: '页面构建器', crumbs: '内容 / 页面' });
   if (!shell) return;
 
@@ -481,15 +481,9 @@
     // Block picker
     buildPicker();
 
-    // Ctrl+S to save
-    window.addEventListener('keydown', (ev) => {
-      if ((ev.metaKey || ev.ctrlKey) && ev.key === 's') { ev.preventDefault(); save(); }
-    });
-
-    // Beforeunload guard
-    window.addEventListener('beforeunload', (ev) => {
-      if (state.dirty) { ev.preventDefault(); ev.returnValue = ''; }
-    });
+    // Hand off save + dirty tracking to the shell so Ctrl+S and the global
+    // beforeunload guard work uniformly across admin pages.
+    if (typeof bindSave === 'function') bindSave(save);
   }
 
   function normalisePage(p) {
@@ -1614,6 +1608,7 @@
         }),
       });
       state.dirty = false;
+      if (typeof markClean === 'function') markClean();
       toast('已保存', 'success');
       const dbadge = document.querySelector('.dirty-badge'); if (dbadge) dbadge.remove();
     } catch (err) {
@@ -1625,6 +1620,7 @@
   }
 
   function markDirty() {
+    if (typeof globalMarkDirty === 'function') globalMarkDirty();
     if (state.dirty) return;
     state.dirty = true;
     const bar = document.querySelector('.builder__bar > div');

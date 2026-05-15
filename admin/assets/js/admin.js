@@ -97,6 +97,10 @@
     if (!shell) return;
     shell.classList.add('admin-shell');
     shell.innerHTML = `
+      <button class="sidebar-toggle" data-sidebar-toggle aria-label="菜单">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="sidebar-mask" data-sidebar-mask></div>
       <aside class="sidebar">
         <div class="sidebar__brand">
           <div class="sidebar__brand-mark">A</div>
@@ -110,7 +114,7 @@
                 <a class="sidebar__link${('/admin/' + here) === i.href ? ' is-active' : ''}" href="${i.href}">
                   <span style="opacity:.6;">${i.icon}</span>
                   <span>${i.label}</span>
-                  ${i.label === 'Inbox' ? '<span class="badge" data-unread-badge style="display:none;">0</span>' : ''}
+                  ${i.href === '/admin/inquiries.html' ? '<span class="badge" data-unread-badge style="display:none;">0</span>' : ''}
                 </a>
               `).join('')}
             </div>
@@ -143,10 +147,73 @@
       try { await api('/api/auth/logout', { method: 'POST' }); } catch (_) {}
       location.href = '/admin/login.html';
     });
+    // Mobile sidebar toggle
+    const toggle = shell.querySelector('[data-sidebar-toggle]');
+    const mask = shell.querySelector('[data-sidebar-mask]');
+    const sb = shell.querySelector('.sidebar');
+    function openSb()  { sb.classList.add('is-open');  mask.classList.add('is-open');  toggle.classList.add('is-open'); }
+    function closeSb() { sb.classList.remove('is-open'); mask.classList.remove('is-open'); toggle.classList.remove('is-open'); }
+    toggle.addEventListener('click', () => sb.classList.contains('is-open') ? closeSb() : openSb());
+    mask.addEventListener('click', closeSb);
+    // Auto-close when a nav link is clicked on mobile so the page is visible.
+    sb.querySelectorAll('.sidebar__link').forEach((a) => a.addEventListener('click', () => {
+      if (window.innerWidth <= 900) closeSb();
+    }));
     return {
       content: shell.querySelector('[data-page-content]'),
       actions: shell.querySelector('[data-topbar-actions]'),
     };
+  }
+
+  /* -------------------------------------------------------------------------
+     Save coordination: pages register their save handler with bindSave(fn).
+     Then Ctrl/⌘+S is a global accelerator and there's one beforeunload
+     prompt if the page reports unsaved changes via markDirty()/clean().
+  ------------------------------------------------------------------------- */
+  let currentSaver = null;     // async function or null
+  let isDirty = false;
+
+  function bindSave(fn) {
+    currentSaver = typeof fn === 'function' ? fn : null;
+  }
+  function markDirty()  { isDirty = true; }
+  function markClean()  { isDirty = false; }
+
+  window.addEventListener('keydown', (ev) => {
+    if (!((ev.metaKey || ev.ctrlKey) && (ev.key === 's' || ev.key === 'S'))) return;
+    // Don't hijack save inside a textarea where ⌘S is browser "Save Page" — let
+    // it through if there's nothing to save. (We still preventDefault if there
+    // IS a save handler so the OS dialog doesn't pop.)
+    if (currentSaver) {
+      ev.preventDefault();
+      Promise.resolve(currentSaver()).catch((err) => toast('保存失败：' + (err && err.message || err), 'error'));
+      return;
+    }
+    // Convenience: most admin pages have a button with id="save" or "save-all"
+    // or carry a [data-save-primary] attribute. Click whichever is found so a
+    // page that hasn't called bindSave() still gets the shortcut for free.
+    const btn = document.querySelector('[data-save-primary], #save, #save-all');
+    if (btn) { ev.preventDefault(); btn.click(); }
+  });
+
+  window.addEventListener('beforeunload', (ev) => {
+    if (!isDirty) return;
+    ev.preventDefault();
+    ev.returnValue = '';
+  });
+
+  /* -------------------------------------------------------------------------
+     withLoading(button, asyncFn) wraps a button so its label shows a spinner
+     while the async operation runs. Disables the button so double-clicks
+     don't double-submit. Restores label on completion.
+  ------------------------------------------------------------------------- */
+  async function withLoading(btn, fn) {
+    if (!btn) return fn();
+    const orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span><span style="margin-left:6px;">处理中…</span>';
+    try { return await fn(); }
+    finally { btn.disabled = false; btn.innerHTML = orig; }
   }
 
   async function refreshUnreadBadge() {
@@ -172,5 +239,8 @@
     return Object.assign(shell || {}, { user });
   }
 
-  window.AdminAPI = { api, el, escapeHtml, formatDate, toast, bootShell };
+  window.AdminAPI = {
+    api, el, escapeHtml, formatDate, toast, bootShell,
+    bindSave, markDirty, markClean, withLoading,
+  };
 })();
