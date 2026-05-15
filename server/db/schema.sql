@@ -255,7 +255,11 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_logs(user_id);
 
--- ----- pages (editable static-page content: hero, meta, body override, sections JSON) -----
+-- ----- pages (editable static-page content) -----
+-- `blocks` is the new block-based content model: ordered array of
+-- {id, type, data} objects rendered by /admin/assets/js/render.js. Existing
+-- columns (hero_*, body_html, sections) are kept for backwards compatibility
+-- so legacy admin pages keep working; new editor writes only to blocks.
 CREATE TABLE IF NOT EXISTS pages (
   id               SERIAL PRIMARY KEY,
   slug             VARCHAR(190) UNIQUE NOT NULL,        -- e.g. 'home', 'about/profile', 'products/standard'
@@ -267,9 +271,10 @@ CREATE TABLE IF NOT EXISTS pages (
   hero_title       VARCHAR(255) NOT NULL DEFAULT '',
   hero_subtitle    TEXT         NOT NULL DEFAULT '',
   hero_image       VARCHAR(500) NOT NULL DEFAULT '',
-  hero_breadcrumbs JSONB        NOT NULL DEFAULT '[]'::jsonb,   -- [{label, url}]
-  body_html        TEXT         NOT NULL DEFAULT '',     -- optional override for the post-hero body
-  sections         JSONB        NOT NULL DEFAULT '{}'::jsonb,   -- structured per-page data (e.g. home blocks)
+  hero_breadcrumbs JSONB        NOT NULL DEFAULT '[]'::jsonb,
+  body_html        TEXT         NOT NULL DEFAULT '',
+  sections         JSONB        NOT NULL DEFAULT '{}'::jsonb,
+  blocks           JSONB        NOT NULL DEFAULT '[]'::jsonb,   -- block-based content (ordered list)
   status           VARCHAR(20)  NOT NULL DEFAULT 'published',
   updated_at       TIMESTAMPTZ  NOT NULL DEFAULT now()
 );

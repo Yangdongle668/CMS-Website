@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Preview</title>
+<link rel="stylesheet" href="/styles.css?v=18">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Make the preview feel responsive even with no page chrome */
+  body { margin: 0; }
+  /* Empty-state when there are no blocks yet */
+  .preview-empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 60vh; padding: 40px 20px; text-align: center;
+    color: #86878b; font-family: 'Inter', sans-serif;
+  }
+  .preview-empty h2 { color: #393c41; font-weight: 500; font-size: 22px; margin: 0 0 8px; }
+  .preview-empty p { margin: 0; font-size: 14px; max-width: 360px; }
+  /* Outline blocks on hover so operators can see edit boundaries */
+  body.show-outlines .render-block { position: relative; outline: 2px dashed transparent; outline-offset: -4px; transition: outline 0.15s ease; }
+  body.show-outlines .render-block:hover { outline-color: #f5a623; }
+  body.show-outlines .render-block::before {
+    content: attr(data-block-type); position: absolute; top: 6px; left: 6px;
+    background: #f5a623; color: #fff; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 999px;
+    opacity: 0; transition: opacity 0.15s ease; pointer-events: none; z-index: 5;
+    font-family: 'Inter', sans-serif;
+  }
+  body.show-outlines .render-block:hover::before { opacity: 1; }
+</style>
+</head>
+<body class="show-outlines">
+<div id="header-mount"></div>
+<main id="page-blocks"></main>
+<div id="footer-mount"></div>
+
+<script src="/render.js?v=18"></script>
+<script src="/partials.js?v=18"></script>
+
+<script>
+(function () {
+  'use strict';
+  const mount = document.getElementById('page-blocks');
+
+  const EMPTY = `
+    <div class="preview-empty">
+      <h2>还没有积木块</h2>
+      <p>点左侧的 <strong>+ 加一块</strong> 开始搭页面。右侧实时预览会显示你加的每一块。</p>
+    </div>`;
+
+  function render(blocks) {
+    if (!Array.isArray(blocks) || !blocks.length) {
+      mount.innerHTML = EMPTY;
+      return;
+    }
+    // Render each block wrapped in a tagged container so the builder can
+    // scroll-into-view when an operator clicks a block in the side list.
+    mount.innerHTML = blocks.map((b) => {
+      const html = window.CMSRender.renderBlock(b);
+      return `<div class="render-block" data-block-id="${b.id || ''}" data-block-type="${b.type || ''}">${html}</div>`;
+    }).join('');
+  }
+
+  // Receive block JSON from the parent builder window.
+  window.addEventListener('message', (ev) => {
+    const m = ev.data;
+    if (!m || typeof m !== 'object') return;
+    if (m.type === 'render') {
+      render(m.blocks || []);
+    } else if (m.type === 'scrollTo') {
+      const el = mount.querySelector(`.render-block[data-block-id="${m.blockId}"]`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (m.type === 'setOutlines') {
+      document.body.classList.toggle('show-outlines', !!m.show);
+    }
+  });
+
+  // Tell the parent we're ready so it can push the initial render.
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: 'preview-ready' }, '*');
+  }
+  // Initial empty state until first message arrives.
+  render([]);
+})();
+</script>
+</body>
+</html>

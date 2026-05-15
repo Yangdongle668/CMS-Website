@@ -4,180 +4,163 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="robots" content="noindex"/>
-<title>页面 | 后台管理</title>
+<title>页面构建器 | 后台管理</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+<style>
+/* ===========================================================
+   Visual page builder shell — overrides .page padding so the
+   iframe can fill the viewport.
+   =========================================================== */
+.builder { display: grid; grid-template-columns: 380px 1fr; gap: 0; height: calc(100vh - 64px); border-top: 1px solid var(--a-line); }
+.builder__left {
+  background: var(--a-surface); border-right: 1px solid var(--a-line);
+  display: flex; flex-direction: column; overflow: hidden; position: relative;
+}
+.builder__right { background: #f4f5f7; position: relative; overflow: hidden; }
+.builder__right iframe { width: 100%; height: 100%; border: 0; background: #fff; display: block; }
+
+.builder__bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-bottom: 1px solid var(--a-line); background: #fff;
+  gap: 10px; flex-shrink: 0;
+}
+.builder__bar h2 { font-size: 13px; font-weight: 700; margin: 0; }
+.builder__bar .url { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--a-mute2); }
+.builder__bar .actions { display: flex; gap: 6px; }
+
+.builder__scroll { flex: 1; overflow-y: auto; padding: 14px; }
+.builder__sect-title {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--a-mute2); margin: 18px 0 8px;
+}
+.builder__sect-title:first-child { margin-top: 4px; }
+
+.field-card { background: #fff; border: 1px solid var(--a-line); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+.field-card .field { margin-bottom: 8px; }
+.field-card .field:last-child { margin-bottom: 0; }
+.field-card .field label { font-size: 11.5px; font-weight: 600; color: var(--a-muted); display: block; margin-bottom: 4px; }
+.field-card .field input,
+.field-card .field textarea {
+  width: 100%; padding: 7px 10px; border: 1px solid var(--a-line);
+  border-radius: 6px; font-size: 13px; font-family: inherit;
+}
+.field-card .field textarea { resize: vertical; min-height: 60px; }
+
+/* Block list */
+.block-list { display: flex; flex-direction: column; gap: 6px; }
+.block-row {
+  display: flex; align-items: center; gap: 10px;
+  background: #fff; border: 1px solid var(--a-line); border-radius: 10px;
+  padding: 10px 12px; cursor: pointer; user-select: none;
+  transition: border 0.15s ease, transform 0.15s ease;
+}
+.block-row:hover { border-color: var(--a-brand); }
+.block-row.is-dragging { opacity: 0.5; }
+.block-row.is-drop-target { border-color: var(--a-brand); border-style: dashed; }
+.block-row__handle { color: var(--a-mute2); cursor: grab; font-size: 14px; line-height: 1; }
+.block-row__handle:active { cursor: grabbing; }
+.block-row__icon { font-size: 16px; line-height: 1; }
+.block-row__body { flex: 1; min-width: 0; }
+.block-row__body .ttl { font-size: 13px; font-weight: 600; color: #1f2127; }
+.block-row__body .sub { font-size: 11.5px; color: var(--a-mute2); margin-top: 2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.block-row__actions { display: flex; gap: 4px; }
+.block-row__btn {
+  width: 26px; height: 26px; border: 0; background: transparent; cursor: pointer;
+  border-radius: 6px; color: var(--a-muted); font-size: 14px;
+}
+.block-row__btn:hover { background: var(--a-surface); color: #1f2127; }
+.block-row__btn.danger:hover { color: #cf1322; background: #fff1f0; }
+
+.add-block-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 11px 14px; margin-top: 8px;
+  background: #fff; border: 1.5px dashed var(--a-line); border-radius: 10px;
+  font-size: 13px; font-weight: 600; color: var(--a-muted); cursor: pointer;
+  transition: border 0.15s ease, color 0.15s ease;
+}
+.add-block-btn:hover { border-color: var(--a-brand); color: var(--a-brand); border-style: solid; }
+
+/* Block picker modal */
+.picker-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 60; display: none; align-items: center; justify-content: center; padding: 20px; }
+.picker-mask.is-open { display: flex; }
+.picker {
+  background: #fff; border-radius: 14px; padding: 22px;
+  width: 100%; max-width: 640px; max-height: 80vh; overflow-y: auto;
+}
+.picker h3 { margin: 0 0 4px; font-size: 16px; }
+.picker p { margin: 0 0 16px; font-size: 13px; color: var(--a-mute2); }
+.picker__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.picker__item {
+  background: #fff; border: 1px solid var(--a-line); border-radius: 10px;
+  padding: 14px 12px; cursor: pointer; text-align: left; transition: all 0.15s ease;
+}
+.picker__item:hover { border-color: var(--a-brand); transform: translateY(-1px); }
+.picker__item .ico { font-size: 22px; line-height: 1; margin-bottom: 8px; }
+.picker__item .ttl { font-size: 13px; font-weight: 600; color: #1f2127; }
+.picker__item .sub { font-size: 11.5px; color: var(--a-mute2); margin-top: 2px; }
+.picker__item.is-soon { opacity: 0.45; cursor: not-allowed; }
+.picker__item.is-soon:hover { transform: none; }
+
+/* Block edit drawer */
+.drawer-mask { position: absolute; inset: 0; background: rgba(0,0,0,0.05); z-index: 30; display: none; }
+.drawer-mask.is-open { display: block; }
+.drawer {
+  position: absolute; top: 0; bottom: 0; left: 0; width: 100%;
+  background: #fff; z-index: 40; transform: translateX(-100%); transition: transform 0.22s cubic-bezier(.4,0,.2,1);
+  display: flex; flex-direction: column;
+}
+.drawer.is-open { transform: translateX(0); }
+.drawer__bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px; border-bottom: 1px solid var(--a-line); flex-shrink: 0;
+}
+.drawer__bar h3 { margin: 0; font-size: 14px; font-weight: 700; }
+.drawer__body { flex: 1; overflow-y: auto; padding: 16px 14px; }
+
+/* Repeater (cards inside a block, e.g. pillar-grid cards) */
+.repeater__item {
+  background: #fff; border: 1px solid var(--a-line); border-radius: 10px;
+  margin-bottom: 10px; overflow: hidden;
+}
+.repeater__head {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  cursor: pointer; user-select: none; background: var(--a-surface);
+}
+.repeater__head:hover { background: #f0f1f3; }
+.repeater__head .ttl { flex: 1; font-size: 13px; font-weight: 600; }
+.repeater__head .caret { color: var(--a-mute2); transition: transform 0.18s ease; }
+.repeater__item.is-open .repeater__head .caret { transform: rotate(90deg); }
+.repeater__body { display: none; padding: 12px; border-top: 1px solid var(--a-line); }
+.repeater__item.is-open .repeater__body { display: block; }
+.repeater__handle { color: var(--a-mute2); cursor: grab; font-size: 14px; }
+
+/* Status pill in topbar */
+.status-pill { display: inline-flex; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+.status-pill.published { background: #e7f7ec; color: #137333; }
+.status-pill.draft     { background: #fff4e5; color: #a35200; }
+.dirty-badge { display: inline-flex; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; background: #fff4e5; color: #a35200; margin-left: 8px; }
+
+/* Preview width toggle */
+.viewport-toggle { position: absolute; top: 12px; right: 14px; z-index: 5; display: flex; gap: 4px; background: #fff; border-radius: 999px; padding: 3px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.viewport-toggle button {
+  border: 0; background: transparent; padding: 5px 12px; font-size: 12px; font-weight: 600;
+  color: var(--a-muted); border-radius: 999px; cursor: pointer; line-height: 1;
+}
+.viewport-toggle button.is-active { background: #171a20; color: #fff; }
+.iframe-wrap { display: flex; justify-content: center; align-items: flex-start; height: 100%; padding: 12px; overflow: auto; }
+.iframe-wrap iframe { width: 100%; max-width: 100%; height: 100%; border: 0; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border-radius: 4px; }
+.iframe-wrap.mobile iframe { max-width: 390px; }
+
+/* Override admin shell page padding so builder fills the viewport */
+.main .page { padding: 0 !important; }
+</style>
 </head>
 <body>
 <div data-admin-shell></div>
 <script src="/admin/assets/js/admin.js"></script>
-<script>
-(async function () {
-  const { api, escapeHtml, formatDate, toast, bootShell } = window.AdminAPI;
-  const shell = await bootShell({ title: '页面', crumbs: '内容 / 静态页面' });
-  if (!shell) return;
-  shell.actions.innerHTML = `<button class="btn btn--sm" id="new">+ 新建页面</button>`;
-
-  const wantId = new URLSearchParams(location.search).get('id');
-
-  async function refresh() {
-    const { items } = await api('/api/pages/admin');
-    shell.content.innerHTML = `
-      <div class="panel" id="list-panel">
-        <p style="margin:0 0 16px; color:var(--a-mute2); font-size:13px;">
-          编辑 hero, meta, breadcrumbs, body content and per-page sections (e.g. homepage blocks). Changes apply on the next page load.
-        </p>
-        <table class="table">
-          <thead><tr><th>Slug</th><th>标题</th><th>导航</th><th>状态</th><th>更新于</th><th></th></tr></thead>
-          <tbody>
-            ${items.length ? items.map((p) => `
-              <tr>
-                <td><span class="mono" style="font-weight:600;">${escapeHtml(p.slug)}</span></td>
-                <td>${escapeHtml(p.title || '')}<div style="font-size:11.5px; color:var(--a-mute2);">${escapeHtml(p.hero_title || '')}</div></td>
-                <td><span class="pill pill--read">${escapeHtml(p.nav || '-')}</span></td>
-                <td><span class="pill pill--${p.status}">${p.status}</span></td>
-                <td>${formatDate(p.updated_at)}</td>
-                <td>
-                  <a class="btn btn--ghost btn--sm" href="?id=${p.id}">编辑</a>
-                  <a class="btn btn--ghost btn--sm" target="_blank" href="${slugToUrl(p.slug)}">预览 ↗</a>
-                </td>
-              </tr>
-            `).join('') : '<tr><td colspan="6"><div class="empty">没有页面。</div></td></tr>'}
-          </tbody>
-        </table>
-      </div>
-      <div id="edit-panel"></div>
-    `;
-    if (wantId) {
-      const p = items.find((x) => String(x.id) === wantId);
-      if (p) renderEditor(p);
-    }
-  }
-
-  function slugToUrl(slug) {
-    if (slug === 'home') return '/';
-    if (slug === 'faq') return '/faq.html';
-    if (slug === 'contact') return '/contact.html';
-    if (['privacy','terms','legal','gdpr'].includes(slug)) return '/' + slug + '.html';
-    if (slug.endsWith('/index')) return '/' + slug.replace(/\/index$/, '/');
-    return '/' + slug + '.html';
-  }
-
-  function renderEditor(p) {
-    p = p || { slug: '', status: 'published', hero_breadcrumbs: [], sections: {} };
-    const isNew = !p.id;
-    document.getElementById('list-panel').style.display = 'none';
-    const panel = document.getElementById('edit-panel');
-    const breadcrumbsJson = JSON.stringify(p.hero_breadcrumbs || [], null, 2);
-    const sectionsJson = JSON.stringify(p.sections || {}, null, 2);
-    panel.innerHTML = `
-      <div class="panel">
-        <div class="panel__head">
-          <h2>${isNew ? '新建页面' : '编辑: ' + escapeHtml(p.slug)}</h2>
-          <div style="display:flex; gap:8px;">
-            ${!isNew ? `<a target="_blank" class="btn btn--ghost btn--sm" href="${slugToUrl(p.slug)}">预览 ↗</a>` : ''}
-            <a href="/admin/pages.html" class="btn btn--ghost btn--sm">返回</a>
-          </div>
-        </div>
-
-        <div class="tabs">
-          <button class="tabs__btn is-active" data-tab="hero">Hero &amp; Meta</button>
-          <button class="tabs__btn" data-tab="body">正文内容</button>
-          <button class="tabs__btn" data-tab="sections">结构化区块 (JSON)</button>
-          <button class="tabs__btn" data-tab="advanced">高级</button>
-        </div>
-
-        <div data-pane="hero">
-          <div class="field-row">
-            <div class="field"><label>Slug <span class="hint">（URL 标识，例如 about/profile）</span></label><input id="f-slug" value="${escapeHtml(p.slug)}" ${isNew ? '' : 'readonly'}/></div>
-            <div class="field"><label>导航高亮 <span class="hint">（顶部导航的 slug）</span></label><input id="f-nav" value="${escapeHtml(p.nav || '')}"/></div>
-          </div>
-          <div class="field"><label>Title <span class="hint">（内部标签）</span></label><input id="f-title" value="${escapeHtml(p.title || '')}"/></div>
-          <div class="field"><label>Hero Eyebrow（标题前小字） <span class="hint">（H1 上方的小字）</span></label><input id="f-heyebrow" value="${escapeHtml(p.hero_eyebrow || '')}"/></div>
-          <div class="field"><label>Hero 主标题 (H1)</label><input id="f-htitle" value="${escapeHtml(p.hero_title || '')}"/></div>
-          <div class="field"><label>Hero 副标题</label><textarea id="f-hsub" rows="2">${escapeHtml(p.hero_subtitle || '')}</textarea></div>
-          <div class="field"><label>Hero 背景图 URL <span class="hint">（满屏背景图）</span></label><input id="f-himg" value="${escapeHtml(p.hero_image || '')}"/></div>
-          <div class="field"><label>面包屑（JSON 数组：{label, url}）</label><textarea id="f-crumbs" class="mono" rows="4">${escapeHtml(breadcrumbsJson)}</textarea></div>
-
-          <h3 style="margin-top:24px; font-size:14px;">SEO</h3>
-          <div class="field"><label>Meta 标题 <span class="hint">（浏览器标签 + Google 搜索结果）</span></label><input id="f-mtitle" value="${escapeHtml(p.meta_title || '')}"/></div>
-          <div class="field"><label>Meta 描述</label><textarea id="f-mdesc" rows="3">${escapeHtml(p.meta_description || '')}</textarea></div>
-        </div>
-
-        <div data-pane="body" style="display:none;">
-          <p style="font-size:13px; color:var(--a-mute2);">可选：用自定义 HTML 替换 <strong>Hero 之后的正文区</strong> (everything below the hero) 。留空保留页面默认内容。可用类名： <code>.section</code>, <code>.section-light</code>, <code>.section-inner</code>, <code>.eyebrow</code>, <code>.lead</code>, <code>.product-grid</code>, <code>.feat-grid</code>, 等。</p>
-          <p style="font-size:13px; color:var(--a-warning);"><strong>注意：</strong>静态 HTML 中必须包含 <code>&lt;div data-page-body&gt;...&lt;/div&gt;</code> 包裹层才会生效。没有该层的页面只会更新 Hero 和 Meta。</p>
-          <div class="field"><textarea id="f-body" rows="20" class="mono">${escapeHtml(p.body_html || '')}</textarea></div>
-        </div>
-
-        <div data-pane="sections" style="display:none;">
-          <p style="font-size:13px; color:var(--a-mute2);">Per-page structured data. Used by the homepage to drive the products / why / CTA blocks. 编辑 as JSON.</p>
-          <div class="field"><textarea id="f-sections" rows="20" class="mono">${escapeHtml(sectionsJson)}</textarea></div>
-        </div>
-
-        <div data-pane="advanced" style="display:none;">
-          <div class="field-row">
-            <div class="field"><label>状态</label><select id="f-status"><option value="published" ${p.status === 'published' ? 'selected' : ''}>已发布</option><option value="draft" ${p.status === 'draft' ? 'selected' : ''}>草稿</option></select></div>
-            <div class="field"><label>更新于</label><input value="${escapeHtml(formatDate(p.updated_at) || '-')}" readonly/></div>
-          </div>
-        </div>
-
-        <div class="form-actions">
-          <button class="btn" id="save">保存</button>
-          ${!isNew ? '<button class="btn btn--danger" id="delete">删除</button>' : ''}
-          <a href="/admin/pages.html" class="btn btn--ghost">取消</a>
-        </div>
-      </div>
-    `;
-
-    panel.querySelectorAll('.tabs__btn').forEach((b) => b.addEventListener('click', () => {
-      panel.querySelectorAll('.tabs__btn').forEach((x) => x.classList.toggle('is-active', x === b));
-      panel.querySelectorAll('[data-pane]').forEach((x) => x.style.display = x.dataset.pane === b.dataset.tab ? '' : 'none');
-    }));
-
-    panel.querySelector('#save').addEventListener('click', async () => {
-      let crumbs, sections;
-      try { crumbs = JSON.parse(panel.querySelector('#f-crumbs').value || '[]'); }
-      catch (_) { return toast('面包屑 JSON 格式错误', 'error'); }
-      try { sections = JSON.parse(panel.querySelector('#f-sections').value || '{}'); }
-      catch (_) { return toast('结构化区块 JSON 格式错误', 'error'); }
-      const payload = {
-        slug: panel.querySelector('#f-slug').value,
-        nav: panel.querySelector('#f-nav').value,
-        title: panel.querySelector('#f-title').value,
-        meta_title: panel.querySelector('#f-mtitle').value,
-        meta_description: panel.querySelector('#f-mdesc').value,
-        hero_eyebrow: panel.querySelector('#f-heyebrow').value,
-        hero_title: panel.querySelector('#f-htitle').value,
-        hero_subtitle: panel.querySelector('#f-hsub').value,
-        hero_image: panel.querySelector('#f-himg').value,
-        hero_breadcrumbs: crumbs,
-        body_html: panel.querySelector('#f-body').value,
-        sections,
-        status: panel.querySelector('#f-status').value,
-      };
-      try {
-        if (isNew) await api('/api/pages', { method: 'POST', body: JSON.stringify(payload) });
-        else await api('/api/pages/' + p.id, { method: 'PUT', body: JSON.stringify(payload) });
-        toast('保存d', 'success');
-        setTimeout(() => location.href = '/admin/pages.html', 500);
-      } catch (err) { toast('保存 failed: ' + err.message, 'error'); }
-    });
-    if (!isNew) {
-      panel.querySelector('#delete').addEventListener('click', async () => {
-        if (!confirm('删除 this page? Restoring requires re-creating with the same slug.')) return;
-        await api('/api/pages/' + p.id, { method: 'DELETE' });
-        toast('删除d', 'success');
-        setTimeout(() => location.href = '/admin/pages.html', 500);
-      });
-    }
-  }
-
-  document.addEventListener('click', (ev) => {
-    if (ev.target.id === 'new') renderEditor();
-  });
-  refresh();
-})();
-</script>
+<script src="/admin/assets/js/page-builder.js?v=1"></script>
 </body>
 </html>

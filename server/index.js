@@ -206,6 +206,7 @@ async function autoMigrate() {
     `CREATE INDEX IF NOT EXISTS idx_outbox_ready   ON mail_outbox(next_attempt_at) WHERE status = 'pending'`,
     `CREATE INDEX IF NOT EXISTS idx_outbox_inquiry ON mail_outbox(inquiry_id)`,
     `CREATE INDEX IF NOT EXISTS idx_outbox_status  ON mail_outbox(status, created_at DESC)`,
+    `ALTER TABLE pages ADD COLUMN IF NOT EXISTS blocks JSONB NOT NULL DEFAULT '[]'::jsonb`,
   ];
   for (const sql of stmts) {
     try { await query(sql); }
