@@ -133,6 +133,67 @@ app.get(['/products/:slug', '/applications/:slug', '/blog/:slug'], (req, res, ne
   return next();
 });
 
+// ----- Block-driven pages -----
+// Anything that wasn't matched by static files / pretty product URLs and looks
+// like a regular page request is checked against the `pages` table. If we find
+// a row with non-empty blocks, serve the block shell — the client fetches the
+// row again via /api/pages/by-slug/<slug> and renders the blocks. Cached
+// briefly so we don't hit Postgres on every 404 attempt.
+const blockShellPath = path.join(ROOT, 'public', '_block-shell.html');
+const slugLookupCache = new Map();              // slug -> { has, expires }
+const SLUG_CACHE_MS = 60 * 1000;
+function pathToSlug(p) {
+  let s = p.replace(/^\/+|\/+$/g, '');
+  if (!s) return 'home';
+  s = s.replace(/\.html$/i, '');
+  if (s.endsWith('/index')) s = s.slice(0, -6);
+  return s || 'home';
+}
+async function hasBlockPage(slug) {
+  const now = Date.now();
+  const c = slugLookupCache.get(slug);
+  if (c && c.expires > now) return c.has;
+  let has = false;
+  try {
+    const { one } = require('./db/client');
+    const row = await one(
+      `SELECT (jsonb_typeof(blocks) = 'array' AND jsonb_array_length(blocks) > 0) AS has
+         FROM pages
+        WHERE slug = $1 AND status = 'published'`,
+      [slug]
+    );
+    has = !!(row && row.has);
+  } catch (err) {
+    console.error('[block-shell] lookup failed for slug', slug, err.message);
+    has = false;
+  }
+  slugLookupCache.set(slug, { has, expires: now + SLUG_CACHE_MS });
+  return has;
+}
+// Bust the cache whenever the admin saves a page so a freshly created /
+// edited block-driven page works without waiting for the TTL.
+function invalidateSlugCache(slug) {
+  if (slug == null) slugLookupCache.clear();
+  else slugLookupCache.delete(slug);
+}
+app.locals.invalidateSlugCache = invalidateSlugCache;
+
+app.get('*', async (req, res, next) => {
+  if (req.method !== 'GET') return next();
+  if (req.path.startsWith('/api/')) return next();
+  if (req.path.startsWith('/admin/')) return next();
+  if (req.path.startsWith('/uploads/')) return next();
+  // Skip extensions other than .html / no-extension — never try this on
+  // .js / .css / images that we already failed to find statically.
+  const last = req.path.split('/').pop() || '';
+  if (last.includes('.') && !/\.html?$/i.test(last)) return next();
+
+  const slug = pathToSlug(req.path);
+  const has = await hasBlockPage(slug);
+  if (has) return res.sendFile(blockShellPath);
+  return next();
+});
+
 // ----- 404 -----
 app.use((req, res) => {
   if (req.path.startsWith('/api/')) {

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Title / meta are filled in by client-side hydration from /api/pages/by-slug/<slug>.
+     A safe placeholder is shown while the request is in flight. -->
+<title>Loading…</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="/styles.css?v=19">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  .page-skeleton {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 60vh; padding: 60px 20px; font-family: 'Inter', sans-serif;
+    color: #86878b; font-size: 14px;
+  }
+  .page-skeleton::before {
+    content: ''; width: 20px; height: 20px; margin-right: 10px;
+    border: 2px solid #d4d4d4; border-top-color: #171a20; border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .page-notfound {
+    max-width: 560px; margin: 80px auto; padding: 40px 28px; text-align: center;
+    font-family: 'Inter', sans-serif; color: #393c41;
+  }
+  .page-notfound h1 { font-size: 28px; font-weight: 500; margin: 0 0 8px; }
+  .page-notfound p { font-size: 14px; color: #86878b; }
+</style>
+</head>
+<body data-nav="">
+
+<div id="header-mount"></div>
+
+<main id="page-blocks">
+  <div class="page-skeleton">加载中…</div>
+</main>
+
+<div id="footer-mount"></div>
+<div id="sidemenu-mount"></div>
+
+<script src="/render.js?v=19"></script>
+<script src="/partials.js?v=19"></script>
+<script src="/script.js?v=19"></script>
+
+<script>
+(function () {
+  'use strict';
+  const mount = document.getElementById('page-blocks');
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]));
+  }
+
+  // Convert a request path into a page slug:
+  //   /                       -> home
+  //   /faq.html               -> faq
+  //   /solutions/storage      -> solutions/storage
+  //   /about/profile          -> about/profile
+  function pathToSlug(p) {
+    let s = p.replace(/^\/+|\/+$/g, '');
+    if (!s) return 'home';
+    s = s.replace(/\.html$/, '');
+    if (s.endsWith('/index')) s = s.slice(0, -6);
+    return s || 'home';
+  }
+
+  function setMeta(page) {
+    if (page.meta_title || page.title) {
+      document.title = page.meta_title || page.title;
+    }
+    if (page.meta_description) {
+      const m = document.querySelector('meta[name="description"]');
+      if (m) m.setAttribute('content', page.meta_description);
+    }
+    if (page.nav) {
+      document.body.setAttribute('data-nav', page.nav);
+    }
+    document.body.setAttribute('data-page', page.slug || '');
+    // Touch <html> lang if the operator set one in title casing.
+    // (No-op for now — kept as a hook for future i18n.)
+  }
+
+  function hydrate() {
+    // Sliders bind their arrow buttons on these new DOM nodes.
+    try { window.bindSliders && window.bindSliders(); } catch (_) {}
+    hydrateCounters();
+    hydrateBlogGrids();
+  }
+
+  function hydrateCounters() {
+    // Animate counter spans the same way the legacy hand-coded pages do.
+    document.querySelectorAll('.counter').forEach((el) => {
+      if (el.__counted) return;
+      el.__counted = true;
+      const target = parseInt(el.dataset.target || '0', 10);
+      if (Number.isNaN(target)) return;
+      const start = performance.now();
+      const dur = 1400;
+      const fmt = (n) => target >= 1000 ? n.toLocaleString('en-US') : String(n);
+      const tick = (now) => {
+        const t = Math.min(1, (now - start) / dur);
+        const eased = 1 - Math.pow(1 - t, 3);
+        el.textContent = fmt(Math.round(target * eased));
+        if (t < 1) requestAnimationFrame(tick);
+      };
+      // Only fire when scrolled into view, like the existing inline pages.
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) { requestAnimationFrame(tick); io.unobserve(e.target); }
+        });
+      }, { threshold: 0.4 });
+      io.observe(el);
+    });
+  }
+
+  async function hydrateBlogGrids() {
+    const grids = document.querySelectorAll('[data-insights-grid]');
+    if (!grids.length) return;
+    try {
+      const r = await fetch('/api/articles?status=published&limit=12');
+      if (!r.ok) return;
+      const j = await r.json();
+      const arts = j.items || j.articles || [];
+      grids.forEach((g) => {
+        const limit = parseInt(g.dataset.limit || '3', 10);
+        const items = arts.slice(0, limit);
+        if (!items.length) {
+          g.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#86878b;">No published articles yet.</p>';
+          return;
+        }
+        g.innerHTML = items.map((a) => `
+          <a class="news-card" href="/blog/${encodeURIComponent(a.slug)}">
+            ${a.cover_url ? `<div class="news-card__media" style="background-image:url('${escapeHtml(a.cover_url)}');"></div>` : ''}
+            <div class="news-card__body">
+              <h3>${escapeHtml(a.title || '')}</h3>
+              <p>${escapeHtml(a.excerpt || '')}</p>
+              <span class="news-link">Read more →</span>
+            </div>
+          </a>`).join('');
+      });
+    } catch (_) { /* ignore — empty grid is acceptable */ }
+  }
+
+  function renderNotFound() {
+    document.title = 'Page not found';
+    mount.innerHTML = `
+      <div class="page-notfound">
+        <h1>页面未找到</h1>
+        <p>请检查 URL，或回到 <a href="/">首页</a>。</p>
+      </div>`;
+  }
+
+  async function load() {
+    const slug = pathToSlug(location.pathname);
+    let page;
+    try {
+      const r = await fetch('/api/pages/by-slug/' + encodeURI(slug));
+      if (!r.ok) { renderNotFound(); return; }
+      const j = await r.json();
+      page = j.page;
+    } catch (_) { renderNotFound(); return; }
+    if (!page) { renderNotFound(); return; }
+    setMeta(page);
+
+    const blocks = Array.isArray(page.blocks) ? page.blocks : [];
+    if (!blocks.length) {
+      // Legacy page row with no blocks yet — show a gentle stub so the URL
+      // is reachable but the operator gets a hint to open the builder.
+      mount.innerHTML = `
+        <div class="page-notfound">
+          <h1>${escapeHtml(page.title || page.meta_title || slug)}</h1>
+          <p>这个页面还没有内容。在后台 <a href="/admin/pages.html?id=${page.id}">页面构建器</a> 里加积木块即可发布。</p>
+        </div>`;
+      return;
+    }
+
+    mount.innerHTML = window.CMSRender.renderBlocks(blocks);
+    setTimeout(hydrate, 0);
+  }
+
+  // Kick off after partials script has had a chance to inject header/footer.
+  // partials.js binds on DOMContentLoaded itself — we just need to be in
+  // the same tick.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', load);
+  } else {
+    load();
+  }
+})();
+</script>
+</body>
+</html>

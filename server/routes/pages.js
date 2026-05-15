@@ -37,6 +37,16 @@ function sanitiseBlocks(input) {
   return out.slice(0, 200);
 }
 
+// Bust the block-shell slug cache after an edit so the public site sees
+// new pages without waiting for the TTL. The cache lives on app.locals
+// (populated by server/index.js).
+function bumpSlugCache(req, slug) {
+  try {
+    const fn = req.app && req.app.locals && req.app.locals.invalidateSlugCache;
+    if (typeof fn === 'function') fn(slug == null ? undefined : slug);
+  } catch (_) { /* not fatal */ }
+}
+
 // ---------- Public ----------
 router.get('/', async (_req, res) => {
   const rows = await many(`SELECT ${FIELDS} FROM pages WHERE status='published' ORDER BY slug`);
@@ -95,6 +105,7 @@ router.post('/', requireAuth, async (req, res) => {
     ]
   );
   await recordAudit({ req, action: 'create', entity: 'page', entityId: result.rows[0].id, detail: { slug } });
+  bumpSlugCache(req, slug);
   res.json({ id: result.rows[0].id });
 });
 
@@ -128,6 +139,7 @@ router.put('/:id', requireAuth, async (req, res) => {
     ]
   );
   await recordAudit({ req, action: 'update', entity: 'page', entityId: id });
+  bumpSlugCache(req); // bust everything — slug may have been renamed
   res.json({ ok: true });
 });
 
@@ -143,6 +155,7 @@ router.patch('/:id/blocks', requireAuth, async (req, res) => {
     [JSON.stringify(blocks), id]
   );
   await recordAudit({ req, action: 'update_blocks', entity: 'page', entityId: id, detail: { count: blocks.length } });
+  bumpSlugCache(req);
   res.json({ ok: true });
 });
 
@@ -151,6 +164,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
   if (!id) return res.status(400).json({ error: 'invalid_id' });
   await query('DELETE FROM pages WHERE id = $1', [id]);
   await recordAudit({ req, action: 'delete', entity: 'page', entityId: id });
+  bumpSlugCache(req);
   res.json({ ok: true });
 });
 
