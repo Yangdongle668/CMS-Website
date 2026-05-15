@@ -195,6 +195,24 @@ router.post('/replace-page', requireAuth, async (req, res) => {
   }
 });
 
+// ----- Hot-render: server renders just this one block's HTML for the
+// builder runtime to swap into the iframe DOM. Faster than reloading
+// the whole page after a text/image edit.
+router.get('/:id/render', requireAuth, async (req, res) => {
+  const id = clamp(req.params.id, 1, 1e9, 0);
+  if (!id) return res.status(400).json({ error: 'invalid_id' });
+  const row = await one(
+    `SELECT id, block_type, content, is_visible FROM page_blocks WHERE id = $1`, [id]
+  );
+  if (!row) return res.status(404).json({ error: 'not_found' });
+  try {
+    const html = await registry.renderBlock(row, { path: '/preview', builderMode: true });
+    res.json({ id: row.id, html });
+  } catch (err) {
+    res.status(500).json({ error: 'render_failed', detail: err.message });
+  }
+});
+
 // ----- Server-side preview (used by the page builder right pane) -----
 // Renders an arbitrary { block_type, content } against the registry
 // without persisting anything. Useful for live preview as the operator

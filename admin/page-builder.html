@@ -350,7 +350,7 @@
     try {
       await api('/api/blocks/' + blockId, { method: 'PUT', body: JSON.stringify({ content: block.content }) });
       setStatus('saved', '✓ 已保存');
-      reloadFrame();
+      hotSwapBlock(blockId);
     } catch (e) {
       setStatus('dirty', '保存失败：' + e.message);
     }
@@ -367,9 +367,24 @@
       await api('/api/blocks/' + id, { method: 'PUT', body: JSON.stringify({ content: block.content }) });
       setStatus('saved', '✓ 已保存');
       postToFrame('block-saved');
-      if (activeTab === 'settings' && selectedId === id) renderSide();   // refresh side fields
+      // Hot-swap the changed block in the iframe instead of full reload —
+      // keeps the user's scroll position, focused selection and undo
+      // history exactly where they were.
+      hotSwapBlock(id);
+      if (activeTab === 'settings' && selectedId === id) renderSide();
     } catch (e) {
       setStatus('dirty', '保存失败：' + e.message);
+    }
+  }
+
+  async function hotSwapBlock(blockId) {
+    try {
+      const { html } = await api('/api/blocks/' + blockId + '/render');
+      postToFrame('replace-block', { id: blockId, html });
+    } catch (_) {
+      // If the render endpoint fails for any reason, fall back to full
+      // reload so the user at least sees fresh state.
+      reloadFrame();
     }
   }
 
@@ -835,11 +850,12 @@
       partialTimers.delete(blockId);
       const block = blocks.find((b) => b.id === blockId);
       if (!block) return;
+      pushUndo();
       setStatus('saving', '保存中…');
       try {
         await api('/api/blocks/' + blockId, { method: 'PUT', body: JSON.stringify({ content: block.content }) });
         setStatus('saved', '✓ 已保存');
-        reloadFrame();
+        hotSwapBlock(blockId);
       } catch (e) { setStatus('dirty', '失败：' + e.message); }
     }, 700));
   }

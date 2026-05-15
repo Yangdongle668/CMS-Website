@@ -360,8 +360,35 @@
       case 'reload':
         location.reload();
         break;
+      case 'replace-block':
+        replaceBlockHtml(m.id, m.html);
+        break;
     }
   });
+
+  // ----- Hot-swap: replace a single block's HTML in place -----
+  // The parent fetches /api/blocks/:id/render after a save and posts
+  // the new outerHTML. We swap the DOM node and re-select if it was
+  // the active block, all without any iframe reload flicker.
+  function replaceBlockHtml(id, html) {
+    const old = document.querySelector(`[data-block-id="${id}"]`);
+    if (!old) return;
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html.trim();
+    const fresh = tmp.firstElementChild;
+    if (!fresh) return;
+    const wasSelected = old.classList.contains('cmsb-selected');
+    const rect = old.getBoundingClientRect();
+    const scrollDelta = rect.top;
+    old.replaceWith(fresh);
+    if (wasSelected) {
+      selectedEl = null;   // force re-init in selectBlock
+      selectBlock(fresh);
+    }
+    const newRect = fresh.getBoundingClientRect();
+    const drift = newRect.top - scrollDelta;
+    if (Math.abs(drift) > 4) window.scrollBy(0, drift);
+  }
 
   // ----- Public surface for inline event handlers -----
   window.cmsb = {
