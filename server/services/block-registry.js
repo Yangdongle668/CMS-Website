@@ -79,18 +79,18 @@ const BLOCKS = {
     render(c) {
       const align = ['left', 'center', 'right'].includes(c.align) ? c.align : 'left';
       const bg = c.image_url ? `style="background-image:url('${attr(c.image_url)}');"` : '';
-      const eyebrow = c.eyebrow ? `<div class="block-hero__eyebrow">${esc(c.eyebrow)}</div>` : '';
-      const subtitle = c.subtitle ? `<p class="block-hero__sub">${lineBreaks(c.subtitle)}</p>` : '';
-      const cta = c.cta_text && c.cta_link
-        ? `<a class="block-hero__cta" href="${attr(c.cta_link)}">${esc(c.cta_text)}</a>` : '';
-      const cta2 = c.secondary_cta_text && c.secondary_cta_link
-        ? `<a class="block-hero__cta block-hero__cta--secondary" href="${attr(c.secondary_cta_link)}">${esc(c.secondary_cta_text)}</a>` : '';
+      const eyebrow = `<div class="block-hero__eyebrow"${edit('eyebrow')}${c.eyebrow ? '' : ' data-empty="1"'}>${esc(c.eyebrow || '')}</div>`;
+      const subtitle = `<p class="block-hero__sub"${edit('subtitle')}${c.subtitle ? '' : ' data-empty="1"'}>${lineBreaks(c.subtitle || '')}</p>`;
+      const cta = c.cta_link
+        ? `<a class="block-hero__cta" href="${attr(c.cta_link)}"${edit('cta_text')}>${esc(c.cta_text || 'Get a Quote')}</a>` : '';
+      const cta2 = c.secondary_cta_link
+        ? `<a class="block-hero__cta block-hero__cta--secondary" href="${attr(c.secondary_cta_link)}"${edit('secondary_cta_text')}>${esc(c.secondary_cta_text || 'Learn more')}</a>` : '';
       return `
         <section class="block block-hero block-hero--${align}" ${bg}>
           <div class="block-hero__overlay"></div>
           <div class="block-hero__inner">
             ${eyebrow}
-            <h1 class="block-hero__title">${esc(c.title || '')}</h1>
+            <h1 class="block-hero__title"${edit('title')}>${esc(c.title || '')}</h1>
             ${subtitle}
             <div class="block-hero__ctas">${cta}${cta2}</div>
           </div>
@@ -133,7 +133,7 @@ const BLOCKS = {
       return `
         <section class="block block-vp">
           <div class="block-vp__inner">
-            ${c.title ? `<h2 class="block-vp__heading">${esc(c.title)}</h2>` : ''}
+            <h2 class="block-vp__heading"${edit('title')}>${esc(c.title || '')}</h2>
             <div class="block-vp__grid block-vp__grid--${cols.length || 3}">${items}</div>
           </div>
         </section>`;
@@ -193,8 +193,8 @@ const BLOCKS = {
       return `
         <section class="block block-pg">
           <div class="block-pg__inner">
-            ${c.title ? `<h2 class="block-pg__heading">${esc(c.title)}</h2>` : ''}
-            ${c.subtitle ? `<p class="block-pg__sub">${lineBreaks(c.subtitle)}</p>` : ''}
+            <h2 class="block-pg__heading"${edit('title')}>${esc(c.title || '')}</h2>
+            <p class="block-pg__sub"${edit('subtitle')}${c.subtitle ? '' : ' data-empty="1"'}>${lineBreaks(c.subtitle || '')}</p>
             <div class="block-pg__grid block-pg__grid--${cols}">${cards || '<p class="block-pg__empty">No products configured yet.</p>'}</div>
           </div>
         </section>`;
@@ -233,7 +233,7 @@ const BLOCKS = {
       return `
         <section class="block block-lw">
           <div class="block-lw__inner">
-            ${c.title ? `<div class="block-lw__heading">${esc(c.title)}</div>` : ''}
+            <div class="block-lw__heading"${edit('title')}>${esc(c.title || '')}</div>
             <div class="block-lw__grid">${logos}</div>
           </div>
         </section>`;
@@ -267,7 +267,7 @@ const BLOCKS = {
       return `
         <section class="block block-st">
           <div class="block-st__inner">
-            ${c.title ? `<h2 class="block-st__heading">${esc(c.title)}</h2>` : ''}
+            <h2 class="block-st__heading"${edit('title')}>${esc(c.title || '')}</h2>
             <div class="block-st__wrap">
               <table class="block-st__table">${thead}<tbody>${tbody}</tbody></table>
             </div>
@@ -313,7 +313,7 @@ const BLOCKS = {
       return `
         <section class="block block-ag">
           <div class="block-ag__inner">
-            ${c.title ? `<h2 class="block-ag__heading">${esc(c.title)}</h2>` : ''}
+            <h2 class="block-ag__heading"${edit('title')}>${esc(c.title || '')}</h2>
             <div class="block-ag__grid block-ag__grid--${cols}">${cards || '<p>No applications configured.</p>'}</div>
           </div>
         </section>`;
@@ -356,7 +356,7 @@ const BLOCKS = {
       return `
         <section class="block block-fs">
           <div class="block-fs__inner">
-            ${c.title ? `<h2 class="block-fs__heading">${esc(c.title)}</h2>` : ''}
+            <h2 class="block-fs__heading"${edit('title')}>${esc(c.title || '')}</h2>
             ${items}
           </div>
         </section>`;
@@ -386,8 +386,8 @@ const BLOCKS = {
         <section class="block block-tm">
           <div class="block-tm__inner">
             ${c.photo ? `<img class="block-tm__photo" src="${attr(c.photo)}" alt="${attr(c.author || '')}" loading="lazy" decoding="async">` : ''}
-            <blockquote class="block-tm__quote">${esc(c.quote || '')}</blockquote>
-            <div class="block-tm__author">${esc(c.author || '')}${c.company ? `, <span>${esc(c.company)}</span>` : ''}</div>
+            <blockquote class="block-tm__quote"${edit('quote')}>${esc(c.quote || '')}</blockquote>
+            <div class="block-tm__author"><span${edit('author')}>${esc(c.author || '')}</span>, <span${edit('company')}>${esc(c.company || '')}</span></div>
           </div>
         </section>`;
     },
@@ -437,7 +437,7 @@ const BLOCKS = {
       return `
         <section class="block block-faq">
           <div class="block-faq__inner">
-            ${c.title ? `<h2 class="block-faq__heading">${esc(c.title)}</h2>` : ''}
+            <h2 class="block-faq__heading"${edit('title')}>${esc(c.title || '')}</h2>
             <div class="block-faq__list">${items}</div>
             ${schemaTag}
           </div>
@@ -471,9 +471,9 @@ const BLOCKS = {
         <section class="block block-cta" ${bg}>
           <div class="block-cta__overlay"></div>
           <div class="block-cta__inner">
-            <h2 class="block-cta__title">${esc(c.title || '')}</h2>
-            ${c.subtitle ? `<p class="block-cta__sub">${lineBreaks(c.subtitle)}</p>` : ''}
-            ${c.cta_text && c.cta_link ? `<a class="block-cta__btn" href="${attr(c.cta_link)}">${esc(c.cta_text)}</a>` : ''}
+            <h2 class="block-cta__title"${edit('title')}>${esc(c.title || '')}</h2>
+            <p class="block-cta__sub"${edit('subtitle')}${c.subtitle ? '' : ' data-empty="1"'}>${lineBreaks(c.subtitle || '')}</p>
+            ${c.cta_link ? `<a class="block-cta__btn" href="${attr(c.cta_link)}"${edit('cta_text')}>${esc(c.cta_text || 'Get a Quote')}</a>` : ''}
           </div>
         </section>`;
     },
@@ -500,8 +500,8 @@ const BLOCKS = {
       return `
         <section class="block block-form">
           <div class="block-form__inner">
-            <h2 class="block-form__heading">${esc(c.title || '')}</h2>
-            ${c.subtitle ? `<p class="block-form__sub">${lineBreaks(c.subtitle)}</p>` : ''}
+            <h2 class="block-form__heading"${edit('title')}>${esc(c.title || '')}</h2>
+            <p class="block-form__sub"${edit('subtitle')}${c.subtitle ? '' : ' data-empty="1"'}>${lineBreaks(c.subtitle || '')}</p>
             <form class="block-form__form" data-inline-inquiry onsubmit="return handleContactSubmit(event);">
               <input type="hidden" name="source_widget" value="mini_rfq">
               <input type="hidden" name="source_page" value="${attr(sourcePage)}">
@@ -566,17 +566,35 @@ async function renderBlock(block, ctx) {
   }
   try {
     const html = await def.render(block.content || {}, ctx || {});
-    return html;
+    // Inject block-id / block-type markers onto the outermost <section>
+    // so the in-iframe page-builder runtime can wire up hover, select,
+    // inline-edit, and reorder behavior without touching each render
+    // function individually. The regex only matches the first <section
+    // class="block ..."> per rendered chunk, which is always the
+    // block's own outer container.
+    const hiddenAttr = (block.is_visible === false || ctx && ctx.forceHidden) ? ' data-block-hidden="1"' : '';
+    return html.replace(
+      /(<section\b[^>]*\bclass="(?:[^"]*\s)?block(?:\s[^"]*)?"[^>]*)>/,
+      `$1 data-block-id="${block.id || ''}" data-block-type="${block.block_type}"${hiddenAttr}>`
+    );
   } catch (err) {
     console.error(`[blocks] render ${block.block_type} failed:`, err && err.message);
     return `<!-- block ${block.block_type} render error -->`;
   }
 }
 
+// Wrap a text snippet with a data-edit-field attribute so the in-iframe
+// runtime can target it for contenteditable. Returns just the
+// attribute fragment (no leading space).
+function edit(field) {
+  return ` data-edit-field="${field}"`;
+}
+
 async function renderBlocks(blocks, ctx) {
+  const builderMode = !!(ctx && ctx.builderMode);
   const out = [];
   for (const b of blocks) {
-    if (b.is_visible === false) continue;
+    if (b.is_visible === false && !builderMode) continue;
     out.push(await renderBlock(b, ctx));
   }
   return out.join('\n');
