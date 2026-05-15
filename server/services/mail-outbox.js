@@ -17,7 +17,7 @@
 // query keeps things race-free.
 // =====================================================================
 const os = require('os');
-const { query, many } = require('../db/client');
+const { query, many, queryNoRetry } = require('../db/client');
 const { getTransporter, defaultFrom } = require('./mailer');
 
 const WORKER_ID = `${os.hostname()}-${process.pid}`;
@@ -156,10 +156,12 @@ function stopWorker() {
 }
 
 // Release any rows our worker had claimed before crashing. Called once
-// at boot in case a prior process died mid-send.
+// at boot in case a prior process died mid-send. Uses queryNoRetry so
+// a boot with PG temporarily down fails fast instead of stalling the
+// listener for several seconds.
 async function releaseStaleLocks(maxAgeMinutes) {
   const minutes = Math.max(1, maxAgeMinutes || 10);
-  const r = await query(
+  const r = await queryNoRetry(
     `UPDATE mail_outbox
      SET status='pending', locked_by='', locked_at=NULL
      WHERE status='sending'
