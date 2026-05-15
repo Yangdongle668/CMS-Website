@@ -84,6 +84,14 @@ async function query(text, params) {
   return runWithRetry(text, params);
 }
 
+// Same as query() but does NOT retry on transient errors. Use for boot-
+// path code (migrations, outbox cleanup, health probes) that should
+// fail fast rather than blocking startup for tens of seconds when PG
+// happens to be unavailable.
+async function queryNoRetry(text, params) {
+  return pool.query(text, params);
+}
+
 async function one(text, params) {
   const { rows } = await runWithRetry(text, params);
   return rows[0] || null;
@@ -95,8 +103,9 @@ async function many(text, params) {
 }
 
 async function ping() {
+  // Fast probe: no retry, short timeout. Used by /readyz and autoMigrate.
   const r = await pool.query('SELECT 1 AS ok');
   return r.rows[0] && r.rows[0].ok === 1;
 }
 
-module.exports = { pool, query, one, many, ping, isTransient };
+module.exports = { pool, query, queryNoRetry, one, many, ping, isTransient };

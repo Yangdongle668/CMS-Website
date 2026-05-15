@@ -317,8 +317,19 @@ app.use((err, req, res, _next) => {
 // ----- Self-healing schema migrations -----
 // Idempotent ALTER TABLEs that bring an older deployment's database
 // up to the current schema. Runs once at boot — safe to re-run.
+//
+// Uses queryNoRetry deliberately: if PG is unreachable, we want each
+// statement to fail in ~1ms (ECONNREFUSED is instant), not spin the
+// 200ms→400ms retry loop ~80 times and delay app.listen by 50+ seconds.
+// The pre-flight ping below short-circuits the entire loop in that case.
 async function autoMigrate() {
-  const { query } = require('./db/client');
+  const { queryNoRetry, ping } = require('./db/client');
+  try {
+    await ping();
+  } catch (err) {
+    console.warn('[migrate] PG not reachable, skipping migrations (will retry on next boot):', err && err.message);
+    return;
+  }
   const stmts = [
     `ALTER TABLE articles ADD COLUMN IF NOT EXISTS template VARCHAR(40) NOT NULL DEFAULT 'standard'`,
     `ALTER TABLE articles ADD COLUMN IF NOT EXISTS hero_image VARCHAR(500) NOT NULL DEFAULT ''`,
@@ -457,7 +468,7 @@ async function autoMigrate() {
       WHERE a.id = r.id AND (SELECT array_length(ids, 1) FROM authors_arr) > 0`,
   ];
   for (const sql of stmts) {
-    try { await query(sql); }
+    try { await queryNoRetry(sql); }
     catch (err) { console.error('[migrate] statement failed:', err.message); }
   }
   console.log('[migrate] schema check complete');
@@ -477,7 +488,7 @@ async function autoMigrate() {
     if (!fs.existsSync(fpath)) continue;
     try {
       const sql = fs.readFileSync(fpath, 'utf8');
-      await query(sql);
+      await queryNoRetry(sql);
       console.log(`[migrate] applied ${fname}`);
     } catch (err) {
       console.error(`[migrate] ${fname} failed:`, err.message);
