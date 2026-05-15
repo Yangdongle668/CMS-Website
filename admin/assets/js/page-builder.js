@@ -241,21 +241,156 @@
     document.getElementById('new-page').addEventListener('click', openNewPageDialog);
   }
 
-  async function openNewPageDialog() {
-    const slug = prompt('新页面的 URL slug（例如 about/profile 或 solutions/storage）：');
-    if (!slug) return;
-    try {
-      const r = await api('/api/pages', {
-        method: 'POST',
-        body: JSON.stringify({
-          slug: slug.trim().toLowerCase(),
-          title: '',
-          status: 'draft',
-          blocks: [{ id: blockId(), type: 'hero', data: DEFAULTS.hero() }],
-        }),
+  /* ---------- Starter templates -------------------------------------------
+     Each template is a function returning an array of pre-filled blocks. The
+     operator picks one in the new-page modal, then only has to tweak text and
+     swap images — no block-from-scratch friction.
+  ------------------------------------------------------------------------- */
+  function pre(type) { return { id: blockId(), type, data: DEFAULTS[type]() }; }
+  const TEMPLATES = {
+    blank: {
+      label: '空白页面',
+      desc: '从零开始，自己加积木块。',
+      icon: '◻',
+      build: () => [],
+    },
+    product: {
+      label: '产品着陆页',
+      desc: 'Hero + 信任带 + 介绍 + 特性 + 规格表 + FAQ + CTA。',
+      icon: '◆',
+      build: () => [
+        pre('hero'),
+        pre('trust-strip'),
+        pre('content-split'),
+        pre('feat-grid'),
+        pre('spec-table'),
+        pre('faq'),
+        pre('cta-band'),
+      ],
+    },
+    application: {
+      label: '应用场景页',
+      desc: 'Hero + 痛点说明 + 推荐产品 + 流程 + 认证 + CTA。',
+      icon: '◉',
+      build: () => [
+        pre('hero'),
+        pre('content-split'),
+        pre('pillar-grid'),
+        pre('steps-grid'),
+        pre('cert-wall'),
+        pre('cta-band'),
+      ],
+    },
+    company: {
+      label: '公司介绍页',
+      desc: 'Hero + 故事 + 数字 + 价值观 + 认证 + CTA。',
+      icon: '★',
+      build: () => [
+        pre('hero'),
+        pre('content-split'),
+        pre('stat-strip'),
+        pre('feat-grid'),
+        pre('cert-wall'),
+        pre('cta-band'),
+      ],
+    },
+    landing: {
+      label: '询盘转化页',
+      desc: 'Hero + 信任带 + 价值卖点 + 客户证言 + 询盘表单。',
+      icon: '✉',
+      build: () => [
+        pre('hero'),
+        pre('trust-strip'),
+        pre('feat-grid'),
+        pre('cert-wall'),
+        pre('quote-form'),
+      ],
+    },
+  };
+
+  /* ---------- New-page modal ----------------------------------------------
+     Two-stage UI in a single screen: a row of template cards + the slug
+     input + create button. Selecting a template highlights it; clicking
+     create posts the chosen template's blocks to /api/pages.
+  ------------------------------------------------------------------------- */
+  function openNewPageDialog() {
+    let chosen = 'product';
+    const mask = document.createElement('div');
+    mask.className = 'picker-mask is-open';
+    mask.innerHTML = `
+      <div class="picker" onclick="event.stopPropagation()" style="max-width: 720px;">
+        <h3>新建页面</h3>
+        <p>选个起手模板，新页面会自动带上一套常用的积木块。之后照常拖动 / 编辑 / 删除。</p>
+        <div class="picker__grid" id="tpl-grid" style="grid-template-columns: repeat(5, 1fr); margin-bottom: 18px;">
+          ${Object.keys(TEMPLATES).map((k) => {
+            const t = TEMPLATES[k];
+            return `
+              <div class="picker__item" data-tpl="${k}">
+                <div class="ico">${t.icon}</div>
+                <div class="ttl">${escapeHtml(t.label)}</div>
+                <div class="sub">${escapeHtml(t.desc)}</div>
+              </div>`;
+          }).join('')}
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center;">
+          <input id="tpl-slug" placeholder="URL 路径，例如  solutions/storage  或  about/our-process" style="padding: 9px 12px; border: 1px solid var(--a-line); border-radius: 8px; font-size: 13.5px;"/>
+          <button class="btn btn--ghost btn--sm" id="tpl-cancel">取消</button>
+          <button class="btn btn--sm" id="tpl-create">创建并开始编辑</button>
+        </div>
+        <div style="font-size: 12px; color: var(--a-mute2); margin-top: 8px;">
+          路径用 <code>/</code> 分层，例如 <code>solutions/storage</code> 会变成 <code>/solutions/storage</code>。不要带 <code>.html</code>。
+        </div>
+      </div>`;
+    document.body.appendChild(mask);
+    const grid = mask.querySelector('#tpl-grid');
+    function highlight() {
+      grid.querySelectorAll('.picker__item').forEach((it) => {
+        it.style.borderColor = it.dataset.tpl === chosen ? 'var(--a-brand)' : '';
+        it.style.background  = it.dataset.tpl === chosen ? 'var(--a-brand-soft)' : '#fff';
       });
-      location.href = '?id=' + r.id;
-    } catch (err) { toast('创建失败：' + err.message, 'error'); }
+    }
+    grid.querySelectorAll('.picker__item').forEach((it) => {
+      it.addEventListener('click', () => { chosen = it.dataset.tpl; highlight(); });
+    });
+    highlight();
+
+    function close() { mask.remove(); }
+    mask.addEventListener('click', close);
+    mask.querySelector('#tpl-cancel').addEventListener('click', close);
+
+    const slugInput = mask.querySelector('#tpl-slug');
+    slugInput.focus();
+    slugInput.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') mask.querySelector('#tpl-create').click();
+    });
+
+    mask.querySelector('#tpl-create').addEventListener('click', async () => {
+      const raw = slugInput.value.trim().toLowerCase().replace(/^\/+|\/+$/g, '').replace(/\.html?$/i, '');
+      if (!raw) {
+        slugInput.style.borderColor = '#cf1322';
+        slugInput.focus();
+        return;
+      }
+      if (!/^[a-z0-9][a-z0-9\-_/]*$/.test(raw)) {
+        toast('路径只能用字母、数字、横线、下划线和斜杠', 'error');
+        return;
+      }
+      const blocks = TEMPLATES[chosen].build();
+      try {
+        const r = await api('/api/pages', {
+          method: 'POST',
+          body: JSON.stringify({
+            slug: raw,
+            title: '',
+            status: 'draft',
+            blocks,
+          }),
+        });
+        location.href = '?id=' + r.id;
+      } catch (err) {
+        toast('创建失败：' + err.message, 'error');
+      }
+    });
   }
 
   function slugToUrl(slug) {
@@ -695,6 +830,349 @@
     );
   }
 
+  /* ------------------------------------------------------------------------
+     Link picker — replaces freely-typed URL fields. The operator clicks "选
+     目标" on any link field and sees a modal grouped by entity (built-in /
+     pages / products / applications / blog / pillars), each row a clickable
+     link target. Picks one → URL is written back to the form field.
+  ------------------------------------------------------------------------ */
+  const linkCache = { fetched: false, groups: [] };
+  async function loadLinkTargets() {
+    if (linkCache.fetched) return linkCache.groups;
+    const [pages, products, apps, articles, pillars] = await Promise.all([
+      api('/api/pages').catch(() => ({ items: [] })),
+      api('/api/products').catch(() => ({ items: [] })),
+      api('/api/applications').catch(() => ({ items: [] })),
+      api('/api/articles?status=published&limit=100').catch(() => ({ items: [] })),
+      api('/api/pillars').catch(() => ({ items: [] })),
+    ]);
+    linkCache.groups = [
+      {
+        name: '内置',
+        items: [
+          { label: '首页',     url: '/' },
+          { label: '联系我们', url: '/contact.html' },
+          { label: '所有产品', url: '/products/' },
+          { label: '所有应用', url: '/applications/' },
+          { label: '所有方案', url: '/solutions/' },
+          { label: '博客首页', url: '/blog/' },
+          { label: 'FAQ',     url: '/faq.html' },
+          { label: '隐私政策', url: '/privacy.html' },
+        ],
+      },
+      {
+        name: '静态页面',
+        items: (pages.items || []).map((p) => ({
+          label: (p.title || p.hero_title || p.slug) + (p.status === 'draft' ? '（草稿）' : ''),
+          url: p.slug === 'home' ? '/' : '/' + p.slug + (p.slug.includes('/') ? '' : '.html'),
+        })),
+      },
+      {
+        name: '产品',
+        items: (products.items || products.products || []).map((p) => ({
+          label: p.name || p.slug,
+          url: '/products/' + p.slug,
+        })),
+      },
+      {
+        name: '应用',
+        items: (apps.items || apps.applications || []).map((a) => ({
+          label: a.name || a.slug,
+          url: '/applications/' + a.slug + (a.slug.includes('.') ? '' : '.html'),
+        })),
+      },
+      {
+        name: '支柱页',
+        items: (pillars.items || pillars.pillars || []).map((p) => ({
+          label: p.name || p.slug,
+          url: '/products/' + p.slug,
+        })),
+      },
+      {
+        name: '博客文章',
+        items: (articles.items || articles.articles || []).map((a) => ({
+          label: a.title || a.slug,
+          url: '/blog/' + a.slug,
+        })),
+      },
+    ];
+    linkCache.fetched = true;
+    return linkCache.groups;
+  }
+
+  function openLinkPicker(currentValue, onPick) {
+    const mask = document.createElement('div');
+    mask.className = 'picker-mask is-open';
+    mask.innerHTML = `
+      <div class="picker" onclick="event.stopPropagation()" style="max-width: 640px;">
+        <h3>选择链接目标</h3>
+        <p>搜索站内页面，或在最下面手填一个完整的外部 URL（必须以 https:// 开头）。</p>
+        <input id="link-search" placeholder="搜索…" style="width: 100%; padding: 9px 12px; border: 1px solid var(--a-line); border-radius: 8px; font-size: 13px; margin-bottom: 12px;"/>
+        <div id="link-list" style="max-height: 46vh; overflow-y: auto; margin: 0 -8px;">
+          <div class="empty" style="padding: 20px;">加载中…</div>
+        </div>
+        <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--a-line);">
+          <label style="font-size: 11px; font-weight: 700; color: var(--a-mute2); letter-spacing: 0.08em; text-transform: uppercase; display: block; margin-bottom: 6px;">或填外部 URL / 锚点</label>
+          <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px;">
+            <input id="link-external" placeholder="https://example.com 或 #anchor 或 mailto:..." value="${escapeHtml(currentValue || '')}" style="padding: 8px 11px; border: 1px solid var(--a-line); border-radius: 6px; font-size: 13px;"/>
+            <button class="btn btn--sm" id="link-confirm">使用</button>
+          </div>
+        </div>
+        <div style="text-align: right; margin-top: 14px;">
+          <button class="btn btn--ghost btn--sm" id="link-cancel">取消</button>
+        </div>
+      </div>`;
+    document.body.appendChild(mask);
+    function close() { mask.remove(); }
+    mask.addEventListener('click', close);
+    mask.querySelector('#link-cancel').addEventListener('click', close);
+
+    const listEl = mask.querySelector('#link-list');
+    const searchEl = mask.querySelector('#link-search');
+    let allGroups = [];
+
+    function paint(query) {
+      const q = (query || '').toLowerCase().trim();
+      const filtered = allGroups
+        .map((g) => ({
+          ...g,
+          items: !q ? g.items
+                    : g.items.filter((it) => it.label.toLowerCase().includes(q) || it.url.toLowerCase().includes(q)),
+        }))
+        .filter((g) => g.items.length);
+      if (!filtered.length) {
+        listEl.innerHTML = '<div class="empty" style="padding: 20px;">没有匹配的目标。</div>';
+        return;
+      }
+      listEl.innerHTML = filtered.map((g) => `
+        <div style="font-size: 11px; font-weight: 700; color: var(--a-mute2); letter-spacing: 0.08em; text-transform: uppercase; padding: 10px 12px 6px;">${escapeHtml(g.name)}</div>
+        ${g.items.map((it) => `
+          <button type="button" data-url="${escapeHtml(it.url)}" style="display: block; width: 100%; text-align: left; border: 0; background: transparent; padding: 8px 14px; cursor: pointer; font-size: 13px; border-radius: 6px;" onmouseover="this.style.background='var(--a-surface)'" onmouseout="this.style.background='transparent'">
+            <div style="font-weight: 500; color: #1f2127;">${escapeHtml(it.label)}</div>
+            <div class="mono" style="font-size: 11.5px; color: var(--a-mute2); margin-top: 2px;">${escapeHtml(it.url)}</div>
+          </button>`).join('')}
+      `).join('');
+      listEl.querySelectorAll('button[data-url]').forEach((b) => {
+        b.addEventListener('click', () => {
+          onPick(b.dataset.url);
+          close();
+        });
+      });
+    }
+
+    searchEl.addEventListener('input', () => paint(searchEl.value));
+
+    mask.querySelector('#link-confirm').addEventListener('click', () => {
+      const v = mask.querySelector('#link-external').value.trim();
+      if (!v) return close();
+      if (!/^(https?:\/\/|\/|#|mailto:)/i.test(v)) {
+        toast('外部 URL 必须以 https:// 或 / 开头', 'error');
+        return;
+      }
+      onPick(v); close();
+    });
+
+    loadLinkTargets().then((groups) => { allGroups = groups; paint(''); });
+    setTimeout(() => searchEl.focus(), 50);
+  }
+
+  /* ------------------------------------------------------------------------
+     Media picker — operators stop pasting URLs. Click "选图" → see the media
+     library; click a thumbnail to fill the URL; or drop a file to upload
+     (alt text required so SEO / accessibility never gets skipped).
+  ------------------------------------------------------------------------ */
+  async function openMediaPicker(currentValue, onPick) {
+    const mask = document.createElement('div');
+    mask.className = 'picker-mask is-open';
+    mask.innerHTML = `
+      <div class="picker" onclick="event.stopPropagation()" style="max-width: 820px;">
+        <h3>媒体库</h3>
+        <p>点缩略图直接使用，或把文件拖到下面的虚线区域上传。上传时必须填 alt 文本。</p>
+
+        <div id="media-dropzone" style="border: 2px dashed var(--a-line); border-radius: 10px; padding: 18px; text-align: center; font-size: 13px; color: var(--a-mute2); margin-bottom: 14px; cursor: pointer;">
+          📤 拖文件到这里，或 <a href="#" id="media-pick-file" style="color: var(--a-brand);">点这里选择</a>
+          <input type="file" id="media-file-input" accept="image/*,application/pdf" style="display: none;"/>
+          <div id="media-upload-status" style="margin-top: 8px; font-size: 12px;"></div>
+        </div>
+
+        <input id="media-search" placeholder="按文件名搜索…" style="width: 100%; padding: 9px 12px; border: 1px solid var(--a-line); border-radius: 8px; font-size: 13px; margin-bottom: 10px;"/>
+
+        <div id="media-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-height: 44vh; overflow-y: auto; padding: 4px;">
+          <div class="empty" style="grid-column: 1/-1; padding: 30px;">加载中…</div>
+        </div>
+
+        <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--a-line); display: grid; grid-template-columns: 1fr auto auto; gap: 8px;">
+          <input id="media-external" placeholder="或粘贴外部图片 URL（必须 https://）" value="${escapeHtml(currentValue || '')}" style="padding: 8px 11px; border: 1px solid var(--a-line); border-radius: 6px; font-size: 13px;"/>
+          <button class="btn btn--ghost btn--sm" id="media-cancel">取消</button>
+          <button class="btn btn--sm" id="media-confirm">使用此 URL</button>
+        </div>
+      </div>`;
+    document.body.appendChild(mask);
+    function close() { mask.remove(); }
+    mask.addEventListener('click', close);
+    mask.querySelector('#media-cancel').addEventListener('click', close);
+
+    const grid = mask.querySelector('#media-grid');
+    const search = mask.querySelector('#media-search');
+    let items = [];
+
+    function paint() {
+      const q = search.value.toLowerCase().trim();
+      const filtered = !q ? items : items.filter((it) =>
+        (it.original || '').toLowerCase().includes(q) || (it.filename || '').toLowerCase().includes(q)
+      );
+      if (!filtered.length) {
+        grid.innerHTML = '<div class="empty" style="grid-column: 1/-1; padding: 30px;">媒体库还是空的。上传第一张图吧。</div>';
+        return;
+      }
+      grid.innerHTML = filtered.map((it) => {
+        const isImg = (it.mime || '').startsWith('image/');
+        const thumb = isImg
+          ? `<img src="${escapeHtml(it.url)}" alt="${escapeHtml(it.alt_text || '')}" style="width: 100%; height: 100%; object-fit: cover; display: block;">`
+          : `<div style="display:flex; align-items:center; justify-content:center; height:100%; font-size: 28px; color: var(--a-mute2);">📄</div>`;
+        return `
+          <button type="button" data-url="${escapeHtml(it.url)}" style="border: 1px solid var(--a-line); border-radius: 8px; padding: 0; background: #fff; cursor: pointer; overflow: hidden; aspect-ratio: 1; display: flex; flex-direction: column;">
+            <div style="flex: 1; min-height: 0; background: var(--a-surface);">${thumb}</div>
+            <div style="padding: 6px 8px; font-size: 11px; color: var(--a-mute2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(it.original || it.filename)}</div>
+          </button>`;
+      }).join('');
+      grid.querySelectorAll('button[data-url]').forEach((b) => {
+        b.addEventListener('click', () => { onPick(b.dataset.url); close(); });
+      });
+    }
+    search.addEventListener('input', paint);
+
+    async function load() {
+      try {
+        const r = await api('/api/media?limit=80');
+        items = r.items || [];
+        paint();
+      } catch (err) {
+        grid.innerHTML = `<div class="empty" style="grid-column: 1/-1; padding: 30px; color: #cf1322;">加载失败：${escapeHtml(err.message)}</div>`;
+      }
+    }
+    load();
+
+    // Upload flow
+    const dropzone = mask.querySelector('#media-dropzone');
+    const fileInput = mask.querySelector('#media-file-input');
+    const statusEl = mask.querySelector('#media-upload-status');
+    mask.querySelector('#media-pick-file').addEventListener('click', (ev) => { ev.preventDefault(); fileInput.click(); });
+    dropzone.addEventListener('click', () => fileInput.click());
+    ['dragenter', 'dragover'].forEach((ev) => dropzone.addEventListener(ev, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      dropzone.style.borderColor = 'var(--a-brand)';
+      dropzone.style.background = 'var(--a-brand-soft)';
+    }));
+    ['dragleave', 'drop'].forEach((ev) => dropzone.addEventListener(ev, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      dropzone.style.borderColor = '';
+      dropzone.style.background = '';
+    }));
+    dropzone.addEventListener('drop', (e) => { if (e.dataTransfer.files[0]) doUpload(e.dataTransfer.files[0]); });
+    fileInput.addEventListener('change', () => { if (fileInput.files[0]) doUpload(fileInput.files[0]); });
+
+    async function doUpload(file) {
+      const alt = prompt(`给这张图填一段 alt 文本（一句话描述图里是什么，SEO + 无障碍都需要）：\n\n文件名：${file.name}`);
+      if (alt === null) return; // user cancelled
+      const altText = alt.trim();
+      if (!altText) { toast('alt 文本不能为空。重新上传吧。', 'error'); return; }
+      statusEl.textContent = '上传中…';
+      statusEl.style.color = 'var(--a-mute2)';
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('alt_text', altText);
+      try {
+        const res = await fetch('/api/media', { method: 'POST', credentials: 'include', body: fd });
+        const j = await res.json();
+        if (!res.ok) throw new Error(j.error || ('HTTP ' + res.status));
+        statusEl.textContent = '✓ 上传成功';
+        statusEl.style.color = '#137333';
+        items.unshift({ id: j.id, url: j.url, original: file.name, filename: j.filename, mime: file.type, alt_text: altText });
+        paint();
+      } catch (err) {
+        statusEl.textContent = '上传失败：' + err.message;
+        statusEl.style.color = '#cf1322';
+      }
+    }
+
+    mask.querySelector('#media-confirm').addEventListener('click', () => {
+      const v = mask.querySelector('#media-external').value.trim();
+      if (!v) return close();
+      if (!/^(https?:\/\/|\/)/i.test(v)) {
+        toast('URL 必须以 https:// 或 / 开头', 'error');
+        return;
+      }
+      onPick(v); close();
+    });
+  }
+
+  // Field component that pairs an image URL with a thumbnail preview + "选图" button.
+  function fieldImage(container, label, getValue, setValue, opts) {
+    opts = opts || {};
+    const wrap = document.createElement('div');
+    wrap.className = 'field-card';
+    const id = 'fld_' + Math.random().toString(36).slice(2, 8);
+    wrap.innerHTML = `
+      <div class="field">
+        <label for="${id}">${escapeHtml(label)}</label>
+        <div style="display: grid; grid-template-columns: 60px 1fr auto; gap: 6px; align-items: center;">
+          <div id="${id}_thumb" style="width: 60px; height: 60px; border: 1px solid var(--a-line); border-radius: 6px; background: var(--a-surface) center/cover no-repeat;"></div>
+          <input id="${id}"/>
+          <button type="button" class="btn btn--ghost btn--sm" data-pick>选图</button>
+        </div>
+        ${opts.hint ? `<div style="font-size:11px; color:var(--a-mute2); margin-top:4px;">${escapeHtml(opts.hint)}</div>` : ''}
+      </div>`;
+    container.appendChild(wrap);
+    const el = wrap.querySelector('#' + id);
+    const thumb = wrap.querySelector('#' + id + '_thumb');
+    function updateThumb(url) {
+      thumb.style.backgroundImage = url ? `url('${url.replace(/'/g, "\\'")}')` : '';
+    }
+    el.value = getValue() ?? '';
+    updateThumb(el.value);
+    el.addEventListener('input', () => {
+      setValue(el.value); updateThumb(el.value);
+      markDirty(); schedulePreview(); refreshBlockRowSummary();
+    });
+    wrap.querySelector('[data-pick]').addEventListener('click', () => {
+      openMediaPicker(el.value, (chosen) => {
+        el.value = chosen;
+        setValue(chosen);
+        updateThumb(chosen);
+        markDirty(); schedulePreview(); refreshBlockRowSummary();
+      });
+    });
+  }
+
+  // Field component that pairs a URL input with a "选目标" button.
+  function fieldLink(container, label, getValue, setValue, opts) {
+    opts = opts || {};
+    const wrap = document.createElement('div');
+    wrap.className = 'field-card';
+    const id = 'fld_' + Math.random().toString(36).slice(2, 8);
+    wrap.innerHTML = `
+      <div class="field">
+        <label for="${id}">${escapeHtml(label)}</label>
+        <div style="display: grid; grid-template-columns: 1fr auto; gap: 6px;">
+          <input id="${id}"/>
+          <button type="button" class="btn btn--ghost btn--sm" data-pick>选目标</button>
+        </div>
+        ${opts.hint ? `<div style="font-size:11px; color:var(--a-mute2); margin-top:4px;">${escapeHtml(opts.hint)}</div>` : ''}
+      </div>`;
+    container.appendChild(wrap);
+    const el = wrap.querySelector('#' + id);
+    el.value = getValue() ?? '';
+    el.addEventListener('input', () => { setValue(el.value); markDirty(); schedulePreview(); refreshBlockRowSummary(); });
+    wrap.querySelector('[data-pick]').addEventListener('click', () => {
+      openLinkPicker(el.value, (chosen) => {
+        el.value = chosen;
+        setValue(chosen);
+        markDirty(); schedulePreview(); refreshBlockRowSummary();
+      });
+    });
+  }
+
   // Generic string-list repeater (e.g. trust-strip items, cert chips,
   // content-split paragraphs, step-card points).
   function fieldStringList(container, label, getList, setList, opts) {
@@ -799,16 +1277,16 @@
 
     'hero': (body, block) => {
       const d = block.data;
-      fieldText(body, '背景图 URL', () => d.image,    (v) => d.image = v, { hint: '满屏背景，使用 Unsplash 链接或自己上传的图片 URL。' });
+      fieldImage(body, '背景图', () => d.image, (v) => d.image = v, { hint: '满屏背景。点"选图"打开媒体库，或粘贴外部 URL。' });
       fieldText(body, 'Eyebrow（标题上方小字）', () => d.eyebrow, (v) => d.eyebrow = v);
       fieldText(body, 'H1 主标题',  () => d.title,    (v) => d.title = v, { hint: '支持简单 <br> 换行。' });
       fieldText(body, '副标题',     () => d.subtitle, (v) => d.subtitle = v, { textarea: true });
       fieldGroup(body, '按钮 1（主按钮）');
       fieldText(body, '按钮 1 文字', () => d.primary?.label, (v) => { d.primary = d.primary || {}; d.primary.label = v; });
-      fieldText(body, '按钮 1 链接', () => d.primary?.url,   (v) => { d.primary = d.primary || {}; d.primary.url = v; }, { hint: '例如 /contact.html 或完整 URL。' });
+      fieldLink(body, '按钮 1 链接', () => d.primary?.url,   (v) => { d.primary = d.primary || {}; d.primary.url = v; });
       fieldGroup(body, '按钮 2（副按钮，可留空）');
       fieldText(body, '按钮 2 文字', () => d.secondary?.label, (v) => { d.secondary = d.secondary || {}; d.secondary.label = v; });
-      fieldText(body, '按钮 2 链接', () => d.secondary?.url,   (v) => { d.secondary = d.secondary || {}; d.secondary.url = v; });
+      fieldLink(body, '按钮 2 链接', () => d.secondary?.url,   (v) => { d.secondary = d.secondary || {}; d.secondary.url = v; });
     },
 
     'trust-strip': (body, block) => {
@@ -830,11 +1308,11 @@
         itemTitle: (c, i) => c.title || c.pill || '卡片 ' + (i + 1),
         newItem: () => ({ image: '', pill: '', title: '新卡片', desc: '', specs: [], link: '#', linkText: '了解更多 →' }),
         renderItem: (mount, c) => {
-          fieldText(mount, '图片 URL',  () => c.image,    (v) => c.image = v);
+          fieldImage(mount, '图片',     () => c.image,    (v) => c.image = v);
           fieldText(mount, '小标签 Pill', () => c.pill,   (v) => c.pill = v);
           fieldText(mount, '卡片标题',   () => c.title,   (v) => c.title = v);
           fieldText(mount, '描述',       () => c.desc,    (v) => c.desc = v, { textarea: true });
-          fieldText(mount, '链接 URL',   () => c.link,    (v) => c.link = v);
+          fieldLink(mount, '链接 URL',   () => c.link,    (v) => c.link = v);
           fieldText(mount, '链接文字',   () => c.linkText, (v) => c.linkText = v);
           fieldGroup(mount, '规格（数字 / 单位）');
           const specsWrap = document.createElement('div');
@@ -879,13 +1357,13 @@
         itemTitle: (s, i) => s.title || `幻灯片 ${i + 1}`,
         newItem: () => ({ image: '', label: '', title: '新幻灯片', subtitle: '', primaryCta: 'Explore', secondaryCta: '', link: '#' }),
         renderItem: (mount, s) => {
-          fieldText(mount, '背景图 URL', () => s.image,        (v) => s.image = v);
+          fieldImage(mount, '背景图',    () => s.image,        (v) => s.image = v);
           fieldText(mount, '顶部小字',   () => s.label,        (v) => s.label = v, { hint: '例如 "Application 01 · AR / VR"' });
           fieldText(mount, '标题',       () => s.title,        (v) => s.title = v);
           fieldText(mount, '副标题',     () => s.subtitle,     (v) => s.subtitle = v, { textarea: true });
           fieldText(mount, '主按钮文字', () => s.primaryCta,   (v) => s.primaryCta = v);
           fieldText(mount, '副按钮文字', () => s.secondaryCta, (v) => s.secondaryCta = v);
-          fieldText(mount, '链接 URL',   () => s.link,         (v) => s.link = v);
+          fieldLink(mount, '链接 URL',   () => s.link,         (v) => s.link = v);
         },
       });
     },
@@ -900,9 +1378,9 @@
       fieldStringList(body, '左栏段落', () => d.paragraphs, (arr) => d.paragraphs = arr, { textarea: true, placeholder: '一段文字', addLabel: '+ 加一段' });
       fieldGroup(body, '可选链接');
       fieldText(body, '链接文字', () => d.link?.label, (v) => { d.link = d.link || {}; d.link.label = v; });
-      fieldText(body, '链接 URL', () => d.link?.url,   (v) => { d.link = d.link || {}; d.link.url   = v; });
+      fieldLink(body, '链接 URL', () => d.link?.url,   (v) => { d.link = d.link || {}; d.link.url   = v; });
       fieldGroup(body, '右栏图片');
-      fieldText(body, '图片 URL', () => d.image,    (v) => d.image = v);
+      fieldImage(body, '图片',   () => d.image,    (v) => d.image = v);
       fieldText(body, '图片 alt', () => d.imageAlt, (v) => d.imageAlt = v, { hint: 'SEO + 无障碍。一句话描述图里是什么。' });
       fieldSelect(body, '图片位置',
         [{ value: 'right', label: '右侧（默认）' }, { value: 'left', label: '左侧（反转）' }],
@@ -1074,7 +1552,7 @@
       fieldText(body, '显示数量', () => d.limit, (v) => d.limit = parseInt(v, 10) || 3, { type: 'number' });
       fieldGroup(body, '底部"查看全部"链接（可选）');
       fieldText(body, '链接文字', () => d.allLinkText, (v) => d.allLinkText = v);
-      fieldText(body, '链接 URL', () => d.allLink,     (v) => d.allLink = v);
+      fieldLink(body, '链接 URL', () => d.allLink,     (v) => d.allLink = v);
     },
 
     'cta-band': (body, block) => {
@@ -1082,7 +1560,7 @@
       fieldText(body, '主标题', () => d.title,    (v) => d.title = v);
       fieldText(body, '副标题', () => d.subtitle, (v) => d.subtitle = v, { textarea: true });
       fieldText(body, '按钮文字', () => d.button?.label, (v) => { d.button = d.button || {}; d.button.label = v; });
-      fieldText(body, '按钮链接', () => d.button?.url,   (v) => { d.button = d.button || {}; d.button.url = v; });
+      fieldLink(body, '按钮链接', () => d.button?.url,   (v) => { d.button = d.button || {}; d.button.url = v; });
       fieldSelect(body, '背景',
         [{ value: 'dark', label: '深色（默认）' }, { value: 'light', label: '浅色' }, { value: 'grey', label: '灰色' }],
         () => d.background || 'dark',
