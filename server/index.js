@@ -434,6 +434,11 @@ async function autoMigrate() {
     `CREATE INDEX IF NOT EXISTS idx_audit_user_recent  ON audit_logs (user_id, created_at DESC)`,
     `CREATE INDEX IF NOT EXISTS idx_pages_slug         ON pages (slug)`,
     `CREATE INDEX IF NOT EXISTS idx_pages_published    ON pages (status) WHERE status = 'published'`,
+
+    // Multi-size image variants — populated by sharp on upload.
+    `ALTER TABLE media ADD COLUMN IF NOT EXISTS width INT`,
+    `ALTER TABLE media ADD COLUMN IF NOT EXISTS height INT`,
+    `ALTER TABLE media ADD COLUMN IF NOT EXISTS variants JSONB NOT NULL DEFAULT '[]'::jsonb`,
   ];
   for (const sql of stmts) {
     try { await query(sql); }
