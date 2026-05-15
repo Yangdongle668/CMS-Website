@@ -86,7 +86,7 @@ const BLOCKS = {
       const cta2 = c.secondary_cta_link
         ? `<a class="block-hero__cta block-hero__cta--secondary" href="${attr(c.secondary_cta_link)}"${edit('secondary_cta_text')}>${esc(c.secondary_cta_text || 'Learn more')}</a>` : '';
       return `
-        <section class="block block-hero block-hero--${align}" ${bg}>
+        <section class="block block-hero block-hero--${align}" data-edit-bg="image_url" ${bg}>
           <div class="block-hero__overlay"></div>
           <div class="block-hero__inner">
             ${eyebrow}
@@ -385,7 +385,7 @@ const BLOCKS = {
       return `
         <section class="block block-tm">
           <div class="block-tm__inner">
-            ${c.photo ? `<img class="block-tm__photo" src="${attr(c.photo)}" alt="${attr(c.author || '')}" loading="lazy" decoding="async">` : ''}
+            <img class="block-tm__photo" src="${attr(c.photo || '/logo.png')}" alt="${attr(c.author || '')}" loading="lazy" decoding="async" data-edit-image="photo">
             <blockquote class="block-tm__quote"${edit('quote')}>${esc(c.quote || '')}</blockquote>
             <div class="block-tm__author"><span${edit('author')}>${esc(c.author || '')}</span>, <span${edit('company')}>${esc(c.company || '')}</span></div>
           </div>
@@ -468,7 +468,7 @@ const BLOCKS = {
     render(c) {
       const bg = c.image ? `style="background-image:url('${attr(c.image)}');"` : '';
       return `
-        <section class="block block-cta" ${bg}>
+        <section class="block block-cta" data-edit-bg="image" ${bg}>
           <div class="block-cta__overlay"></div>
           <div class="block-cta__inner">
             <h2 class="block-cta__title"${edit('title')}>${esc(c.title || '')}</h2>

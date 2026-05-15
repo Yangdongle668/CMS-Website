@@ -34,9 +34,36 @@
   document.addEventListener('submit', (ev) => ev.preventDefault(), true);
 
   function interceptClicks(ev) {
+    // Click on an [data-edit-image] inline image: open media picker via parent
+    const imgEdit = ev.target.closest('[data-edit-image]');
+    if (imgEdit) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const block = imgEdit.closest('[data-block-id]');
+      if (block) {
+        const id = parseInt(block.dataset.blockId, 10);
+        const field = imgEdit.dataset.editImage;
+        selectBlock(block);
+        post('image-edit-request', { id, field });
+      }
+      return;
+    }
+    // Click on the "Change background" floating button (injected on selection)
+    if (ev.target.closest('.cmsb-edit-bg-btn')) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const block = ev.target.closest('[data-block-id]');
+      const field = block && block.dataset.editBg;
+      if (block && field) {
+        post('image-edit-request', {
+          id: parseInt(block.dataset.blockId, 10),
+          field,
+        });
+      }
+      return;
+    }
     const a = ev.target.closest('a');
     if (a && a.getAttribute('href')) {
-      // Allow clicks INSIDE a contenteditable so the cursor lands properly
       const editable = ev.target.closest('[contenteditable="true"]');
       if (!editable) {
         ev.preventDefault();
@@ -47,7 +74,6 @@
     const block = ev.target.closest('[data-block-id]');
     if (block && !ev.target.closest('.cmsb-toolbar') && !ev.target.closest('.cmsb-insert')) {
       selectBlock(block);
-      // Also focus the field if it's a data-edit-field click
       const field = ev.target.closest('[data-edit-field]');
       if (field) {
         enableEdit(field);
@@ -56,6 +82,9 @@
       deselect();
     }
   }
+
+  // ----- Drag-and-drop state -----
+  let draggedBlockId = null;
 
   // ----- Block selection -----
   let selectedEl = null;
@@ -80,26 +109,52 @@
   }
 
   function ensureToolbar(el) {
-    if (el.querySelector(':scope > .cmsb-toolbar')) return;
-    const tb = document.createElement('div');
-    tb.className = 'cmsb-toolbar';
-    tb.innerHTML = `
-      <span class="cmsb-toolbar__label" title="拖拽换位">⠿ ${escapeHtml(el.dataset.blockType || '')}</span>
-      <button data-act="up" title="上移">↑</button>
-      <button data-act="down" title="下移">↓</button>
-      <button data-act="hide" title="隐藏">⊘</button>
-      <button data-act="duplicate" title="复制">⎘</button>
-      <button data-act="delete" title="删除">✕</button>
-    `;
-    // Toolbar lives inside the section so position:absolute against the section works
-    el.appendChild(tb);
-    tb.addEventListener('click', (ev) => {
-      const btn = ev.target.closest('button');
-      if (!btn) return;
-      ev.stopPropagation();
-      const id = parseInt(el.dataset.blockId, 10);
-      post('block-action', { id, action: btn.dataset.act });
-    });
+    if (!el.querySelector(':scope > .cmsb-toolbar')) {
+      const tb = document.createElement('div');
+      tb.className = 'cmsb-toolbar';
+      tb.innerHTML = `
+        <span class="cmsb-toolbar__label" draggable="true" title="拖拽换位">⠿ ${escapeHtml(el.dataset.blockType || '')}</span>
+        <button data-act="up" title="上移">↑</button>
+        <button data-act="down" title="下移">↓</button>
+        <button data-act="hide" title="隐藏">⊘</button>
+        <button data-act="duplicate" title="复制">⎘</button>
+        <button data-act="delete" title="删除">✕</button>
+      `;
+      el.appendChild(tb);
+      tb.addEventListener('click', (ev) => {
+        const btn = ev.target.closest('button');
+        if (!btn) return;
+        ev.stopPropagation();
+        const id = parseInt(el.dataset.blockId, 10);
+        post('block-action', { id, action: btn.dataset.act });
+      });
+
+      // ----- Drag-to-reorder wiring on the handle -----
+      const handle = tb.querySelector('.cmsb-toolbar__label');
+      handle.addEventListener('dragstart', (ev) => {
+        draggedBlockId = parseInt(el.dataset.blockId, 10);
+        ev.dataTransfer.effectAllowed = 'move';
+        try { ev.dataTransfer.setData('text/plain', String(draggedBlockId)); } catch (_) {}
+        document.documentElement.classList.add('cmsb-is-dragging');
+        el.classList.add('cmsb-being-dragged');
+      });
+      handle.addEventListener('dragend', () => {
+        document.documentElement.classList.remove('cmsb-is-dragging');
+        document.querySelectorAll('.cmsb-being-dragged').forEach((e) => e.classList.remove('cmsb-being-dragged'));
+        draggedBlockId = null;
+      });
+    }
+
+    // Floating "Change image" button for blocks with a [data-edit-bg]
+    // field. We inject ONLY on selection (not on every render) so the
+    // affordance doesn't compete with normal hover/click on visitors.
+    if (el.dataset.editBg && !el.querySelector(':scope > .cmsb-edit-bg-btn')) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'cmsb-edit-bg-btn';
+      btn.innerHTML = '📷 <span>换背景图</span>';
+      el.appendChild(btn);
+    }
   }
 
   // ----- Inline edit (contenteditable + debounced post) -----
@@ -203,7 +258,7 @@
 
   function makeInsertSlot(refBlockId, position) {
     const slot = document.createElement('div');
-    slot.className = 'cmsb-insert';
+    slot.className = 'cmsb-insert cmsb-dropzone';
     slot.dataset.refId = refBlockId;
     slot.dataset.position = position;
     slot.innerHTML = `<button class="cmsb-insert__btn" type="button">+ 添加区块</button>`;
@@ -215,6 +270,30 @@
         position,
       });
       setTimeout(() => slot.classList.remove('is-active'), 800);
+    });
+
+    // ----- Also serve as drop target during drag-to-reorder -----
+    slot.addEventListener('dragover', (ev) => {
+      if (draggedBlockId == null) return;
+      ev.preventDefault();
+      ev.dataTransfer.dropEffect = 'move';
+      slot.classList.add('is-over');
+    });
+    slot.addEventListener('dragleave', () => slot.classList.remove('is-over'));
+    slot.addEventListener('drop', (ev) => {
+      if (draggedBlockId == null) return;
+      ev.preventDefault();
+      slot.classList.remove('is-over');
+      const fromId = draggedBlockId;
+      const refId = parseInt(refBlockId, 10) || null;
+      if (fromId && refId && fromId !== refId) {
+        post('block-reorder', {
+          from_id: fromId,
+          ref_id: refId,
+          position,   // 'before' or 'after'
+        });
+      }
+      draggedBlockId = null;
     });
     return slot;
   }
