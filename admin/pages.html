@@ -47,6 +47,7 @@
                 <td><span class="pill pill--${p.status}">${p.status}</span></td>
                 <td>${formatDate(p.updated_at)}</td>
                 <td>
+                  <a class="btn btn--ghost btn--sm" href="/admin/page-builder.html?page=${p.id}" title="拖拽搭积木">🧱 积木</a>
                   <a class="btn btn--ghost btn--sm" href="?id=${p.id}">编辑</a>
                   <a class="btn btn--ghost btn--sm" target="_blank" href="${slugToUrl(p.slug)}">预览 ↗</a>
                 </td>
