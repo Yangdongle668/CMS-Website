@@ -31,12 +31,16 @@
           <option value="archived">archived</option>
           <option value="spam">标记垃圾</option>
         </select>
+        <select id="sort" title="排序">
+          <option value="created">最新优先</option>
+          <option value="score">高分优先</option>
+        </select>
       </div>
     </div>
     <div class="split">
       <div class="panel" style="padding:0;">
         <table class="table" id="inq-table">
-          <thead><tr><th>编号</th><th>公司</th><th>国家</th><th>状态</th><th>提交时间</th></tr></thead>
+          <thead><tr><th>编号</th><th>公司</th><th>来源</th><th>分数</th><th>状态</th><th>提交时间</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -47,22 +51,47 @@
   const tbody = document.querySelector('#inq-table tbody');
   const qInput = document.querySelector('#q');
   const statusInput = document.querySelector('#status');
+  const sortInput = document.querySelector('#sort');
+
+  function widgetTag(w) {
+    const label = ({
+      main_form: '主表单',
+      mini_rfq: 'Mini RFQ',
+      exit_intent: '退出意图',
+      resource_pack: '资料包',
+    })[w] || w || '主表单';
+    return `<span style="font-size:11px; background:#f1f5f9; color:#475569; padding:2px 8px; border-radius:4px;">${label}</span>`;
+  }
+
+  function scoreBadge(score) {
+    score = score || 0;
+    let color = '#94a3b8';
+    if (score >= 60) color = '#dc2626';
+    else if (score >= 30) color = '#d97706';
+    else if (score > 0) color = '#0b3a82';
+    return `<strong style="color:${color}; font-variant-numeric:tabular-nums;">${score}</strong>`;
+  }
 
   async function load() {
     const params = new URLSearchParams();
     if (qInput.value) params.set('q', qInput.value);
     if (statusInput.value) params.set('status', statusInput.value);
+    if (sortInput.value === 'score') params.set('sort', 'score');
     params.set('limit', '50');
     const { items } = await api('/api/inquiries?' + params.toString());
     tbody.innerHTML = items.length ? items.map((i) => `
-      <tr class="${i.status === 'new' ? 'is-unread' : ''}" data-id="${i.id}" style="cursor:pointer;">
+      <tr class="${i.status === 'new' ? 'is-unread' : ''}" data-id="${i.id}" style="cursor:pointer; ${(i.score || 0) >= 60 ? 'background:rgba(220,38,38,0.04);' : ''}">
         <td><span class="mono" style="font-weight:600;">${escapeHtml(i.reference)}</span></td>
-        <td>${escapeHtml(i.company || i.full_name)}<div style="font-size:11.5px; color:var(--a-mute2);">${escapeHtml(i.email)}</div></td>
-        <td>${escapeHtml(i.country || '-')}</td>
+        <td>
+          ${escapeHtml(i.company || i.full_name)}
+          <div style="font-size:11.5px; color:var(--a-mute2);">${escapeHtml(i.email)} ${i.country ? '· ' + escapeHtml(i.country) : ''}</div>
+        </td>
+        <td>${widgetTag(i.source_widget)}</td>
+        <td>${scoreBadge(i.score)}</td>
         <td><span class="pill pill--${i.status}">${i.status}</span></td>
         <td>${formatDate(i.created_at)}</td>
       </tr>
-    `).join('') : '<tr><td colspan="5"><div class="empty">没有询盘。</div></td></tr>';
+    `).join('') : '<tr><td colspan="6"><div class="empty">没有询盘。</div></td></tr>';
 
     tbody.querySelectorAll('tr[data-id]').forEach((tr) => {
       tr.addEventListener('click', () => openDetail(tr.dataset.id));
@@ -131,6 +160,7 @@
 
   qInput.addEventListener('input', () => { clearTimeout(window.__qt); window.__qt = setTimeout(load, 250); });
   statusInput.addEventListener('change', load);
+  sortInput.addEventListener('change', load);
   load();
 })();
 </script>

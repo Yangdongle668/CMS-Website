@@ -24,6 +24,12 @@ const submitLimiter = rateLimit({
   message: { error: 'too_many_inquiries' },
 });
 
+// Allowed widget origins. Anything else collapses to 'main_form' so an
+// attacker can't pollute funnel stats by inventing source labels.
+const ALLOWED_WIDGETS = new Set([
+  'main_form', 'mini_rfq', 'exit_intent', 'resource_pack',
+]);
+
 // ---------- Public submit ----------
 router.post('/', submitLimiter, async (req, res) => {
   const b = req.body || {};
@@ -33,16 +39,28 @@ router.post('/', submitLimiter, async (req, res) => {
     return res.status(200).json({ ok: true, reference: 'BOT' });
   }
 
+  const widget = ALLOWED_WIDGETS.has(b.source_widget) ? b.source_widget : 'main_form';
+  // Mini widgets capture fewer fields; we relax full_name and message
+  // requirements for them since the goal is just to start a conversation.
+  // Sales follows up via the email auto-reply trail.
+  const isMini = widget !== 'main_form';
+
   const consent = asBool(b.consent_given);
   if (!consent) return res.status(400).json({ error: 'consent_required' });
 
   const email = trimStr(b.email, 190).toLowerCase();
-  const fullName = trimStr(b.full_name, 190);
+  const fullName = trimStr(b.full_name, 190) || (isMini ? '(via mini form)' : '');
   if (!isEmail(email)) return res.status(400).json({ error: 'invalid_email' });
-  if (!fullName) return res.status(400).json({ error: 'name_required' });
+  if (!isMini && !fullName) return res.status(400).json({ error: 'name_required' });
 
-  const message = trimStr(b.message, 4000);
-  if (message.length < 10) return res.status(400).json({ error: 'message_too_short' });
+  let message = trimStr(b.message, 4000);
+  if (!isMini && message.length < 10) return res.status(400).json({ error: 'message_too_short' });
+  // For mini forms, derive a default message from context so sales has
+  // something readable in the email alert.
+  if (!message && isMini) {
+    const ctx = trimStr(b.source_page, 200) || '(no page)';
+    message = `Inline ${widget} request from ${ctx}. Reply to the visitor for full requirements.`;
+  }
 
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || '';
   const ipHash = sha256(ip);
@@ -103,6 +121,7 @@ router.post('/', submitLimiter, async (req, res) => {
     consent_at: new Date(),
     policy_version: process.env.PRIVACY_POLICY_VERSION || '1.0',
     content_hash: contentHash,
+    source_widget: widget,
   };
 
   const { score } = scoreInquiry(inquiry);
@@ -115,8 +134,8 @@ router.post('/', submitLimiter, async (req, res) => {
          reference, company, full_name, email, phone, country, product_categories,
          capacity_need, annual_volume, application, message, attachments,
          source_page, utm, ip_hash, user_agent, consent_given, consent_at, policy_version,
-         content_hash, score
-       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21) RETURNING id`,
+         content_hash, score, source_widget
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22) RETURNING id`,
       [
         inquiry.reference,
         inquiry.company,
@@ -139,6 +158,7 @@ router.post('/', submitLimiter, async (req, res) => {
         inquiry.policy_version,
         inquiry.content_hash,
         inquiry.score,
+        inquiry.source_widget,
       ]
     );
     inquiryId = r.rows[0].id;
@@ -218,7 +238,8 @@ router.get('/', requireAuth, async (req, res) => {
   params.push(offset);
   const rows = await many(
     `SELECT id, reference, company, full_name, email, phone, country, product_categories,
-            capacity_need, annual_volume, application, source_page, status, score, created_at
+            capacity_need, annual_volume, application, source_page, source_widget,
+            status, score, replied_at, created_at
      FROM inquiries WHERE ${where.join(' AND ')}
      ORDER BY ${orderBy}
      LIMIT $${params.length - 1} OFFSET $${params.length}`,
@@ -260,6 +281,12 @@ router.patch('/:id', requireAuth, async (req, res) => {
   if (status) {
     params.push(status);
     sets.push(`status = $${params.length}`);
+    // First-touch reply tracking: stamp replied_at the first time an
+    // inquiry flips to 'replied'. Subsequent status changes don't move
+    // the timestamp — funnel "avg first response time" stays meaningful.
+    if (status === 'replied') {
+      sets.push(`replied_at = COALESCE(replied_at, now())`);
+    }
   }
   if (notes != null) {
     params.push(notes);
@@ -284,6 +311,94 @@ router.delete('/:id', requireAuth, async (req, res) => {
   );
   await recordAudit({ req, action: 'soft_delete', entity: 'inquiry', entityId: id });
   res.json({ ok: true });
+});
+
+// ----- Admin funnel analytics -----
+// Aggregates that drive /admin/analytics inquiry-funnel panels.
+// Cheap queries (the indexes added in Sprint 1 make them ~5ms each).
+router.get('/funnel/summary', requireAuth, async (req, res) => {
+  const days = clamp(req.query.days, 1, 365, 30);
+  const since = `now() - interval '${days} days'`;
+
+  const totals = await one(
+    `SELECT
+       count(*)::int AS total,
+       count(*) FILTER (WHERE status='replied')::int AS replied,
+       count(*) FILTER (WHERE score >= 60)::int AS hot,
+       count(*) FILTER (WHERE source_widget='mini_rfq')::int AS mini_rfq,
+       count(*) FILTER (WHERE source_widget='exit_intent')::int AS exit_intent,
+       count(*) FILTER (WHERE source_widget='resource_pack')::int AS resource_pack,
+       count(*) FILTER (WHERE source_widget='main_form')::int AS main_form,
+       AVG(EXTRACT(EPOCH FROM (replied_at - created_at)) / 3600)
+         FILTER (WHERE replied_at IS NOT NULL)::float AS avg_reply_hours
+     FROM inquiries
+     WHERE is_deleted=FALSE AND created_at > ${since}`
+  );
+
+  // Page-view total over the same window (denominator for conversion rate)
+  const pageviews = await one(
+    `SELECT count(*)::int AS n FROM analytics_hits
+     WHERE ts > ${since} AND is_bot = FALSE`
+  ).catch(() => ({ n: 0 }));
+
+  const topSourcePages = await many(
+    `SELECT source_page, count(*)::int AS n
+     FROM inquiries
+     WHERE is_deleted=FALSE AND created_at > ${since} AND source_page <> ''
+     GROUP BY source_page
+     ORDER BY n DESC
+     LIMIT 10`
+  );
+
+  const topUtm = await many(
+    `SELECT
+       COALESCE(utm->>'utm_source', '(direct)') AS source,
+       COALESCE(utm->>'utm_medium', '(none)')   AS medium,
+       count(*)::int AS n
+     FROM inquiries
+     WHERE is_deleted=FALSE AND created_at > ${since}
+     GROUP BY source, medium
+     ORDER BY n DESC
+     LIMIT 10`
+  );
+
+  const daily = await many(
+    `SELECT to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS d,
+            count(*)::int AS total,
+            count(*) FILTER (WHERE score >= 60)::int AS hot
+     FROM inquiries
+     WHERE is_deleted=FALSE AND created_at > ${since}
+     GROUP BY date_trunc('day', created_at)
+     ORDER BY date_trunc('day', created_at)`
+  );
+
+  const total = totals ? totals.total : 0;
+  const replied = totals ? totals.replied : 0;
+  const pv = pageviews ? pageviews.n : 0;
+
+  res.json({
+    window_days: days,
+    totals: {
+      inquiries: total,
+      hot_leads: totals ? totals.hot : 0,
+      replied,
+      pageviews: pv,
+      conversion_rate: pv > 0 ? Number((total / pv * 100).toFixed(3)) : null,
+      hot_rate: total > 0 ? Number((totals.hot / total * 100).toFixed(1)) : null,
+      reply_rate: total > 0 ? Number((replied / total * 100).toFixed(1)) : null,
+      avg_reply_hours: totals && totals.avg_reply_hours != null
+        ? Number(totals.avg_reply_hours.toFixed(2)) : null,
+    },
+    widgets: {
+      main_form: totals.main_form,
+      mini_rfq: totals.mini_rfq,
+      exit_intent: totals.exit_intent,
+      resource_pack: totals.resource_pack,
+    },
+    top_source_pages: topSourcePages,
+    top_utm: topUtm,
+    daily,
+  });
 });
 
 router.get('/export/csv', requireAuth, async (_req, res) => {

@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>询盘漏斗 | 后台管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+<style>
+  .funnel-ranges { display:inline-flex; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; background:#fff; }
+  .funnel-ranges button { background:transparent; border:none; padding:8px 14px; font-size:12.5px; color:#64748b; cursor:pointer; border-right:1px solid #e2e8f0; }
+  .funnel-ranges button:last-child { border-right:none; }
+  .funnel-ranges button.is-active { background:#0b3a82; color:#fff; font-weight:500; }
+  .funnel-kpi-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:14px; margin-bottom:18px; }
+  .funnel-kpi { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:16px 18px; }
+  .funnel-kpi__label { font-size:11px; letter-spacing:1px; text-transform:uppercase; color:#94a3b8; font-weight:600; }
+  .funnel-kpi__value { font-size:28px; font-weight:700; color:#0f172a; margin-top:6px; letter-spacing:-0.4px; line-height:1.1; }
+  .funnel-kpi__sub { font-size:11.5px; color:#64748b; margin-top:6px; }
+  .funnel-kpi--hot .funnel-kpi__value { color:#dc2626; }
+  .funnel-kpi--ok  .funnel-kpi__value { color:#059669; }
+  .funnel-row { display:grid; grid-template-columns:1.3fr 1fr; gap:16px; margin-top:18px; }
+  @media (max-width:1100px) { .funnel-row { grid-template-columns:1fr; } }
+  .funnel-card { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:18px 20px; }
+  .funnel-card h3 { margin:0 0 14px; font-size:14px; font-weight:600; color:#0f172a; }
+  .widget-bars { display:flex; flex-direction:column; gap:10px; }
+  .widget-bar { display:flex; align-items:center; gap:10px; font-size:13px; }
+  .widget-bar__label { width:120px; flex-shrink:0; color:#475569; }
+  .widget-bar__track { flex:1; height:18px; background:#f1f5f9; border-radius:4px; overflow:hidden; position:relative; }
+  .widget-bar__fill { height:100%; background:linear-gradient(90deg, #0b3a82, #1e60d5); transition:width 0.4s ease; }
+  .widget-bar__n { width:50px; text-align:right; font-variant-numeric:tabular-nums; color:#0f172a; font-weight:600; }
+  .table-tight { width:100%; border-collapse:collapse; font-size:13px; }
+  .table-tight th, .table-tight td { padding:8px 4px; text-align:left; border-bottom:1px solid #f1f5f9; }
+  .table-tight th { font-weight:600; color:#94a3b8; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; }
+  .table-tight td.mono { font-family:'JetBrains Mono', monospace; font-size:11.5px; color:#475569; }
+  .table-tight td.n { text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
+  .daily-sparkline { display:flex; align-items:flex-end; gap:2px; height:60px; padding:8px 0; }
+  .daily-sparkline__bar { flex:1; background:#0b3a82; border-radius:2px 2px 0 0; min-height:2px; position:relative; transition:background 0.15s; }
+  .daily-sparkline__bar.has-hot { background:linear-gradient(180deg, #dc2626 0%, #dc2626 var(--hot-pct), #0b3a82 var(--hot-pct), #0b3a82 100%); }
+  .daily-sparkline__bar:hover { opacity:0.8; }
+  .daily-sparkline__bar::after {
+    content: attr(data-tip);
+    position:absolute; bottom:100%; left:50%; transform:translateX(-50%);
+    background:#0f172a; color:#fff; padding:4px 8px; border-radius:4px;
+    font-size:11px; white-space:nowrap; opacity:0; pointer-events:none;
+    transition:opacity 0.15s; margin-bottom:4px;
+  }
+  .daily-sparkline__bar:hover::after { opacity:1; }
+  .daily-sparkline__legend { display:flex; gap:12px; font-size:11px; color:#64748b; margin-top:6px; }
+  .daily-sparkline__legend span { display:inline-flex; align-items:center; gap:5px; }
+  .daily-sparkline__legend i { width:10px; height:10px; border-radius:2px; display:inline-block; }
+  .hint { font-size:12px; color:#64748b; line-height:1.5; }
+</style>
+</head>
+<body>
+<div data-admin-shell></div>
+<script src="/admin/assets/js/admin.js"></script>
+<script>
+(async function () {
+  const { api, escapeHtml, bootShell } = window.AdminAPI;
+  const shell = await bootShell({ title: '询盘漏斗', crumbs: '询盘 / 漏斗分析' });
+  if (!shell) return;
+
+  let days = 30;
+
+  function fmtNum(n) {
+    if (n == null) return '—';
+    return new Intl.NumberFormat('en-US').format(n);
+  }
+  function fmtPct(n, digits) {
+    if (n == null) return '—';
+    return n.toFixed(digits || 1) + '%';
+  }
+  function fmtHours(h) {
+    if (h == null) return '—';
+    if (h < 1) return Math.round(h * 60) + ' 分钟';
+    if (h < 24) return h.toFixed(1) + ' 小时';
+    return (h / 24).toFixed(1) + ' 天';
+  }
+
+  function widgetLabel(k) {
+    return ({
+      main_form: '主表单',
+      mini_rfq: 'Mini RFQ',
+      exit_intent: '退出意图',
+      resource_pack: '资料包',
+    })[k] || k;
+  }
+
+  async function load() {
+    let data;
+    try {
+      data = await api('/api/inquiries/funnel/summary?days=' + days);
+    } catch (e) {
+      shell.content.innerHTML = '<div class="empty" style="padding:40px;">加载失败：' + escapeHtml(e.message) + '</div>';
+      return;
+    }
+
+    const t = data.totals;
+    const widgets = data.widgets || {};
+    const widgetMax = Math.max(1, ...Object.values(widgets));
+
+    const dailyMaxTotal = Math.max(1, ...data.daily.map((d) => d.total));
+
+    shell.content.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+        <div class="hint">询盘漏斗 KPI · 数据来自 inquiries + analytics_hits 实时聚合，含触点拆分、来源排行、首次响应时长。</div>
+        <div class="funnel-ranges">
+          ${[7,30,90,180].map((d) => `<button data-days="${d}" class="${d===days?'is-active':''}">${d} 天</button>`).join('')}
+        </div>
+      </div>
+
+      <div class="funnel-kpi-grid">
+        <div class="funnel-kpi">
+          <div class="funnel-kpi__label">询盘总数</div>
+          <div class="funnel-kpi__value">${fmtNum(t.inquiries)}</div>
+          <div class="funnel-kpi__sub">过去 ${days} 天</div>
+        </div>
+        <div class="funnel-kpi funnel-kpi--hot">
+          <div class="funnel-kpi__label">高分线索（≥60）</div>
+          <div class="funnel-kpi__value">${fmtNum(t.hot_leads)}</div>
+          <div class="funnel-kpi__sub">占比 ${fmtPct(t.hot_rate)}</div>
+        </div>
+        <div class="funnel-kpi funnel-kpi--ok">
+          <div class="funnel-kpi__label">已回复</div>
+          <div class="funnel-kpi__value">${fmtNum(t.replied)}</div>
+          <div class="funnel-kpi__sub">回复率 ${fmtPct(t.reply_rate)}</div>
+        </div>
+        <div class="funnel-kpi">
+          <div class="funnel-kpi__label">询盘转化率</div>
+          <div class="funnel-kpi__value">${t.conversion_rate != null ? t.conversion_rate.toFixed(3) + '%' : '—'}</div>
+          <div class="funnel-kpi__sub">${fmtNum(t.pageviews)} PV / ${fmtNum(t.inquiries)} 询盘</div>
+        </div>
+        <div class="funnel-kpi">
+          <div class="funnel-kpi__label">首次响应时长</div>
+          <div class="funnel-kpi__value" style="font-size:22px; padding-top:8px;">${fmtHours(t.avg_reply_hours)}</div>
+          <div class="funnel-kpi__sub">从 created_at 到首次 replied</div>
+        </div>
+      </div>
+
+      <div class="funnel-row">
+        <div class="funnel-card">
+          <h3>每日询盘趋势（蓝=普通 / 红=高分线索叠加）</h3>
+          ${data.daily.length ? `
+            <div class="daily-sparkline">
+              ${data.daily.map((d) => {
+                const pct = Math.max(2, Math.round(d.total / dailyMaxTotal * 100));
+                const hotPct = d.total ? Math.round(d.hot / d.total * 100) : 0;
+                const cls = d.hot > 0 ? 'daily-sparkline__bar has-hot' : 'daily-sparkline__bar';
+                return `<div class="${cls}" style="--hot-pct:${hotPct}%; height:${pct}%;"
+                          data-tip="${d.d} · 总 ${d.total} · 高分 ${d.hot}"></div>`;
+              }).join('')}
+            </div>
+            <div class="daily-sparkline__legend">
+              <span><i style="background:#0b3a82;"></i>普通询盘</span>
+              <span><i style="background:#dc2626;"></i>高分线索（score ≥ 60）</span>
+            </div>
+          ` : '<div class="empty" style="padding:30px;">区间内暂无询盘。</div>'}
+        </div>
+
+        <div class="funnel-card">
+          <h3>触点来源拆分</h3>
+          ${Object.keys(widgets).length ? `
+            <div class="widget-bars">
+              ${['main_form','mini_rfq','exit_intent','resource_pack'].map((k) => {
+                const n = widgets[k] || 0;
+                const pct = Math.round(n / widgetMax * 100);
+                return `
+                  <div class="widget-bar">
+                    <div class="widget-bar__label">${widgetLabel(k)}</div>
+                    <div class="widget-bar__track"><div class="widget-bar__fill" style="width:${pct}%;"></div></div>
+                    <div class="widget-bar__n">${n}</div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+            <p class="hint" style="margin-top:14px;">
+              Mini RFQ + 退出意图是 Sprint 2 新增的轻量入口，主表单是 /contact /quote 页。
+              如果某个触点询盘为零但 PV 很高，可能是触点没正确加载或配置 — 检查相应页面。
+            </p>
+          ` : '<div class="empty" style="padding:24px;">尚无询盘数据。</div>'}
+        </div>
+      </div>
+
+      <div class="funnel-row">
+        <div class="funnel-card">
+          <h3>Top 10 来源页 <span class="hint" style="font-weight:400; margin-left:8px;">询盘来自哪个页面</span></h3>
+          ${data.top_source_pages.length ? `
+            <table class="table-tight">
+              <thead><tr><th style="width:36px;">#</th><th>页面</th><th class="n">询盘数</th></tr></thead>
+              <tbody>
+                ${data.top_source_pages.map((r, i) => `
+                  <tr>
+                    <td class="mono">${i + 1}</td>
+                    <td class="mono"><a href="${escapeHtml(r.source_page)}" target="_blank" style="color:#0b3a82;">${escapeHtml(r.source_page)}</a></td>
+                    <td class="n">${r.n}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          ` : '<div class="empty" style="padding:24px;">暂无数据。</div>'}
+        </div>
+
+        <div class="funnel-card">
+          <h3>Top 10 UTM 来源 <span class="hint" style="font-weight:400; margin-left:8px;">投放/外链效果</span></h3>
+          ${data.top_utm.length ? `
+            <table class="table-tight">
+              <thead><tr><th>Source</th><th>Medium</th><th class="n">询盘数</th></tr></thead>
+              <tbody>
+                ${data.top_utm.map((r) => `
+                  <tr>
+                    <td class="mono">${escapeHtml(r.source)}</td>
+                    <td class="mono">${escapeHtml(r.medium)}</td>
+                    <td class="n">${r.n}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          ` : '<div class="empty" style="padding:24px;">暂无 UTM 数据。</div>'}
+        </div>
+      </div>
+    `;
+
+    // Wire range tabs
+    shell.content.querySelectorAll('[data-days]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        days = parseInt(btn.dataset.days, 10) || 30;
+        load();
+      });
+    });
+  }
+
+  await load();
+})();
+</script>
+</body>
+</html>

@@ -8,6 +8,7 @@
     { group: '询盘', items: [
       { label: '收件箱', href: '/admin/inquiries.html', icon: '✉' },
       { label: '仪表盘', href: '/admin/index.html', icon: '⌂' },
+      { label: '漏斗分析', href: '/admin/inquiry-funnel.html', icon: '⇢' },
       { label: '邮件队列', href: '/admin/mail-queue.html', icon: '⇲' },
       { label: '访问统计', href: '/admin/analytics.html', icon: '◔' },
     ]},
