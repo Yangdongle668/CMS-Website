@@ -158,9 +158,17 @@ CREATE TABLE IF NOT EXISTS media (
   mime        VARCHAR(120) NOT NULL,
   size        BIGINT       NOT NULL DEFAULT 0,
   alt_text    VARCHAR(255) NOT NULL DEFAULT '',
+  variants    JSONB        NOT NULL DEFAULT '[]'::jsonb,
+  srcset      JSONB        NOT NULL DEFAULT '{}'::jsonb,
+  width       INT          NOT NULL DEFAULT 0,
+  height      INT          NOT NULL DEFAULT 0,
   uploaded_by INT REFERENCES users(id) ON DELETE SET NULL,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE media ADD COLUMN IF NOT EXISTS variants JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE media ADD COLUMN IF NOT EXISTS srcset   JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE media ADD COLUMN IF NOT EXISTS width    INT   NOT NULL DEFAULT 0;
+ALTER TABLE media ADD COLUMN IF NOT EXISTS height   INT   NOT NULL DEFAULT 0;
 
 -- ----- settings (key/value JSON) -----
 CREATE TABLE IF NOT EXISTS settings (

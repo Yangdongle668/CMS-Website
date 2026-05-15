@@ -521,6 +521,11 @@ async function autoMigrate() {
     `CREATE INDEX IF NOT EXISTS idx_analytics_country_ts
        ON analytics_hits(country, ts DESC)
        WHERE country <> ''`,
+    // ----- Media variants (Sprint 1 — image processing) -----
+    `ALTER TABLE media ADD COLUMN IF NOT EXISTS variants JSONB NOT NULL DEFAULT '[]'::jsonb`,
+    `ALTER TABLE media ADD COLUMN IF NOT EXISTS srcset   JSONB NOT NULL DEFAULT '{}'::jsonb`,
+    `ALTER TABLE media ADD COLUMN IF NOT EXISTS width    INT   NOT NULL DEFAULT 0`,
+    `ALTER TABLE media ADD COLUMN IF NOT EXISTS height   INT   NOT NULL DEFAULT 0`,
     // ----- Acme → Zufek cleanup (legacy seed data) -----
     `UPDATE articles SET author = 'Zufek Engineering' WHERE author ILIKE '%acme%' OR author = '' OR author IS NULL`,
     `UPDATE articles SET content = REPLACE(content, 'Acme Engineering', 'Zufek Engineering') WHERE content LIKE '%Acme%'`,
