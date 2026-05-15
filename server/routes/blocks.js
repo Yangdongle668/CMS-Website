@@ -11,7 +11,7 @@
 //   DELETE /api/blocks/:id                 → remove block
 // =====================================================================
 const express = require('express');
-const { many, one, query } = require('../db/client');
+const { many, one, query, pool } = require('../db/client');
 const { requireAuth } = require('../middleware/auth');
 const { recordAudit } = require('../middleware/audit');
 const { clamp, trimStr, asBool, asJson } = require('../utils/validate');
@@ -145,6 +145,54 @@ router.delete('/:id', requireAuth, async (req, res) => {
   await recordAudit({ req, action: 'delete', entity: 'block', entityId: id });
   await bustPageCache();
   res.json({ ok: true });
+});
+
+// ----- Bulk replace a page's blocks (used by undo/redo) -----
+// Atomic transaction: DELETE all existing rows for the page, then INSERT
+// the supplied list in order. New rows get fresh IDs — undo callers
+// must refresh their local block array after this returns.
+router.post('/replace-page', requireAuth, async (req, res) => {
+  const pageId = clamp(req.body && req.body.page_id, 1, 1e9, 0);
+  if (!pageId) return res.status(400).json({ error: 'invalid_page_id' });
+  const list = Array.isArray(req.body && req.body.blocks) ? req.body.blocks : [];
+  // Validate every block_type up front so a single bad entry doesn't
+  // get half-applied before we hit the bad row.
+  for (const b of list) {
+    if (!b || !registry.getBlockType(trimStr(b.block_type, 40))) {
+      return res.status(400).json({ error: 'unknown_block_type', detail: b && b.block_type });
+    }
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('DELETE FROM page_blocks WHERE page_id = $1', [pageId]);
+    const insertedIds = [];
+    for (let i = 0; i < list.length; i++) {
+      const b = list[i];
+      const r = await client.query(
+        `INSERT INTO page_blocks (page_id, block_type, sort_order, content, is_visible)
+         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+        [
+          pageId,
+          trimStr(b.block_type, 40),
+          i,
+          JSON.stringify(b.content || {}),
+          b.is_visible !== false,
+        ]
+      );
+      insertedIds.push(r.rows[0].id);
+    }
+    await client.query('COMMIT');
+    await recordAudit({ req, action: 'replace_page', entity: 'block', detail: { page_id: pageId, count: list.length } });
+    await bustPageCache();
+    res.json({ ok: true, ids: insertedIds });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
 });
 
 // ----- Server-side preview (used by the page builder right pane) -----

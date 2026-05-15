@@ -544,6 +544,23 @@
     }[c]));
   }
 
+  // ----- Forward undo/redo shortcuts to the parent -----
+  // Inside a contenteditable, browser-native undo IS what the user
+  // wants (single keystroke roll-back). Outside any contenteditable
+  // (i.e. when the keyboard target is the canvas itself), forward to
+  // parent which holds the block-level history stack.
+  document.addEventListener('keydown', (ev) => {
+    if (!(ev.ctrlKey || ev.metaKey)) return;
+    const k = ev.key.toLowerCase();
+    if (k !== 'z' && k !== 'y') return;
+    const editable = document.activeElement && document.activeElement.closest
+      && document.activeElement.closest('[contenteditable="true"]');
+    if (editable) return;   // browser handles native field undo
+    ev.preventDefault();
+    if (k === 'z' && !ev.shiftKey) post('shortcut', { key: 'undo' });
+    else post('shortcut', { key: 'redo' });
+  });
+
   // ----- Initial paint -----
   injectInsertSlots();
 

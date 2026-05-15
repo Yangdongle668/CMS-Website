@@ -157,6 +157,8 @@
             <button class="pb2-device" data-device="mobile">📱 手机</button>
           </div>
           <div class="pb2-toolbar__right">
+            <button class="btn btn--ghost btn--sm" id="undo-btn" title="撤销 (Ctrl+Z)" disabled>↶ 撤销</button>
+            <button class="btn btn--ghost btn--sm" id="redo-btn" title="重做 (Ctrl+Y)" disabled>↷ 重做</button>
             <span class="pb2-save" id="save-status">✓ 已加载</span>
             <a class="btn btn--ghost btn--sm" href="/${escapeHtml(slug)}" target="_blank">前台查看 ↗</a>
           </div>
@@ -186,6 +188,83 @@
     saveStatus.className = 'pb2-save is-' + state;
     saveStatus.textContent = text;
   }
+
+  // ----- Undo / Redo (client-side history of full block state) -----
+  // Each user-initiated change captures the BEFORE state. Undo pops
+  // that off and bulk-replaces the page; the current state goes to
+  // the redo stack. A new edit after an undo clears the redo stack
+  // (standard linear history behavior).
+  const MAX_HISTORY = 50;
+  const undoStack = [];
+  const redoStack = [];
+
+  function snapshotBlocks() {
+    return blocks.map((b) => ({
+      block_type: b.block_type,
+      content: JSON.parse(JSON.stringify(b.content || {})),
+      is_visible: b.is_visible !== false,
+    }));
+  }
+
+  function pushUndo() {
+    undoStack.push(snapshotBlocks());
+    if (undoStack.length > MAX_HISTORY) undoStack.shift();
+    redoStack.length = 0;
+    updateHistoryUI();
+  }
+
+  function updateHistoryUI() {
+    const u = document.getElementById('undo-btn');
+    const r = document.getElementById('redo-btn');
+    if (u) u.disabled = !undoStack.length;
+    if (r) r.disabled = !redoStack.length;
+  }
+
+  async function restoreState(state) {
+    setStatus('saving', '恢复中…');
+    try {
+      await api('/api/blocks/replace-page', {
+        method: 'POST',
+        body: JSON.stringify({ page_id: pageId, blocks: state }),
+      });
+      const fresh = await api('/api/blocks/page/' + pageId);
+      blocks = fresh.items;
+      selectedId = null;
+      setStatus('saved', '✓ 已恢复');
+      reloadFrame();
+    } catch (e) {
+      setStatus('dirty', '恢复失败：' + e.message);
+    }
+  }
+
+  async function undo() {
+    if (!undoStack.length) return;
+    const prev = undoStack.pop();
+    redoStack.push(snapshotBlocks());
+    updateHistoryUI();
+    await restoreState(prev);
+  }
+
+  async function redo() {
+    if (!redoStack.length) return;
+    const next = redoStack.pop();
+    undoStack.push(snapshotBlocks());
+    updateHistoryUI();
+    await restoreState(next);
+  }
+
+  document.getElementById('undo-btn').addEventListener('click', undo);
+  document.getElementById('redo-btn').addEventListener('click', redo);
+
+  // Keyboard: Ctrl/Cmd+Z = undo, Ctrl+Shift+Z or Ctrl+Y = redo.
+  // The iframe forwards the same shortcuts via postMessage so the
+  // user doesn't need to click out of the canvas first.
+  document.addEventListener('keydown', (ev) => {
+    if (!(ev.ctrlKey || ev.metaKey)) return;
+    const k = ev.key.toLowerCase();
+    if (k === 'z' && !ev.shiftKey) { ev.preventDefault(); undo(); }
+    else if ((k === 'z' && ev.shiftKey) || k === 'y') { ev.preventDefault(); redo(); }
+  });
 
   // ----- Postmessage protocol -----
   function postToFrame(type, payload) {
@@ -226,6 +305,10 @@
       case 'block-insert-drop':
         await addBlockAt(m.block_type, m.ref_id, m.position);
         break;
+      case 'shortcut':
+        if (m.key === 'undo') undo();
+        else if (m.key === 'redo') redo();
+        break;
     }
   });
 
@@ -234,6 +317,7 @@
     const fromIdx = blocks.findIndex((b) => b.id === fromId);
     const refIdx = blocks.findIndex((b) => b.id === refId);
     if (fromIdx < 0 || refIdx < 0 || fromId === refId) return;
+    pushUndo();
     const [moved] = blocks.splice(fromIdx, 1);
     // After removing, refIdx may have shifted by -1 if it was after fromIdx
     const adjustedRefIdx = blocks.findIndex((b) => b.id === refId);
@@ -258,6 +342,7 @@
     if (!block) return;
     const url = await pickFromMedia();
     if (!url) return;
+    pushUndo();
     block.content = block.content || {};
     block.content[field] = url;
     setStatus('saving', '保存中…');
@@ -274,6 +359,7 @@
   async function applyPartialEdit(id, fields) {
     const block = blocks.find((b) => b.id === id);
     if (!block) return;
+    pushUndo();
     Object.assign(block.content, fields);
     setStatus('saving', '保存中…');
     try {
@@ -291,6 +377,7 @@
     if (idx < 0) return;
     if (action === 'delete') {
       if (!confirm('删除这个区块？')) return;
+      pushUndo();
       try {
         await api('/api/blocks/' + id, { method: 'DELETE' });
         blocks.splice(idx, 1);
@@ -298,6 +385,7 @@
         reloadFrame();
       } catch (e) { alert('删除失败：' + e.message); }
     } else if (action === 'hide') {
+      pushUndo();
       const b = blocks[idx];
       try {
         await api('/api/blocks/' + id, { method: 'PUT', body: JSON.stringify({ is_visible: !b.is_visible }) });
@@ -307,6 +395,7 @@
     } else if (action === 'up' || action === 'down') {
       const target = action === 'up' ? idx - 1 : idx + 1;
       if (target < 0 || target >= blocks.length) return;
+      pushUndo();
       [blocks[idx], blocks[target]] = [blocks[target], blocks[idx]];
       const orderedIds = blocks.map((b) => b.id);
       try {
@@ -314,6 +403,7 @@
         reloadFrame();
       } catch (e) { alert('排序失败：' + e.message); }
     } else if (action === 'duplicate') {
+      pushUndo();
       const orig = blocks[idx];
       try {
         const r = await api('/api/blocks', {
@@ -337,6 +427,7 @@
   }
 
   async function addBlockAt(type, refId, position) {
+    pushUndo();
     try {
       const r = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ page_id: pageId, block_type: type }) });
       // r is appended to end. If we want it elsewhere, reorder.
