@@ -198,7 +198,13 @@ app.get(['/blog/', '/blog/index.html'], async (req, res, next) => {
 app.use(htmlTokenMiddleware);
 
 // ----- Static uploads -----
-app.use('/uploads', express.static(path.join(ROOT, 'uploads'), { maxAge: '7d', index: false }));
+// Uploaded media is content-addressed by filename (timestamp+hash) so a
+// given URL never points at different bytes — safe to hard-cache.
+app.use('/uploads', express.static(path.join(ROOT, 'uploads'), {
+  maxAge: '365d',
+  immutable: true,
+  index: false,
+}));
 
 // ----- Static admin -----
 app.use('/admin', express.static(path.join(ROOT, 'admin'), { extensions: ['html'] }));
@@ -210,11 +216,20 @@ app.get('/admin/*', (req, res, next) => {
 });
 
 // ----- Static public site (assets only — HTML already handled above) -----
+// HTML stays no-cache so CMS edits remain instantly visible. JS/CSS/fonts/
+// images get a 7-day max-age — the existing ?v=N query-string bust handles
+// invalidation on release.
 app.use(
   express.static(path.join(ROOT, 'public'), {
     extensions: ['html'],
     setHeaders: (res, filePath) => {
-      if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache');
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache');
+        return;
+      }
+      if (/\.(js|css|woff2?|ttf|eot|svg|png|jpe?g|gif|webp|ico|mp4|webm)$/i.test(filePath)) {
+        res.setHeader('Cache-Control', 'public, max-age=604800');
+      }
     },
   })
 );
