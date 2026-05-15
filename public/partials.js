@@ -442,6 +442,165 @@ function applyGa4Consent() {
   });
 }
 
+// ----- Exit-intent modal (Sprint 2 — inquiry funnel) -----
+// Fires when the user's mouse leaves the viewport from the top edge —
+// the classic "they're about to close the tab" signal. Offers to email
+// them a product datasheet pack in exchange for their email. Single
+// trigger per session, suppressed if they've already submitted any
+// inquiry. Only mounted on high-intent product / application / blog
+// pages so it never fires on the home or legal pages.
+const EXIT_INTENT_KEY = 'cms_exit_intent_shown';
+const EXIT_INTENT_HTML = `
+  <div class="exit-modal__backdrop"></div>
+  <div class="exit-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="exit-modal-title">
+    <button class="exit-modal__close" type="button" aria-label="Close">×</button>
+    <div class="exit-modal__inner">
+      <div class="exit-modal__eyebrow">Before you go</div>
+      <h2 class="exit-modal__title" id="exit-modal-title">Get our full product datasheet pack</h2>
+      <p class="exit-modal__sub">Specs, certs, application notes and case-study PDFs — sent to your inbox so you have them when you're ready to decide.</p>
+      <form class="exit-modal__form" novalidate>
+        <input class="exit-modal__honeypot" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <div class="exit-modal__row">
+          <input type="email" name="email" placeholder="your@company.com" required autocomplete="email">
+          <button type="submit" class="exit-modal__submit">Email me the pack</button>
+        </div>
+        <label class="exit-modal__consent">
+          <input type="checkbox" name="consent" required>
+          <span>I agree to receive product information per the <a href="/privacy" target="_blank" rel="noopener">privacy policy</a>.</span>
+        </label>
+        <div class="exit-modal__turnstile" data-turnstile data-turnstile-theme="light"></div>
+        <p class="exit-modal__status" role="status" aria-live="polite"></p>
+      </form>
+    </div>
+  </div>
+`;
+
+function shouldShowExitIntent() {
+  if (location.pathname.startsWith('/admin/')) return false;
+  if (location.pathname === '/contact.html' || location.pathname === '/quote.html') return false;
+  // Same surfaces as mini RFQ but additionally also on /products list etc.
+  if (!(
+    /^\/products(\/|$)/.test(location.pathname) ||
+    /^\/applications(\/|$)/.test(location.pathname) ||
+    /^\/blog(\/|$)/.test(location.pathname) ||
+    /^\/solutions(\/|$)/.test(location.pathname)
+  )) return false;
+  if (sessionStorage.getItem(EXIT_INTENT_KEY)) return false;
+  if (sessionStorage.getItem(MINI_RFQ_SUBMITTED_KEY)) return false;
+  return true;
+}
+
+function injectExitIntent() {
+  if (!shouldShowExitIntent()) return;
+  if (document.querySelector('.exit-modal')) return;
+
+  // Wait at least 8s before arming the trigger so a visitor who landed
+  // and bounced in 2s doesn't see a modal pop on a bare-bones page view.
+  const ARM_DELAY_MS = 8000;
+  let armed = false;
+  let shown = false;
+  setTimeout(() => { armed = true; }, ARM_DELAY_MS);
+
+  // Trigger: mouse leaves the viewport through the TOP edge.
+  // On mobile (no mouseout), trigger after 60s + scroll-to-half + back-to-top
+  // is too noisy — we just skip mobile entirely. Desktop is where exit
+  // intent works best anyway.
+  function onMouseOut(ev) {
+    if (!armed || shown) return;
+    if (!ev || !ev.toElement && !ev.relatedTarget) {
+      // True viewport exit. Only fire when clientY is near the top —
+      // ignores leaves out the side or bottom.
+      if (ev.clientY <= 0) {
+        shown = true;
+        sessionStorage.setItem(EXIT_INTENT_KEY, '1');
+        mount();
+        document.removeEventListener('mouseout', onMouseOut);
+      }
+    }
+  }
+  document.addEventListener('mouseout', onMouseOut);
+
+  function mount() {
+    const root = document.createElement('div');
+    root.className = 'exit-modal';
+    root.innerHTML = EXIT_INTENT_HTML;
+    document.body.appendChild(root);
+    document.documentElement.classList.add('has-exit-modal');
+
+    const closeBtn = root.querySelector('.exit-modal__close');
+    const backdrop = root.querySelector('.exit-modal__backdrop');
+    const form = root.querySelector('.exit-modal__form');
+    const submit = root.querySelector('.exit-modal__submit');
+    const status = root.querySelector('.exit-modal__status');
+
+    function close() {
+      root.remove();
+      document.documentElement.classList.remove('has-exit-modal');
+    }
+    closeBtn.addEventListener('click', close);
+    backdrop.addEventListener('click', close);
+    document.addEventListener('keydown', function esc(e) {
+      if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); }
+    });
+
+    // Re-trigger Turnstile auto-mount for the newly added element
+    document.dispatchEvent(new CustomEvent('cms:turnstile-rescan'));
+
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const fd = new FormData(form);
+      if (fd.get('website')) { close(); return; }   // honeypot
+      if (!fd.get('consent')) {
+        status.textContent = 'Please agree to the privacy policy.';
+        status.className = 'exit-modal__status is-error';
+        return;
+      }
+      submit.disabled = true;
+      submit.textContent = 'Sending…';
+      let utm = {};
+      try { utm = JSON.parse(localStorage.getItem('cms_utm') || '{}'); } catch (_) {}
+      try {
+        const res = await fetch('/api/inquiries', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: fd.get('email'),
+            consent_given: true,
+            source_page: location.pathname,
+            source_widget: 'exit_intent',
+            message: 'Visitor requested the product datasheet pack via the exit-intent modal. Send the PDF library + a short follow-up email.',
+            utm,
+            'cf-turnstile-response': fd.get('cf-turnstile-response') || 'dev-bypass',
+          }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.ok && json.ok) {
+          status.textContent = `✓ Sent. Check your inbox shortly. (Ref ${json.reference})`;
+          status.className = 'exit-modal__status is-ok';
+          sessionStorage.setItem(MINI_RFQ_SUBMITTED_KEY, '1');
+          setTimeout(close, 3500);
+        } else {
+          const errMap = {
+            consent_required: 'Please agree to the privacy policy.',
+            invalid_email: 'That email looks invalid.',
+            turnstile_failed: 'Anti-bot check failed. Try again.',
+            too_many_inquiries: 'Slow down — try again in a few minutes.',
+          };
+          status.textContent = errMap[json.error] || 'Could not send. Please try the contact page.';
+          status.className = 'exit-modal__status is-error';
+          submit.disabled = false;
+          submit.textContent = 'Email me the pack';
+        }
+      } catch (_) {
+        status.textContent = 'Network error. Please try again.';
+        status.className = 'exit-modal__status is-error';
+        submit.disabled = false;
+        submit.textContent = 'Email me the pack';
+      }
+    });
+  }
+}
+
 // ----- Mini RFQ widget (Sprint 2 — inquiry funnel) -----
 // 3-field inline form anchored bottom-right. Lighter touch than
 // /contact.html for visitors who want to ask a quick question without
@@ -643,6 +802,7 @@ function injectFloatingQuote() {
   bindCookieBanner();
   injectFloatingQuote();
   injectMiniRFQ();
+  injectExitIntent();
   // 3. Inject Organization + WebSite JSON-LD with FALLBACK values now so
   //    even a JS-rendering scraper that snapshots immediately sees them.
   //    They get re-injected (idempotent) after live settings arrive.
