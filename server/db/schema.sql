@@ -201,6 +201,15 @@ CREATE TABLE IF NOT EXISTS inquiries (
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Defensive ALTERs: when this schema.sql runs against an older
+-- deployment, CREATE TABLE IF NOT EXISTS is a no-op so the columns
+-- added in the CREATE block above won't be applied. We add them
+-- explicitly before any index that references them; otherwise
+-- CREATE INDEX below fails with "column does not exist" and init.js
+-- exits, putting the container in a restart loop.
+ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS content_hash VARCHAR(64) NOT NULL DEFAULT '';
+ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS score INT NOT NULL DEFAULT 0;
+
 CREATE INDEX IF NOT EXISTS idx_inquiries_status ON inquiries(status, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_inquiries_email ON inquiries(email);
 CREATE INDEX IF NOT EXISTS idx_inquiries_dedupe ON inquiries(email, content_hash, created_at DESC);
