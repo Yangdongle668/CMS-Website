@@ -191,6 +191,8 @@ CREATE TABLE IF NOT EXISTS inquiries (
   consent_given   BOOLEAN NOT NULL DEFAULT FALSE,
   consent_at      TIMESTAMPTZ,
   policy_version  VARCHAR(20) NOT NULL DEFAULT '',
+  content_hash    VARCHAR(64)  NOT NULL DEFAULT '',   -- dedupe key (email + msg + company)
+  score           INT          NOT NULL DEFAULT 0,    -- lead score, populated on insert
   status          VARCHAR(20) NOT NULL DEFAULT 'new',  -- new|read|replied|spam|archived
   notes           TEXT NOT NULL DEFAULT '',
   is_deleted      BOOLEAN NOT NULL DEFAULT FALSE,
@@ -201,6 +203,45 @@ CREATE TABLE IF NOT EXISTS inquiries (
 
 CREATE INDEX IF NOT EXISTS idx_inquiries_status ON inquiries(status, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_inquiries_email ON inquiries(email);
+CREATE INDEX IF NOT EXISTS idx_inquiries_dedupe ON inquiries(email, content_hash, created_at DESC);
+
+-- ----- mail outbox (decouples SMTP from request lifecycle) -----
+-- Every email the system wants to send is INSERTed here first. A
+-- background worker (server/services/mail-outbox.js) polls this table
+-- with FOR UPDATE SKIP LOCKED, attempts SMTP delivery with exponential
+-- backoff, and marks rows sent/dead. Inquiries are therefore captured
+-- the instant the HTTP request returns, regardless of SMTP latency.
+CREATE TABLE IF NOT EXISTS mail_outbox (
+  id              SERIAL PRIMARY KEY,
+  kind            VARCHAR(40)  NOT NULL,                          -- 'inquiry_internal' | 'inquiry_autoreply' | 'gdpr_confirm' | 'health_alert'
+  related_type    VARCHAR(40)  NOT NULL DEFAULT '',
+  related_id      INT,
+  to_addr         TEXT         NOT NULL,
+  reply_to        TEXT         NOT NULL DEFAULT '',
+  subject         TEXT         NOT NULL,
+  html            TEXT         NOT NULL,
+  text_body       TEXT         NOT NULL DEFAULT '',
+  attachments     JSONB        NOT NULL DEFAULT '[]'::jsonb,
+  status          VARCHAR(20)  NOT NULL DEFAULT 'pending',        -- pending|sending|sent|failed|dead
+  attempts        INT          NOT NULL DEFAULT 0,
+  max_attempts    INT          NOT NULL DEFAULT 8,
+  next_attempt_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  last_error      TEXT         NOT NULL DEFAULT '',
+  locked_by       VARCHAR(80)  NOT NULL DEFAULT '',
+  locked_at       TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  sent_at         TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_outbox_due
+  ON mail_outbox(status, next_attempt_at)
+  WHERE status IN ('pending', 'failed');
+
+CREATE INDEX IF NOT EXISTS idx_outbox_related
+  ON mail_outbox(related_type, related_id);
+
+CREATE INDEX IF NOT EXISTS idx_outbox_status_created
+  ON mail_outbox(status, created_at DESC);
 
 -- ----- GDPR data subject access requests -----
 CREATE TABLE IF NOT EXISTS gdpr_requests (

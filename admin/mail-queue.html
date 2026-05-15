@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>邮件队列 | 后台管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+<style>
+.mq-stat { display:flex; gap:8px; align-items:baseline; }
+.mq-stat strong { font-size:24px; font-weight:700; }
+.mq-stat .label { color:var(--a-mute2); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+.mq-tabs { display:flex; gap:4px; margin-bottom:14px; border-bottom:1px solid var(--a-line, #e5e7eb); }
+.mq-tabs button { background:none; border:none; padding:10px 14px; cursor:pointer; font:inherit; color:var(--a-muted); border-bottom:2px solid transparent; }
+.mq-tabs button.is-active { color:var(--a-fg, #0f172a); border-bottom-color:var(--a-accent, #0b3a82); font-weight:600; }
+.mq-row[data-status="dead"] td { background:#fef2f2; }
+.mq-row[data-status="failed"] td { background:#fffbeb; }
+.mq-row[data-status="sending"] td { background:#eff6ff; }
+.mq-err { font-family: 'JetBrains Mono', monospace; font-size:11px; color:#b91c1c; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.modal-backdrop { position:fixed; inset:0; background:rgba(15,23,42,.45); display:flex; align-items:center; justify-content:center; z-index:1000; }
+.modal { background:#fff; border-radius:8px; max-width:760px; width:92%; max-height:88vh; overflow:auto; padding:24px; box-shadow:0 20px 50px rgba(0,0,0,.2); }
+.modal h3 { margin:0 0 12px; }
+.modal-meta { display:grid; grid-template-columns:120px 1fr; gap:6px 12px; font-size:13px; margin-bottom:14px; }
+.modal-meta dt { color:var(--a-mute2); font-weight:600; }
+.modal-preview { border:1px solid var(--a-line, #e5e7eb); border-radius:6px; padding:12px; max-height:300px; overflow:auto; background:#f8fafc; font-size:12px; }
+.modal-actions { display:flex; gap:8px; margin-top:16px; justify-content:flex-end; }
+</style>
+</head>
+<body>
+<div data-admin-shell></div>
+<script src="/admin/assets/js/admin.js"></script>
+<script>
+(async function () {
+  const { api, escapeHtml, formatDate, bootShell, toast } = window.AdminAPI;
+  const shell = await bootShell({ title: '邮件队列', crumbs: '询盘 / 邮件队列' });
+  if (!shell) return;
+
+  let currentTab = 'pending';
+
+  function statusPillClass(s) {
+    return ({
+      pending: 'pill--new',
+      sending: 'pill--read',
+      sent: 'pill--replied',
+      failed: 'pill--archived',
+      dead: 'pill--spam',
+    })[s] || 'pill--read';
+  }
+
+  function nextRetryText(row) {
+    if (row.status === 'sent') return formatDate(row.sent_at);
+    if (row.status === 'dead') return '已死信';
+    if (!row.next_attempt_at) return '-';
+    const next = new Date(row.next_attempt_at).getTime();
+    const diff = next - Date.now();
+    if (diff <= 0) return '准备发送';
+    const mins = Math.round(diff / 60000);
+    if (mins < 1) return '<1 分钟';
+    if (mins < 60) return mins + ' 分钟后';
+    const hrs = Math.round(mins / 60);
+    return hrs + ' 小时后';
+  }
+
+  async function load() {
+    const [{ items }, stats] = await Promise.all([
+      api('/api/mail-queue?status=' + encodeURIComponent(currentTab) + '&limit=100'),
+      api('/api/mail-queue/stats'),
+    ]);
+
+    shell.content.innerHTML = `
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi__label">待发送</div><div class="kpi__value">${stats.pending}</div></div>
+        <div class="kpi"><div class="kpi__label">失败重试中</div><div class="kpi__value" style="color:#d97706;">${stats.failed}</div></div>
+        <div class="kpi"><div class="kpi__label">死信</div><div class="kpi__value" style="color:#dc2626;">${stats.dead}</div></div>
+        <div class="kpi"><div class="kpi__label">24 小时已发</div><div class="kpi__value" style="color:#059669;">${stats.sent_24h}</div></div>
+      </div>
+
+      ${stats.overdue > 0 ? `<div class="panel" style="border-left:4px solid #d97706; margin-bottom:14px;">
+        <strong>⚠ 有 ${stats.overdue} 封邮件已滞留超过 10 分钟。</strong>
+        建议检查 SMTP 配置或网络。所有原始询盘已安全入库，邮件可手动重试。
+      </div>` : ''}
+
+      <div class="panel">
+        <div class="mq-tabs">
+          ${['pending','failed','dead','sending','sent'].map((s) => `
+            <button data-tab="${s}" class="${s===currentTab?'is-active':''}">
+              ${({pending:'待发送',failed:'失败',dead:'死信',sending:'发送中',sent:'已发送'})[s]}
+              ${s===currentTab ? '' : ''}
+            </button>
+          `).join('')}
+          ${stats.dead > 0 ? `<button data-action="retry-all-dead" style="margin-left:auto; color:#dc2626;">↻ 重试全部死信</button>` : ''}
+        </div>
+
+        <table class="table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>类型</th>
+              <th>收件人</th>
+              <th>主题</th>
+              <th>状态</th>
+              <th>尝试</th>
+              <th>${currentTab==='sent'?'发送时间':'下次重试'}</th>
+              <th>错误</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.length ? items.map((m) => `
+              <tr class="mq-row" data-status="${m.status}">
+                <td class="mono">${m.id}</td>
+                <td><span style="font-size:11.5px; color:var(--a-mute2);">${escapeHtml(m.kind)}</span></td>
+                <td style="font-size:12.5px;">${escapeHtml(m.to_addr)}</td>
+                <td style="font-size:12.5px; max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(m.subject)}</td>
+                <td><span class="pill ${statusPillClass(m.status)}">${m.status}</span></td>
+                <td class="mono">${m.attempts}/${m.max_attempts}</td>
+                <td style="font-size:12px;">${escapeHtml(nextRetryText(m))}</td>
+                <td><span class="mq-err" title="${escapeHtml(m.last_error||'')}">${escapeHtml(m.last_error||'')}</span></td>
+                <td style="white-space:nowrap;">
+                  <button class="btn btn--ghost btn--sm" data-view="${m.id}">查看</button>
+                  ${['failed','dead'].includes(m.status) ? `<button class="btn btn--ghost btn--sm" data-retry="${m.id}">重试</button>` : ''}
+                  ${['pending','failed','sending'].includes(m.status) ? `<button class="btn btn--ghost btn--sm" data-cancel="${m.id}" style="color:#dc2626;">取消</button>` : ''}
+                </td>
+              </tr>
+            `).join('') : '<tr><td colspan="9"><div class="empty">这个分类下没有邮件。</div></td></tr>'}
+          </tbody>
+        </table>
+        <p style="margin-top:12px; color:var(--a-mute2); font-size:12px;">
+          所有外发邮件都通过此队列。即使 SMTP 不可用，询盘也已经先入库，邮件会在 SMTP 恢复后自动重发（最多 8 次，指数退避至 24 小时）。
+        </p>
+      </div>
+    `;
+
+    // Tab switching
+    shell.content.querySelectorAll('[data-tab]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        currentTab = btn.dataset.tab;
+        load();
+      });
+    });
+
+    // Retry / cancel / view actions
+    shell.content.querySelectorAll('[data-retry]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.retry;
+        try {
+          await api('/api/mail-queue/' + id + '/retry', { method: 'POST' });
+          toast('已重新加入队列', 'success');
+          setTimeout(load, 400);
+        } catch (e) { toast('重试失败: ' + e.message, 'error'); }
+      });
+    });
+    shell.content.querySelectorAll('[data-cancel]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('确定要取消这封邮件？取消后不会重试。')) return;
+        const id = btn.dataset.cancel;
+        try {
+          await api('/api/mail-queue/' + id + '/cancel', { method: 'POST' });
+          toast('已取消', 'success');
+          setTimeout(load, 400);
+        } catch (e) { toast('取消失败: ' + e.message, 'error'); }
+      });
+    });
+    shell.content.querySelectorAll('[data-view]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.view;
+        try {
+          const { mail } = await api('/api/mail-queue/' + id);
+          openModal(mail);
+        } catch (e) { toast('加载失败: ' + e.message, 'error'); }
+      });
+    });
+    const retryAllBtn = shell.content.querySelector('[data-action="retry-all-dead"]');
+    if (retryAllBtn) {
+      retryAllBtn.addEventListener('click', async () => {
+        if (!confirm('确认重试全部死信邮件吗？')) return;
+        try {
+          const r = await api('/api/mail-queue/retry-all-dead', { method: 'POST' });
+          toast(`已重新加入 ${r.count} 封`, 'success');
+          setTimeout(load, 400);
+        } catch (e) { toast('失败: ' + e.message, 'error'); }
+      });
+    }
+  }
+
+  function openModal(mail) {
+    const m = document.createElement('div');
+    m.className = 'modal-backdrop';
+    m.innerHTML = `
+      <div class="modal">
+        <h3>邮件 #${mail.id}</h3>
+        <dl class="modal-meta">
+          <dt>类型</dt><dd>${escapeHtml(mail.kind)}</dd>
+          <dt>关联</dt><dd>${escapeHtml(mail.related_type || '-')} ${mail.related_id ? '#' + mail.related_id : ''}</dd>
+          <dt>收件人</dt><dd>${escapeHtml(mail.to_addr)}</dd>
+          <dt>Reply-To</dt><dd>${escapeHtml(mail.reply_to || '-')}</dd>
+          <dt>主题</dt><dd>${escapeHtml(mail.subject)}</dd>
+          <dt>状态</dt><dd>${escapeHtml(mail.status)} (${mail.attempts}/${mail.max_attempts})</dd>
+          <dt>创建</dt><dd>${formatDate(mail.created_at)}</dd>
+          <dt>发送</dt><dd>${mail.sent_at ? formatDate(mail.sent_at) : '-'}</dd>
+          ${mail.last_error ? `<dt>错误</dt><dd style="color:#b91c1c;">${escapeHtml(mail.last_error)}</dd>` : ''}
+        </dl>
+        <div style="margin:14px 0 6px; font-size:12px; color:var(--a-mute2); font-weight:600;">HTML 预览</div>
+        <div class="modal-preview">${mail.html}</div>
+        <div class="modal-actions">
+          <button class="btn btn--ghost" data-close>关闭</button>
+        </div>
+      </div>
+    `;
+    m.addEventListener('click', (ev) => {
+      if (ev.target.matches('[data-close]') || ev.target === m) m.remove();
+    });
+    document.body.appendChild(m);
+  }
+
+  await load();
+  setInterval(load, 15000);   // auto-refresh every 15s for live ops view
+})();
+</script>
+</body>
+</html>

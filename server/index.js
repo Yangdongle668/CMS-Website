@@ -7,6 +7,12 @@ const express = require('express');
 process.on('unhandledRejection', (err) => {
   console.error('[unhandledRejection]', err);
 });
+process.on('uncaughtException', (err) => {
+  // Don't exit immediately — log and let supervisor decide. An
+  // uncaughtException during normal operation usually means a logic
+  // bug we want to see in the logs rather than a silent restart.
+  console.error('[uncaughtException]', err && err.stack ? err.stack : err);
+});
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
@@ -93,6 +99,53 @@ const apiLimiter = rateLimit({
 });
 app.use('/api/', apiLimiter);
 
+// ----- Health probes -----
+// /healthz is the cheap "is the process alive" check used by load
+// balancers and container orchestrators. It must not touch the DB so
+// that PG hiccups don't take the whole pod out of rotation.
+app.get('/healthz', (_req, res) => {
+  res.json({ ok: true, ts: Date.now(), uptime: Math.round(process.uptime()) });
+});
+
+// /readyz is the deeper check — touches PG, looks at outbox lag and
+// emergency-store backlog. Operators can poll this from monitoring or
+// rely on the same endpoint for k8s readiness probes (delay traffic
+// during DB warm-up or when the mail queue is badly backed up).
+app.get('/readyz', async (_req, res) => {
+  const { ping } = require('./db/client');
+  const emergency = require('./services/emergency-store');
+  const checks = { db: 'unknown', outbox_overdue: 0, dead_letters: 0, emergency: 0 };
+  let healthy = true;
+
+  try {
+    await ping();
+    checks.db = 'ok';
+  } catch (err) {
+    checks.db = 'fail: ' + (err && err.message);
+    healthy = false;
+  }
+
+  if (checks.db === 'ok') {
+    try {
+      const { one } = require('./db/client');
+      const lag = await one(
+        `SELECT count(*)::int AS n FROM mail_outbox
+         WHERE status IN ('pending','failed') AND created_at < now() - interval '10 minutes'`
+      );
+      const dead = await one(`SELECT count(*)::int AS n FROM mail_outbox WHERE status='dead'`);
+      checks.outbox_overdue = lag ? lag.n : 0;
+      checks.dead_letters = dead ? dead.n : 0;
+      if (checks.outbox_overdue >= 50) healthy = false;
+    } catch (_) {}
+  }
+
+  try { checks.emergency = await emergency.count(); }
+  catch (_) {}
+  if (checks.emergency > 0) healthy = false;
+
+  res.status(healthy ? 200 : 503).json({ ok: healthy, ...checks });
+});
+
 // ----- Public env (Turnstile site key + SEO defaults for the client) -----
 app.get('/api/public/config', async (_req, res) => {
   // Read latest seo settings so the SPA can populate analytics/verification
@@ -135,6 +188,7 @@ app.use('/api/text-overrides', require('./routes/text-overrides'));
 app.use('/api/seo-check', require('./routes/seo-check'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/ai-generate', require('./routes/ai-generate'));
+app.use('/api/mail-queue', require('./routes/mail-queue'));
 
 // ----- SEO endpoints -----
 app.use('/', require('./routes/seo'));
@@ -347,6 +401,42 @@ async function autoMigrate() {
       `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS seo_score INT NOT NULL DEFAULT 0`,
       `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS seo_checks JSONB NOT NULL DEFAULT '[]'::jsonb`,
     ]),
+    // ----- Mail outbox + inquiry hardening (Sprint 0) -----
+    // The outbox decouples SMTP from request handling: inquiry inserts
+    // enqueue here, a worker drains them with exponential backoff. Adding
+    // these as idempotent migrations so existing deployments self-upgrade.
+    `ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS content_hash VARCHAR(64) NOT NULL DEFAULT ''`,
+    `ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS score INT NOT NULL DEFAULT 0`,
+    `CREATE INDEX IF NOT EXISTS idx_inquiries_dedupe
+       ON inquiries(email, content_hash, created_at DESC)`,
+    `CREATE TABLE IF NOT EXISTS mail_outbox (
+       id              SERIAL PRIMARY KEY,
+       kind            VARCHAR(40)  NOT NULL,
+       related_type    VARCHAR(40)  NOT NULL DEFAULT '',
+       related_id      INT,
+       to_addr         TEXT         NOT NULL,
+       reply_to        TEXT         NOT NULL DEFAULT '',
+       subject         TEXT         NOT NULL,
+       html            TEXT         NOT NULL,
+       text_body       TEXT         NOT NULL DEFAULT '',
+       attachments     JSONB        NOT NULL DEFAULT '[]'::jsonb,
+       status          VARCHAR(20)  NOT NULL DEFAULT 'pending',
+       attempts        INT          NOT NULL DEFAULT 0,
+       max_attempts    INT          NOT NULL DEFAULT 8,
+       next_attempt_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
+       last_error      TEXT         NOT NULL DEFAULT '',
+       locked_by       VARCHAR(80)  NOT NULL DEFAULT '',
+       locked_at       TIMESTAMPTZ,
+       created_at      TIMESTAMPTZ  NOT NULL DEFAULT now(),
+       sent_at         TIMESTAMPTZ
+     )`,
+    `CREATE INDEX IF NOT EXISTS idx_outbox_due
+       ON mail_outbox(status, next_attempt_at)
+       WHERE status IN ('pending', 'failed')`,
+    `CREATE INDEX IF NOT EXISTS idx_outbox_related
+       ON mail_outbox(related_type, related_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_outbox_status_created
+       ON mail_outbox(status, created_at DESC)`,
     // ----- Acme → Zufek cleanup (legacy seed data) -----
     `UPDATE articles SET author = 'Zufek Engineering' WHERE author ILIKE '%acme%' OR author = '' OR author IS NULL`,
     `UPDATE articles SET content = REPLACE(content, 'Acme Engineering', 'Zufek Engineering') WHERE content LIKE '%Acme%'`,
@@ -416,7 +506,86 @@ async function autoMigrate() {
   } catch (err) {
     console.error('[ai-settings] initial load failed:', err.message);
   }
-  app.listen(PORT, () => {
+
+  // Recover any rows a prior process had marked 'sending' before
+  // crashing — they'd otherwise be stuck forever.
+  try {
+    const outbox = require('./services/mail-outbox');
+    await outbox.releaseStaleLocks(10);
+    if (String(process.env.OUTBOX_DISABLED || 'false') !== 'true') {
+      outbox.startWorker();
+    } else {
+      console.log('[outbox] worker disabled by OUTBOX_DISABLED=true');
+    }
+  } catch (err) {
+    console.error('[outbox] startup failed:', err && err.message);
+  }
+
+  // Replay any inquiries that were sidelined to the emergency NDJSON
+  // file during a prior PG outage. This is a one-shot replay; the
+  // health-alert job will surface any records that fail to land
+  // (e.g. DB still unhealthy) so a human can intervene.
+  try {
+    const emergency = require('./services/emergency-store');
+    const inquiriesRouter = require('./routes/inquiries');
+    const insertFn = inquiriesRouter.insertInquiryRaw;
+    if (typeof insertFn === 'function') {
+      const result = await emergency.replay(insertFn);
+      if (result.recovered) {
+        console.log(`[emergency] recovered ${result.recovered} inquiry record(s) at boot`);
+      }
+    }
+  } catch (err) {
+    console.error('[emergency] replay failed at boot:', err && err.message);
+  }
+
+  // Background health-alert scheduler (5min poll, 30min per-reason
+  // debounce). Skipped if HEALTH_ALERTS_DISABLED=true so a local dev
+  // setup doesn't fire alerts for empty configs.
+  if (String(process.env.HEALTH_ALERTS_DISABLED || 'false') !== 'true') {
+    try {
+      const healthAlert = require('./jobs/health-alert');
+      healthAlert.start();
+    } catch (err) {
+      console.error('[health-alert] failed to start:', err && err.message);
+    }
+  }
+
+  const server = app.listen(PORT, () => {
     console.log(`[battery-cms] running on http://localhost:${PORT}`);
   });
+
+  // ----- Graceful shutdown -----
+  // SIGTERM is what `docker stop` / k8s rolling restarts send. We stop
+  // accepting new connections, let in-flight requests drain, halt the
+  // outbox worker so a half-sent batch doesn't leak, then exit. The
+  // 10s hard-kill safety net catches a stuck request hanging the
+  // graceful path.
+  let shuttingDown = false;
+  const shutdown = (sig) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`[shutdown] ${sig} received, draining...`);
+    try {
+      const outbox = require('./services/mail-outbox');
+      outbox.stopWorker();
+    } catch (_) {}
+    try {
+      const healthAlert = require('./jobs/health-alert');
+      healthAlert.stop();
+    } catch (_) {}
+    server.close((err) => {
+      if (err) console.error('[shutdown] http close error', err.message);
+      else console.log('[shutdown] http closed');
+      // Best-effort: drain pg pool so PG sees clean disconnects
+      const { pool } = require('./db/client');
+      pool.end().catch(() => {}).finally(() => process.exit(0));
+    });
+    setTimeout(() => {
+      console.error('[shutdown] forced exit after 10s');
+      process.exit(1);
+    }, 10_000).unref();
+  };
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 })();
