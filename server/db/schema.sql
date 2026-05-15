@@ -242,6 +242,32 @@ CREATE TABLE IF NOT EXISTS mail_outbox (
   sent_at         TIMESTAMPTZ
 );
 
+-- Self-healing column ALTERs for mail_outbox: a previous broken
+-- deployment can leave the table half-populated (PG's implicit
+-- transaction around a multi-statement Query rolls back, but pg's
+-- pool can split DDL into separate transactions). These idempotent
+-- ALTERs guarantee every column exists before we build indexes on
+-- them — a CREATE INDEX on a missing column would put the container
+-- back in restart loop.
+ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS kind            VARCHAR(40)  NOT NULL DEFAULT '';
+ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS related_type    VARCHAR(40)  NOT NULL DEFAULT '';
+ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS related_id      INT;
+ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS to_addr         TEXT         NOT NULL DEFAULT '';
+ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS reply_to        TEXT         NOT NULL DEFAULT '';
+ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS subject         TEXT         NOT NULL DEFAULT '';
+ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS html            TEXT         NOT NULL DEFAULT '';
+ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS text_body       TEXT         NOT NULL DEFAULT '';
+ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS attachments     JSONB        NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS status          VARCHAR(20)  NOT NULL DEFAULT 'pending';
+ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS attempts        INT          NOT NULL DEFAULT 0;
+ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS max_attempts    INT          NOT NULL DEFAULT 8;
+ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS next_attempt_at TIMESTAMPTZ  NOT NULL DEFAULT now();
+ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS last_error      TEXT         NOT NULL DEFAULT '';
+ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS locked_by       VARCHAR(80)  NOT NULL DEFAULT '';
+ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS locked_at       TIMESTAMPTZ;
+ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS created_at      TIMESTAMPTZ  NOT NULL DEFAULT now();
+ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS sent_at         TIMESTAMPTZ;
+
 CREATE INDEX IF NOT EXISTS idx_outbox_due
   ON mail_outbox(status, next_attempt_at)
   WHERE status IN ('pending', 'failed');
