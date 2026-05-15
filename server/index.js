@@ -619,6 +619,16 @@ async function autoMigrate() {
        created_at  TIMESTAMPTZ  NOT NULL DEFAULT now()
      )`,
     `CREATE INDEX IF NOT EXISTS idx_block_snippets_type ON block_snippets(block_type, created_at DESC)`,
+    // ----- Page versions (Sprint 3 — autosave history) -----
+    `CREATE TABLE IF NOT EXISTS page_versions (
+       id              SERIAL PRIMARY KEY,
+       page_id         INT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+       label           VARCHAR(120) NOT NULL DEFAULT 'auto',
+       blocks_snapshot JSONB NOT NULL,
+       created_by      INT REFERENCES users(id) ON DELETE SET NULL,
+       created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+     )`,
+    `CREATE INDEX IF NOT EXISTS idx_page_versions_page ON page_versions(page_id, created_at DESC)`,
     // ----- Acme → Zufek cleanup (legacy seed data) -----
     `UPDATE articles SET author = 'Zufek Engineering' WHERE author ILIKE '%acme%' OR author = '' OR author IS NULL`,
     `UPDATE articles SET content = REPLACE(content, 'Acme Engineering', 'Zufek Engineering') WHERE content LIKE '%Acme%'`,

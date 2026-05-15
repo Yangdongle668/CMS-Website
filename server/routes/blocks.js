@@ -17,6 +17,7 @@ const { recordAudit } = require('../middleware/audit');
 const { clamp, trimStr, asBool, asJson } = require('../utils/validate');
 const registry = require('../services/block-registry');
 const cache = require('../services/cache');
+const versions = require('../services/page-versions');
 
 const router = express.Router();
 
@@ -24,6 +25,21 @@ const router = express.Router();
 // block sets on next request).
 async function bustPageCache() {
   await cache.invalidate('page:');
+}
+
+// Auto-snapshot wrapper: best-effort, never throws. Called from every
+// block write so editors get rollback points without thinking about it.
+async function maybeSnapshot(req, pageId) {
+  if (!pageId) return;
+  try {
+    await versions.maybeAutoSnapshot(pageId, req.user && req.user.id);
+  } catch (_) { /* swallowed inside service already */ }
+}
+
+// Resolve the page_id from a block id (for endpoints that take :id only).
+async function pageIdOfBlock(blockId) {
+  const row = await one('SELECT page_id FROM page_blocks WHERE id = $1', [blockId]);
+  return row ? row.page_id : null;
 }
 
 // ----- Block type list (public — safe, just schema metadata) -----
@@ -76,6 +92,7 @@ router.post('/', requireAuth, async (req, res) => {
     [pageId, blockType, sortOrder, JSON.stringify(content)]
   );
   await recordAudit({ req, action: 'create', entity: 'block', entityId: r.rows[0].id, detail: { page_id: pageId, block_type: blockType } });
+  await maybeSnapshot(req, pageId);
   await bustPageCache();
   res.json({ id: r.rows[0].id, page_id: pageId, block_type: blockType, sort_order: sortOrder, content, is_visible: true });
 });
@@ -110,6 +127,7 @@ router.put('/:id', requireAuth, async (req, res) => {
   );
   if (!r.rows.length) return res.status(404).json({ error: 'not_found' });
   await recordAudit({ req, action: 'update', entity: 'block', entityId: id });
+  await maybeSnapshot(req, r.rows[0].page_id);
   await bustPageCache();
   res.json({ ok: true });
 });
@@ -133,6 +151,7 @@ router.post('/reorder', requireAuth, async (req, res) => {
     );
   }
   await recordAudit({ req, action: 'reorder', entity: 'block', detail: { page_id: pageId, count: ids.length } });
+  await maybeSnapshot(req, pageId);
   await bustPageCache();
   res.json({ ok: true });
 });
@@ -141,8 +160,10 @@ router.post('/reorder', requireAuth, async (req, res) => {
 router.delete('/:id', requireAuth, async (req, res) => {
   const id = clamp(req.params.id, 1, 1e9, 0);
   if (!id) return res.status(400).json({ error: 'invalid_id' });
+  const pageId = await pageIdOfBlock(id);
   await query('DELETE FROM page_blocks WHERE id = $1', [id]);
   await recordAudit({ req, action: 'delete', entity: 'block', entityId: id });
+  if (pageId) await maybeSnapshot(req, pageId);
   await bustPageCache();
   res.json({ ok: true });
 });
@@ -185,6 +206,7 @@ router.post('/replace-page', requireAuth, async (req, res) => {
     }
     await client.query('COMMIT');
     await recordAudit({ req, action: 'replace_page', entity: 'block', detail: { page_id: pageId, count: list.length } });
+    await maybeSnapshot(req, pageId);
     await bustPageCache();
     res.json({ ok: true, ids: insertedIds });
   } catch (err) {
@@ -267,6 +289,71 @@ router.delete('/snippets/:id', requireAuth, async (req, res) => {
   if (!id) return res.status(400).json({ error: 'invalid_id' });
   await query('DELETE FROM block_snippets WHERE id = $1', [id]);
   await recordAudit({ req, action: 'delete', entity: 'block_snippet', entityId: id });
+  res.json({ ok: true });
+});
+
+// =====================================================================
+// Page versions — autosave history + manual snapshots + restore
+// =====================================================================
+router.get('/versions/:page_id', requireAuth, async (req, res) => {
+  const pageId = clamp(req.params.page_id, 1, 1e9, 0);
+  if (!pageId) return res.status(400).json({ error: 'invalid_page_id' });
+  const items = await versions.listVersions(pageId, 50);
+  res.json({ items });
+});
+
+router.post('/versions/:page_id', requireAuth, async (req, res) => {
+  const pageId = clamp(req.params.page_id, 1, 1e9, 0);
+  if (!pageId) return res.status(400).json({ error: 'invalid_page_id' });
+  const label = trimStr(req.body && req.body.label, 120) || 'manual';
+  const v = await versions.createSnapshot(pageId, req.user && req.user.id, label);
+  await recordAudit({ req, action: 'snapshot', entity: 'page_version', entityId: v.id, detail: { page_id: pageId, label } });
+  res.json({ id: v.id, created_at: v.created_at });
+});
+
+router.post('/versions/:page_id/restore/:vid', requireAuth, async (req, res) => {
+  const pageId = clamp(req.params.page_id, 1, 1e9, 0);
+  const vid = clamp(req.params.vid, 1, 1e9, 0);
+  if (!pageId || !vid) return res.status(400).json({ error: 'invalid_params' });
+  const v = await versions.getVersion(vid);
+  if (!v || v.page_id !== pageId) return res.status(404).json({ error: 'not_found' });
+  const list = Array.isArray(v.blocks_snapshot) ? v.blocks_snapshot : [];
+  // Auto-snapshot CURRENT state before restoring, so the restore itself
+  // is undoable
+  try {
+    await versions.createSnapshot(pageId, req.user && req.user.id, 'pre-restore');
+  } catch (_) {}
+  // Apply via bulk replace
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('DELETE FROM page_blocks WHERE page_id = $1', [pageId]);
+    for (let i = 0; i < list.length; i++) {
+      const b = list[i];
+      if (!b || !registry.getBlockType(trimStr(b.block_type, 40))) continue;
+      await client.query(
+        `INSERT INTO page_blocks (page_id, block_type, sort_order, content, is_visible)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [pageId, trimStr(b.block_type, 40), i, JSON.stringify(b.content || {}), b.is_visible !== false]
+      );
+    }
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+  await recordAudit({ req, action: 'restore', entity: 'page_version', entityId: vid, detail: { page_id: pageId } });
+  await bustPageCache();
+  res.json({ ok: true, restored: list.length });
+});
+
+router.delete('/versions/:vid', requireAuth, async (req, res) => {
+  const vid = clamp(req.params.vid, 1, 1e9, 0);
+  if (!vid) return res.status(400).json({ error: 'invalid_id' });
+  await query('DELETE FROM page_versions WHERE id = $1', [vid]);
+  await recordAudit({ req, action: 'delete', entity: 'page_version', entityId: vid });
   res.json({ ok: true });
 });
 
