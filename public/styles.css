@@ -3419,3 +3419,96 @@ a:hover > .news-link::after,
   .about-stats { grid-template-columns: 1fr; gap: 24px; }
 }
 
+
+
+/* =============================================================
+   v20 — Unified responsive layer
+   -------------------------------------------------------------
+   Existing media queries are scattered (520 / 600 / 700 / 800 /
+   900 / 1000 / 1100 / 1200), which leaves common tablet sizes
+   (768 / iPad portrait) poorly served. The rules below override
+   the worst offenders with consistent breakpoints so phone /
+   tablet / desktop all look intentional.
+   ============================================================= */
+
+/* ----- Tablet (≤ 1024px): tighten section padding, shrink hero ----- */
+@media (max-width: 1024px) {
+  .section { padding: 80px 24px; }
+  .hero { min-height: 90vh; padding: 110px 24px 64px; }
+  .hero h1 { font-size: clamp(40px, 5.5vw, 56px); }
+  .hero .subtitle { font-size: clamp(15px, 1.6vw, 18px); }
+  /* Iframe-style sliders look tiny when arrows are 16px touch targets. */
+  .tesla-slider__arrow { width: 44px; height: 44px; font-size: 28px; }
+  /* spec-table can be very wide — let it scroll instead of clipping. */
+  .spec-table { display: block; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+  .spec-table th, .spec-table td { white-space: normal; }
+}
+
+/* ----- Mid-tablet (≤ 900px): collapse 3-up grids to 2-up ----- */
+@media (max-width: 900px) {
+  .feat-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .feat-item { padding: 22px; }
+  .steps-grid { grid-template-columns: repeat(2, 1fr); }
+  .cta-band { padding: 64px 20px; }
+  .cta-band h2 { font-size: clamp(24px, 4vw, 36px); }
+}
+
+/* ----- Portrait tablet / large phone (≤ 768px): everything single column ----- */
+@media (max-width: 768px) {
+  .section { padding: 56px 18px; }
+  .hero { min-height: 80vh; padding: 96px 18px 48px; }
+  .hero h1 { font-size: clamp(32px, 7vw, 44px); }
+  .hero .subtitle { font-size: 15px; max-width: 100%; }
+  .hero-top, .hero-bottom { padding: 0 4px; }
+  /* Trust strip wraps gracefully */
+  .trust-strip__inner { flex-wrap: wrap; gap: 12px; padding: 22px 18px; }
+  .trust-strip__items { gap: 14px 18px; flex-wrap: wrap; justify-content: center; }
+  /* Content-split images sit tighter to text */
+  .content-split { gap: 28px; }
+  .content-split img { aspect-ratio: 16 / 10; }
+  /* Tesla slider — arrows easier to thumb-reach */
+  .tesla-slider__arrow--prev { left: 8px; }
+  .tesla-slider__arrow--next { right: 8px; }
+  .tesla-slide { min-height: 70vh; }
+  .tesla-slide__title { font-size: 28px; }
+  .tesla-slide__sub { font-size: 13px; }
+  .tesla-slide__ctas { flex-wrap: wrap; gap: 8px; }
+  /* Stats: keep 2 cols even at 768, only collapse at phone width */
+  .mfg-stats { grid-template-columns: 1fr 1fr; gap: 14px; }
+}
+
+/* ----- Phone (≤ 540px): single column everywhere ----- */
+@media (max-width: 540px) {
+  .feat-grid { grid-template-columns: 1fr; }
+  .steps-grid { grid-template-columns: 1fr; }
+  .pillar-grid { gap: 18px; }
+  .mfg-stats { grid-template-columns: 1fr; }
+  .section-inner > h2 { font-size: clamp(24px, 7vw, 30px); }
+  .lead { font-size: 14px; }
+  .cta-group { width: 100%; }
+  /* Touch targets — buttons should be ≥ 44px tall for accessibility. */
+  .btn { min-height: 44px; padding: 12px 20px; }
+  /* Trust strip vertical on very narrow screens */
+  .trust-strip__inner { flex-direction: column; align-items: flex-start; padding: 18px; }
+  .trust-strip__label { letter-spacing: 1.4px; }
+}
+
+/* ----- Reduce motion preference: kill parallax & scroll animations ----- */
+@media (prefers-reduced-motion: reduce) {
+  .hero { background-attachment: scroll; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ----- Print: hide nav / footer / sticky bits so a quote page prints cleanly ----- */
+@media print {
+  #site-header, #site-footer, #sidemenu-mount,
+  .floating-quote, .tesla-slider__arrow, .cookie-banner { display: none !important; }
+  .hero { min-height: auto; padding: 24px 0; color: #000; background: none; }
+  .hero::before { display: none; }
+  .section { padding: 24px 0; break-inside: avoid; }
+}

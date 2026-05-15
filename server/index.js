@@ -331,6 +331,11 @@ async function autoMigrate() {
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_login_attempts INT NOT NULL DEFAULT 0`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TIMESTAMPTZ`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS last_failed_login_at TIMESTAMPTZ`,
+
+    // Multi-size image variants — populated by sharp on upload.
+    `ALTER TABLE media ADD COLUMN IF NOT EXISTS width INT`,
+    `ALTER TABLE media ADD COLUMN IF NOT EXISTS height INT`,
+    `ALTER TABLE media ADD COLUMN IF NOT EXISTS variants JSONB NOT NULL DEFAULT '[]'::jsonb`,
   ];
   for (const sql of stmts) {
     try { await query(sql); }

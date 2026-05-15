@@ -46,6 +46,71 @@
     return '';
   }
 
+  // -------- Responsive variant helpers --------
+  // Every uploaded image goes through sharp on POST /api/media, which emits
+  // 4 widths (400/800/1200/1600) in both raster + webp. The variants follow
+  // a deterministic naming pattern: foo.jpg -> foo.w800.jpg, foo.w800.webp.
+  // So we can synthesize a srcset purely from the URL without an extra
+  // round-trip. External URLs (Unsplash etc.) are returned as-is.
+  const VARIANT_WIDTHS = [400, 800, 1200, 1600];
+  function isUploadUrl(u) { return /^\/uploads\//.test(u); }
+  function variantUrl(originalUrl, w, format) {
+    // /uploads/abc-foo.jpg  ->  /uploads/abc-foo.w800.webp
+    const i = originalUrl.lastIndexOf('.');
+    if (i < 0) return originalUrl;
+    const base = originalUrl.slice(0, i);
+    const ext = format === 'webp' ? '.webp'
+              : format === 'png'  ? '.png'
+              : '.jpg';
+    return `${base}.w${w}${ext}`;
+  }
+  function isPngLike(u) { return /\.(png)$/i.test(u); }
+  // Build an <img>-suitable srcset string for an uploaded image.
+  function buildSrcset(url, format) {
+    return VARIANT_WIDTHS.map((w) => `${variantUrl(url, w, format)} ${w}w`).join(', ');
+  }
+  // Render an <img> with responsive variants if the URL is an upload.
+  // sizes: viewport-relative widths hint (e.g. "(max-width: 768px) 100vw, 50vw").
+  function imgTag(url, alt, sizes, extra) {
+    const safe = safeImg(url);
+    if (!safe) return '';
+    const safeAlt = h(alt || '');
+    const sizesAttr = sizes ? ` sizes="${h(sizes)}"` : '';
+    const extraAttr = extra ? ' ' + extra : '';
+    if (!isUploadUrl(safe)) {
+      return `<img src="${h(safe)}" alt="${safeAlt}" loading="lazy" decoding="async"${extraAttr}>`;
+    }
+    const rasterFmt = isPngLike(safe) ? 'png' : 'jpeg';
+    const webpSrcset = h(buildSrcset(safe, 'webp'));
+    const rasterSrcset = h(buildSrcset(safe, rasterFmt));
+    // Pick the largest variant as the fallback src for browsers that ignore srcset.
+    const fallback = h(variantUrl(safe, 1600, rasterFmt));
+    return `<picture>
+      <source type="image/webp" srcset="${webpSrcset}"${sizesAttr}>
+      <img src="${fallback}" srcset="${rasterSrcset}"${sizesAttr} alt="${safeAlt}" loading="lazy" decoding="async"${extraAttr}>
+    </picture>`;
+  }
+  // Pick the best background-image URL for a hero / card. Prefers the
+  // 1600-wide webp variant when the source is an uploaded file, otherwise
+  // returns the URL untouched (Unsplash already does its own sizing).
+  function bgUrl(url) {
+    const safe = safeImg(url);
+    if (!safe) return '';
+    if (!isUploadUrl(safe)) return safe;
+    // Most viewports won't get the 1600 anyway thanks to image-set, but
+    // single-URL fallback uses the largest webp.
+    return variantUrl(safe, 1600, 'webp');
+  }
+  // CSS image-set so capable browsers pick the best format/density.
+  function bgImageSet(url) {
+    const safe = safeImg(url);
+    if (!safe) return '';
+    if (!isUploadUrl(safe)) return `url('${safe}')`;
+    const webp1600 = variantUrl(safe, 1600, 'webp');
+    const raster1600 = variantUrl(safe, 1600, isPngLike(safe) ? 'png' : 'jpeg');
+    return `image-set(url('${webp1600}') type("image/webp") 1x, url('${raster1600}') 1x)`;
+  }
+
   // Section wrapper helper. Every "content" block lives inside
   // <section class="section section-<bg>"><div class="section-inner">...</div></section>.
   // bg can be 'light' (default), 'grey', or 'dark'.
@@ -74,7 +139,11 @@
     hero(d) {
       d = d || {};
       const img = safeImg(d.image);
-      const bg = img ? `style="background-image:url('${h(img)}');"` : '';
+      // Use image-set so capable browsers pick the WebP variant for uploaded
+      // images; fall back to a single url() for external URLs.
+      const bg = img
+        ? `style="background-image: url('${h(bgUrl(img))}'); background-image: ${bgImageSet(img)};"`
+        : '';
       const p1 = d.primary || {};
       const p2 = d.secondary || {};
       return `
@@ -122,7 +191,7 @@
             const specs = arr(c.specs);
             return `
             <a class="pillar-card" href="${link}">
-              ${img ? `<div class="pillar-card__media" style="background-image:url('${h(img)}');"></div>` : ''}
+              ${img ? `<div class="pillar-card__media" style="background-image: url('${h(bgUrl(img))}'); background-image: ${bgImageSet(img)};"></div>` : ''}
               <div class="pillar-card__body">
                 ${c.pill ? `<span class="pillar-card__pill">${h(c.pill)}</span>` : ''}
                 ${c.title ? `<h3>${h(c.title)}</h3>` : ''}
@@ -157,7 +226,9 @@
         s = s || {};
         const img = safeImg(s.image);
         const label = s.label || `Application ${String(i + 1).padStart(2, '0')}`;
-        const bg = img ? `style="background-image:url('${h(img)}');"` : '';
+        const bg = img
+          ? `style="background-image: url('${h(bgUrl(img))}'); background-image: ${bgImageSet(img)};"`
+          : '';
         return `
         <a class="tesla-slide" href="${h(safeUrl(s.link))}" ${bg}>
           <div class="tesla-slide__label">${h(label)}</div>
@@ -181,10 +252,12 @@
     'content-split'(d) {
       d = d || {};
       const reverse = d.imagePosition === 'left' ? ' reverse' : '';
-      const img = safeImg(d.image);
       const link = (d.link && d.link.label && d.link.url)
         ? `<a href="${h(safeUrl(d.link.url))}" class="news-link">${h(d.link.label)} &rarr;</a>`
         : '';
+      // Hint to the browser that this image takes ~half the viewport on
+      // desktop, full width on mobile. Matches the .content-split layout.
+      const sizes = '(max-width: 768px) 100vw, 50vw';
       return section(d.background, `
         ${(d.eyebrow || d.title) ? `${d.eyebrow ? `<span class="eyebrow">${h(d.eyebrow)}</span>` : ''}${d.title ? `<h2>${htitle(d.title)}</h2>` : ''}` : ''}
         <div class="content-split${reverse}">
@@ -194,7 +267,7 @@
             ${link}
           </div>
           <div class="img-col">
-            ${img ? `<img src="${h(img)}" alt="${h(d.imageAlt || d.title || '')}">` : ''}
+            ${imgTag(d.image, d.imageAlt || d.title, sizes)}
           </div>
         </div>`);
     },

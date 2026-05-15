@@ -139,6 +139,9 @@ CREATE TABLE IF NOT EXISTS media (
   mime        VARCHAR(120) NOT NULL,
   size        BIGINT       NOT NULL DEFAULT 0,
   alt_text    VARCHAR(255) NOT NULL DEFAULT '',
+  width       INT,
+  height      INT,
+  variants    JSONB        NOT NULL DEFAULT '[]'::jsonb,
   uploaded_by INT REFERENCES users(id) ON DELETE SET NULL,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
