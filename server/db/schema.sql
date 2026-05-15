@@ -355,6 +355,31 @@ CREATE TABLE IF NOT EXISTS pages (
 );
 CREATE INDEX IF NOT EXISTS idx_pages_status ON pages(status);
 
+-- ----- page blocks (Sprint 3 — block-based page builder) -----
+-- A page is a sequence of typed blocks. The admin page-builder lets a
+-- non-technical operator drag block types out of a library, fill in a
+-- structured form, and have the SSR layer render them into HTML on
+-- request. content is a JSONB blob whose shape is governed by
+-- server/services/block-registry.js — the registry knows how to render
+-- each block_type and how to validate writes.
+CREATE TABLE IF NOT EXISTS page_blocks (
+  id          SERIAL PRIMARY KEY,
+  page_id     INT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+  block_type  VARCHAR(40) NOT NULL,
+  sort_order  INT NOT NULL DEFAULT 0,
+  content     JSONB NOT NULL DEFAULT '{}'::jsonb,
+  is_visible  BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_page_blocks_page
+  ON page_blocks(page_id, sort_order);
+
+CREATE INDEX IF NOT EXISTS idx_page_blocks_visible
+  ON page_blocks(page_id, sort_order)
+  WHERE is_visible = TRUE;
+
 -- ----- navigation -----
 CREATE TABLE IF NOT EXISTS navigation (
   id         SERIAL PRIMARY KEY,

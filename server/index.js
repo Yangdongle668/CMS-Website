@@ -205,6 +205,7 @@ app.use('/api/seo-check', require('./routes/seo-check'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/ai-generate', require('./routes/ai-generate'));
 app.use('/api/mail-queue', require('./routes/mail-queue'));
+app.use('/api/blocks', require('./routes/blocks'));
 
 // ----- SEO endpoints -----
 app.use('/', require('./routes/seo'));
@@ -538,6 +539,20 @@ async function autoMigrate() {
     `ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS source_widget VARCHAR(40) NOT NULL DEFAULT 'main_form'`,
     `ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS replied_at TIMESTAMPTZ`,
     `CREATE INDEX IF NOT EXISTS idx_inquiries_widget ON inquiries(source_widget, created_at DESC) WHERE is_deleted = FALSE`,
+    // ----- Page blocks (Sprint 3 — block-based page builder) -----
+    `CREATE TABLE IF NOT EXISTS page_blocks (
+       id          SERIAL PRIMARY KEY,
+       page_id     INT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+       block_type  VARCHAR(40) NOT NULL,
+       sort_order  INT NOT NULL DEFAULT 0,
+       content     JSONB NOT NULL DEFAULT '{}'::jsonb,
+       is_visible  BOOLEAN NOT NULL DEFAULT TRUE,
+       created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+       updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+     )`,
+    `CREATE INDEX IF NOT EXISTS idx_page_blocks_page ON page_blocks(page_id, sort_order)`,
+    `CREATE INDEX IF NOT EXISTS idx_page_blocks_visible
+       ON page_blocks(page_id, sort_order) WHERE is_visible = TRUE`,
     // ----- Acme → Zufek cleanup (legacy seed data) -----
     `UPDATE articles SET author = 'Zufek Engineering' WHERE author ILIKE '%acme%' OR author = '' OR author IS NULL`,
     `UPDATE articles SET content = REPLACE(content, 'Acme Engineering', 'Zufek Engineering') WHERE content LIKE '%Acme%'`,
