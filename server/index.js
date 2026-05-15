@@ -135,6 +135,7 @@ app.use('/api/text-overrides', require('./routes/text-overrides'));
 app.use('/api/seo-check', require('./routes/seo-check'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/ai-generate', require('./routes/ai-generate'));
+app.use('/api/mail-queue', require('./routes/mail-queue'));
 
 // ----- SEO endpoints -----
 app.use('/', require('./routes/seo'));
@@ -347,6 +348,42 @@ async function autoMigrate() {
       `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS seo_score INT NOT NULL DEFAULT 0`,
       `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS seo_checks JSONB NOT NULL DEFAULT '[]'::jsonb`,
     ]),
+    // ----- Mail outbox + inquiry hardening (Sprint 0) -----
+    // The outbox decouples SMTP from request handling: inquiry inserts
+    // enqueue here, a worker drains them with exponential backoff. Adding
+    // these as idempotent migrations so existing deployments self-upgrade.
+    `ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS content_hash VARCHAR(64) NOT NULL DEFAULT ''`,
+    `ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS score INT NOT NULL DEFAULT 0`,
+    `CREATE INDEX IF NOT EXISTS idx_inquiries_dedupe
+       ON inquiries(email, content_hash, created_at DESC)`,
+    `CREATE TABLE IF NOT EXISTS mail_outbox (
+       id              SERIAL PRIMARY KEY,
+       kind            VARCHAR(40)  NOT NULL,
+       related_type    VARCHAR(40)  NOT NULL DEFAULT '',
+       related_id      INT,
+       to_addr         TEXT         NOT NULL,
+       reply_to        TEXT         NOT NULL DEFAULT '',
+       subject         TEXT         NOT NULL,
+       html            TEXT         NOT NULL,
+       text_body       TEXT         NOT NULL DEFAULT '',
+       attachments     JSONB        NOT NULL DEFAULT '[]'::jsonb,
+       status          VARCHAR(20)  NOT NULL DEFAULT 'pending',
+       attempts        INT          NOT NULL DEFAULT 0,
+       max_attempts    INT          NOT NULL DEFAULT 8,
+       next_attempt_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
+       last_error      TEXT         NOT NULL DEFAULT '',
+       locked_by       VARCHAR(80)  NOT NULL DEFAULT '',
+       locked_at       TIMESTAMPTZ,
+       created_at      TIMESTAMPTZ  NOT NULL DEFAULT now(),
+       sent_at         TIMESTAMPTZ
+     )`,
+    `CREATE INDEX IF NOT EXISTS idx_outbox_due
+       ON mail_outbox(status, next_attempt_at)
+       WHERE status IN ('pending', 'failed')`,
+    `CREATE INDEX IF NOT EXISTS idx_outbox_related
+       ON mail_outbox(related_type, related_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_outbox_status_created
+       ON mail_outbox(status, created_at DESC)`,
     // ----- Acme → Zufek cleanup (legacy seed data) -----
     `UPDATE articles SET author = 'Zufek Engineering' WHERE author ILIKE '%acme%' OR author = '' OR author IS NULL`,
     `UPDATE articles SET content = REPLACE(content, 'Acme Engineering', 'Zufek Engineering') WHERE content LIKE '%Acme%'`,
@@ -416,6 +453,21 @@ async function autoMigrate() {
   } catch (err) {
     console.error('[ai-settings] initial load failed:', err.message);
   }
+
+  // Recover any rows a prior process had marked 'sending' before
+  // crashing — they'd otherwise be stuck forever.
+  try {
+    const outbox = require('./services/mail-outbox');
+    await outbox.releaseStaleLocks(10);
+    if (String(process.env.OUTBOX_DISABLED || 'false') !== 'true') {
+      outbox.startWorker();
+    } else {
+      console.log('[outbox] worker disabled by OUTBOX_DISABLED=true');
+    }
+  } catch (err) {
+    console.error('[outbox] startup failed:', err && err.message);
+  }
+
   app.listen(PORT, () => {
     console.log(`[battery-cms] running on http://localhost:${PORT}`);
   });

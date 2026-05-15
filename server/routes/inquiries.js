@@ -6,7 +6,12 @@ const { recordAudit } = require('../middleware/audit');
 const { isEmail, trimStr, asBool, asJson, clamp } = require('../utils/validate');
 const { sha256, shortRef } = require('../utils/hash');
 const { verifyTurnstile } = require('../services/turnstile');
-const { sendInquiryEmails } = require('../services/mailer');
+const { enqueue } = require('../services/mail-outbox');
+const {
+  buildInquiryInternalMail,
+  buildInquiryAutoReplyMail,
+} = require('../services/mail-templates');
+const { scoreInquiry } = require('../services/lead-scoring');
 
 const router = express.Router();
 
@@ -46,10 +51,39 @@ router.post('/', submitLimiter, async (req, res) => {
   const turnstile = await verifyTurnstile(b['cf-turnstile-response'] || b.turnstile, ip);
   if (!turnstile.success) return res.status(400).json({ error: 'turnstile_failed' });
 
+  const company = trimStr(b.company, 190);
+  const contentHash = sha256(`${email}|${company}|${message}`);
+
+  // Idempotency: same email + same content fingerprint within the last
+  // 5 minutes is treated as a duplicate (double-click, network retry,
+  // accidental refresh-resubmit). Returns the original reference so the
+  // user sees the same success screen.
+  const dup = await one(
+    `SELECT reference FROM inquiries
+     WHERE email = $1 AND content_hash = $2
+       AND created_at > now() - interval '5 minutes'
+     LIMIT 1`,
+    [email, contentHash]
+  );
+  if (dup) {
+    return res.json({ ok: true, reference: dup.reference, deduped: true });
+  }
+
+  // Per-email throttle: max 3 inquiries from the same address per hour
+  // to mitigate IP-rate-limit bypass via NAT/shared connections.
+  const recentByEmail = await one(
+    `SELECT count(*)::int AS n FROM inquiries
+     WHERE email = $1 AND created_at > now() - interval '1 hour'`,
+    [email]
+  );
+  if (recentByEmail && recentByEmail.n >= 3) {
+    return res.status(429).json({ error: 'too_many_inquiries' });
+  }
+
   const reference = shortRef('INQ');
   const inquiry = {
     reference,
-    company: trimStr(b.company, 190),
+    company,
     full_name: fullName,
     email,
     phone: trimStr(b.phone, 60),
@@ -67,14 +101,19 @@ router.post('/', submitLimiter, async (req, res) => {
     consent_given: true,
     consent_at: new Date(),
     policy_version: process.env.PRIVACY_POLICY_VERSION || '1.0',
+    content_hash: contentHash,
   };
+
+  const { score } = scoreInquiry(inquiry);
+  inquiry.score = score;
 
   const r = await query(
     `INSERT INTO inquiries (
        reference, company, full_name, email, phone, country, product_categories,
        capacity_need, annual_volume, application, message, attachments,
-       source_page, utm, ip_hash, user_agent, consent_given, consent_at, policy_version
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING id`,
+       source_page, utm, ip_hash, user_agent, consent_given, consent_at, policy_version,
+       content_hash, score
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21) RETURNING id`,
     [
       inquiry.reference,
       inquiry.company,
@@ -95,14 +134,37 @@ router.post('/', submitLimiter, async (req, res) => {
       inquiry.consent_given,
       inquiry.consent_at,
       inquiry.policy_version,
+      inquiry.content_hash,
+      inquiry.score,
     ]
   );
+  const inquiryId = r.rows[0].id;
 
-  // Send emails (don't fail the request if SMTP errors)
+  // Hand off email delivery to the outbox worker. enqueue() is a single
+  // INSERT — never awaits SMTP — so the response below returns in
+  // milliseconds even if the mail server is down.
   try {
-    await sendInquiryEmails(inquiry);
+    const internal = buildInquiryInternalMail(inquiry);
+    await enqueue({
+      kind: 'inquiry_internal',
+      relatedType: 'inquiry',
+      relatedId: inquiryId,
+      ...internal,
+    });
+    if (String(process.env.AUTO_REPLY_ENABLED || 'true') === 'true') {
+      const auto = buildInquiryAutoReplyMail(inquiry);
+      await enqueue({
+        kind: 'inquiry_autoreply',
+        relatedType: 'inquiry',
+        relatedId: inquiryId,
+        ...auto,
+      });
+    }
   } catch (err) {
-    console.error('[inquiries] mail send error', err);
+    // Even if the outbox INSERT itself fails (e.g. PG hiccup), the
+    // inquiry row above is already committed, so we never lose the lead.
+    // The next /readyz probe will surface any outbox lag.
+    console.error('[inquiries] outbox enqueue failed', err && err.message);
   }
 
   res.json({ ok: true, reference });
@@ -113,6 +175,7 @@ router.get('/', requireAuth, async (req, res) => {
   const limit = clamp(req.query.limit, 1, 100, 25);
   const offset = clamp(req.query.offset, 0, 1e6, 0);
   const status = trimStr(req.query.status, 20);
+  const sort = req.query.sort === 'score' ? 'score' : 'created';
   const params = [];
   const where = ['is_deleted = FALSE'];
   if (status) {
@@ -125,13 +188,16 @@ router.get('/', requireAuth, async (req, res) => {
       `(email ILIKE $${params.length} OR company ILIKE $${params.length} OR full_name ILIKE $${params.length} OR reference ILIKE $${params.length})`
     );
   }
+  const orderBy = sort === 'score'
+    ? 'score DESC, created_at DESC'
+    : 'created_at DESC';
   params.push(limit);
   params.push(offset);
   const rows = await many(
     `SELECT id, reference, company, full_name, email, phone, country, product_categories,
-            capacity_need, annual_volume, application, source_page, status, created_at
+            capacity_need, annual_volume, application, source_page, status, score, created_at
      FROM inquiries WHERE ${where.join(' AND ')}
-     ORDER BY created_at DESC
+     ORDER BY ${orderBy}
      LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params
   );
@@ -143,7 +209,8 @@ router.get('/', requireAuth, async (req, res) => {
     `SELECT
        count(*)::int AS total,
        count(*) FILTER (WHERE status='new')::int AS unread,
-       count(*) FILTER (WHERE created_at > now() - interval '7 days')::int AS week
+       count(*) FILTER (WHERE created_at > now() - interval '7 days')::int AS week,
+       count(*) FILTER (WHERE score >= 60 AND is_deleted = FALSE)::int AS hot
      FROM inquiries WHERE is_deleted = FALSE`
   );
   res.json({ items: rows, total: total ? total.n : 0, stats, limit, offset });
@@ -198,12 +265,12 @@ router.delete('/:id', requireAuth, async (req, res) => {
 
 router.get('/export/csv', requireAuth, async (_req, res) => {
   const rows = await many(
-    `SELECT reference, created_at, status, full_name, email, company, country, phone,
+    `SELECT reference, created_at, status, score, full_name, email, company, country, phone,
             capacity_need, annual_volume, application, message
      FROM inquiries WHERE is_deleted = FALSE ORDER BY created_at DESC LIMIT 5000`
   );
   const headers = [
-    'reference', 'created_at', 'status', 'full_name', 'email', 'company',
+    'reference', 'created_at', 'status', 'score', 'full_name', 'email', 'company',
     'country', 'phone', 'capacity_need', 'annual_volume', 'application', 'message',
   ];
   const escape = (v) => {
