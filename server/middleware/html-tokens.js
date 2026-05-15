@@ -25,6 +25,62 @@ const path = require('path');
 
 const PUBLIC_DIR = path.resolve(__dirname, '..', '..', 'public');
 
+// ----- Asset manifest (Sprint 1 — build pipeline) -----
+// public/dist/manifest.json is written by `npm run build` and maps the
+// authored asset paths (script.js, styles.css) to the minified+hashed
+// equivalents. On HTML responses we substitute the hashed URLs so the
+// browser can long-cache them (Cache-Control: immutable). Missing
+// manifest = no rewrite, original files served as before. This keeps
+// dev / pre-build deployments fully functional.
+let assetManifest = null;
+function loadManifest() {
+  try {
+    const p = path.join(PUBLIC_DIR, 'dist', 'manifest.json');
+    if (fs.existsSync(p)) {
+      assetManifest = JSON.parse(fs.readFileSync(p, 'utf8'));
+      const count = Object.keys(assetManifest.entries || {}).length;
+      console.log(`[assets] loaded manifest: ${count} hashed asset(s)`);
+    } else {
+      assetManifest = null;
+    }
+  } catch (err) {
+    console.warn('[assets] manifest load failed (using source files):', err && err.message);
+    assetManifest = null;
+  }
+}
+loadManifest();
+// Watch for rebuilds — useful in dev so a re-run of `npm run build`
+// becomes effective without restarting the server. Ignored if the
+// dist directory doesn't exist yet.
+try {
+  const distDir = path.join(PUBLIC_DIR, 'dist');
+  if (fs.existsSync(distDir)) {
+    fs.watch(distDir, { persistent: false }, (_evt, name) => {
+      if (name === 'manifest.json') loadManifest();
+    });
+  }
+} catch (_) {}
+
+// Rewrite raw source asset references to their hashed counterparts.
+// Examples handled:
+//   /script.js          → /dist/script.<hash>.js
+//   /script.js?v=19     → /dist/script.<hash>.js     (drops the query)
+//   /styles.css         → /dist/styles.<hash>.css
+// We only touch the exact authored paths so any legitimate use of
+// other names (admin/* JS, vendor scripts, etc.) is unaffected.
+function rewriteAssetUrls(html) {
+  if (!assetManifest || !assetManifest.entries) return html;
+  for (const entry of Object.values(assetManifest.entries)) {
+    if (!entry || !entry.src || !entry.dist) continue;
+    // Match the src path bracketed by " ' or = sign, optionally
+    // followed by ?v=NN. Captures preserve the surrounding quote.
+    const escSrc = entry.src.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(`(["'=])${escSrc}(\\?v=\\d+)?`, 'g');
+    html = html.replace(re, `$1${entry.dist}`);
+  }
+  return html;
+}
+
 // In-memory cache of seo + site + organization settings, refreshed on every
 // PUT /api/settings/* and on a 30s interval. Avoids a DB hit per request.
 const settingsCache = {
@@ -185,6 +241,10 @@ function replaceTokens(html, ctx) {
   if (Object.keys(textOverrides).length) {
     out = applyTextOverrides(out, textOverrides);
   }
+  // Final pass: swap source asset URLs for content-hashed bundles.
+  // Safe to run last because all earlier passes operate on text content
+  // and don't touch <script src="..."> / <link href="..."> attributes.
+  out = rewriteAssetUrls(out);
   return out;
 }
 

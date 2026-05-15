@@ -4,8 +4,10 @@ const { requireAuth } = require('../middleware/auth');
 const { recordAudit } = require('../middleware/audit');
 const { isSlug, trimStr, clamp } = require('../utils/validate');
 const { SEO_FIELDS, extractSeoValues, seoValuesPlaceholders, seoSetClause } = require('../utils/seo-fields');
+const cache = require('../services/cache');
 
 const router = express.Router();
+const CACHE_TTL = parseInt(process.env.CACHE_TTL_ARTICLE || '300', 10);
 const FIELDS = `
   a.id, a.pillar_id, a.category_id, a.author_id, a.slug, a.title, a.excerpt, a.cover_url,
   a.content, a.author, a.meta_title, a.meta_description, a.reading_minutes,
@@ -71,24 +73,28 @@ router.get('/', async (req, res) => {
 router.get('/:slug', async (req, res) => {
   const slug = String(req.params.slug);
   if (!isSlug(slug)) return res.status(400).json({ error: 'invalid_slug' });
-  const row = await one(
-    `SELECT ${FIELDS} FROM articles a
-     LEFT JOIN categories c ON c.id = a.category_id
-     LEFT JOIN pillar_pages p ON p.id = a.pillar_id
-     LEFT JOIN authors au ON au.id = a.author_id
-     WHERE a.slug = $1`,
-    [slug]
-  );
-  if (!row) return res.status(404).json({ error: 'not_found' });
-  const related = row.pillar_id
-    ? await many(
-        `SELECT id, slug, title, excerpt, cover_url, reading_minutes, published_at
-         FROM articles WHERE pillar_id = $1 AND id <> $2 AND status='published'
-         ORDER BY published_at DESC LIMIT 3`,
-        [row.pillar_id, row.id]
-      )
-    : [];
-  res.json({ article: row, related });
+  const payload = await cache.cached(`article:slug:${slug}`, CACHE_TTL, async () => {
+    const row = await one(
+      `SELECT ${FIELDS} FROM articles a
+       LEFT JOIN categories c ON c.id = a.category_id
+       LEFT JOIN pillar_pages p ON p.id = a.pillar_id
+       LEFT JOIN authors au ON au.id = a.author_id
+       WHERE a.slug = $1`,
+      [slug]
+    );
+    if (!row) return null;
+    const related = row.pillar_id
+      ? await many(
+          `SELECT id, slug, title, excerpt, cover_url, reading_minutes, published_at
+           FROM articles WHERE pillar_id = $1 AND id <> $2 AND status='published'
+           ORDER BY published_at DESC LIMIT 3`,
+          [row.pillar_id, row.id]
+        )
+      : [];
+    return { article: row, related };
+  });
+  if (!payload) return res.status(404).json({ error: 'not_found' });
+  res.json(payload);
 });
 
 router.get('/admin/list', requireAuth, async (_req, res) => {
@@ -141,6 +147,9 @@ router.post('/', requireAuth, async (req, res) => {
     ]
   );
   await recordAudit({ req, action: 'create', entity: 'article', entityId: r.rows[0].id, detail: { slug } });
+  // New article may appear in pillar cluster blocks; bust both caches.
+  await cache.invalidate('article:');
+  await cache.invalidate('pillar:');
   res.json({ id: r.rows[0].id });
 });
 
@@ -180,6 +189,8 @@ router.put('/:id', requireAuth, async (req, res) => {
     ]
   );
   await recordAudit({ req, action: 'update', entity: 'article', entityId: id });
+  await cache.invalidate('article:');
+  await cache.invalidate('pillar:');
   res.json({ ok: true });
 });
 
@@ -188,6 +199,8 @@ router.delete('/:id', requireAuth, async (req, res) => {
   if (!id) return res.status(400).json({ error: 'invalid_id' });
   await query('DELETE FROM articles WHERE id = $1', [id]);
   await recordAudit({ req, action: 'delete', entity: 'article', entityId: id });
+  await cache.invalidate('article:');
+  await cache.invalidate('pillar:');
   res.json({ ok: true });
 });
 

@@ -13,6 +13,7 @@ const { many, one, query } = require('../db/client');
 const { requireAuth } = require('../middleware/auth');
 const { recordAudit } = require('../middleware/audit');
 const { clamp, trimStr } = require('../utils/validate');
+const cache = require('../services/cache');
 
 const router = express.Router();
 
@@ -38,6 +39,7 @@ router.get('/stats', requireAuth, async (_req, res) => {
     sending: counts.sending || 0,
     sent_24h: counts.sent_24h || 0,
     overdue: overdue.n || 0,
+    cache: cache.getStats(),
   });
 });
 

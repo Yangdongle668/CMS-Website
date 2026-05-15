@@ -4,8 +4,10 @@ const { requireAuth } = require('../middleware/auth');
 const { recordAudit } = require('../middleware/audit');
 const { isSlug, trimStr, asJson, asBool, clamp } = require('../utils/validate');
 const { SEO_SELECT } = require('../utils/seo-fields');
+const cache = require('../services/cache');
 
 const router = express.Router();
+const CACHE_TTL = parseInt(process.env.CACHE_TTL_PRODUCT || '300', 10);
 
 const PRODUCT_FIELDS = `
   id, pillar_id, slug, name, model_no, tagline, cover_url, gallery,
@@ -37,19 +39,23 @@ router.get('/', async (req, res) => {
 router.get('/:slug', async (req, res) => {
   const slug = String(req.params.slug);
   if (!isSlug(slug)) return res.status(400).json({ error: 'invalid_slug' });
-  const row = await one(`SELECT ${PRODUCT_FIELDS} FROM products WHERE slug = $1`, [slug]);
-  if (!row) return res.status(404).json({ error: 'not_found' });
-  const pillar = row.pillar_id
-    ? await one('SELECT slug, name, short_name FROM pillar_pages WHERE id = $1', [row.pillar_id])
-    : null;
-  const related = row.pillar_id
-    ? await many(
-        `SELECT id, slug, name, model_no, tagline, cover_url FROM products
-         WHERE pillar_id = $1 AND id <> $2 AND status='published' ORDER BY sort_order LIMIT 4`,
-        [row.pillar_id, row.id]
-      )
-    : [];
-  res.json({ product: row, pillar, related });
+  const payload = await cache.cached(`product:slug:${slug}`, CACHE_TTL, async () => {
+    const row = await one(`SELECT ${PRODUCT_FIELDS} FROM products WHERE slug = $1`, [slug]);
+    if (!row) return null;
+    const pillar = row.pillar_id
+      ? await one('SELECT slug, name, short_name FROM pillar_pages WHERE id = $1', [row.pillar_id])
+      : null;
+    const related = row.pillar_id
+      ? await many(
+          `SELECT id, slug, name, model_no, tagline, cover_url FROM products
+           WHERE pillar_id = $1 AND id <> $2 AND status='published' ORDER BY sort_order LIMIT 4`,
+          [row.pillar_id, row.id]
+        )
+      : [];
+    return { product: row, pillar, related };
+  });
+  if (!payload) return res.status(404).json({ error: 'not_found' });
+  res.json(payload);
 });
 
 // ----- Admin -----
@@ -117,6 +123,8 @@ router.post('/', requireAuth, async (req, res) => {
     ]
   );
   await recordAudit({ req, action: 'create', entity: 'product', entityId: result.rows[0].id, detail: { slug } });
+  await cache.invalidate('product:');
+  await cache.invalidate('pillar:');
   res.json({ id: result.rows[0].id });
 });
 
@@ -165,6 +173,8 @@ router.put('/:id', requireAuth, async (req, res) => {
     values
   );
   await recordAudit({ req, action: 'update', entity: 'product', entityId: id });
+  await cache.invalidate('product:');
+  await cache.invalidate('pillar:');
   res.json({ ok: true });
 });
 
@@ -173,6 +183,8 @@ router.delete('/:id', requireAuth, async (req, res) => {
   if (!id) return res.status(400).json({ error: 'invalid_id' });
   await query('DELETE FROM products WHERE id = $1', [id]);
   await recordAudit({ req, action: 'delete', entity: 'product', entityId: id });
+  await cache.invalidate('product:');
+  await cache.invalidate('pillar:');
   res.json({ ok: true });
 });
 

@@ -27,6 +27,17 @@ services:
       timeout: 5s
       retries: 12
 
+  redis:
+    image: redis:7-alpine
+    container_name: battery-cms-redis
+    restart: unless-stopped
+    command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru", "--save", ""]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   app:
     build: .
     image: battery-cms:latest
@@ -34,6 +45,8 @@ services:
     restart: unless-stopped
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     environment:
       NODE_ENV: production
@@ -86,6 +99,14 @@ services:
       # OUTBOX_BATCH: 5
       # OUTBOX_DISABLED: false
       # HEALTH_ALERTS_DISABLED: false
+
+      # Cache layer. Comment out REDIS_URL to fall back to in-memory
+      # (works fine for single-node deployments, ~90% hit rate).
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      # CACHE_DISABLED: false
+      # CACHE_TTL_PILLAR: 300
+      # CACHE_TTL_ARTICLE: 300
+      # CACHE_TTL_PRODUCT: 300
     ports:
       - "${APP_PORT:-3000}:3000"
     volumes:
