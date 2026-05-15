@@ -751,6 +751,277 @@ function solutionsMassProductionBlocks() {
 }
 
 // =============================================================================
+//  FAQ
+// =============================================================================
+
+function faqBlocks() {
+  return [
+    blk('page-hero', {
+      image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=1920&q=80',
+      title: 'Frequently Asked Questions',
+      subtitle: 'The ten things we get asked every week.',
+      breadcrumbs: [{ label: 'Home', url: '/' }, { label: 'FAQ' }],
+    }),
+    blk('faq', {
+      background: 'light',
+      eyebrow: 'MOQ',
+      title: 'Minimum order quantity.',
+      items: [
+        { q: 'What is your MOQ for standard catalog cells?',
+          a: '500 pcs per SKU for first orders. Repeat orders accepted from 200 pcs. Sample quantities (10–50 pcs) are always available for qualification.' },
+        { q: 'What is your MOQ for custom cells?',
+          a: 'Custom cells without new tooling: 1,000 pcs. Custom cells with new tooling (new geometry, new connector): typically 3,000–5,000 pcs per order, 20,000 pcs per year commitment. Prototyping runs from 100 pcs.' },
+        { q: 'Can you accept smaller test quantities?',
+          a: 'Yes — we routinely ship 100-pc pilot runs for integration testing. The sample fee is refunded against your first MP order.' },
+      ],
+    }),
+    blk('faq', {
+      background: 'grey',
+      eyebrow: 'Lead Time',
+      title: 'How quickly we can ship.',
+      items: [
+        { q: 'How long for standard catalog cells?',
+          a: '7–10 business days from purchase order, including electrical screening and DGR packaging. Stocked SKUs can ship in 3–5 days.' },
+        { q: 'How long for custom cell samples?',
+          a: 'A-samples: 2 weeks. B-samples: 3–4 weeks. C-samples (MP-equivalent): 4–6 weeks. Tooling lead time may add 1–3 weeks for new geometry.' },
+        { q: 'How long for mass production after sample approval?',
+          a: '4–6 weeks for first MP lot (includes PPAP or DHF documentation). 3–4 weeks for repeat orders. Urgent programs can be accelerated on a case-by-case basis.' },
+        { q: 'What about shipping time?',
+          a: 'Air: 3–7 days to most destinations. Sea: 25–45 days. Rail to EU: 18–25 days. DDP terms available.' },
+      ],
+    }),
+    blk('faq', {
+      background: 'light',
+      eyebrow: 'Customization',
+      title: 'How much can be customized.',
+      items: [
+        { q: 'What can you customize?',
+          a: 'Capacity, voltage, shape (including curved, stepped and irregular), thickness, tab position, connector, wire harness, PCM/BMS, fuel gauge, label, and certification targets. Chemistry can be tuned for energy / power / cycle-life / low-temperature priorities.' },
+        { q: 'Do you sign NDAs?',
+          a: 'Yes — mutual NDAs are signed before any technical exchange. We can also sign exclusivity agreements for strategic projects.' },
+        { q: 'Do you handle certification?',
+          a: 'IEC 62133, UN 38.3, UL 2054, KC, PSE, BIS and CB reports — we handle these in-house or with accredited partners. FCC and CE marking can be coordinated as part of the program.' },
+        { q: 'What CAD formats do you accept?',
+          a: 'STEP, IGES, SolidWorks, Creo, Fusion 360. Hand sketches and 2D drawings (PDF / DXF) are also fine for the initial DFM conversation.' },
+      ],
+    }),
+    blk('faq', {
+      background: 'grey',
+      eyebrow: 'Payment & Logistics',
+      title: 'How commercial terms work.',
+      items: [
+        { q: 'What payment terms do you offer?',
+          a: 'First orders: 30% deposit, 70% against BL copy. Established accounts: Net 30 or Net 60 against credit insurance. LC at sight accepted for orders above USD 100k.' },
+        { q: 'What Incoterms do you support?',
+          a: 'EXW Dongguan, FOB Yantian / Shenzhen, CIF / DDP to all major ports. We handle DGR documentation in-house.' },
+        { q: 'Can you hold safety stock?',
+          a: 'Yes — VMI arrangements available for programs above 50k pcs / month. Typical holding: 4–8 weeks of rolling forecast.' },
+      ],
+    }),
+    blk('cta-band', {
+      background: 'dark',
+      title: 'Question not answered here?',
+      subtitle: 'Our commercial team replies within one business day. Faster if you ping us on WeChat or WhatsApp.',
+      button: { label: 'Ask Us Anything', url: '/contact.html' },
+    }),
+  ];
+}
+
+// =============================================================================
+//  LEGAL PAGES (privacy / terms / legal)
+// =============================================================================
+//  Each is a long single-document page. We compose it as:
+//    page-hero          (background image + H1 + breadcrumbs)
+//    rich-text          (numbered sections via ## headings; ### sub-headings)
+//    cta-band           (link out to /contact.html or /gdpr.html)
+//  Operators can edit the markdown-style body directly in the admin drawer.
+
+function privacyBlocks() {
+  return [
+    blk('page-hero', {
+      image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=1920&q=80',
+      title: 'Privacy Policy',
+      subtitle: 'How we handle the data you share when you contact us, request a quote, or browse the site.',
+      breadcrumbs: [{ label: 'Home', url: '/' }, { label: 'Privacy Policy' }],
+    }),
+    blk('rich-text', {
+      background: 'light',
+      title: '',
+      body: [
+        '_Last updated: April 22, 2026_',
+        '',
+        '## 1. Who we are',
+        'This Privacy Policy applies to this site operated by **Acme Battery Co., Ltd.** ("Acme", "we", "us", "our"), with registered address in Dongguan, Guangdong, China. For any privacy-related question, contact us at [privacy@acme-battery.com](mailto:privacy@acme-battery.com).',
+        '',
+        '## 2. What data we collect',
+        'We collect the minimum data needed to respond to your inquiries and to operate the site securely.',
+        '',
+        '### 2.1 Information you give us',
+        '- **Contact-form submissions:** name, company, email, country, phone number, application type, and any message content you send.',
+        '- **Email correspondence:** anything you include when you email us directly.',
+        '',
+        '### 2.2 Information collected automatically',
+        '- **Server logs:** IP address, browser type, operating system, referring page, timestamps, and pages visited. Retained for up to 30 days for security and diagnostics.',
+        '- **Cookies:** strictly-necessary cookies for site function are always set. Analytics / preference cookies are only set after you accept them in our cookie banner.',
+        '',
+        '## 3. Why we use it (legal basis under GDPR)',
+        '- **Reply to your inquiry** — legitimate interest (6(1)(f)) / pre-contractual steps (6(1)(b)).',
+        '- **Site security, fraud prevention, abuse protection** — legitimate interest (6(1)(f)).',
+        '- **Analytics and performance monitoring** — consent (6(1)(a)).',
+        '- **Legal or regulatory compliance** — legal obligation (6(1)(c)).',
+        '',
+        '## 4. How long we keep it',
+        '- **Inquiry data:** up to 24 months after your last contact with us, unless a commercial relationship has begun — in which case retention is governed by our customer contract and applicable tax/accounting rules.',
+        '- **Server logs:** up to 30 days.',
+        '- **Cookie preferences:** up to 12 months, then we ask again.',
+        '',
+        '## 5. Who we share it with',
+        'We do not sell your personal data. We share it only with processors that help us run the site and our business, under written data-processing agreements: hosting and CDN providers, email delivery providers, analytics providers (only if you have consented), and professional advisers (legal, accounting, auditors) when strictly necessary.',
+        '',
+        '## 6. International transfers',
+        'Some of our processors are located outside the EEA (mainly in the United States and China). When data is transferred outside the EEA, we rely on the European Commission\'s Standard Contractual Clauses or on adequacy decisions where applicable.',
+        '',
+        '## 7. Your rights',
+        'Under the GDPR you can ask us to: access, correct, delete or restrict processing of your personal data; receive a copy in a portable format; withdraw consent at any time; lodge a complaint with a supervisory authority. Submit a request via our [GDPR Data Subject Request form](/gdpr.html) or by emailing privacy@acme-battery.com.',
+        '',
+        '## 8. Cookies',
+        'See the cookie banner shown on your first visit for the list of categories. You can change your preferences at any time by clicking the cookie icon in the footer.',
+        '',
+        '## 9. Security',
+        'We use industry-standard measures: TLS for all traffic, hashed passwords, restricted database access, audit logging for all admin actions, and regular dependency updates.',
+        '',
+        '## 10. Children',
+        'The site is intended for business audiences. We do not knowingly collect data from anyone under 16.',
+        '',
+        '## 11. Changes to this policy',
+        'Material changes will be announced on this page. The "Last updated" date at the top reflects the most recent revision.',
+        '',
+        '## 12. Contact',
+        'For any privacy-related question or to exercise your rights: [privacy@acme-battery.com](mailto:privacy@acme-battery.com).',
+      ].join('\n'),
+    }),
+    blk('cta-band', {
+      background: 'grey',
+      title: 'Want to exercise a GDPR right?',
+      subtitle: 'Submit an access, correction or deletion request through our verified intake form.',
+      button: { label: 'Open GDPR Request Form', url: '/gdpr.html' },
+    }),
+  ];
+}
+
+function termsBlocks() {
+  return [
+    blk('page-hero', {
+      image: 'https://images.unsplash.com/photo-1589994965851-a8f479c573a9?w=1920&q=80',
+      title: 'Terms of Use',
+      subtitle: 'The rules that govern your use of this website and our information services.',
+      breadcrumbs: [{ label: 'Home', url: '/' }, { label: 'Terms of Use' }],
+    }),
+    blk('rich-text', {
+      background: 'light',
+      title: '',
+      body: [
+        '_Last updated: April 22, 2026_',
+        '',
+        '## 1. Acceptance',
+        'By accessing this site you accept these Terms of Use. If you disagree, please do not use the site.',
+        '',
+        '## 2. Purpose of the site',
+        'This site is operated by **Acme Battery Co., Ltd.** to present our company, our products, our applications and our custom programs. It is not a webshop; orders are placed only after direct commercial discussion and a signed purchase order.',
+        '',
+        '## 3. Permitted use',
+        'You may browse the site, download published datasheets and request information for legitimate business purposes. You may not scrape the site, attempt to bypass technical limits, or use it to harm third parties.',
+        '',
+        '## 4. Intellectual property',
+        'All text, photos, drawings, logos and other content are owned by us or licensed to us. You may not reproduce or redistribute any content for commercial purposes without our written permission.',
+        '',
+        '## 5. Inquiries and confidentiality',
+        'Inquiries you submit via the contact form are treated as confidential business communication. We will sign a mutual NDA before any technical exchange beyond high-level information. See our [Privacy Policy](/privacy.html) for how we handle your personal data.',
+        '',
+        '## 6. Third-party links',
+        'External links are provided for convenience. We are not responsible for the content or practices of any linked site.',
+        '',
+        '## 7. No warranty',
+        'The site is provided **"as is"**. While we work to keep information accurate, we make no warranty that the site will be error-free or uninterrupted, or that any information will remain current.',
+        '',
+        '## 8. Limitation of liability',
+        'To the maximum extent permitted by applicable law, we are not liable for any indirect, incidental, special, consequential or punitive damages arising from your use of the site.',
+        '',
+        '## 9. Indemnity',
+        'You agree to indemnify and hold us harmless from any claim arising out of your misuse of the site or your violation of these Terms.',
+        '',
+        '## 10. Changes to the site and to these terms',
+        'We may change the site at any time. Material changes to these Terms will be announced on this page; the "Last updated" date reflects the most recent revision.',
+        '',
+        '## 11. Governing law and disputes',
+        'These Terms are governed by the laws of the People\'s Republic of China, without reference to conflict-of-law principles. Disputes that cannot be resolved amicably will be submitted to the competent court of Dongguan, Guangdong.',
+        '',
+        '## 12. Severability and waiver',
+        'If any provision is held unenforceable, the remaining provisions stay in effect. A waiver of any breach is not a waiver of future breaches.',
+        '',
+        '## 13. Contact',
+        'For any question about these Terms, write to [legal@acme-battery.com](mailto:legal@acme-battery.com).',
+      ].join('\n'),
+    }),
+    blk('cta-band', {
+      background: 'grey',
+      title: 'Need to talk to us?',
+      subtitle: 'Sales, technical and legal inquiries all reach a human within one business day.',
+      button: { label: 'Contact Us', url: '/contact.html' },
+    }),
+  ];
+}
+
+function legalBlocks() {
+  return [
+    blk('page-hero', {
+      image: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=1920&q=80',
+      title: 'Legal Notice',
+      subtitle: 'Company information, content responsibility and trademark details required under EU and Chinese law.',
+      breadcrumbs: [{ label: 'Home', url: '/' }, { label: 'Legal Notice' }],
+    }),
+    blk('rich-text', {
+      background: 'light',
+      title: '',
+      body: [
+        '## 1. Company information',
+        '**Acme Battery Co., Ltd.** — Building A, Industrial Park, Shenzhen 518000, China. Registered with the State Administration for Market Regulation under unified social credit code [USCC placeholder]. VAT / tax registration: [tax-ID placeholder].',
+        '',
+        '## 2. Responsible for content',
+        'Editorial responsibility for the site content rests with the Marketing department of Acme Battery Co., Ltd., reachable at [marketing@acme-battery.com](mailto:marketing@acme-battery.com).',
+        '',
+        '## 3. Trademarks',
+        '"Acme Battery", the Acme logo and the names of our product lines are trademarks of Acme Battery Co., Ltd. Other trademarks shown on the site (e.g. customer logos, technology partners) belong to their respective owners and are used with permission or under fair-use principles.',
+        '',
+        '## 4. Copyright',
+        'Unless otherwise indicated, all text, photos, drawings and source code on this site are © Acme Battery Co., Ltd. and are protected under PRC and international copyright law.',
+        '',
+        '## 5. Disclaimer on product information',
+        'Datasheets, drawings and specifications shown on the site reflect typical values for the product variants listed. Actual cells supplied under a commercial order are governed by the version-controlled datasheet attached to that order.',
+        '',
+        '## 6. External links',
+        'Outbound links are provided for convenience. We have no influence over content on linked sites and assume no responsibility for them.',
+        '',
+        '## 7. Compliance and export control',
+        'Lithium cells are dangerous goods (UN 38.3 class 9) and may be subject to export-control regulations depending on the country of destination and the end use. It is the buyer\'s responsibility to ensure compliance with applicable import / export rules.',
+        '',
+        '## 8. Online dispute resolution (EU users)',
+        'The European Commission provides a platform for online dispute resolution: [ec.europa.eu/consumers/odr](https://ec.europa.eu/consumers/odr/). We are willing to participate in pre-litigation dispute resolution for material consumer disputes.',
+        '',
+        '## 9. How to reach us',
+        'For legal matters: [legal@acme-battery.com](mailto:legal@acme-battery.com). For privacy matters: [privacy@acme-battery.com](mailto:privacy@acme-battery.com). For all other matters: [info@acme-battery.com](mailto:info@acme-battery.com).',
+      ].join('\n'),
+    }),
+    blk('cta-band', {
+      background: 'grey',
+      title: 'See also: Privacy Policy and Terms of Use.',
+      subtitle: 'Together with this Legal Notice they describe how we operate the site.',
+      button: { label: 'Read the Privacy Policy', url: '/privacy.html' },
+    }),
+  ];
+}
+
+// =============================================================================
 
 const MIGRATIONS = {
   'about/index':              aboutIndexBlocks,
@@ -768,6 +1039,11 @@ const MIGRATIONS = {
   'solutions/design':         solutionsDesignBlocks,
   'solutions/prototyping':    solutionsPrototypingBlocks,
   'solutions/mass-production': solutionsMassProductionBlocks,
+
+  'faq':                      faqBlocks,
+  'privacy':                  privacyBlocks,
+  'terms':                    termsBlocks,
+  'legal':                    legalBlocks,
 };
 
 async function run() {
