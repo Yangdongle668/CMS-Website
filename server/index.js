@@ -240,13 +240,21 @@ app.get(['/blog/', '/blog/index.html'], async (req, res, next) => {
 app.use(htmlTokenMiddleware);
 
 // ----- Static caching strategy -----
-// HTML:     no-cache (so admin edits go live immediately on next visit)
-// Uploads:  30 days (filenames already include a hash; safe to long-cache)
-// Assets:   1 day default; query-string-versioned files get 1 year + immutable
-// Fonts:    1 year
+// HTML:        no-cache (so admin edits go live immediately on next visit)
+// /dist/*:     1 year + immutable (filenames are content-hashed)
+// Uploads:     30 days (filenames already include a hash; safe to long-cache)
+// Fonts:       1 year
+// Other CSS/JS: 1 day (covers source files served when no build manifest)
 const staticHeaders = (res, filePath) => {
   if (filePath.endsWith('.html')) {
     res.setHeader('Cache-Control', 'no-cache');
+    return;
+  }
+  // Anything served out of the built bundle directory is content-hashed
+  // and therefore safe to cache forever. The HTML rewrite layer swaps
+  // references to these whenever a new manifest is loaded.
+  if (filePath.includes(path.sep + 'dist' + path.sep)) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     return;
   }
   if (/\.(woff2?|ttf|otf|eot)$/i.test(filePath)) {
