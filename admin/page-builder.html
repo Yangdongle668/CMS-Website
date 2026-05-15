@@ -223,6 +223,9 @@
       case 'image-edit-request':
         await pickImageForField(m.id, m.field);
         break;
+      case 'block-insert-drop':
+        await addBlockAt(m.block_type, m.ref_id, m.position);
+        break;
     }
   });
 
@@ -386,11 +389,11 @@
   function renderLibrary() {
     sideBody.innerHTML = `
       <div class="pb2-form__note">
-        点任一区块 → 加到当前页面末尾。可在 iframe 中拖拽 / 重排 / 点 + 在两个区块之间插入。
+        <strong>添加方式：</strong> 拖拽到画布上任意位置 — 或点击加到页面末尾。
       </div>
       <div class="pb2-lib">
         ${TYPES.map((t) => `
-          <div class="pb2-lib__item" data-type="${t.id}" title="${escapeHtml(t.description)}">
+          <div class="pb2-lib__item" data-type="${t.id}" draggable="true" title="${escapeHtml(t.description)}">
             <div class="pb2-lib__icon">${escapeHtml(t.icon)}</div>
             <div class="pb2-lib__label">${escapeHtml(t.label)}</div>
           </div>
@@ -399,6 +402,15 @@
     `;
     sideBody.querySelectorAll('[data-type]').forEach((el) => {
       el.addEventListener('click', () => addBlockAt(el.dataset.type, null, 'end'));
+      // Tile drag → notify iframe so its drop zones light up
+      el.addEventListener('dragstart', (ev) => {
+        ev.dataTransfer.effectAllowed = 'copy';
+        try { ev.dataTransfer.setData('text/plain', el.dataset.type); } catch (_) {}
+        postToFrame('library-drag-start', { block_type: el.dataset.type });
+      });
+      el.addEventListener('dragend', () => {
+        postToFrame('library-drag-end');
+      });
     });
   }
 
@@ -636,16 +648,15 @@
 
   // ----- Insert-block popover -----
   function showInsertPopover(refId, position) {
-    // Switch to library tab and scroll into view
     activeTab = 'library';
     document.querySelectorAll('.pb2-side__tab').forEach((x) => x.classList.toggle('is-active', x.dataset.tab === 'library'));
     sideBody.innerHTML = `
       <div class="pb2-form__note">
-        在 <strong>${refId ? '指定位置' : '页面末尾'}</strong> 插入一个新区块。点选要添加的类型：
+        在 <strong>${refId ? '指定位置' : '页面末尾'}</strong> 插入一个新区块。点选或拖拽要添加的类型：
       </div>
       <div class="pb2-lib">
         ${TYPES.map((t) => `
-          <div class="pb2-lib__item" data-type="${t.id}" title="${escapeHtml(t.description)}">
+          <div class="pb2-lib__item" data-type="${t.id}" draggable="true" title="${escapeHtml(t.description)}">
             <div class="pb2-lib__icon">${escapeHtml(t.icon)}</div>
             <div class="pb2-lib__label">${escapeHtml(t.label)}</div>
           </div>
@@ -658,6 +669,12 @@
         activeTab = 'settings';
         document.querySelectorAll('.pb2-side__tab').forEach((x) => x.classList.toggle('is-active', x.dataset.tab === 'settings'));
       });
+      el.addEventListener('dragstart', (ev) => {
+        ev.dataTransfer.effectAllowed = 'copy';
+        try { ev.dataTransfer.setData('text/plain', el.dataset.type); } catch (_) {}
+        postToFrame('library-drag-start', { block_type: el.dataset.type });
+      });
+      el.addEventListener('dragend', () => postToFrame('library-drag-end'));
     });
   }
 

@@ -80,7 +80,7 @@ const BLOCKS = {
       const align = ['left', 'center', 'right'].includes(c.align) ? c.align : 'left';
       const bg = c.image_url ? `style="background-image:url('${attr(c.image_url)}');"` : '';
       const eyebrow = `<div class="block-hero__eyebrow"${edit('eyebrow')}${c.eyebrow ? '' : ' data-empty="1"'}>${esc(c.eyebrow || '')}</div>`;
-      const subtitle = `<p class="block-hero__sub"${edit('subtitle')}${c.subtitle ? '' : ' data-empty="1"'}>${lineBreaks(c.subtitle || '')}</p>`;
+      const subtitle = `<p class="block-hero__sub"${editRich('subtitle')}${c.subtitle ? '' : ' data-empty="1"'}>${richHtml(c.subtitle || '')}</p>`;
       const cta = c.cta_link
         ? `<a class="block-hero__cta" href="${attr(c.cta_link)}"${edit('cta_text')}>${esc(c.cta_text || 'Get a Quote')}</a>` : '';
       const cta2 = c.secondary_cta_link
@@ -194,7 +194,7 @@ const BLOCKS = {
         <section class="block block-pg">
           <div class="block-pg__inner">
             <h2 class="block-pg__heading"${edit('title')}>${esc(c.title || '')}</h2>
-            <p class="block-pg__sub"${edit('subtitle')}${c.subtitle ? '' : ' data-empty="1"'}>${lineBreaks(c.subtitle || '')}</p>
+            <p class="block-pg__sub"${editRich('subtitle')}${c.subtitle ? '' : ' data-empty="1"'}>${richHtml(c.subtitle || '')}</p>
             <div class="block-pg__grid block-pg__grid--${cols}">${cards || '<p class="block-pg__empty">No products configured yet.</p>'}</div>
           </div>
         </section>`;
@@ -386,7 +386,7 @@ const BLOCKS = {
         <section class="block block-tm">
           <div class="block-tm__inner">
             <img class="block-tm__photo" src="${attr(c.photo || '/logo.png')}" alt="${attr(c.author || '')}" loading="lazy" decoding="async" data-edit-image="photo">
-            <blockquote class="block-tm__quote"${edit('quote')}>${esc(c.quote || '')}</blockquote>
+            <blockquote class="block-tm__quote"${editRich('quote')}>${richHtml(c.quote || '')}</blockquote>
             <div class="block-tm__author"><span${edit('author')}>${esc(c.author || '')}</span>, <span${edit('company')}>${esc(c.company || '')}</span></div>
           </div>
         </section>`;
@@ -472,7 +472,7 @@ const BLOCKS = {
           <div class="block-cta__overlay"></div>
           <div class="block-cta__inner">
             <h2 class="block-cta__title"${edit('title')}>${esc(c.title || '')}</h2>
-            <p class="block-cta__sub"${edit('subtitle')}${c.subtitle ? '' : ' data-empty="1"'}>${lineBreaks(c.subtitle || '')}</p>
+            <p class="block-cta__sub"${editRich('subtitle')}${c.subtitle ? '' : ' data-empty="1"'}>${richHtml(c.subtitle || '')}</p>
             ${c.cta_link ? `<a class="block-cta__btn" href="${attr(c.cta_link)}"${edit('cta_text')}>${esc(c.cta_text || 'Get a Quote')}</a>` : ''}
           </div>
         </section>`;
@@ -501,7 +501,7 @@ const BLOCKS = {
         <section class="block block-form">
           <div class="block-form__inner">
             <h2 class="block-form__heading"${edit('title')}>${esc(c.title || '')}</h2>
-            <p class="block-form__sub"${edit('subtitle')}${c.subtitle ? '' : ' data-empty="1"'}>${lineBreaks(c.subtitle || '')}</p>
+            <p class="block-form__sub"${editRich('subtitle')}${c.subtitle ? '' : ' data-empty="1"'}>${richHtml(c.subtitle || '')}</p>
             <form class="block-form__form" data-inline-inquiry onsubmit="return handleContactSubmit(event);">
               <input type="hidden" name="source_widget" value="mini_rfq">
               <input type="hidden" name="source_page" value="${attr(sourcePage)}">
@@ -588,6 +588,27 @@ async function renderBlock(block, ctx) {
 // attribute fragment (no leading space).
 function edit(field) {
   return ` data-edit-field="${field}"`;
+}
+
+// Like edit() but also marks the field as accepting inline rich-text
+// formatting (bold, italic, link). The runtime shows a floating
+// toolbar on selection inside these and saves innerHTML rather than
+// innerText.
+function editRich(field) {
+  return ` data-edit-field="${field}" data-edit-rich="1"`;
+}
+
+// Pass-through HTML for rich fields with light defensive sanitisation
+// (strip <script> / on*= attributes). Admins have full backend access
+// anyway, so this is hygiene, not a security boundary.
+function richHtml(s) {
+  if (s == null) return '';
+  let out = String(s);
+  out = out.replace(/<script[\s\S]*?<\/script>/gi, '');
+  out = out.replace(/<style[\s\S]*?<\/style>/gi, '');
+  out = out.replace(/ on[a-z]+\s*=\s*"[^"]*"/gi, '');
+  out = out.replace(/ on[a-z]+\s*=\s*'[^']*'/gi, '');
+  return out;
 }
 
 async function renderBlocks(blocks, ctx) {
