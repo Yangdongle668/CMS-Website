@@ -10,12 +10,20 @@ process.on('unhandledRejection', (err) => {
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
+const compression = require('compression');
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const ROOT = path.join(__dirname, '..');
 
 app.set('trust proxy', 1);
+
+// gzip/brotli compression for every response that's larger than a few hundred
+// bytes. HTML and JSON shrink ~65-75%; cuts payload over WAN dramatically.
+// Static assets already on disk get compressed here (express.static doesn't
+// pre-compress); for truly hot files in production a CDN would be the right
+// place but this covers the common case for free.
+app.use(compression({ threshold: 512 }));
 
 // ----- Security headers -----
 // HTTPS enforcement (HSTS + upgrade-insecure-requests) is only enabled when
@@ -93,7 +101,13 @@ app.use('/api/mail-queue', require('./routes/mail-queue'));
 app.use('/', require('./routes/seo'));
 
 // ----- Static uploads -----
-app.use('/uploads', express.static(path.join(ROOT, 'uploads'), { maxAge: '7d', index: false }));
+// Uploaded media is content-addressed by filename (timestamp+hash) so it never
+// changes for a given URL — safe to cache hard.
+app.use('/uploads', express.static(path.join(ROOT, 'uploads'), {
+  maxAge: '365d',
+  immutable: true,
+  index: false,
+}));
 
 // ----- Static admin -----
 app.use('/admin', express.static(path.join(ROOT, 'admin'), { extensions: ['html'] }));
@@ -105,11 +119,24 @@ app.get('/admin/*', (req, res, next) => {
 });
 
 // ----- Static public site -----
+// HTML must never be hard-cached: it embeds dynamic data and a CMS edit must
+// be visible on the next reload. JS/CSS/images are cache-busted via ?v=N
+// query strings (bumped on every release), so we can set a long max-age and
+// rely on the query change to invalidate.
 app.use(
   express.static(path.join(ROOT, 'public'), {
     extensions: ['html'],
-    setHeaders: (res, filePath) => {
-      if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache');
+    setHeaders: (res, filePath, _stat) => {
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache');
+        return;
+      }
+      if (/\.(js|css|woff2?|ttf|eot|svg|png|jpe?g|gif|webp|ico|mp4|webm)$/i.test(filePath)) {
+        // 7 days — long enough to matter, short enough that an emergency
+        // un-versioned fix still propagates within a week. Combined with the
+        // ?v=N bust this gives us infinite caching in practice on releases.
+        res.setHeader('Cache-Control', 'public, max-age=604800');
+      }
     },
   })
 );
@@ -268,6 +295,16 @@ async function autoMigrate() {
     `CREATE INDEX IF NOT EXISTS idx_outbox_inquiry ON mail_outbox(inquiry_id)`,
     `CREATE INDEX IF NOT EXISTS idx_outbox_status  ON mail_outbox(status, created_at DESC)`,
     `ALTER TABLE pages ADD COLUMN IF NOT EXISTS blocks JSONB NOT NULL DEFAULT '[]'::jsonb`,
+
+    // Performance — indexes covering the hot query paths in admin lists,
+    // public lookups, and sitemap building. UNIQUE columns already have an
+    // implicit index, so these only add what's missing.
+    `CREATE INDEX IF NOT EXISTS idx_inquiries_created  ON inquiries (created_at DESC)`,
+    `CREATE INDEX IF NOT EXISTS idx_inquiries_filter   ON inquiries (is_deleted, status, created_at DESC)`,
+    `CREATE INDEX IF NOT EXISTS idx_articles_published ON articles (published_at DESC) WHERE status = 'published'`,
+    `CREATE INDEX IF NOT EXISTS idx_audit_user_recent  ON audit_logs (user_id, created_at DESC)`,
+    `CREATE INDEX IF NOT EXISTS idx_pages_slug         ON pages (slug)`,
+    `CREATE INDEX IF NOT EXISTS idx_pages_published    ON pages (status) WHERE status = 'published'`,
   ];
   for (const sql of stmts) {
     try { await query(sql); }
