@@ -7,6 +7,12 @@ const express = require('express');
 process.on('unhandledRejection', (err) => {
   console.error('[unhandledRejection]', err);
 });
+process.on('uncaughtException', (err) => {
+  // Don't exit immediately — log and let supervisor decide. An
+  // uncaughtException during normal operation usually means a logic
+  // bug we want to see in the logs rather than a silent restart.
+  console.error('[uncaughtException]', err && err.stack ? err.stack : err);
+});
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
@@ -92,6 +98,53 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 app.use('/api/', apiLimiter);
+
+// ----- Health probes -----
+// /healthz is the cheap "is the process alive" check used by load
+// balancers and container orchestrators. It must not touch the DB so
+// that PG hiccups don't take the whole pod out of rotation.
+app.get('/healthz', (_req, res) => {
+  res.json({ ok: true, ts: Date.now(), uptime: Math.round(process.uptime()) });
+});
+
+// /readyz is the deeper check — touches PG, looks at outbox lag and
+// emergency-store backlog. Operators can poll this from monitoring or
+// rely on the same endpoint for k8s readiness probes (delay traffic
+// during DB warm-up or when the mail queue is badly backed up).
+app.get('/readyz', async (_req, res) => {
+  const { ping } = require('./db/client');
+  const emergency = require('./services/emergency-store');
+  const checks = { db: 'unknown', outbox_overdue: 0, dead_letters: 0, emergency: 0 };
+  let healthy = true;
+
+  try {
+    await ping();
+    checks.db = 'ok';
+  } catch (err) {
+    checks.db = 'fail: ' + (err && err.message);
+    healthy = false;
+  }
+
+  if (checks.db === 'ok') {
+    try {
+      const { one } = require('./db/client');
+      const lag = await one(
+        `SELECT count(*)::int AS n FROM mail_outbox
+         WHERE status IN ('pending','failed') AND created_at < now() - interval '10 minutes'`
+      );
+      const dead = await one(`SELECT count(*)::int AS n FROM mail_outbox WHERE status='dead'`);
+      checks.outbox_overdue = lag ? lag.n : 0;
+      checks.dead_letters = dead ? dead.n : 0;
+      if (checks.outbox_overdue >= 50) healthy = false;
+    } catch (_) {}
+  }
+
+  try { checks.emergency = await emergency.count(); }
+  catch (_) {}
+  if (checks.emergency > 0) healthy = false;
+
+  res.status(healthy ? 200 : 503).json({ ok: healthy, ...checks });
+});
 
 // ----- Public env (Turnstile site key + SEO defaults for the client) -----
 app.get('/api/public/config', async (_req, res) => {
@@ -468,7 +521,71 @@ async function autoMigrate() {
     console.error('[outbox] startup failed:', err && err.message);
   }
 
-  app.listen(PORT, () => {
+  // Replay any inquiries that were sidelined to the emergency NDJSON
+  // file during a prior PG outage. This is a one-shot replay; the
+  // health-alert job will surface any records that fail to land
+  // (e.g. DB still unhealthy) so a human can intervene.
+  try {
+    const emergency = require('./services/emergency-store');
+    const inquiriesRouter = require('./routes/inquiries');
+    const insertFn = inquiriesRouter.insertInquiryRaw;
+    if (typeof insertFn === 'function') {
+      const result = await emergency.replay(insertFn);
+      if (result.recovered) {
+        console.log(`[emergency] recovered ${result.recovered} inquiry record(s) at boot`);
+      }
+    }
+  } catch (err) {
+    console.error('[emergency] replay failed at boot:', err && err.message);
+  }
+
+  // Background health-alert scheduler (5min poll, 30min per-reason
+  // debounce). Skipped if HEALTH_ALERTS_DISABLED=true so a local dev
+  // setup doesn't fire alerts for empty configs.
+  if (String(process.env.HEALTH_ALERTS_DISABLED || 'false') !== 'true') {
+    try {
+      const healthAlert = require('./jobs/health-alert');
+      healthAlert.start();
+    } catch (err) {
+      console.error('[health-alert] failed to start:', err && err.message);
+    }
+  }
+
+  const server = app.listen(PORT, () => {
     console.log(`[battery-cms] running on http://localhost:${PORT}`);
   });
+
+  // ----- Graceful shutdown -----
+  // SIGTERM is what `docker stop` / k8s rolling restarts send. We stop
+  // accepting new connections, let in-flight requests drain, halt the
+  // outbox worker so a half-sent batch doesn't leak, then exit. The
+  // 10s hard-kill safety net catches a stuck request hanging the
+  // graceful path.
+  let shuttingDown = false;
+  const shutdown = (sig) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`[shutdown] ${sig} received, draining...`);
+    try {
+      const outbox = require('./services/mail-outbox');
+      outbox.stopWorker();
+    } catch (_) {}
+    try {
+      const healthAlert = require('./jobs/health-alert');
+      healthAlert.stop();
+    } catch (_) {}
+    server.close((err) => {
+      if (err) console.error('[shutdown] http close error', err.message);
+      else console.log('[shutdown] http closed');
+      // Best-effort: drain pg pool so PG sees clean disconnects
+      const { pool } = require('./db/client');
+      pool.end().catch(() => {}).finally(() => process.exit(0));
+    });
+    setTimeout(() => {
+      console.error('[shutdown] forced exit after 10s');
+      process.exit(1);
+    }, 10_000).unref();
+  };
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 })();

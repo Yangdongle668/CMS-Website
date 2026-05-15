@@ -75,11 +75,30 @@ services:
       GDPR_RETENTION_DAYS: ${GDPR_RETENTION_DAYS:-365}
       GDPR_SOFT_DELETE_DAYS: ${GDPR_SOFT_DELETE_DAYS:-30}
       PRIVACY_POLICY_VERSION: ${PRIVACY_POLICY_VERSION:-1.0}
+
+      # Emergency store — inquiries are written here as NDJSON if the
+      # DB is unreachable, then replayed at boot. Lives on a named
+      # volume so it survives container restarts.
+      EMERGENCY_DIR: /app/data
+
+      # Outbox worker tuning (sensible defaults; uncomment to tweak)
+      # OUTBOX_POLL_MS: 5000
+      # OUTBOX_BATCH: 5
+      # OUTBOX_DISABLED: false
+      # HEALTH_ALERTS_DISABLED: false
     ports:
       - "${APP_PORT:-3000}:3000"
     volumes:
       - uploads:/app/uploads
+      - cms-data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
 volumes:
   db-data:
   uploads:
+  cms-data:

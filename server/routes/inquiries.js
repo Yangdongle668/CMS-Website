@@ -12,6 +12,7 @@ const {
   buildInquiryAutoReplyMail,
 } = require('../services/mail-templates');
 const { scoreInquiry } = require('../services/lead-scoring');
+const emergency = require('../services/emergency-store');
 
 const router = express.Router();
 
@@ -107,38 +108,60 @@ router.post('/', submitLimiter, async (req, res) => {
   const { score } = scoreInquiry(inquiry);
   inquiry.score = score;
 
-  const r = await query(
-    `INSERT INTO inquiries (
-       reference, company, full_name, email, phone, country, product_categories,
-       capacity_need, annual_volume, application, message, attachments,
-       source_page, utm, ip_hash, user_agent, consent_given, consent_at, policy_version,
-       content_hash, score
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21) RETURNING id`,
-    [
-      inquiry.reference,
-      inquiry.company,
-      inquiry.full_name,
-      inquiry.email,
-      inquiry.phone,
-      inquiry.country,
-      JSON.stringify(inquiry.product_categories),
-      inquiry.capacity_need,
-      inquiry.annual_volume,
-      inquiry.application,
-      inquiry.message,
-      JSON.stringify(inquiry.attachments),
-      inquiry.source_page,
-      JSON.stringify(inquiry.utm),
-      inquiry.ip_hash,
-      inquiry.user_agent,
-      inquiry.consent_given,
-      inquiry.consent_at,
-      inquiry.policy_version,
-      inquiry.content_hash,
-      inquiry.score,
-    ]
-  );
-  const inquiryId = r.rows[0].id;
+  let inquiryId = null;
+  try {
+    const r = await query(
+      `INSERT INTO inquiries (
+         reference, company, full_name, email, phone, country, product_categories,
+         capacity_need, annual_volume, application, message, attachments,
+         source_page, utm, ip_hash, user_agent, consent_given, consent_at, policy_version,
+         content_hash, score
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21) RETURNING id`,
+      [
+        inquiry.reference,
+        inquiry.company,
+        inquiry.full_name,
+        inquiry.email,
+        inquiry.phone,
+        inquiry.country,
+        JSON.stringify(inquiry.product_categories),
+        inquiry.capacity_need,
+        inquiry.annual_volume,
+        inquiry.application,
+        inquiry.message,
+        JSON.stringify(inquiry.attachments),
+        inquiry.source_page,
+        JSON.stringify(inquiry.utm),
+        inquiry.ip_hash,
+        inquiry.user_agent,
+        inquiry.consent_given,
+        inquiry.consent_at,
+        inquiry.policy_version,
+        inquiry.content_hash,
+        inquiry.score,
+      ]
+    );
+    inquiryId = r.rows[0].id;
+  } catch (dbErr) {
+    // Last-resort path: PostgreSQL is unreachable / down. Persist the
+    // raw inquiry payload to disk so the lead is not lost. A boot-time
+    // replay (see server/index.js) will retry insertion once the DB is
+    // back. We deliberately return success to the user so they don't
+    // resubmit and we don't reveal infrastructure state.
+    console.error('[inquiries] DB INSERT failed, falling back to emergency store:', dbErr && dbErr.message);
+    const ok = emergency.appendSync({
+      ...inquiry,
+      // store ISO strings since JSON.stringify already does this
+      consent_at: new Date(inquiry.consent_at).toISOString(),
+      _captured_at: new Date().toISOString(),
+    });
+    if (!ok) {
+      // Both PG AND filesystem failed — surface a real error so the
+      // client can retry rather than silently dropping the lead.
+      return res.status(503).json({ error: 'service_unavailable' });
+    }
+    return res.json({ ok: true, reference, degraded: true });
+  }
 
   // Hand off email delivery to the outbox worker. enqueue() is a single
   // INSERT — never awaits SMTP — so the response below returns in
@@ -285,4 +308,45 @@ router.get('/export/csv', requireAuth, async (_req, res) => {
   res.send('﻿' + csv);
 });
 
+// Used by the boot-time emergency replay (see server/index.js). Pure
+// INSERT — does not re-run scoring, hashing or rate-limiting because
+// the record already passed those checks before being sidelined.
+async function insertInquiryRaw(rec) {
+  const r = await query(
+    `INSERT INTO inquiries (
+       reference, company, full_name, email, phone, country, product_categories,
+       capacity_need, annual_volume, application, message, attachments,
+       source_page, utm, ip_hash, user_agent, consent_given, consent_at, policy_version,
+       content_hash, score
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+     ON CONFLICT (reference) DO NOTHING
+     RETURNING id`,
+    [
+      rec.reference,
+      rec.company || '',
+      rec.full_name,
+      rec.email,
+      rec.phone || '',
+      rec.country || '',
+      JSON.stringify(rec.product_categories || []),
+      rec.capacity_need || '',
+      rec.annual_volume || '',
+      rec.application || '',
+      rec.message || '',
+      JSON.stringify(rec.attachments || []),
+      rec.source_page || '',
+      JSON.stringify(rec.utm || {}),
+      rec.ip_hash || '',
+      rec.user_agent || '',
+      !!rec.consent_given,
+      rec.consent_at || new Date(),
+      rec.policy_version || '',
+      rec.content_hash || '',
+      rec.score || 0,
+    ]
+  );
+  return r.rows[0] ? r.rows[0].id : null;
+}
+
 module.exports = router;
+module.exports.insertInquiryRaw = insertInquiryRaw;
