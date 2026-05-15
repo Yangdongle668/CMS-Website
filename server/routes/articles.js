@@ -19,6 +19,40 @@ const FIELDS = `
   au.knows_about AS author_knows_about, au.same_as AS author_same_as
 `;
 
+/* ---------------------------------------------------------------------------
+   Article version history.
+   Same shape as page_versions: every save snapshots the full row, kept 50
+   per article. Restore overwrites the live row + bookend snapshots.
+--------------------------------------------------------------------------- */
+const VERSION_KEEP = 50;
+const ARTICLE_FIELDS_PLAIN = [
+  'id', 'pillar_id', 'category_id', 'author_id', 'slug', 'title', 'excerpt', 'cover_url',
+  'content', 'author', 'meta_title', 'meta_description', 'reading_minutes',
+  'template', 'hero_image', 'published_at', 'status', 'created_at', 'updated_at',
+].concat(SEO_FIELDS).join(', ');
+
+async function snapshotArticle(req, articleId, summary) {
+  const row = await one(`SELECT ${ARTICLE_FIELDS_PLAIN} FROM articles WHERE id = $1`, [articleId]);
+  if (!row) return;
+  const userEmail = (req.user && req.user.email) || '';
+  await query(
+    `INSERT INTO article_versions (article_id, snapshot, summary, created_by, creator_email)
+     VALUES ($1, $2::jsonb, $3, $4, $5)`,
+    [articleId, JSON.stringify(row), String(summary || '').slice(0, 200), (req.user && req.user.id) || null, userEmail]
+  );
+  await query(
+    `DELETE FROM article_versions
+       WHERE article_id = $1
+         AND id NOT IN (
+           SELECT id FROM article_versions
+            WHERE article_id = $1
+            ORDER BY created_at DESC
+            LIMIT $2
+         )`,
+    [articleId, VERSION_KEEP]
+  );
+}
+
 router.get('/', async (req, res) => {
   const limit = clamp(req.query.limit, 1, 50, 12);
   const offset = clamp(req.query.offset, 0, 1e6, 0);
@@ -140,8 +174,10 @@ router.post('/', requireAuth, async (req, res) => {
       ...seoVals,
     ]
   );
-  await recordAudit({ req, action: 'create', entity: 'article', entityId: r.rows[0].id, detail: { slug } });
-  res.json({ id: r.rows[0].id });
+  const id = r.rows[0].id;
+  await snapshotArticle(req, id, 'created');
+  await recordAudit({ req, action: 'create', entity: 'article', entityId: id, detail: { slug } });
+  res.json({ id });
 });
 
 router.put('/:id', requireAuth, async (req, res) => {
@@ -179,7 +215,83 @@ router.put('/:id', requireAuth, async (req, res) => {
       id,
     ]
   );
+  await snapshotArticle(req, id, trimStr(b._summary, 200) || 'edited');
   await recordAudit({ req, action: 'update', entity: 'article', entityId: id });
+  res.json({ ok: true });
+});
+
+/* ---------- Admin: version history -----------------------------------------
+   GET    /api/articles/:id/versions
+   GET    /api/articles/:id/versions/:vid
+   POST   /api/articles/:id/versions/:vid/restore
+--------------------------------------------------------------------------- */
+router.get('/:id/versions', requireAuth, async (req, res) => {
+  const id = clamp(req.params.id, 1, 1e9, 0);
+  if (!id) return res.status(400).json({ error: 'invalid_id' });
+  const rows = await many(
+    `SELECT id, article_id, summary, creator_email, created_at,
+            length(COALESCE(snapshot->>'content', '')) AS content_length
+       FROM article_versions
+      WHERE article_id = $1
+      ORDER BY created_at DESC
+      LIMIT 60`,
+    [id]
+  );
+  res.json({ items: rows });
+});
+
+router.get('/:id/versions/:vid', requireAuth, async (req, res) => {
+  const id  = clamp(req.params.id, 1, 1e9, 0);
+  const vid = clamp(req.params.vid, 1, 1e9, 0);
+  if (!id || !vid) return res.status(400).json({ error: 'invalid_id' });
+  const row = await one(
+    `SELECT id, article_id, snapshot, summary, creator_email, created_at
+       FROM article_versions
+      WHERE id = $1 AND article_id = $2`,
+    [vid, id]
+  );
+  if (!row) return res.status(404).json({ error: 'not_found' });
+  res.json({ version: row });
+});
+
+router.post('/:id/versions/:vid/restore', requireAuth, async (req, res) => {
+  const id  = clamp(req.params.id, 1, 1e9, 0);
+  const vid = clamp(req.params.vid, 1, 1e9, 0);
+  if (!id || !vid) return res.status(400).json({ error: 'invalid_id' });
+  const v = await one(`SELECT snapshot FROM article_versions WHERE id = $1 AND article_id = $2`, [vid, id]);
+  if (!v) return res.status(404).json({ error: 'not_found' });
+  const s = v.snapshot || {};
+  await snapshotArticle(req, id, `pre-restore-of-v${vid}`);
+
+  const tpl = ['standard', 'guide', 'case-study'].includes(s.template) ? s.template : 'standard';
+  const status = s.status === 'published' ? 'published' : 'draft';
+  // Slug is preserved on restore so inbound links stay alive. Status / dates
+  // are restored from the snapshot. SEO columns aren't touched here — they
+  // round-trip through the JSON snapshot already.
+  await query(
+    `UPDATE articles SET pillar_id=$1, category_id=$2, title=$3, excerpt=$4, cover_url=$5,
+       content=$6, author=$7, meta_title=$8, meta_description=$9, reading_minutes=$10,
+       template=$11, hero_image=$12, status=$13,
+       updated_at=now() WHERE id = $14`,
+    [
+      s.pillar_id || null,
+      s.category_id || null,
+      String(s.title || '').slice(0, 255),
+      String(s.excerpt || '').slice(0, 500),
+      String(s.cover_url || '').slice(0, 500),
+      String(s.content || '').slice(0, 100000),
+      String(s.author || '').slice(0, 120),
+      String(s.meta_title || '').slice(0, 255),
+      String(s.meta_description || '').slice(0, 500),
+      clamp(s.reading_minutes, 1, 60, 5),
+      tpl,
+      String(s.hero_image || '').slice(0, 500),
+      status,
+      id,
+    ]
+  );
+  await snapshotArticle(req, id, `restored from v${vid}`);
+  await recordAudit({ req, action: 'restore_version', entity: 'article', entityId: id, detail: { version_id: vid } });
   res.json({ ok: true });
 });
 
