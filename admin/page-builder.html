@@ -197,7 +197,6 @@
     if (!m || m.source !== 'cms-builder') return;
     switch (m.type) {
       case 'ready':
-        // Iframe finished bootstrap. If we have a selectedId (after reload), re-select.
         if (selectedId) postToFrame('select-block', { id: selectedId });
         break;
       case 'block-selected':
@@ -218,8 +217,55 @@
       case 'insert-request':
         showInsertPopover(m.ref_id, m.position);
         break;
+      case 'block-reorder':
+        await reorderBlock(m.from_id, m.ref_id, m.position);
+        break;
+      case 'image-edit-request':
+        await pickImageForField(m.id, m.field);
+        break;
     }
   });
+
+  // ----- Drag-to-reorder: move a block to a new position relative to another -----
+  async function reorderBlock(fromId, refId, position) {
+    const fromIdx = blocks.findIndex((b) => b.id === fromId);
+    const refIdx = blocks.findIndex((b) => b.id === refId);
+    if (fromIdx < 0 || refIdx < 0 || fromId === refId) return;
+    const [moved] = blocks.splice(fromIdx, 1);
+    // After removing, refIdx may have shifted by -1 if it was after fromIdx
+    const adjustedRefIdx = blocks.findIndex((b) => b.id === refId);
+    const targetIdx = position === 'before' ? adjustedRefIdx : adjustedRefIdx + 1;
+    blocks.splice(targetIdx, 0, moved);
+    setStatus('saving', '排序保存中…');
+    try {
+      await api('/api/blocks/reorder', {
+        method: 'POST',
+        body: JSON.stringify({ page_id: pageId, ordered_ids: blocks.map((b) => b.id) }),
+      });
+      setStatus('saved', '✓ 已保存');
+      reloadFrame();
+    } catch (e) {
+      setStatus('dirty', '排序失败：' + e.message);
+    }
+  }
+
+  // ----- Click-to-swap-image: parent opens media picker, saves the result -----
+  async function pickImageForField(blockId, field) {
+    const block = blocks.find((b) => b.id === blockId);
+    if (!block) return;
+    const url = await pickFromMedia();
+    if (!url) return;
+    block.content = block.content || {};
+    block.content[field] = url;
+    setStatus('saving', '保存中…');
+    try {
+      await api('/api/blocks/' + blockId, { method: 'PUT', body: JSON.stringify({ content: block.content }) });
+      setStatus('saved', '✓ 已保存');
+      reloadFrame();
+    } catch (e) {
+      setStatus('dirty', '保存失败：' + e.message);
+    }
+  }
 
   // ----- Block writes -----
   async function applyPartialEdit(id, fields) {
