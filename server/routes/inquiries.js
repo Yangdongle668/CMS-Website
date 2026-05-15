@@ -6,7 +6,7 @@ const { recordAudit } = require('../middleware/audit');
 const { isEmail, trimStr, asBool, asJson, clamp } = require('../utils/validate');
 const { sha256, shortRef } = require('../utils/hash');
 const { verifyTurnstile } = require('../services/turnstile');
-const { sendInquiryEmails } = require('../services/mailer');
+const { enqueueInquiryEmails } = require('../services/mailer');
 
 const router = express.Router();
 
@@ -69,43 +69,92 @@ router.post('/', submitLimiter, async (req, res) => {
     policy_version: process.env.PRIVACY_POLICY_VERSION || '1.0',
   };
 
-  const r = await query(
-    `INSERT INTO inquiries (
-       reference, company, full_name, email, phone, country, product_categories,
-       capacity_need, annual_volume, application, message, attachments,
-       source_page, utm, ip_hash, user_agent, consent_given, consent_at, policy_version
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING id`,
-    [
-      inquiry.reference,
-      inquiry.company,
-      inquiry.full_name,
-      inquiry.email,
-      inquiry.phone,
-      inquiry.country,
-      JSON.stringify(inquiry.product_categories),
-      inquiry.capacity_need,
-      inquiry.annual_volume,
-      inquiry.application,
-      inquiry.message,
-      JSON.stringify(inquiry.attachments),
-      inquiry.source_page,
-      JSON.stringify(inquiry.utm),
-      inquiry.ip_hash,
-      inquiry.user_agent,
-      inquiry.consent_given,
-      inquiry.consent_at,
-      inquiry.policy_version,
-    ]
-  );
-
-  // Send emails (don't fail the request if SMTP errors)
+  // 1) Persist the inquiry first. This is the only step the request blocks on,
+  //    so the visitor never loses their RFQ even if SMTP is down. If this
+  //    fails we return 5xx so the front-end can show a retry banner.
+  let inserted;
   try {
-    await sendInquiryEmails(inquiry);
+    const r = await query(
+      `INSERT INTO inquiries (
+         reference, company, full_name, email, phone, country, product_categories,
+         capacity_need, annual_volume, application, message, attachments,
+         source_page, utm, ip_hash, user_agent, consent_given, consent_at, policy_version
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING id`,
+      [
+        inquiry.reference,
+        inquiry.company,
+        inquiry.full_name,
+        inquiry.email,
+        inquiry.phone,
+        inquiry.country,
+        JSON.stringify(inquiry.product_categories),
+        inquiry.capacity_need,
+        inquiry.annual_volume,
+        inquiry.application,
+        inquiry.message,
+        JSON.stringify(inquiry.attachments),
+        inquiry.source_page,
+        JSON.stringify(inquiry.utm),
+        inquiry.ip_hash,
+        inquiry.user_agent,
+        inquiry.consent_given,
+        inquiry.consent_at,
+        inquiry.policy_version,
+      ]
+    );
+    inserted = r.rows && r.rows[0];
   } catch (err) {
-    console.error('[inquiries] mail send error', err);
+    console.error('[inquiries] insert failed', err);
+    return res.status(500).json({ error: 'persist_failed' });
+  }
+  inquiry.id = inserted ? inserted.id : null;
+
+  // 2) Enqueue notification + auto-reply. Failure to enqueue is logged but does
+  //    NOT fail the visitor's request — the inquiry is already safely in the DB
+  //    and an operator can resend from the admin UI.
+  try {
+    await enqueueInquiryEmails(inquiry);
+  } catch (err) {
+    console.error('[inquiries] enqueue failed', err);
   }
 
   res.json({ ok: true, reference });
+});
+
+// ---------- Mail delivery status (admin) ----------
+// Per-inquiry outbox view: every mail we tried to send for this RFQ.
+router.get('/:id/mails', requireAuth, async (req, res) => {
+  const id = clamp(req.params.id, 1, 1e9, 0);
+  if (!id) return res.status(400).json({ error: 'invalid_id' });
+  const rows = await many(
+    `SELECT id, kind, to_addr, status, attempts, max_attempts,
+            next_attempt_at, last_error, sent_at, created_at, updated_at
+       FROM mail_outbox
+      WHERE inquiry_id = $1
+      ORDER BY created_at ASC`,
+    [id]
+  );
+  res.json({ items: rows });
+});
+
+// Manually requeue a failed or dead outbox row.
+router.post('/:id/mails/:mailId/resend', requireAuth, async (req, res) => {
+  const id = clamp(req.params.id, 1, 1e9, 0);
+  const mailId = clamp(req.params.mailId, 1, 1e9, 0);
+  if (!id || !mailId) return res.status(400).json({ error: 'invalid_id' });
+  const r = await query(
+    `UPDATE mail_outbox
+        SET status = 'pending',
+            next_attempt_at = now(),
+            last_error = '',
+            updated_at = now()
+      WHERE id = $1 AND inquiry_id = $2 AND status IN ('dead','pending','sent')
+      RETURNING id`,
+    [mailId, id]
+  );
+  if (!r.rowCount) return res.status(404).json({ error: 'not_found' });
+  await recordAudit({ req, action: 'resend_mail', entity: 'inquiry', entityId: id, detail: { mail_id: mailId } });
+  res.json({ ok: true });
 });
 
 // ---------- Admin ----------

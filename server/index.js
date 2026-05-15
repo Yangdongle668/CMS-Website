@@ -135,6 +135,7 @@ app.use('/api/text-overrides', require('./routes/text-overrides'));
 app.use('/api/seo-check', require('./routes/seo-check'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/ai-generate', require('./routes/ai-generate'));
+app.use('/api/mail-queue', require('./routes/mail-queue'));
 
 // ----- SEO endpoints -----
 app.use('/', require('./routes/seo'));
@@ -365,6 +366,32 @@ async function autoMigrate() {
         SET author_id = (SELECT ids FROM authors_arr)[ ((r.rn - 1) % NULLIF(array_length((SELECT ids FROM authors_arr), 1), 0)) + 1 ]
        FROM ranked r
       WHERE a.id = r.id AND (SELECT array_length(ids, 1) FROM authors_arr) > 0`,
+
+    // Mail outbox — transactional queue for guaranteed inquiry delivery.
+    // The mail-worker job drains it; the public POST /api/inquiries only
+    // blocks on the DB insert, never on SMTP.
+    `CREATE TABLE IF NOT EXISTS mail_outbox (
+       id              SERIAL PRIMARY KEY,
+       kind            VARCHAR(40) NOT NULL,
+       inquiry_id      INT REFERENCES inquiries(id) ON DELETE SET NULL,
+       to_addr         TEXT        NOT NULL,
+       from_addr       TEXT        NOT NULL DEFAULT '',
+       reply_to        TEXT        NOT NULL DEFAULT '',
+       subject         TEXT        NOT NULL DEFAULT '',
+       body_html       TEXT        NOT NULL DEFAULT '',
+       body_text       TEXT        NOT NULL DEFAULT '',
+       status          VARCHAR(20) NOT NULL DEFAULT 'pending',
+       attempts        INT         NOT NULL DEFAULT 0,
+       max_attempts    INT         NOT NULL DEFAULT 6,
+       next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+       last_error      TEXT        NOT NULL DEFAULT '',
+       sent_at         TIMESTAMPTZ,
+       created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+       updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+     )`,
+    `CREATE INDEX IF NOT EXISTS idx_outbox_ready   ON mail_outbox(next_attempt_at) WHERE status = 'pending'`,
+    `CREATE INDEX IF NOT EXISTS idx_outbox_inquiry ON mail_outbox(inquiry_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_outbox_status  ON mail_outbox(status, created_at DESC)`,
   ];
   for (const sql of stmts) {
     try { await query(sql); }
@@ -415,6 +442,13 @@ async function autoMigrate() {
     console.log('[ai-settings] snapshot loaded');
   } catch (err) {
     console.error('[ai-settings] initial load failed:', err.message);
+  }
+  // Mail outbox worker: drains pending inquiry / GDPR / test mails. Started
+  // after autoMigrate so the mail_outbox table is guaranteed to exist.
+  try {
+    require('./jobs/mail-worker').start();
+  } catch (err) {
+    console.error('[mail-worker] failed to start:', err.message);
   }
   app.listen(PORT, () => {
     console.log(`[battery-cms] running on http://localhost:${PORT}`);
