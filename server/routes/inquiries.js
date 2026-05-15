@@ -6,7 +6,7 @@ const { recordAudit } = require('../middleware/audit');
 const { isEmail, trimStr, asBool, asJson, clamp } = require('../utils/validate');
 const { sha256, shortRef } = require('../utils/hash');
 const { verifyTurnstile } = require('../services/turnstile');
-const { sendInquiryEmails } = require('../services/mailer');
+const { enqueueInquiryEmails, enqueueTestEmail } = require('../services/mailer');
 
 const router = express.Router();
 
@@ -69,40 +69,53 @@ router.post('/', submitLimiter, async (req, res) => {
     policy_version: process.env.PRIVACY_POLICY_VERSION || '1.0',
   };
 
-  const r = await query(
-    `INSERT INTO inquiries (
-       reference, company, full_name, email, phone, country, product_categories,
-       capacity_need, annual_volume, application, message, attachments,
-       source_page, utm, ip_hash, user_agent, consent_given, consent_at, policy_version
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING id`,
-    [
-      inquiry.reference,
-      inquiry.company,
-      inquiry.full_name,
-      inquiry.email,
-      inquiry.phone,
-      inquiry.country,
-      JSON.stringify(inquiry.product_categories),
-      inquiry.capacity_need,
-      inquiry.annual_volume,
-      inquiry.application,
-      inquiry.message,
-      JSON.stringify(inquiry.attachments),
-      inquiry.source_page,
-      JSON.stringify(inquiry.utm),
-      inquiry.ip_hash,
-      inquiry.user_agent,
-      inquiry.consent_given,
-      inquiry.consent_at,
-      inquiry.policy_version,
-    ]
-  );
-
-  // Send emails (don't fail the request if SMTP errors)
+  // 1) Persist the inquiry first. This is the only step the request blocks on,
+  //    so the visitor never loses their RFQ even if SMTP is down. If this
+  //    fails we return 5xx so the front-end can show a retry banner.
+  let inserted;
   try {
-    await sendInquiryEmails(inquiry);
+    const r = await query(
+      `INSERT INTO inquiries (
+         reference, company, full_name, email, phone, country, product_categories,
+         capacity_need, annual_volume, application, message, attachments,
+         source_page, utm, ip_hash, user_agent, consent_given, consent_at, policy_version
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING id`,
+      [
+        inquiry.reference,
+        inquiry.company,
+        inquiry.full_name,
+        inquiry.email,
+        inquiry.phone,
+        inquiry.country,
+        JSON.stringify(inquiry.product_categories),
+        inquiry.capacity_need,
+        inquiry.annual_volume,
+        inquiry.application,
+        inquiry.message,
+        JSON.stringify(inquiry.attachments),
+        inquiry.source_page,
+        JSON.stringify(inquiry.utm),
+        inquiry.ip_hash,
+        inquiry.user_agent,
+        inquiry.consent_given,
+        inquiry.consent_at,
+        inquiry.policy_version,
+      ]
+    );
+    inserted = r.rows && r.rows[0];
   } catch (err) {
-    console.error('[inquiries] mail send error', err);
+    console.error('[inquiries] insert failed', err);
+    return res.status(500).json({ error: 'persist_failed' });
+  }
+  inquiry.id = inserted ? inserted.id : null;
+
+  // 2) Enqueue notification + auto-reply. Failure to enqueue is logged but does
+  //    NOT fail the visitor's request — the inquiry is already safely in the DB
+  //    and an operator can resend from the admin UI.
+  try {
+    await enqueueInquiryEmails(inquiry);
+  } catch (err) {
+    console.error('[inquiries] enqueue failed', err);
   }
 
   res.json({ ok: true, reference });
@@ -114,29 +127,41 @@ router.get('/', requireAuth, async (req, res) => {
   const offset = clamp(req.query.offset, 0, 1e6, 0);
   const status = trimStr(req.query.status, 20);
   const params = [];
-  const where = ['is_deleted = FALSE'];
+  const where = ['i.is_deleted = FALSE'];
   if (status) {
     params.push(status);
-    where.push(`status = $${params.length}`);
+    where.push(`i.status = $${params.length}`);
   }
   if (req.query.q) {
     params.push('%' + String(req.query.q).slice(0, 100) + '%');
     where.push(
-      `(email ILIKE $${params.length} OR company ILIKE $${params.length} OR full_name ILIKE $${params.length} OR reference ILIKE $${params.length})`
+      `(i.email ILIKE $${params.length} OR i.company ILIKE $${params.length} OR i.full_name ILIKE $${params.length} OR i.reference ILIKE $${params.length})`
     );
   }
+  const filterClause = where.join(' AND ');
   params.push(limit);
   params.push(offset);
   const rows = await many(
-    `SELECT id, reference, company, full_name, email, phone, country, product_categories,
-            capacity_need, annual_volume, application, source_page, status, created_at
-     FROM inquiries WHERE ${where.join(' AND ')}
-     ORDER BY created_at DESC
+    `SELECT i.id, i.reference, i.company, i.full_name, i.email, i.phone, i.country,
+            i.product_categories, i.capacity_need, i.annual_volume, i.application,
+            i.source_page, i.status, i.created_at,
+            COALESCE((
+              SELECT CASE
+                WHEN bool_or(status = 'dead')    THEN 'dead'
+                WHEN bool_or(status = 'pending') THEN 'pending'
+                WHEN bool_or(status = 'sending') THEN 'sending'
+                WHEN count(*) > 0                THEN 'sent'
+                ELSE 'none'
+              END FROM mail_outbox WHERE inquiry_id = i.id
+            ), 'none') AS mail_status
+     FROM inquiries i
+     WHERE ${filterClause}
+     ORDER BY i.created_at DESC
      LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params
   );
   const total = await one(
-    `SELECT count(*)::int AS n FROM inquiries WHERE ${where.join(' AND ')}`,
+    `SELECT count(*)::int AS n FROM inquiries i WHERE ${filterClause}`,
     params.slice(0, params.length - 2)
   );
   const stats = await one(
@@ -146,7 +171,18 @@ router.get('/', requireAuth, async (req, res) => {
        count(*) FILTER (WHERE created_at > now() - interval '7 days')::int AS week
      FROM inquiries WHERE is_deleted = FALSE`
   );
-  res.json({ items: rows, total: total ? total.n : 0, stats, limit, offset });
+  // Mail queue alarms — surface failed/dead totals so the inquiries page can show a banner.
+  const mailQueue = await one(
+    `SELECT
+       count(*) FILTER (WHERE status='dead')::int    AS dead,
+       count(*) FILTER (WHERE status='pending'
+                          AND attempts > 0)::int     AS retrying,
+       count(*) FILTER (WHERE status='pending'
+                          AND attempts = 0)::int     AS pending,
+       max(updated_at) FILTER (WHERE status='dead')  AS last_dead_at
+     FROM mail_outbox WHERE created_at > now() - interval '30 days'`
+  );
+  res.json({ items: rows, total: total ? total.n : 0, stats, mailQueue, limit, offset });
 });
 
 router.get('/:id', requireAuth, async (req, res) => {
@@ -193,6 +229,44 @@ router.delete('/:id', requireAuth, async (req, res) => {
     [id]
   );
   await recordAudit({ req, action: 'soft_delete', entity: 'inquiry', entityId: id });
+  res.json({ ok: true });
+});
+
+// ---------- Mail delivery status (admin) ----------
+
+// Per-inquiry outbox view: every mail we tried to send for this RFQ.
+router.get('/:id/mails', requireAuth, async (req, res) => {
+  const id = clamp(req.params.id, 1, 1e9, 0);
+  if (!id) return res.status(400).json({ error: 'invalid_id' });
+  const rows = await many(
+    `SELECT id, kind, to_addr, status, attempts, max_attempts,
+            next_attempt_at, last_error, sent_at, created_at, updated_at
+       FROM mail_outbox
+      WHERE inquiry_id = $1
+      ORDER BY created_at ASC`,
+    [id]
+  );
+  res.json({ items: rows });
+});
+
+// Manually requeue a failed or dead outbox row. The worker will pick it up
+// on the next tick.
+router.post('/:id/mails/:mailId/resend', requireAuth, async (req, res) => {
+  const id = clamp(req.params.id, 1, 1e9, 0);
+  const mailId = clamp(req.params.mailId, 1, 1e9, 0);
+  if (!id || !mailId) return res.status(400).json({ error: 'invalid_id' });
+  const r = await query(
+    `UPDATE mail_outbox
+        SET status = 'pending',
+            next_attempt_at = now(),
+            last_error = '',
+            updated_at = now()
+      WHERE id = $1 AND inquiry_id = $2 AND status IN ('dead','pending','sent')
+      RETURNING id`,
+    [mailId, id]
+  );
+  if (!r.rowCount) return res.status(404).json({ error: 'not_found' });
+  await recordAudit({ req, action: 'resend_mail', entity: 'inquiry', entityId: id, detail: { mail_id: mailId } });
   res.json({ ok: true });
 });
 

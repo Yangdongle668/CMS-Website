@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const { query, one } = require('../db/client');
 const { escapeHtml } = require('../utils/validate');
 
 let transporter = null;
@@ -18,6 +19,7 @@ function getTransporter() {
         console.log('[mailer:dev]', { to: opts.to, subject: opts.subject });
         return { messageId: 'dev-' + Date.now() };
       },
+      verify: async () => true,
     };
     return transporter;
   }
@@ -61,13 +63,9 @@ function inquiryRowsHtml(inq) {
     .join('');
 }
 
-async function sendInquiryEmails(inq, attachments) {
-  const t = getTransporter();
+function buildInternalInquiry(inq) {
   const subjectPrefix = process.env.INQUIRY_SUBJECT_PREFIX || '[Inquiry]';
-  const fromAddr = defaultFrom();
-  const recipients = inquiryRecipients();
-
-  const internalHtml = `
+  const html = `
     <div style="font-family:Inter,Arial,sans-serif;max-width:680px;margin:0 auto;color:#0f172a;">
       <h2 style="margin:0 0 16px;color:#0b3a82;">New B2B Inquiry</h2>
       <p style="margin:0 0 16px;">A new inquiry has been submitted from the website.</p>
@@ -76,54 +74,89 @@ async function sendInquiryEmails(inq, attachments) {
       <div style="white-space:pre-wrap;background:#f8fafc;padding:12px;border:1px solid #e5e7eb;border-radius:6px;">${escapeHtml(
         inq.message || ''
       )}</div>
-      <p style="margin-top:24px;font-size:12px;color:#64748b;">Sent automatically by the CMS. Do not reply directly to the visitor's address before reviewing the request.</p>
+      <p style="margin-top:24px;font-size:12px;color:#64748b;">Sent automatically by the CMS.</p>
     </div>`;
-
-  const internal = await t.sendMail({
-    from: fromAddr,
-    to: recipients.join(','),
-    replyTo: inq.email,
+  const text = `New inquiry ${inq.reference}\nFrom: ${inq.full_name} <${inq.email}>\n\n${inq.message}`;
+  return {
     subject: `${subjectPrefix} ${inq.reference} - ${inq.company || inq.full_name}`,
-    html: internalHtml,
-    text: `New inquiry ${inq.reference}\nFrom: ${inq.full_name} <${inq.email}>\n\n${inq.message}`,
-    attachments: attachments || [],
-  });
-
-  let auto = null;
-  const autoEnabled = String(process.env.AUTO_REPLY_ENABLED || 'true') === 'true';
-  if (autoEnabled) {
-    const siteName = process.env.SITE_NAME || 'Acme Battery';
-    const autoHtml = `
-      <div style="font-family:Inter,Arial,sans-serif;max-width:640px;margin:0 auto;color:#0f172a;">
-        <h2 style="color:#0b3a82;margin:0 0 16px;">Thank you for your inquiry</h2>
-        <p>Dear ${escapeHtml(inq.full_name)},</p>
-        <p>We have received your request <strong>${escapeHtml(
-          inq.reference
-        )}</strong>. A member of our sales engineering team will respond within 1 business day with technical questions or a preliminary quotation.</p>
-        <p>For your reference, the details we received:</p>
-        <table style="width:100%;border-collapse:collapse;font-size:13px;">${inquiryRowsHtml(inq)}</table>
-        <p style="margin-top:24px;font-size:13px;color:#475569;">Your data is processed under our <a href="${
-          process.env.PUBLIC_URL || ''
-        }/privacy">Privacy Policy</a>. To exercise your GDPR rights at any time, visit our <a href="${
-      process.env.PUBLIC_URL || ''
-    }/gdpr">data request page</a>.</p>
-        <p style="margin-top:16px;">Best regards,<br/>${escapeHtml(siteName)} Sales Team</p>
-      </div>`;
-    auto = await t.sendMail({
-      from: fromAddr,
-      to: inq.email,
-      subject: `We received your inquiry - ${inq.reference}`,
-      html: autoHtml,
-      text: `Dear ${inq.full_name},\n\nThank you for your inquiry. Reference: ${inq.reference}.\nWe will respond within 1 business day.\n\n${siteName}`,
-    });
-  }
-
-  return { internal, auto };
+    html,
+    text,
+  };
 }
 
-async function sendGdprConfirmation(req, link) {
-  const t = getTransporter();
+function buildAutoReply(inq) {
+  const siteName = process.env.SITE_NAME || 'Acme Battery';
+  const html = `
+    <div style="font-family:Inter,Arial,sans-serif;max-width:640px;margin:0 auto;color:#0f172a;">
+      <h2 style="color:#0b3a82;margin:0 0 16px;">Thank you for your inquiry</h2>
+      <p>Dear ${escapeHtml(inq.full_name)},</p>
+      <p>We have received your request <strong>${escapeHtml(
+        inq.reference
+      )}</strong>. A member of our sales engineering team will respond within 1 business day with technical questions or a preliminary quotation.</p>
+      <p>For your reference, the details we received:</p>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">${inquiryRowsHtml(inq)}</table>
+      <p style="margin-top:24px;font-size:13px;color:#475569;">Your data is processed under our <a href="${
+        process.env.PUBLIC_URL || ''
+      }/privacy">Privacy Policy</a>. To exercise your GDPR rights at any time, visit our <a href="${
+        process.env.PUBLIC_URL || ''
+      }/gdpr">data request page</a>.</p>
+      <p style="margin-top:16px;">Best regards,<br/>${escapeHtml(siteName)} Sales Team</p>
+    </div>`;
+  const text = `Dear ${inq.full_name},\n\nThank you for your inquiry. Reference: ${inq.reference}.\nWe will respond within 1 business day.\n\n${siteName}`;
+  return {
+    subject: `We received your inquiry - ${inq.reference}`,
+    html,
+    text,
+  };
+}
+
+// ---------- Outbox writes ----------
+
+async function enqueueMail({ kind, inquiryId, to, from, replyTo, subject, html, text }) {
+  if (!to) throw new Error('mail recipient required');
+  const row = await one(
+    `INSERT INTO mail_outbox (kind, inquiry_id, to_addr, from_addr, reply_to, subject, body_html, body_text)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     RETURNING id`,
+    [kind, inquiryId || null, String(to), from || defaultFrom(), replyTo || '', subject || '', html || '', text || '']
+  );
+  return row && row.id;
+}
+
+async function enqueueInquiryEmails(inq) {
   const fromAddr = defaultFrom();
+  const recipients = inquiryRecipients().join(',');
+  const internal = buildInternalInquiry(inq);
+
+  const ids = { internal: null, auto: null };
+  ids.internal = await enqueueMail({
+    kind: 'inquiry_internal',
+    inquiryId: inq.id || null,
+    to: recipients,
+    from: fromAddr,
+    replyTo: inq.email,
+    subject: internal.subject,
+    html: internal.html,
+    text: internal.text,
+  });
+
+  const autoEnabled = String(process.env.AUTO_REPLY_ENABLED || 'true') === 'true';
+  if (autoEnabled) {
+    const auto = buildAutoReply(inq);
+    ids.auto = await enqueueMail({
+      kind: 'inquiry_auto',
+      inquiryId: inq.id || null,
+      to: inq.email,
+      from: fromAddr,
+      subject: auto.subject,
+      html: auto.html,
+      text: auto.text,
+    });
+  }
+  return ids;
+}
+
+async function enqueueGdprConfirmation(req, link) {
   const html = `
     <div style="font-family:Inter,Arial,sans-serif;max-width:600px;color:#0f172a;">
       <h2 style="color:#0b3a82;">Confirm your GDPR ${escapeHtml(req.request_type)} request</h2>
@@ -135,13 +168,60 @@ async function sendGdprConfirmation(req, link) {
       <p>Reference: ${escapeHtml(req.reference)}</p>
       <p style="font-size:12px;color:#64748b;">If you did not make this request, you can ignore this email.</p>
     </div>`;
-  return t.sendMail({
-    from: fromAddr,
+  return enqueueMail({
+    kind: 'gdpr_confirm',
     to: req.email,
+    from: defaultFrom(),
     subject: `Confirm your GDPR request - ${req.reference}`,
     html,
     text: `Confirm your GDPR ${req.request_type} request: ${link}`,
   });
 }
 
-module.exports = { getTransporter, sendInquiryEmails, sendGdprConfirmation };
+async function enqueueTestEmail(to) {
+  return enqueueMail({
+    kind: 'test',
+    to,
+    from: defaultFrom(),
+    subject: 'CMS SMTP test email',
+    html: `<p>This is a test email from the CMS. If you can read this, SMTP is configured correctly. <br/>Sent at ${new Date().toISOString()}.</p>`,
+    text: `CMS SMTP test email. Sent at ${new Date().toISOString()}.`,
+  });
+}
+
+// ---------- Raw send (used by mail worker) ----------
+
+async function deliver(m) {
+  const t = getTransporter();
+  return t.sendMail({
+    from: m.from_addr || defaultFrom(),
+    to: m.to_addr,
+    replyTo: m.reply_to || undefined,
+    subject: m.subject,
+    html: m.body_html,
+    text: m.body_text,
+  });
+}
+
+// ---------- Back-compat shims ----------
+// Old code called sendInquiryEmails / sendGdprConfirmation directly. Route
+// those through the outbox so legacy call sites keep working without
+// changes.
+async function sendInquiryEmails(inq) {
+  return enqueueInquiryEmails(inq);
+}
+async function sendGdprConfirmation(req, link) {
+  return enqueueGdprConfirmation(req, link);
+}
+
+module.exports = {
+  getTransporter,
+  enqueueInquiryEmails,
+  enqueueGdprConfirmation,
+  enqueueTestEmail,
+  enqueueMail,
+  deliver,
+  // Back-compat names
+  sendInquiryEmails,
+  sendGdprConfirmation,
+};

@@ -183,6 +183,33 @@ CREATE TABLE IF NOT EXISTS inquiries (
 CREATE INDEX IF NOT EXISTS idx_inquiries_status ON inquiries(status, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_inquiries_email ON inquiries(email);
 
+-- ----- mail outbox (transactional outbox for guaranteed inquiry delivery) -----
+-- Every outbound email is recorded here. A background worker drains the queue
+-- with exponential backoff retries. The web request never blocks on SMTP.
+CREATE TABLE IF NOT EXISTS mail_outbox (
+  id              SERIAL PRIMARY KEY,
+  kind            VARCHAR(40) NOT NULL,                       -- inquiry_internal | inquiry_auto | gdpr_confirm | test
+  inquiry_id      INT REFERENCES inquiries(id) ON DELETE SET NULL,
+  to_addr         TEXT         NOT NULL,
+  from_addr       TEXT         NOT NULL DEFAULT '',
+  reply_to        TEXT         NOT NULL DEFAULT '',
+  subject         TEXT         NOT NULL DEFAULT '',
+  body_html       TEXT         NOT NULL DEFAULT '',
+  body_text       TEXT         NOT NULL DEFAULT '',
+  status          VARCHAR(20)  NOT NULL DEFAULT 'pending',     -- pending | sending | sent | dead
+  attempts        INT          NOT NULL DEFAULT 0,
+  max_attempts    INT          NOT NULL DEFAULT 6,
+  next_attempt_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  last_error      TEXT         NOT NULL DEFAULT '',
+  sent_at         TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at      TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_outbox_ready    ON mail_outbox(next_attempt_at) WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS idx_outbox_inquiry  ON mail_outbox(inquiry_id);
+CREATE INDEX IF NOT EXISTS idx_outbox_status   ON mail_outbox(status, created_at DESC);
+
 -- ----- GDPR data subject access requests -----
 CREATE TABLE IF NOT EXISTS gdpr_requests (
   id           SERIAL PRIMARY KEY,
