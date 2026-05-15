@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>行业模板 | 后台管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+<style>
+  .tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .tpl-card { background: #fff; border: 2px solid #e2e8f0; border-radius: 12px; padding: 22px; transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s; cursor: pointer; display: flex; flex-direction: column; }
+  .tpl-card:hover { border-color: #0b3a82; transform: translateY(-3px); box-shadow: 0 12px 28px rgba(15,23,42,0.1); }
+  .tpl-card__industry { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; color: #94a3b8; font-weight: 700; margin-bottom: 6px; }
+  .tpl-card__label { font-size: 19px; font-weight: 800; margin: 0 0 8px; color: #0f172a; }
+  .tpl-card__desc { font-size: 13.5px; line-height: 1.55; color: #475569; flex: 1; margin: 0 0 14px; }
+  .tpl-card__meta { font-size: 11.5px; color: #94a3b8; padding-top: 12px; border-top: 1px solid #f1f5f9; }
+  .tpl-card__meta strong { color: #0f172a; }
+  .tpl-modal__backdrop { position: fixed; inset: 0; background: rgba(15,23,42,0.6); z-index: 100; display: flex; align-items: center; justify-content: center; }
+  .tpl-modal { background: #fff; border-radius: 12px; width: 600px; max-width: 92%; padding: 28px; box-shadow: 0 30px 60px rgba(0,0,0,0.3); }
+  .tpl-modal h2 { margin: 0 0 8px; font-size: 22px; }
+  .tpl-modal__intro { color: #64748b; font-size: 13.5px; line-height: 1.55; margin: 0 0 18px; }
+  .tpl-pages-list { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 14px; font-size: 13px; }
+  .tpl-pages-list ul { margin: 0; padding-left: 20px; }
+  .tpl-pages-list li { margin-bottom: 4px; color: #475569; }
+  .tpl-pages-list li code { background: #fff; padding: 1px 6px; border-radius: 3px; font-size: 11.5px; }
+  .tpl-modal__field { margin-bottom: 12px; }
+  .tpl-modal__field label { display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px; }
+  .tpl-modal__field input[type="text"] { width: 100%; padding: 8px 12px; font-size: 13.5px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
+  .tpl-modal__field-cb { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: #475569; line-height: 1.5; padding: 10px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; margin-bottom: 14px; }
+  .tpl-modal__actions { display: flex; gap: 8px; justify-content: flex-end; }
+</style>
+</head>
+<body>
+<div data-admin-shell></div>
+<script src="/admin/assets/js/admin.js"></script>
+<script>
+(async function () {
+  const { api, escapeHtml, bootShell, toast } = window.AdminAPI;
+  const shell = await bootShell({ title: '行业模板', crumbs: '内容 / 一键建站' });
+  if (!shell) return;
+
+  let templates = [];
+  try {
+    const r = await api('/api/templates');
+    templates = r.templates;
+  } catch (e) {
+    shell.content.innerHTML = '<div class="empty">加载失败：' + escapeHtml(e.message) + '</div>';
+    return;
+  }
+
+  shell.content.innerHTML = `
+    <p style="color:#64748b; font-size:13.5px; margin: 0 0 18px; line-height: 1.6;">
+      选一套行业模板 → 自动创建首页 / 关于 / 能力 等页面 + 预填好 hero / 价值主张 / 产品网格 / 应用 / FAQ 等
+      <strong style="color:#0b3a82;">8-10 个区块</strong>。之后用"页面 → 🧱 积木"修改文案和图片即可。
+    </p>
+    <div class="tpl-grid" id="grid"></div>
+  `;
+  const grid = document.getElementById('grid');
+  grid.innerHTML = templates.map((t) => `
+    <div class="tpl-card" data-id="${t.id}">
+      <div class="tpl-card__industry">${escapeHtml(t.industry)}</div>
+      <h3 class="tpl-card__label">${escapeHtml(t.label)}</h3>
+      <p class="tpl-card__desc">${escapeHtml(t.description)}</p>
+      <div class="tpl-card__meta">包含 <strong>${t.page_count}</strong> 个预制页面</div>
+    </div>
+  `).join('');
+
+  grid.querySelectorAll('[data-id]').forEach((card) => {
+    card.addEventListener('click', () => openModal(card.dataset.id));
+  });
+
+  async function openModal(id) {
+    let tplDetail = null;
+    try {
+      const r = await api('/api/templates/' + id);
+      tplDetail = r.template;
+    } catch (e) { toast('加载失败：' + e.message, 'error'); return; }
+
+    const pageRows = tplDetail.pages.map((p) =>
+      `<li><code>/${escapeHtml(p.slug)}</code> — ${escapeHtml(p.title)} · ${p.blocks.length} 区块</li>`
+    ).join('');
+
+    const modal = document.createElement('div');
+    modal.className = 'tpl-modal__backdrop';
+    modal.innerHTML = `
+      <div class="tpl-modal">
+        <h2>应用「${escapeHtml(tplDetail.label)}」模板</h2>
+        <p class="tpl-modal__intro">${escapeHtml(tplDetail.description)}</p>
+        <div class="tpl-pages-list">
+          <strong style="font-size:12px; color:#475569; display:block; margin-bottom:6px;">将创建 / 更新以下页面：</strong>
+          <ul>${pageRows}</ul>
+        </div>
+        <div class="tpl-modal__field">
+          <label>Slug 前缀（可选，留空则用模板自带 slug）</label>
+          <input type="text" id="prefix" placeholder="如：demo（→ /demo/home, /demo/about ...）">
+        </div>
+        <label class="tpl-modal__field-cb">
+          <input type="checkbox" id="replace">
+          <span><strong>覆盖已有页面</strong>—— 如果上面的 slug 已存在，会替换 hero / meta / 区块为模板内容。
+            <br>不勾的话只创建新页面，已存在的留原样。</span>
+        </label>
+        <div class="tpl-modal__actions">
+          <button class="btn btn--ghost btn--sm" id="cancel">取消</button>
+          <button class="btn btn--sm" id="apply">应用模板</button>
+        </div>
+      </div>
+    `;
+    modal.addEventListener('click', (ev) => { if (ev.target === modal) modal.remove(); });
+    modal.querySelector('#cancel').addEventListener('click', () => modal.remove());
+    modal.querySelector('#apply').addEventListener('click', async () => {
+      const btn = modal.querySelector('#apply');
+      btn.disabled = true;
+      btn.textContent = '应用中…';
+      const slug_prefix = modal.querySelector('#prefix').value.trim();
+      const replace_existing = modal.querySelector('#replace').checked;
+      try {
+        const r = await api('/api/templates/apply', {
+          method: 'POST',
+          body: JSON.stringify({ template_id: id, slug_prefix, replace_existing }),
+        });
+        toast(`✓ 完成：${r.created.length} 个新建，${r.updated.length} 个更新`, 'success');
+        modal.remove();
+        // After 1s redirect to pages list so they can start editing
+        setTimeout(() => { location.href = '/admin/pages.html'; }, 800);
+      } catch (e) {
+        btn.disabled = false;
+        btn.textContent = '应用模板';
+        toast('失败：' + e.message, 'error');
+      }
+    });
+    document.body.appendChild(modal);
+  }
+})();
+</script>
+</body>
+</html>

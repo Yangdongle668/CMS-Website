@@ -4434,3 +4434,186 @@ html.has-exit-modal { overflow: hidden; }
   .exit-modal__row { flex-direction: column; }
   .exit-modal__submit { width: 100%; }
 }
+
+/* ===== Block-builder rendered blocks (Sprint 3) ================== */
+/* Shared spacing. Each block is a full-width <section> the SSR layer
+   slots into [data-blocks]. The inner div constrains content width
+   while letting backgrounds bleed edge-to-edge. */
+.block {
+  display: block;
+  padding: 80px 24px;
+  position: relative;
+  box-sizing: border-box;
+}
+.block-vp__inner, .block-pg__inner, .block-lw__inner,
+.block-st__inner, .block-ag__inner, .block-fs__inner,
+.block-tm__inner, .block-faq__inner, .block-cta__inner,
+.block-form__inner, .block-rt__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* --- 1. Hero Banner --- */
+.block-hero {
+  min-height: 520px;
+  background-size: cover;
+  background-position: center;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  padding: 100px 24px;
+}
+.block-hero__overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(15,23,42,0.35), rgba(15,23,42,0.6));
+}
+.block-hero__inner { position: relative; max-width: 1100px; margin: 0 auto; width: 100%; }
+.block-hero--center .block-hero__inner { text-align: center; margin: 0 auto; }
+.block-hero--right  .block-hero__inner { text-align: right; margin-left: auto; }
+.block-hero__eyebrow {
+  display: inline-block; padding: 6px 14px; background: rgba(255,255,255,0.18);
+  font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  border-radius: 4px; margin-bottom: 18px;
+}
+.block-hero__title { font-size: clamp(32px, 5vw, 56px); font-weight: 800; line-height: 1.1; margin: 0 0 18px; }
+.block-hero__sub { font-size: clamp(15px, 1.5vw, 18px); line-height: 1.55; max-width: 640px; margin: 0 0 28px; opacity: 0.92; }
+.block-hero--center .block-hero__sub { margin-left: auto; margin-right: auto; }
+.block-hero__ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+.block-hero--center .block-hero__ctas { justify-content: center; }
+.block-hero--right .block-hero__ctas { justify-content: flex-end; }
+.block-hero__cta {
+  display: inline-block; padding: 14px 28px; background: #0b3a82; color: #fff;
+  text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px;
+  transition: background 0.15s, transform 0.15s;
+}
+.block-hero__cta:hover { background: #082c63; transform: translateY(-2px); }
+.block-hero__cta--secondary { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.4); }
+.block-hero__cta--secondary:hover { background: rgba(255,255,255,0.25); }
+
+/* --- 2. Value Props --- */
+.block-vp__heading { font-size: 28px; font-weight: 800; margin: 0 0 36px; text-align: center; color: #0f172a; }
+.block-vp__grid { display: grid; gap: 28px; }
+.block-vp__grid--2 { grid-template-columns: repeat(2, 1fr); }
+.block-vp__grid--3 { grid-template-columns: repeat(3, 1fr); }
+.block-vp__grid--4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 768px) {
+  .block-vp__grid--3, .block-vp__grid--4 { grid-template-columns: 1fr 1fr; }
+  .block-vp__grid--2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) { .block-vp__grid { grid-template-columns: 1fr !important; } }
+.block-vp__item { text-align: center; }
+.block-vp__icon { width: 56px; height: 56px; display: inline-flex; align-items: center; justify-content: center; background: #eff6ff; color: #0b3a82; border-radius: 12px; font-size: 24px; margin-bottom: 14px; }
+.block-vp__title { font-size: 17px; font-weight: 700; margin: 0 0 8px; color: #0f172a; }
+.block-vp__text { font-size: 14px; line-height: 1.55; color: #475569; margin: 0; }
+
+/* --- 3. Product Grid --- */
+.block-pg__heading { font-size: 28px; font-weight: 800; margin: 0 0 12px; color: #0f172a; }
+.block-pg__sub { color: #64748b; font-size: 15px; margin: 0 0 32px; }
+.block-pg__grid { display: grid; gap: 20px; }
+.block-pg__grid--2 { grid-template-columns: repeat(2, 1fr); }
+.block-pg__grid--3 { grid-template-columns: repeat(3, 1fr); }
+.block-pg__grid--4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 768px) { .block-pg__grid { grid-template-columns: repeat(2, 1fr) !important; } }
+@media (max-width: 480px) { .block-pg__grid { grid-template-columns: 1fr !important; } }
+.block-pg__card { display: block; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; text-decoration: none; color: #0f172a; transition: transform 0.18s, box-shadow 0.18s; }
+.block-pg__card:hover { transform: translateY(-4px); box-shadow: 0 14px 30px rgba(15,23,42,0.08); }
+.block-pg__cover img { width: 100%; height: 180px; object-fit: cover; border-radius: 6px; margin-bottom: 12px; }
+.block-pg__name { font-size: 16px; font-weight: 700; margin: 0 0 4px; }
+.block-pg__tagline { font-size: 13px; color: #64748b; margin: 0; }
+.block-pg__empty { padding: 30px; text-align: center; color: #94a3b8; }
+
+/* --- 4. Logo Wall --- */
+.block-lw { padding-top: 40px; padding-bottom: 40px; background: #f8fafc; }
+.block-lw__heading { font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: #64748b; text-align: center; margin: 0 0 22px; }
+.block-lw__grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 24px; align-items: center; }
+@media (max-width: 800px) { .block-lw__grid { grid-template-columns: repeat(3, 1fr); } }
+.block-lw__cell { display: flex; align-items: center; justify-content: center; min-height: 60px; opacity: 0.6; transition: opacity 0.15s; }
+.block-lw__cell:hover { opacity: 1; }
+.block-lw__cell img { max-width: 100%; max-height: 50px; filter: grayscale(100%); transition: filter 0.15s; }
+.block-lw__cell:hover img { filter: none; }
+
+/* --- 5. Spec Table --- */
+.block-st__heading { font-size: 28px; font-weight: 800; margin: 0 0 24px; color: #0f172a; }
+.block-st__wrap { overflow-x: auto; }
+.block-st__table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.block-st__table th, .block-st__table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+.block-st__table th { background: #f1f5f9; font-weight: 600; color: #0f172a; }
+.block-st__table tr:nth-child(even) td { background: #fafbfc; }
+
+/* --- 6. Application Grid --- */
+.block-ag__heading { font-size: 28px; font-weight: 800; margin: 0 0 32px; color: #0f172a; text-align: center; }
+.block-ag__grid { display: grid; gap: 18px; }
+.block-ag__grid--2 { grid-template-columns: repeat(2, 1fr); }
+.block-ag__grid--3 { grid-template-columns: repeat(3, 1fr); }
+.block-ag__grid--4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 768px) { .block-ag__grid { grid-template-columns: repeat(2, 1fr) !important; } }
+.block-ag__card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 22px; text-align: center; text-decoration: none; color: #0f172a; transition: transform 0.18s, box-shadow 0.18s; }
+.block-ag__card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(15,23,42,0.08); }
+.block-ag__icon { font-size: 36px; color: #0b3a82; margin-bottom: 12px; }
+.block-ag__cover { height: 140px; background-size: cover; background-position: center; border-radius: 6px; margin-bottom: 12px; }
+.block-ag__name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.block-ag__summary { font-size: 12.5px; color: #64748b; line-height: 1.5; }
+
+/* --- 7. Factory Showcase --- */
+.block-fs__heading { font-size: 28px; font-weight: 800; margin: 0 0 40px; color: #0f172a; text-align: center; }
+.block-fs__row { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; margin-bottom: 56px; }
+.block-fs__row:last-child { margin-bottom: 0; }
+.block-fs__row--right { direction: rtl; }
+.block-fs__row--right .block-fs__text { direction: ltr; }
+@media (max-width: 768px) { .block-fs__row { grid-template-columns: 1fr; direction: ltr !important; } }
+.block-fs__media img { width: 100%; height: auto; border-radius: 10px; display: block; }
+.block-fs__text h3 { font-size: 22px; font-weight: 700; margin: 0 0 14px; color: #0f172a; }
+.block-fs__text p { font-size: 15px; line-height: 1.6; color: #475569; margin: 0; }
+
+/* --- 8. Testimonial --- */
+.block-tm { background: #0b3a82; color: #fff; }
+.block-tm__inner { text-align: center; max-width: 800px; }
+.block-tm__photo { width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 20px; display: block; object-fit: cover; }
+.block-tm__quote { font-size: 22px; font-weight: 500; line-height: 1.5; margin: 0 0 20px; font-style: italic; }
+.block-tm__author { font-size: 14px; color: rgba(255,255,255,0.85); }
+.block-tm__author span { color: rgba(255,255,255,0.6); }
+
+/* --- 9. FAQ --- */
+.block-faq__heading { font-size: 28px; font-weight: 800; margin: 0 0 28px; color: #0f172a; text-align: center; }
+.block-faq__inner { max-width: 800px; }
+.block-faq__item { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px; }
+.block-faq__item summary { padding: 16px 20px; font-weight: 600; cursor: pointer; list-style: none; position: relative; padding-right: 48px; }
+.block-faq__item summary::after { content: '+'; position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 22px; color: #94a3b8; transition: transform 0.15s; }
+.block-faq__item[open] summary::after { content: '−'; transform: translateY(-50%); }
+.block-faq__a { padding: 0 20px 18px; font-size: 14px; line-height: 1.6; color: #475569; }
+
+/* --- 10. CTA Banner --- */
+.block-cta { background: #0f172a; color: #fff; background-size: cover; background-position: center; padding: 100px 24px; text-align: center; }
+.block-cta__overlay { position: absolute; inset: 0; background: rgba(15,23,42,0.7); }
+.block-cta__inner { position: relative; max-width: 800px; margin: 0 auto; }
+.block-cta__title { font-size: clamp(28px, 4vw, 40px); font-weight: 800; margin: 0 0 16px; line-height: 1.2; }
+.block-cta__sub { font-size: 16px; line-height: 1.55; opacity: 0.85; margin: 0 0 28px; }
+.block-cta__btn { display: inline-block; padding: 16px 36px; background: #ef4444; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 700; font-size: 16px; transition: background 0.15s, transform 0.15s; }
+.block-cta__btn:hover { background: #dc2626; transform: translateY(-2px); }
+
+/* --- 11. Inline Inquiry Form --- */
+.block-form__inner { max-width: 640px; }
+.block-form__heading { font-size: 28px; font-weight: 800; margin: 0 0 8px; color: #0f172a; text-align: center; }
+.block-form__sub { color: #64748b; font-size: 15px; text-align: center; margin: 0 0 28px; }
+.block-form__form { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 28px; }
+.block-form__row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 12px; }
+@media (max-width: 600px) { .block-form__row { grid-template-columns: 1fr; } }
+.block-form__form label { display: block; margin-bottom: 12px; }
+.block-form__form label span { display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px; }
+.block-form__form input, .block-form__form textarea { display: block; width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-family: inherit; }
+.block-form__consent { display: flex !important; align-items: flex-start; gap: 8px; font-size: 13px; color: #64748b; }
+.block-form__consent input { width: auto !important; margin-top: 3px; }
+.block-form__submit { display: block; width: 100%; padding: 12px 20px; background: #0b3a82; color: #fff; border: none; border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 14px; }
+.block-form__submit:hover:not(:disabled) { background: #082c63; }
+
+/* --- 12. Rich Text --- */
+.block-rt--narrow .block-rt__inner { max-width: 680px; margin: 0 auto; }
+.block-rt--standard .block-rt__inner { max-width: 880px; margin: 0 auto; }
+.block-rt--wide .block-rt__inner { max-width: 1100px; margin: 0 auto; }
+.block-rt--full .block-rt__inner { max-width: 100%; }
+.block-rt__inner h2 { font-size: 26px; font-weight: 700; margin: 0 0 16px; color: #0f172a; }
+.block-rt__inner h3 { font-size: 20px; font-weight: 700; margin: 24px 0 12px; color: #0f172a; }
+.block-rt__inner p { font-size: 15px; line-height: 1.65; color: #334155; margin: 0 0 14px; }
+.block-rt__inner a { color: #0b3a82; }
+.block-rt__inner ul, .block-rt__inner ol { padding-left: 22px; color: #334155; line-height: 1.65; }
+.block-rt__inner img { max-width: 100%; height: auto; border-radius: 6px; margin: 16px 0; }

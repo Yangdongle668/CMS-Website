@@ -13,7 +13,9 @@
       { label: '访问统计', href: '/admin/analytics.html', icon: '◔' },
     ]},
     { group: '内容', items: [
+      { label: '一键建站', href: '/admin/templates.html', icon: '★' },
       { label: '页面', href: '/admin/pages.html', icon: '☰' },
+      { label: '搭积木', href: '/admin/pages.html', icon: '🧱' },
       { label: '支柱页', href: '/admin/pillars.html', icon: '◇' },
       { label: '产品', href: '/admin/products.html', icon: '▣' },
       { label: '应用行业', href: '/admin/applications.html', icon: '◷' },

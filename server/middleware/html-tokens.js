@@ -324,7 +324,7 @@ async function applyPageOverrides(html) {
   try {
     const { one } = require('../db/client');
     page = await one(
-      `SELECT slug, nav, title, meta_title, meta_description,
+      `SELECT id, slug, nav, title, meta_title, meta_description,
               hero_eyebrow, hero_title, hero_subtitle, hero_image,
               hero_breadcrumbs, body_html, sections, status,
               focus_keyword, canonical_override, robots,
@@ -515,6 +515,32 @@ async function applyPageOverrides(html) {
         open + page.body_html + close
       );
     }
+  }
+
+  // ----- block rendering: replace [data-blocks] innerHTML with the
+  // page's block-builder output. Falls through silently if the page
+  // doesn't have any blocks OR the template doesn't expose a [data-blocks]
+  // mount point.
+  try {
+    const { many } = require('../db/client');
+    const registry = require('../services/block-registry');
+    const blocks = await many(
+      `SELECT id, block_type, sort_order, content, is_visible
+       FROM page_blocks WHERE page_id = $1 AND is_visible = TRUE
+       ORDER BY sort_order, id`,
+      [page.id]
+    );
+    if (blocks.length) {
+      const rendered = await registry.renderBlocks(blocks, { path: '/' + (page.slug || '') });
+      const blocksRe = /(<([a-z0-9]+)\b[^>]*\sdata-blocks\b[^>]*>)([\s\S]*?)(<\/\2>)/i;
+      if (blocksRe.test(html)) {
+        html = html.replace(blocksRe, (_m, open, _tag, _inner, close) =>
+          open + rendered + close
+        );
+      }
+    }
+  } catch (err) {
+    console.warn('[blocks] render in page override failed:', err && err.message);
   }
 
   // ----- sections override: rewrite every [data-section="<key>"] node -----

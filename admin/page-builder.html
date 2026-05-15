@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>页面构建器 | 后台管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<style>
+  /* ===== Page builder 3-pane layout ===== */
+  .pb-shell { display: grid; grid-template-columns: 260px 1fr 380px; gap: 14px; height: calc(100vh - 100px); }
+  @media (max-width: 1200px) { .pb-shell { grid-template-columns: 220px 1fr 340px; } }
+  @media (max-width: 1000px) { .pb-shell { grid-template-columns: 1fr; height: auto; } }
+  .pb-pane { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; overflow-y: auto; }
+  .pb-pane h2 { margin: 0 0 12px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: #475569; font-weight: 700; }
+
+  /* Library */
+  .pb-lib { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .pb-lib__item { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; transition: transform 0.12s, border-color 0.12s, background 0.12s; }
+  .pb-lib__item:hover { transform: translateY(-2px); border-color: #0b3a82; background: #eff6ff; }
+  .pb-lib__icon { font-size: 22px; color: #0b3a82; line-height: 1; }
+  .pb-lib__label { font-size: 11.5px; font-weight: 600; text-align: center; color: #0f172a; }
+  .pb-lib__desc { display: none; }
+  .pb-lib__hint { font-size: 11px; color: #94a3b8; line-height: 1.45; padding: 8px 4px 0; }
+
+  /* Block list */
+  .pb-list { display: flex; flex-direction: column; gap: 8px; min-height: 100%; }
+  .pb-block { display: flex; align-items: center; gap: 10px; padding: 14px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: grab; transition: border-color 0.12s, background 0.12s; }
+  .pb-block:hover { background: #fff; border-color: #0b3a82; }
+  .pb-block.is-active { background: #fff; border-color: #0b3a82; box-shadow: 0 0 0 3px rgba(11,58,130,0.12); }
+  .pb-block.is-hidden { opacity: 0.5; }
+  .pb-block__drag { color: #94a3b8; font-size: 16px; cursor: grab; user-select: none; }
+  .pb-block__icon { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; background: #eff6ff; color: #0b3a82; border-radius: 6px; font-size: 14px; flex-shrink: 0; }
+  .pb-block__main { flex: 1; min-width: 0; }
+  .pb-block__title { font-size: 13px; font-weight: 600; color: #0f172a; display: flex; align-items: center; gap: 6px; }
+  .pb-block__preview { font-size: 11.5px; color: #94a3b8; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pb-block__actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.12s; }
+  .pb-block:hover .pb-block__actions { opacity: 1; }
+  .pb-block__btn { background: transparent; border: 1px solid transparent; padding: 4px 8px; border-radius: 4px; font-size: 12px; cursor: pointer; color: #64748b; }
+  .pb-block__btn:hover { background: #e2e8f0; color: #0f172a; }
+  .pb-block__btn--danger:hover { background: #fee2e2; color: #b91c1c; }
+  .pb-empty { padding: 60px 20px; text-align: center; color: #94a3b8; border: 2px dashed #e2e8f0; border-radius: 10px; }
+  .pb-empty p { margin: 4px 0; font-size: 13px; }
+  .pb-empty strong { color: #475569; }
+
+  /* Form pane */
+  .pb-form__heading { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .pb-form__heading h2 { margin: 0; }
+  .pb-form__heading .pb-block__icon { width: 26px; height: 26px; font-size: 13px; }
+  .pb-form__field { margin-bottom: 14px; }
+  .pb-form__field label { display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px; }
+  .pb-form__field input[type="text"], .pb-form__field input[type="url"], .pb-form__field input[type="number"], .pb-form__field textarea, .pb-form__field select {
+    width: 100%; padding: 8px 10px; font-size: 13px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-family: inherit;
+  }
+  .pb-form__field textarea { resize: vertical; min-height: 70px; }
+  .pb-form__field .hint { display: block; font-size: 11px; color: #94a3b8; margin-top: 4px; }
+  .pb-form__field--image { display: flex; gap: 8px; align-items: flex-start; }
+  .pb-form__field--image input { flex: 1; }
+  .pb-form__image-pick { padding: 8px 12px; background: #eff6ff; color: #0b3a82; border: 1px solid #bfdbfe; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
+  .pb-form__image-pick:hover { background: #dbeafe; }
+  .pb-form__image-preview { width: 100%; height: 80px; background: #f1f5f9 center / cover no-repeat; border-radius: 6px; margin-top: 6px; display: none; }
+  .pb-form__image-preview.has-image { display: block; }
+
+  /* Repeater */
+  .pb-rep { border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; background: #fafbfc; margin-top: 4px; }
+  .pb-rep__item { background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin-bottom: 8px; position: relative; }
+  .pb-rep__item-remove { position: absolute; top: 6px; right: 6px; background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 16px; padding: 0 4px; }
+  .pb-rep__item-remove:hover { color: #b91c1c; }
+  .pb-rep__add { background: transparent; border: 1px dashed #cbd5e1; padding: 8px; width: 100%; border-radius: 6px; color: #64748b; cursor: pointer; font-size: 12px; }
+  .pb-rep__add:hover { border-color: #0b3a82; color: #0b3a82; }
+
+  /* Table editor */
+  .pb-tbl table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .pb-tbl th, .pb-tbl td { border: 1px solid #e2e8f0; padding: 2px; }
+  .pb-tbl input { width: 100%; padding: 4px 6px; border: none; font-size: 12px; background: transparent; }
+  .pb-tbl input:focus { outline: 1px solid #0b3a82; background: #fff; }
+  .pb-tbl__controls { display: flex; gap: 6px; margin-top: 8px; }
+  .pb-tbl__btn { background: #eff6ff; border: 1px solid #bfdbfe; padding: 4px 10px; border-radius: 4px; font-size: 11.5px; color: #0b3a82; cursor: pointer; }
+
+  /* Save bar */
+  .pb-savebar { position: sticky; bottom: 0; background: #fff; padding: 10px 14px; margin: 0 -14px -14px; border-top: 1px solid #e2e8f0; display: flex; gap: 8px; align-items: center; }
+  .pb-savebar__status { font-size: 12px; color: #94a3b8; flex: 1; }
+  .pb-savebar__status.is-dirty { color: #d97706; }
+  .pb-savebar__status.is-saving { color: #0b3a82; }
+  .pb-savebar__status.is-saved { color: #059669; }
+
+  /* Sortable ghost */
+  .sortable-ghost { opacity: 0.4; background: #fef3c7 !important; }
+  .sortable-drag { background: #fff !important; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+
+  /* Preview iframe overlay */
+  .pb-preview-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.7); z-index: 200; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
+  .pb-preview-toolbar { display: flex; gap: 8px; align-items: center; background: #fff; padding: 8px; border-radius: 999px; box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
+  .pb-preview-toolbar button { background: transparent; border: 1px solid transparent; padding: 6px 14px; font-size: 12.5px; border-radius: 999px; cursor: pointer; color: #475569; }
+  .pb-preview-toolbar button:hover { background: #f1f5f9; }
+  .pb-preview-toolbar button.is-active { background: #0b3a82; color: #fff; }
+  .pb-preview-toolbar .pb-preview-close { color: #b91c1c; }
+  .pb-preview-frame-wrap {
+    background: #fff; border-radius: 10px; box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+    transition: width 0.25s ease, height 0.25s ease;
+    overflow: hidden;
+  }
+  .pb-preview-iframe { width: 100%; height: 100%; background: #fff; border: none; display: block; }
+</style>
+</head>
+<body>
+<div data-admin-shell></div>
+<script src="/admin/assets/js/admin.js"></script>
+<script>
+(async function () {
+  const { api, escapeHtml, bootShell, toast } = window.AdminAPI;
+
+  const pageId = parseInt(new URLSearchParams(location.search).get('page') || '0', 10);
+  if (!pageId) {
+    document.body.innerHTML = '<p style="padding:40px;">缺少 ?page=&lt;id&gt; 参数。回到 <a href="/admin/pages.html">页面列表</a>。</p>';
+    return;
+  }
+
+  // Load page info for the breadcrumb
+  let pageInfo = null;
+  try {
+    const r = await api('/api/pages/admin');
+    pageInfo = r.items.find((p) => p.id === pageId);
+  } catch (_) {}
+
+  const shell = await bootShell({
+    title: '搭积木：' + (pageInfo ? pageInfo.title || pageInfo.slug : '#' + pageId),
+    crumbs: '内容 / 页面 / 构建器',
+  });
+  if (!shell) return;
+
+  shell.actions.innerHTML = `
+    <button class="btn btn--ghost btn--sm" id="preview-btn">预览</button>
+    <a class="btn btn--ghost btn--sm" href="/admin/pages.html">返回</a>
+  `;
+
+  // --- Load block types and current blocks in parallel ---
+  const [typesResp, blocksResp] = await Promise.all([
+    api('/api/blocks/types'),
+    api('/api/blocks/page/' + pageId),
+  ]);
+  const TYPES = typesResp.types;
+  let blocks = blocksResp.items;
+  let selectedId = null;
+
+  // ----- Build UI shell -----
+  shell.content.innerHTML = `
+    <div class="pb-shell">
+      <!-- LEFT: library -->
+      <div class="pb-pane">
+        <h2>区块库</h2>
+        <div class="pb-lib" id="lib"></div>
+        <p class="pb-lib__hint">点击区块加到当前页面末尾；中间面板可拖拽排序。</p>
+      </div>
+
+      <!-- CENTER: list -->
+      <div class="pb-pane">
+        <h2 style="display:flex; justify-content:space-between; align-items:center;">
+          <span>页面区块（${blocks.length}）</span>
+          <span style="font-weight:400; color:#94a3b8; font-size:11.5px; text-transform:none; letter-spacing:0;">拖拽排序</span>
+        </h2>
+        <div class="pb-list" id="list"></div>
+      </div>
+
+      <!-- RIGHT: form -->
+      <div class="pb-pane" id="form-pane">
+        <div class="pb-empty"><p>👈 在中间面板选择一个区块编辑</p><p>或从左边添加新区块</p></div>
+      </div>
+    </div>
+  `;
+
+  // ----- Library -----
+  const lib = document.getElementById('lib');
+  lib.innerHTML = TYPES.map((t) => `
+    <div class="pb-lib__item" data-type="${t.id}" title="${escapeHtml(t.description)}">
+      <div class="pb-lib__icon">${escapeHtml(t.icon)}</div>
+      <div class="pb-lib__label">${escapeHtml(t.label)}</div>
+    </div>
+  `).join('');
+  lib.querySelectorAll('.pb-lib__item').forEach((el) => {
+    el.addEventListener('click', () => addBlock(el.dataset.type));
+  });
+
+  // ----- Block list -----
+  const listEl = document.getElementById('list');
+  function blockPreview(b) {
+    const c = b.content || {};
+    // Cheap one-line preview from common fields
+    return c.title || c.headline || c.q || c.heading || c.html?.slice(0, 60) || c.quote?.slice(0, 60) || c.image_url || '(empty)';
+  }
+  function findType(id) { return TYPES.find((t) => t.id === id); }
+
+  function renderList() {
+    if (!blocks.length) {
+      listEl.innerHTML = '<div class="pb-empty"><p>这个页面还没有区块。</p><p><strong>👈 从左边的库点击</strong>添加一个 Hero / Value Props / FAQ 等开始。</p></div>';
+      return;
+    }
+    listEl.innerHTML = blocks.map((b) => {
+      const t = findType(b.block_type);
+      const icon = t ? t.icon : '?';
+      const label = t ? t.label : b.block_type;
+      const active = b.id === selectedId ? ' is-active' : '';
+      const hidden = b.is_visible === false ? ' is-hidden' : '';
+      return `
+        <div class="pb-block${active}${hidden}" data-id="${b.id}">
+          <span class="pb-block__drag" title="拖拽">⠿</span>
+          <div class="pb-block__icon">${escapeHtml(icon)}</div>
+          <div class="pb-block__main">
+            <div class="pb-block__title">${escapeHtml(label)}${b.is_visible === false ? ' <span style="color:#94a3b8;font-size:10.5px;">[隐藏]</span>' : ''}</div>
+            <div class="pb-block__preview">${escapeHtml(blockPreview(b))}</div>
+          </div>
+          <div class="pb-block__actions">
+            <button class="pb-block__btn" data-act="toggle" title="显示/隐藏">${b.is_visible === false ? '👁' : '⊘'}</button>
+            <button class="pb-block__btn pb-block__btn--danger" data-act="delete" title="删除">×</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Wire click handlers (single delegate)
+    listEl.querySelectorAll('.pb-block').forEach((row) => {
+      const id = parseInt(row.dataset.id, 10);
+      row.addEventListener('click', (ev) => {
+        if (ev.target.closest('[data-act]')) return;
+        selectBlock(id);
+      });
+      row.querySelector('[data-act="toggle"]').addEventListener('click', async () => {
+        const b = blocks.find((x) => x.id === id);
+        b.is_visible = !b.is_visible;
+        await api('/api/blocks/' + id, { method: 'PUT', body: JSON.stringify({ is_visible: b.is_visible }) });
+        renderList();
+      });
+      row.querySelector('[data-act="delete"]').addEventListener('click', async () => {
+        if (!confirm('删除这个区块？')) return;
+        await api('/api/blocks/' + id, { method: 'DELETE' });
+        blocks = blocks.filter((x) => x.id !== id);
+        if (selectedId === id) { selectedId = null; renderForm(); }
+        renderList();
+        updateHeaderCount();
+      });
+    });
+
+    // Drag-sort with SortableJS
+    new Sortable(listEl, {
+      animation: 150,
+      handle: '.pb-block__drag',
+      ghostClass: 'sortable-ghost',
+      dragClass: 'sortable-drag',
+      onEnd: async () => {
+        const orderedIds = [...listEl.querySelectorAll('.pb-block')].map((el) => parseInt(el.dataset.id, 10));
+        // Rebuild local blocks array in the new order
+        const map = new Map(blocks.map((b) => [b.id, b]));
+        blocks = orderedIds.map((id) => map.get(id)).filter(Boolean);
+        try {
+          await api('/api/blocks/reorder', {
+            method: 'POST',
+            body: JSON.stringify({ page_id: pageId, ordered_ids: orderedIds }),
+          });
+        } catch (e) { toast('重新排序失败：' + e.message, 'error'); }
+      },
+    });
+  }
+
+  function updateHeaderCount() {
+    const h2 = document.querySelector('.pb-pane h2 span');
+    if (h2) h2.textContent = `页面区块（${blocks.length}）`;
+  }
+
+  function selectBlock(id) {
+    selectedId = id;
+    renderList();
+    renderForm();
+  }
+
+  async function addBlock(type) {
+    try {
+      const r = await api('/api/blocks', {
+        method: 'POST',
+        body: JSON.stringify({ page_id: pageId, block_type: type }),
+      });
+      blocks.push(r);
+      selectedId = r.id;
+      renderList();
+      renderForm();
+      updateHeaderCount();
+      toast('已添加 ' + (findType(type)?.label || type), 'success');
+    } catch (e) { toast('添加失败：' + e.message, 'error'); }
+  }
+
+  // ----- Form pane -----
+  const formPane = document.getElementById('form-pane');
+  let dirtyTimer = null;
+  let pendingSave = null;
+  let saveBar = null;
+
+  function setSaveStatus(state, text) {
+    if (!saveBar) return;
+    saveBar.className = 'pb-savebar__status is-' + state;
+    saveBar.textContent = text;
+  }
+
+  function debouncedSave() {
+    if (!selectedId) return;
+    setSaveStatus('dirty', '未保存…');
+    clearTimeout(dirtyTimer);
+    dirtyTimer = setTimeout(saveNow, 700);
+  }
+
+  async function saveNow() {
+    if (!selectedId) return;
+    const block = blocks.find((b) => b.id === selectedId);
+    if (!block) return;
+    setSaveStatus('saving', '保存中…');
+    try {
+      await api('/api/blocks/' + selectedId, {
+        method: 'PUT',
+        body: JSON.stringify({ content: block.content }),
+      });
+      setSaveStatus('saved', '✓ 已保存');
+      renderList();
+    } catch (e) {
+      setSaveStatus('dirty', '保存失败：' + e.message);
+    }
+  }
+
+  function renderForm() {
+    if (!selectedId) {
+      formPane.innerHTML = `<div class="pb-empty"><p>👈 在中间面板选择一个区块编辑</p><p>或从左边添加新区块</p></div>`;
+      return;
+    }
+    const block = blocks.find((b) => b.id === selectedId);
+    if (!block) return;
+    const type = findType(block.block_type);
+    if (!type) {
+      formPane.innerHTML = `<p>未知区块类型: ${escapeHtml(block.block_type)}</p>`;
+      return;
+    }
+
+    formPane.innerHTML = `
+      <div class="pb-form__heading">
+        <div class="pb-block__icon">${escapeHtml(type.icon)}</div>
+        <h2 style="text-transform:none; letter-spacing:0; font-size:15px;">${escapeHtml(type.label)}</h2>
+      </div>
+      <p style="font-size:11.5px; color:#94a3b8; margin:0 0 14px;">${escapeHtml(type.description)}</p>
+      <div id="fields"></div>
+      <div class="pb-savebar">
+        <span class="pb-savebar__status is-saved" id="save-status">✓ 已保存</span>
+        <button class="btn btn--sm btn--ghost" id="save-now">立即保存</button>
+      </div>
+    `;
+    saveBar = document.getElementById('save-status');
+    document.getElementById('save-now').addEventListener('click', saveNow);
+
+    const fieldsEl = document.getElementById('fields');
+    type.schema.forEach((f) => {
+      fieldsEl.appendChild(renderField(f, block.content));
+    });
+  }
+
+  // ----- Single field renderer -----
+  function renderField(field, content) {
+    const wrap = document.createElement('div');
+    wrap.className = 'pb-form__field';
+    const value = content[field.name];
+    const labelHtml = `<label>${escapeHtml(field.label)}${field.required ? ' *' : ''}</label>`;
+
+    if (field.type === 'text' || field.type === 'url') {
+      wrap.innerHTML = labelHtml + `<input type="${field.type === 'url' ? 'url' : 'text'}" maxlength="${field.max || 500}">`;
+      const input = wrap.querySelector('input');
+      input.value = value || '';
+      input.addEventListener('input', () => { content[field.name] = input.value; debouncedSave(); });
+    } else if (field.type === 'textarea') {
+      wrap.innerHTML = labelHtml + `<textarea maxlength="${field.max || 5000}" rows="3"></textarea>`;
+      const ta = wrap.querySelector('textarea');
+      ta.value = value || '';
+      ta.addEventListener('input', () => { content[field.name] = ta.value; debouncedSave(); });
+    } else if (field.type === 'number') {
+      wrap.innerHTML = labelHtml + `<input type="number" min="${field.min ?? 0}" max="${field.max ?? 9999}">`;
+      const input = wrap.querySelector('input');
+      input.value = value ?? '';
+      input.addEventListener('input', () => { content[field.name] = parseInt(input.value, 10) || 0; debouncedSave(); });
+    } else if (field.type === 'checkbox') {
+      wrap.innerHTML = `<label style="display:flex; align-items:center; gap:8px;"><input type="checkbox"> ${escapeHtml(field.label)}</label>`;
+      const cb = wrap.querySelector('input');
+      cb.checked = !!value;
+      cb.addEventListener('change', () => { content[field.name] = cb.checked; debouncedSave(); });
+    } else if (field.type === 'select') {
+      const opts = (field.options || []).map((o) => `<option value="${escapeHtml(o)}" ${value === o ? 'selected' : ''}>${escapeHtml(o)}</option>`).join('');
+      wrap.innerHTML = labelHtml + `<select>${opts}</select>`;
+      const sel = wrap.querySelector('select');
+      sel.addEventListener('change', () => { content[field.name] = sel.value; debouncedSave(); });
+    } else if (field.type === 'image') {
+      wrap.innerHTML = labelHtml + `
+        <div class="pb-form__field--image">
+          <input type="text" placeholder="/uploads/... or https://..." maxlength="500">
+          <button type="button" class="pb-form__image-pick">媒体库</button>
+        </div>
+        <div class="pb-form__image-preview"></div>
+      `;
+      const input = wrap.querySelector('input');
+      const preview = wrap.querySelector('.pb-form__image-preview');
+      function syncPreview() {
+        if (input.value) { preview.style.backgroundImage = `url('${input.value}')`; preview.classList.add('has-image'); }
+        else preview.classList.remove('has-image');
+      }
+      input.value = value || '';
+      syncPreview();
+      input.addEventListener('input', () => { content[field.name] = input.value; syncPreview(); debouncedSave(); });
+      wrap.querySelector('.pb-form__image-pick').addEventListener('click', async () => {
+        const url = await pickFromMedia();
+        if (url) { input.value = url; content[field.name] = url; syncPreview(); debouncedSave(); }
+      });
+    } else if (field.type === 'richtext') {
+      wrap.innerHTML = labelHtml + `<textarea rows="8" style="font-family:'JetBrains Mono', monospace; font-size:12px;"></textarea><span class="hint">HTML supported. Use the Pages page for the full WYSIWYG.</span>`;
+      const ta = wrap.querySelector('textarea');
+      ta.value = value || '';
+      ta.addEventListener('input', () => { content[field.name] = ta.value; debouncedSave(); });
+    } else if (field.type === 'repeater') {
+      wrap.innerHTML = labelHtml;
+      const rep = document.createElement('div');
+      rep.className = 'pb-rep';
+      const items = Array.isArray(value) ? value : [];
+      function rebuild() {
+        rep.innerHTML = items.map((_, idx) => `
+          <div class="pb-rep__item" data-idx="${idx}">
+            <button type="button" class="pb-rep__item-remove" title="删除">×</button>
+            <div data-rep-fields></div>
+          </div>
+        `).join('') + `<button type="button" class="pb-rep__add">+ 添加条目</button>`;
+
+        rep.querySelectorAll('.pb-rep__item').forEach((wrapEl) => {
+          const idx = parseInt(wrapEl.dataset.idx, 10);
+          const inner = wrapEl.querySelector('[data-rep-fields]');
+          field.fields.forEach((subField) => {
+            const subWrap = renderField(subField, items[idx] = items[idx] || {});
+            inner.appendChild(subWrap);
+          });
+          wrapEl.querySelector('.pb-rep__item-remove').addEventListener('click', () => {
+            items.splice(idx, 1);
+            content[field.name] = items;
+            debouncedSave();
+            rebuild();
+          });
+        });
+        rep.querySelector('.pb-rep__add').addEventListener('click', () => {
+          const blank = {};
+          field.fields.forEach((sf) => { blank[sf.name] = ''; });
+          items.push(blank);
+          content[field.name] = items;
+          debouncedSave();
+          rebuild();
+        });
+      }
+      content[field.name] = items;   // ensure reference
+      rebuild();
+      wrap.appendChild(rep);
+    } else if (field.type === 'table') {
+      wrap.innerHTML = labelHtml;
+      const tblWrap = document.createElement('div');
+      tblWrap.className = 'pb-tbl';
+      // headers + rows are siblings on content. We synthesize a flat editor.
+      const headersKey = field.headersKey || 'headers';
+      const headers = Array.isArray(content[headersKey]) ? content[headersKey] : ['Col 1', 'Col 2'];
+      const rows = Array.isArray(value) ? value : [];
+      function rebuildTable() {
+        const ths = headers.map((h, i) => `<th><input data-h="${i}" value="${escapeHtml(h)}"></th>`).join('') + '<th style="width:32px;"></th>';
+        const trs = rows.map((row, ri) => {
+          const cells = headers.map((_, ci) => `<td><input data-r="${ri}" data-c="${ci}" value="${escapeHtml(row[ci] || '')}"></td>`).join('');
+          return `<tr>${cells}<td style="text-align:center;"><button type="button" data-del-row="${ri}" style="border:none;background:transparent;cursor:pointer;color:#b91c1c;">×</button></td></tr>`;
+        }).join('');
+        tblWrap.innerHTML = `<table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>
+          <div class="pb-tbl__controls">
+            <button type="button" class="pb-tbl__btn" data-add-row>+ 行</button>
+            <button type="button" class="pb-tbl__btn" data-add-col>+ 列</button>
+          </div>`;
+        tblWrap.querySelectorAll('input[data-h]').forEach((i) => i.addEventListener('input', () => {
+          headers[parseInt(i.dataset.h, 10)] = i.value;
+          content[headersKey] = headers;
+          debouncedSave();
+        }));
+        tblWrap.querySelectorAll('input[data-r]').forEach((i) => i.addEventListener('input', () => {
+          const r = parseInt(i.dataset.r, 10), c = parseInt(i.dataset.c, 10);
+          rows[r] = rows[r] || []; rows[r][c] = i.value;
+          content[field.name] = rows;
+          debouncedSave();
+        }));
+        tblWrap.querySelectorAll('[data-del-row]').forEach((b) => b.addEventListener('click', () => {
+          rows.splice(parseInt(b.dataset.delRow, 10), 1);
+          content[field.name] = rows;
+          debouncedSave();
+          rebuildTable();
+        }));
+        tblWrap.querySelector('[data-add-row]').addEventListener('click', () => {
+          rows.push(headers.map(() => ''));
+          content[field.name] = rows;
+          debouncedSave();
+          rebuildTable();
+        });
+        tblWrap.querySelector('[data-add-col]').addEventListener('click', () => {
+          headers.push('Col ' + (headers.length + 1));
+          rows.forEach((r) => r.push(''));
+          content[headersKey] = headers;
+          content[field.name] = rows;
+          debouncedSave();
+          rebuildTable();
+        });
+      }
+      content[headersKey] = headers;
+      content[field.name] = rows;
+      rebuildTable();
+      wrap.appendChild(tblWrap);
+    }
+    return wrap;
+  }
+
+  // ----- Media picker (uses /api/media) -----
+  async function pickFromMedia() {
+    return new Promise((resolve) => {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:300;display:flex;align-items:center;justify-content:center;';
+      overlay.innerHTML = `
+        <div style="background:#fff;border-radius:10px;width:680px;max-width:92%;max-height:80vh;display:flex;flex-direction:column;">
+          <div style="padding:14px 18px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+            <strong>选择媒体</strong>
+            <button style="border:none;background:transparent;font-size:20px;cursor:pointer;" data-close>×</button>
+          </div>
+          <div style="padding:14px;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;" data-grid>加载中…</div>
+        </div>
+      `;
+      overlay.addEventListener('click', (ev) => {
+        if (ev.target === overlay || ev.target.matches('[data-close]')) { overlay.remove(); resolve(null); }
+      });
+      document.body.appendChild(overlay);
+      api('/api/media?limit=60').then(({ items }) => {
+        const g = overlay.querySelector('[data-grid]');
+        g.innerHTML = items.map((m) => `
+          <div data-url="${escapeHtml(m.url)}" style="cursor:pointer;border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;background:#f8fafc;">
+            ${m.mime && m.mime.startsWith('image/')
+              ? `<div style="height:90px;background:#fff url('${escapeHtml(m.url)}') center/cover no-repeat;"></div>`
+              : `<div style="height:90px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#64748b;">${escapeHtml(m.mime || 'file')}</div>`}
+            <div style="padding:4px 6px;font-size:10.5px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(m.original || m.filename)}</div>
+          </div>
+        `).join('') || '<p>没有媒体。先去媒体库上传。</p>';
+        g.querySelectorAll('[data-url]').forEach((el) => {
+          el.addEventListener('click', () => { overlay.remove(); resolve(el.dataset.url); });
+        });
+      });
+    });
+  }
+
+  // ----- Preview button with device toggle -----
+  const DEVICE_SIZES = {
+    mobile:  { w: 390,  h: 740,  label: '📱 手机' },
+    tablet:  { w: 820,  h: 900,  label: '◽ 平板' },
+    desktop: { w: 1280, h: 800,  label: '🖥 桌面' },
+  };
+  document.getElementById('preview-btn').addEventListener('click', () => {
+    if (!pageInfo || !pageInfo.slug) {
+      toast('页面 slug 未知，无法预览', 'error');
+      return;
+    }
+    const overlay = document.createElement('div');
+    overlay.className = 'pb-preview-overlay';
+    overlay.innerHTML = `
+      <div class="pb-preview-toolbar">
+        ${Object.entries(DEVICE_SIZES).map(([k, v]) =>
+          `<button data-device="${k}" class="${k === 'desktop' ? 'is-active' : ''}">${v.label}</button>`).join('')}
+        <button class="pb-preview-close" data-close>✕ 关闭</button>
+      </div>
+      <div class="pb-preview-frame-wrap" style="width:${DEVICE_SIZES.desktop.w}px; height:${DEVICE_SIZES.desktop.h}px; max-width:96vw; max-height:80vh;">
+        <iframe class="pb-preview-iframe" src="/${pageInfo.slug}"></iframe>
+      </div>
+    `;
+
+    const wrap = overlay.querySelector('.pb-preview-frame-wrap');
+    overlay.querySelectorAll('[data-device]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const dev = DEVICE_SIZES[btn.dataset.device];
+        if (!dev) return;
+        overlay.querySelectorAll('[data-device]').forEach((b) => b.classList.toggle('is-active', b === btn));
+        wrap.style.width = dev.w + 'px';
+        wrap.style.height = dev.h + 'px';
+      });
+    });
+    overlay.querySelector('[data-close]').addEventListener('click', () => overlay.remove());
+    overlay.addEventListener('click', (ev) => { if (ev.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+  });
+
+  // ----- Initial paint -----
+  renderList();
+  renderForm();
+})();
+</script>
+</body>
+</html>
