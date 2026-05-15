@@ -22,8 +22,37 @@
 
 const fs = require('fs');
 const path = require('path');
+const jwt = require('jsonwebtoken');
 
 const PUBLIC_DIR = path.resolve(__dirname, '..', '..', 'public');
+
+// ----- Builder mode detection (Sprint 3 — inline page editor) -----
+// When the URL has ?builder=1 AND the request carries a valid admin
+// cms_session JWT cookie, we inject the in-iframe page-builder runtime
+// (public/builder-runtime.js + .css) into the served HTML. Without
+// valid auth the param is silently ignored, so visitors can't trigger
+// the editor by guessing the URL.
+function isBuilderRequest(req) {
+  if (!req || !req.query || req.query.builder !== '1') return false;
+  const token = req.cookies && req.cookies.cms_session;
+  if (!token) return false;
+  try {
+    jwt.verify(token, process.env.JWT_SECRET || 'dev-secret');
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function injectBuilderRuntime(html) {
+  const tag =
+    '\n<link rel="stylesheet" href="/builder-runtime.css">\n' +
+    '<script defer src="/builder-runtime.js"></script>\n';
+  if (html.indexOf('</head>') !== -1) {
+    return html.replace('</head>', tag + '</head>');
+  }
+  return html + tag;
+}
 
 // ----- Asset manifest (Sprint 1 — build pipeline) -----
 // public/dist/manifest.json is written by `npm run build` and maps the
@@ -311,7 +340,8 @@ function buildContext(req, canonicalPathOverride) {
 // initial HTML the visitor receives already contains the operator's
 // edits — no JS-driven post-load flash where the page text changes
 // from the static fallback to the DB-driven version.
-async function applyPageOverrides(html) {
+async function applyPageOverrides(html, opts) {
+  const builderMode = !!(opts && opts.builderMode);
   // The body's data-page="<slug>" attribute identifies which CMS row,
   // if any, governs this page. /admin/pages.html lets the operator
   // manage hero/breadcrumbs/body for that slug.
@@ -517,26 +547,40 @@ async function applyPageOverrides(html) {
     }
   }
 
-  // ----- block rendering: replace [data-blocks] innerHTML with the
-  // page's block-builder output. Falls through silently if the page
-  // doesn't have any blocks OR the template doesn't expose a [data-blocks]
-  // mount point.
+  // ----- block rendering: render this page's page_blocks rows into HTML.
+  // Mount strategy (in order of preference):
+  //   1. [data-blocks]       — explicit placeholder for block-builder pages
+  //   2. [data-page-body]    — existing pages built before Sprint 3 use this
+  //                            as the post-hero body mount point; we hijack it
+  //                            ONLY when the page actually has blocks defined
+  // If neither marker exists OR the page has zero blocks, this is a no-op.
   try {
     const { many } = require('../db/client');
     const registry = require('../services/block-registry');
-    const blocks = await many(
+    // In builder mode show ALL blocks (incl. hidden) so editors can
+    // see/unhide them; in normal serving only visible ones reach visitors.
+    const blocksList = await many(
       `SELECT id, block_type, sort_order, content, is_visible
-       FROM page_blocks WHERE page_id = $1 AND is_visible = TRUE
+       FROM page_blocks WHERE page_id = $1
+       ${builderMode ? '' : 'AND is_visible = TRUE'}
        ORDER BY sort_order, id`,
       [page.id]
     );
-    if (blocks.length) {
-      const rendered = await registry.renderBlocks(blocks, { path: '/' + (page.slug || '') });
+    if (blocksList.length) {
+      const rendered = await registry.renderBlocks(blocksList, { path: '/' + (page.slug || ''), builderMode });
       const blocksRe = /(<([a-z0-9]+)\b[^>]*\sdata-blocks\b[^>]*>)([\s\S]*?)(<\/\2>)/i;
+      const bodyRe = /(<([a-z0-9]+)\b[^>]*\sdata-page-body\b[^>]*>)([\s\S]*?)(<\/\2>)/i;
       if (blocksRe.test(html)) {
         html = html.replace(blocksRe, (_m, open, _tag, _inner, close) =>
           open + rendered + close
         );
+      } else if (bodyRe.test(html)) {
+        // Mark the body container so the builder runtime can find blocks
+        html = html.replace(bodyRe, (_m, open, _tag, _inner, close) => {
+          // Inject data-blocks attribute into the open tag if not present
+          const taggedOpen = / data-blocks\b/i.test(open) ? open : open.replace(/>$/, ' data-blocks>');
+          return taggedOpen + rendered + close;
+        });
       }
     }
   } catch (err) {
@@ -623,7 +667,7 @@ async function tryServeHtml(req, res, candidates, options) {
     let out = replaceTokens(html, ctx);
     // Apply admin pages-table overrides AFTER tokens so the operator's
     // edits beat both the source-file defaults and the {{TOKEN}} fallbacks.
-    out = await applyPageOverrides(out);
+    out = await applyPageOverrides(out, { builderMode: isBuilderRequest(req) });
     // FINAL pass: re-apply text_overrides AFTER applyPageOverrides so an
     // operator's inline-edited string ("click the H1 in the preview iframe
     // → save") wins over pages.hero_title from the DB. Without this pass,
@@ -632,6 +676,9 @@ async function tryServeHtml(req, res, candidates, options) {
     const textOverrides = settingsCache.text_overrides || {};
     if (Object.keys(textOverrides).length) {
       out = applyTextOverrides(out, textOverrides);
+    }
+    if (isBuilderRequest(req)) {
+      out = injectBuilderRuntime(out);
     }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     if (!res.getHeader('Cache-Control')) res.setHeader('Cache-Control', 'no-cache');

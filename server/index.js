@@ -344,6 +344,61 @@ app.get(['/products/:slug', '/applications/:slug', '/blog/:slug'], async (req, r
   return next();
 });
 
+// ----- Pages-table fallback (Sprint 3 — block builder) -----
+// A page created via /admin/templates.html or page-builder lives ONLY
+// in the pages + page_blocks tables — no static HTML in /public/. Serve
+// such pages by feeding the /public/_page-shell.html through the
+// existing applyPageOverrides + block-renderer chain. This keeps every
+// pages.slug reachable without anyone having to drop a file on disk.
+app.use(async (req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  if (req.path.startsWith('/api/') || req.path.startsWith('/admin')) return next();
+  if (req.path.startsWith('/uploads/')) return next();
+  if (/\.[a-z0-9]+$/i.test(req.path)) return next();   // skip clear asset paths
+  try {
+    const { one } = require('./db/client');
+    const slug = req.path.replace(/^\/+/, '').replace(/\/+$/, '') || 'home';
+    const page = await one(`SELECT slug FROM pages WHERE slug = $1 AND status = 'published'`, [slug]);
+    if (!page) return next();
+    // Inject data-page="<slug>" into the shell BEFORE running through
+    // applyPageOverrides so the pipeline knows which CMS row drives this
+    // request. The token + override layers do the rest.
+    const shellPath = path.join(ROOT, 'public', '_page-shell.html');
+    if (!fs.existsSync(shellPath)) return next();
+    let html = fs.readFileSync(shellPath, 'utf8');
+    html = html.replace(/<body([^>]*)>/, `<body data-page="${slug}"$1>`);
+    // Serve through tryServeHtml-style pipeline manually
+    const { replaceTokens, buildContext, applyPageOverrides, applySavedTextOverrides } = require('./middleware/html-tokens');
+    const { isBuilderRequest, injectBuilderRuntime } = require('./middleware/html-tokens');
+    // We need access to the helper functions. They're not exported by
+    // name; instead, use the public tryServeHtml by writing the shell
+    // to a temp candidate. Simpler: inline the pipeline.
+    const ctx = buildContext(req, req.path);
+    let out = replaceTokens(html, ctx);
+    out = await applyPageOverrides(out, { builderMode: req.query.builder === '1' });
+    out = applySavedTextOverrides(out);
+    // Builder-mode injection — replicate the tryServeHtml decision logic
+    if (req.query.builder === '1') {
+      const jwt = require('jsonwebtoken');
+      const tok = req.cookies && req.cookies.cms_session;
+      if (tok) {
+        try {
+          jwt.verify(tok, process.env.JWT_SECRET || 'dev-secret');
+          out = out.replace('</head>',
+            '\n<link rel="stylesheet" href="/builder-runtime.css">\n' +
+            '<script defer src="/builder-runtime.js"></script>\n</head>');
+        } catch (_) {}
+      }
+    }
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.send(out);
+  } catch (err) {
+    console.error('[page-fallback]', err && err.message);
+    next();
+  }
+});
+
 // ----- 404 -----
 app.use(async (req, res) => {
   if (req.path.startsWith('/api/')) {
