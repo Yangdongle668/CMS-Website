@@ -418,6 +418,19 @@
         await api('/api/blocks/reorder', { method: 'POST', body: JSON.stringify({ page_id: pageId, ordered_ids: orderedIds }) });
         reloadFrame();
       } catch (e) { alert('排序失败：' + e.message); }
+    } else if (action === 'star') {
+      const block = blocks[idx];
+      const def = typeMap[block.block_type];
+      const suggested = (block.content.title || block.content.headline || def?.label || block.block_type).slice(0, 60);
+      const name = prompt('给这个片段起个名字（之后在区块库里能找到）:', suggested);
+      if (!name || !name.trim()) return;
+      try {
+        await api('/api/blocks/snippets', {
+          method: 'POST',
+          body: JSON.stringify({ name: name.trim(), block_type: block.block_type, content: block.content }),
+        });
+        setStatus('saved', '✓ 已存为片段「' + name.trim() + '」');
+      } catch (e) { alert('保存片段失败：' + e.message); }
     } else if (action === 'duplicate') {
       pushUndo();
       const orig = blocks[idx];
@@ -634,11 +647,12 @@
     });
   }
 
-  function renderLibrary() {
+  async function renderLibrary() {
     sideBody.innerHTML = `
       <div class="pb2-form__note">
         <strong>添加方式：</strong> 拖拽到画布上任意位置 — 或点击加到页面末尾。
       </div>
+      <div style="font-size:11px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.06em; margin: 4px 0 6px;">12 个标准区块</div>
       <div class="pb2-lib">
         ${TYPES.map((t) => `
           <div class="pb2-lib__item" data-type="${t.id}" draggable="true" title="${escapeHtml(t.description)}">
@@ -647,19 +661,70 @@
           </div>
         `).join('')}
       </div>
+      <div style="font-size:11px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.06em; margin: 18px 0 6px;">⭐ 我的片段</div>
+      <div id="snippets-list" style="font-size:12px; color:#94a3b8;">加载中…</div>
     `;
     sideBody.querySelectorAll('[data-type]').forEach((el) => {
       el.addEventListener('click', () => addBlockAt(el.dataset.type, null, 'end'));
-      // Tile drag → notify iframe so its drop zones light up
       el.addEventListener('dragstart', (ev) => {
         ev.dataTransfer.effectAllowed = 'copy';
         try { ev.dataTransfer.setData('text/plain', el.dataset.type); } catch (_) {}
         postToFrame('library-drag-start', { block_type: el.dataset.type });
       });
-      el.addEventListener('dragend', () => {
-        postToFrame('library-drag-end');
-      });
+      el.addEventListener('dragend', () => postToFrame('library-drag-end'));
     });
+
+    // Load + render saved snippets
+    try {
+      const { items } = await api('/api/blocks/snippets');
+      const listEl = document.getElementById('snippets-list');
+      if (!items.length) {
+        listEl.innerHTML = '<p style="margin:0; font-size:11.5px;">还没有保存的片段。<br>在画布上选中区块 → 点工具栏 ⭐ 按钮保存。</p>';
+      } else {
+        listEl.innerHTML = items.map((s) => {
+          const def = typeMap[s.block_type];
+          return `
+            <div style="display:flex; align-items:center; gap:8px; padding:8px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; margin-bottom:5px; cursor:pointer;" data-snippet-id="${s.id}">
+              <span style="color:#0b3a82; font-size:14px;">${def ? escapeHtml(def.icon) : '?'}</span>
+              <div style="flex:1; min-width:0;">
+                <div style="font-weight:600; color:#0f172a; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(s.name)}</div>
+                <div style="color:#94a3b8; font-size:10.5px;">${def ? escapeHtml(def.label) : s.block_type}</div>
+              </div>
+              <button data-snippet-delete="${s.id}" title="删除片段" style="background:transparent; border:none; color:#94a3b8; padding:4px 6px; cursor:pointer; font-size:13px;">×</button>
+            </div>
+          `;
+        }).join('');
+        listEl.querySelectorAll('[data-snippet-id]').forEach((el) => {
+          const id = parseInt(el.dataset.snippetId, 10);
+          el.addEventListener('click', async (ev) => {
+            if (ev.target.closest('[data-snippet-delete]')) return;
+            try {
+              pushUndo();
+              const r = await api('/api/blocks/from-snippet', {
+                method: 'POST',
+                body: JSON.stringify({ page_id: pageId, snippet_id: id }),
+              });
+              blocks.push(r);
+              selectedId = r.id;
+              setStatus('saved', '✓ 已插入片段');
+              reloadFrame();
+            } catch (e) { alert('插入失败：' + e.message); }
+          });
+        });
+        listEl.querySelectorAll('[data-snippet-delete]').forEach((b) => {
+          b.addEventListener('click', async (ev) => {
+            ev.stopPropagation();
+            if (!confirm('删除这个片段？')) return;
+            try {
+              await api('/api/blocks/snippets/' + b.dataset.snippetDelete, { method: 'DELETE' });
+              renderLibrary();
+            } catch (e) { alert('删除失败：' + e.message); }
+          });
+        });
+      }
+    } catch (e) {
+      document.getElementById('snippets-list').innerHTML = '<p style="color:#b91c1c;">片段加载失败</p>';
+    }
   }
 
   function renderSettings() {

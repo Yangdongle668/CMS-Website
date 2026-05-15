@@ -380,6 +380,20 @@ CREATE INDEX IF NOT EXISTS idx_page_blocks_visible
   ON page_blocks(page_id, sort_order)
   WHERE is_visible = TRUE;
 
+-- ----- block snippets (Sprint 3 — reusable block presets) -----
+-- An admin can save any current block as a named snippet, then add a
+-- new block from the snippet anywhere. Think of it as "favorite/copy
+-- this configured block for re-use."
+CREATE TABLE IF NOT EXISTS block_snippets (
+  id          SERIAL PRIMARY KEY,
+  name        VARCHAR(120) NOT NULL,
+  block_type  VARCHAR(40)  NOT NULL,
+  content     JSONB        NOT NULL DEFAULT '{}'::jsonb,
+  created_by  INT REFERENCES users(id) ON DELETE SET NULL,
+  created_at  TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_block_snippets_type ON block_snippets(block_type, created_at DESC);
+
 -- ----- navigation -----
 CREATE TABLE IF NOT EXISTS navigation (
   id         SERIAL PRIMARY KEY,

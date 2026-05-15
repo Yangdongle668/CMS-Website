@@ -121,6 +121,7 @@
         <button data-act="down" title="下移">↓</button>
         <button data-act="hide" title="隐藏">⊘</button>
         <button data-act="duplicate" title="复制">⎘</button>
+        <button data-act="star" title="存为片段（复用到其他页面）">⭐</button>
         <button data-act="delete" title="删除">✕</button>
       `;
       el.appendChild(tb);

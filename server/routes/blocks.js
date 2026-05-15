@@ -233,4 +233,68 @@ router.post('/preview', requireAuth, async (req, res) => {
   }
 });
 
+// =====================================================================
+// Block snippets — reusable presets
+// =====================================================================
+router.get('/snippets', requireAuth, async (req, res) => {
+  const blockType = trimStr(req.query.block_type, 40);
+  const params = [];
+  let sql = `SELECT id, name, block_type, content, created_at FROM block_snippets`;
+  if (blockType) { params.push(blockType); sql += ` WHERE block_type = $1`; }
+  sql += ` ORDER BY created_at DESC LIMIT 100`;
+  const rows = await many(sql, params);
+  res.json({ items: rows });
+});
+
+router.post('/snippets', requireAuth, async (req, res) => {
+  const b = req.body || {};
+  const name = trimStr(b.name, 120);
+  const blockType = trimStr(b.block_type, 40);
+  if (!name) return res.status(400).json({ error: 'name_required' });
+  if (!registry.getBlockType(blockType)) return res.status(400).json({ error: 'unknown_block_type' });
+  const content = (b.content && typeof b.content === 'object') ? b.content : {};
+  const r = await query(
+    `INSERT INTO block_snippets (name, block_type, content, created_by)
+     VALUES ($1, $2, $3, $4) RETURNING id`,
+    [name, blockType, JSON.stringify(content), req.user.id]
+  );
+  await recordAudit({ req, action: 'create', entity: 'block_snippet', entityId: r.rows[0].id, detail: { name, block_type: blockType } });
+  res.json({ id: r.rows[0].id, name, block_type: blockType, content });
+});
+
+router.delete('/snippets/:id', requireAuth, async (req, res) => {
+  const id = clamp(req.params.id, 1, 1e9, 0);
+  if (!id) return res.status(400).json({ error: 'invalid_id' });
+  await query('DELETE FROM block_snippets WHERE id = $1', [id]);
+  await recordAudit({ req, action: 'delete', entity: 'block_snippet', entityId: id });
+  res.json({ ok: true });
+});
+
+// Create a block from a snippet (place at end of page; reorder if needed)
+router.post('/from-snippet', requireAuth, async (req, res) => {
+  const b = req.body || {};
+  const pageId = clamp(b.page_id, 1, 1e9, 0);
+  const snippetId = clamp(b.snippet_id, 1, 1e9, 0);
+  if (!pageId || !snippetId) return res.status(400).json({ error: 'invalid_params' });
+  const snippet = await one('SELECT block_type, content FROM block_snippets WHERE id = $1', [snippetId]);
+  if (!snippet) return res.status(404).json({ error: 'snippet_not_found' });
+  const max = await one(`SELECT COALESCE(MAX(sort_order), -1)::int AS m FROM page_blocks WHERE page_id = $1`, [pageId]);
+  const sortOrder = (max ? max.m : -1) + 1;
+  const r = await query(
+    `INSERT INTO page_blocks (page_id, block_type, sort_order, content, is_visible)
+     VALUES ($1, $2, $3, $4, TRUE) RETURNING id`,
+    [pageId, snippet.block_type, sortOrder, JSON.stringify(snippet.content || {})]
+  );
+  await recordAudit({ req, action: 'create_from_snippet', entity: 'block', entityId: r.rows[0].id, detail: { snippet_id: snippetId } });
+  await bustPageCache();
+  res.json({
+    id: r.rows[0].id,
+    page_id: pageId,
+    block_type: snippet.block_type,
+    sort_order: sortOrder,
+    content: snippet.content,
+    is_visible: true,
+  });
+});
+
 module.exports = router;
