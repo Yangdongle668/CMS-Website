@@ -7,6 +7,32 @@
 <title>询盘 | 后台管理</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+<style>
+  /* Mail delivery pill — paired with mail_status from /api/inquiries. */
+  .mail-pill { display:inline-flex; align-items:center; gap:6px; padding:2px 9px; border-radius:999px; font-size:11px; font-weight:600; letter-spacing:.02em; }
+  .mail-pill::before { content:''; width:6px; height:6px; border-radius:50%; }
+  .mail-pill.sent     { background:#e7f7ec; color:#137333; } .mail-pill.sent::before     { background:#34a853; }
+  .mail-pill.pending  { background:#fff4e5; color:#a35200; } .mail-pill.pending::before  { background:#fa8c16; animation: mp-pulse 1.4s infinite; }
+  .mail-pill.sending  { background:#e6f4ff; color:#0958d9; } .mail-pill.sending::before  { background:#1677ff; animation: mp-pulse 1.4s infinite; }
+  .mail-pill.dead     { background:#fdecec; color:#a8071a; } .mail-pill.dead::before     { background:#cf1322; }
+  .mail-pill.none     { background:#f1f3f5; color:#6c757d; } .mail-pill.none::before     { background:#adb5bd; }
+  @keyframes mp-pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+  /* Top-of-list alarm banner when SMTP is failing. */
+  .mail-banner { display:flex; align-items:center; gap:12px; padding:12px 16px; margin:0 0 16px; background:#fff1f0; border:1px solid #ffa39e; border-radius:10px; color:#820014; font-size:13.5px; }
+  .mail-banner .icn { font-size:18px; }
+  .mail-banner .msg { flex:1; }
+  .mail-banner .msg strong { font-weight:700; }
+
+  /* Outbox sub-table inside the inquiry detail panel. */
+  .outbox { margin-top:14px; }
+  .outbox h3 { font-size:13px; margin:0 0 8px; }
+  .outbox table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  .outbox th, .outbox td { padding:8px 10px; text-align:left; border-bottom:1px solid var(--a-line); vertical-align:top; }
+  .outbox th { font-size:11px; color:var(--a-mute2); text-transform:uppercase; letter-spacing:.06em; font-weight:600; }
+  .outbox .err { color:#a8071a; font-size:11.5px; margin-top:4px; white-space:pre-wrap; word-break:break-word; max-width:380px; }
+  .outbox .kind-tag { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--a-mute2); }
+</style>
 </head>
 <body>
 <div data-admin-shell></div>
@@ -20,15 +46,16 @@
   shell.actions.innerHTML = `<a href="/api/inquiries/export/csv" class="btn btn--ghost btn--sm">导出 CSV</a>`;
 
   shell.content.innerHTML = `
+    <div id="mail-banner-slot"></div>
     <div class="toolbar">
       <div class="toolbar__filters">
         <input type="search" id="q" placeholder="搜索编号、邮箱、公司…"/>
         <select id="status">
           <option value="">全部状态</option>
-          <option value="new">New</option>
-          <option value="read">Read</option>
-          <option value="replied">Replied</option>
-          <option value="archived">archived</option>
+          <option value="new">未读</option>
+          <option value="read">已读</option>
+          <option value="replied">已回复</option>
+          <option value="archived">已归档</option>
           <option value="spam">标记垃圾</option>
         </select>
       </div>
@@ -36,7 +63,7 @@
     <div class="split">
       <div class="panel" style="padding:0;">
         <table class="table" id="inq-table">
-          <thead><tr><th>编号</th><th>公司</th><th>国家</th><th>状态</th><th>提交时间</th></tr></thead>
+          <thead><tr><th>编号</th><th>公司</th><th>国家</th><th>状态</th><th>邮件投递</th><th>提交时间</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -48,29 +75,110 @@
   const qInput = document.querySelector('#q');
   const statusInput = document.querySelector('#status');
 
+  const MAIL_LABEL = { sent: '已送达', pending: '排队中', sending: '发送中', dead: '失败', none: '无' };
+  function mailPill(s) {
+    const cls = ['sent','pending','sending','dead','none'].includes(s) ? s : 'none';
+    return `<span class="mail-pill ${cls}">${MAIL_LABEL[cls]}</span>`;
+  }
+
+  function renderBanner(q) {
+    const slot = document.getElementById('mail-banner-slot');
+    if (!slot || !q) { if (slot) slot.innerHTML = ''; return; }
+    const messages = [];
+    if (q.dead > 0)     messages.push(`<strong>${q.dead}</strong> 封邮件多次重试仍未投递`);
+    if (q.retrying > 0) messages.push(`<strong>${q.retrying}</strong> 封邮件正在重试`);
+    if (!messages.length) { slot.innerHTML = ''; return; }
+    slot.innerHTML = `
+      <div class="mail-banner">
+        <span class="icn">⚠️</span>
+        <div class="msg">SMTP 状态异常：${messages.join('，')}。检查 <code>.env</code> 里的 SMTP 凭据，或在询盘详情里手动重发。</div>
+      </div>`;
+  }
+
   async function load() {
     const params = new URLSearchParams();
     if (qInput.value) params.set('q', qInput.value);
     if (statusInput.value) params.set('status', statusInput.value);
     params.set('limit', '50');
-    const { items } = await api('/api/inquiries?' + params.toString());
+    const { items, mailQueue } = await api('/api/inquiries?' + params.toString());
+    renderBanner(mailQueue);
     tbody.innerHTML = items.length ? items.map((i) => `
       <tr class="${i.status === 'new' ? 'is-unread' : ''}" data-id="${i.id}" style="cursor:pointer;">
         <td><span class="mono" style="font-weight:600;">${escapeHtml(i.reference)}</span></td>
         <td>${escapeHtml(i.company || i.full_name)}<div style="font-size:11.5px; color:var(--a-mute2);">${escapeHtml(i.email)}</div></td>
         <td>${escapeHtml(i.country || '-')}</td>
         <td><span class="pill pill--${i.status}">${i.status}</span></td>
+        <td>${mailPill(i.mail_status)}</td>
         <td>${formatDate(i.created_at)}</td>
       </tr>
-    `).join('') : '<tr><td colspan="5"><div class="empty">没有询盘。</div></td></tr>';
+    `).join('') : '<tr><td colspan="6"><div class="empty">没有询盘。</div></td></tr>';
 
     tbody.querySelectorAll('tr[data-id]').forEach((tr) => {
       tr.addEventListener('click', () => openDetail(tr.dataset.id));
     });
 
-    // If an id was passed in URL, open it
     const wantId = new URLSearchParams(location.search).get('id');
     if (wantId) openDetail(wantId);
+  }
+
+  function outboxKindLabel(k) {
+    return ({ inquiry_internal: '内部通知', inquiry_auto: '自动回复客户', gdpr_confirm: 'GDPR 确认', test: '测试邮件' })[k] || k;
+  }
+
+  async function renderOutbox(id, container) {
+    container.innerHTML = '<div class="outbox"><h3>邮件投递状态</h3><div style="font-size:12px; color:var(--a-mute2);">加载中…</div></div>';
+    let mails = [];
+    try {
+      const r = await api('/api/inquiries/' + id + '/mails');
+      mails = r.items || [];
+    } catch (err) {
+      container.innerHTML = `<div class="outbox"><h3>邮件投递状态</h3><div style="font-size:12px; color:#a8071a;">加载失败：${escapeHtml(err.message)}</div></div>`;
+      return;
+    }
+    if (!mails.length) {
+      container.innerHTML = '<div class="outbox"><h3>邮件投递状态</h3><div style="font-size:12px; color:var(--a-mute2);">没有相关邮件记录。</div></div>';
+      return;
+    }
+    container.innerHTML = `
+      <div class="outbox">
+        <h3>邮件投递状态（${mails.length}）</h3>
+        <table>
+          <thead><tr><th>类型</th><th>收件人</th><th>状态</th><th>尝试</th><th>时间</th><th></th></tr></thead>
+          <tbody>
+            ${mails.map((m) => `
+              <tr>
+                <td>${escapeHtml(outboxKindLabel(m.kind))}<div class="kind-tag">${escapeHtml(m.kind)}</div></td>
+                <td style="word-break:break-all;">${escapeHtml(m.to_addr)}</td>
+                <td>
+                  ${mailPill(m.status === 'sent' ? 'sent' : (m.status === 'dead' ? 'dead' : (m.status === 'sending' ? 'sending' : 'pending')))}
+                  ${m.last_error ? `<div class="err">${escapeHtml(m.last_error)}</div>` : ''}
+                </td>
+                <td>${m.attempts}/${m.max_attempts}</td>
+                <td>${m.sent_at ? '已发于 ' + formatDate(m.sent_at) : (m.status === 'pending' ? '下次 ' + formatDate(m.next_attempt_at) : formatDate(m.updated_at))}</td>
+                <td>
+                  ${m.status !== 'sending' ? `<button class="btn btn--sm btn--ghost" data-resend-mail="${m.id}">重发</button>` : ''}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    container.querySelectorAll('[data-resend-mail]').forEach((b) => {
+      b.addEventListener('click', async () => {
+        b.disabled = true;
+        b.textContent = '排队中…';
+        try {
+          await api(`/api/inquiries/${id}/mails/${b.dataset.resendMail}/resend`, { method: 'POST' });
+          toast('已重新加入发送队列', 'success');
+          await renderOutbox(id, container);
+          load();
+        } catch (err) {
+          toast('重发失败：' + err.message, 'error');
+          b.disabled = false;
+          b.textContent = '重发';
+        }
+      });
+    });
   }
 
   async function openDetail(id) {
@@ -96,6 +204,7 @@
       </div>
       <h3 style="font-size:13px; margin-top:18px;">内容</h3>
       <div style="background:#fff; border:1px solid var(--a-line); border-radius:8px; padding:14px; white-space:pre-wrap; font-size:13.5px;">${escapeHtml(inquiry.message)}</div>
+      <div id="mail-outbox-slot"></div>
       <h3 style="font-size:13px; margin-top:18px;">内部备注</h3>
       <textarea id="notes" style="width:100%; min-height:80px; border:1px solid var(--a-line); border-radius:8px; padding:10px; font-size:13.5px;">${escapeHtml(inquiry.notes || '')}</textarea>
       <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
@@ -121,12 +230,13 @@
       toast('备注已保存', 'success');
     });
     panel.querySelector('[data-delete]').addEventListener('click', async () => {
-      if (!confirm('删除 this inquiry? Soft-deleted records are removed permanently after the retention window.')) return;
+      if (!confirm('确认删除此询盘？软删除保留期过后会彻底清除。')) return;
       await api('/api/inquiries/' + id, { method: 'DELETE' });
       toast('询盘已删除', 'success');
       panel.style.display = 'none';
       load();
     });
+    renderOutbox(id, document.getElementById('mail-outbox-slot'));
   }
 
   qInput.addEventListener('input', () => { clearTimeout(window.__qt); window.__qt = setTimeout(load, 250); });

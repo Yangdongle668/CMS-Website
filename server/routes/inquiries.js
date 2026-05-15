@@ -176,16 +176,28 @@ router.get('/', requireAuth, async (req, res) => {
   }
   params.push(limit);
   params.push(offset);
+  // Aggregate the mail_outbox state per inquiry directly in the list query
+  // so the admin row can show a delivery pill without a per-row round-trip.
   const rows = await many(
-    `SELECT id, reference, company, full_name, email, phone, country, product_categories,
-            capacity_need, annual_volume, application, source_page, status, created_at
-     FROM inquiries WHERE ${where.join(' AND ')}
-     ORDER BY created_at DESC
+    `SELECT inq.id, inq.reference, inq.company, inq.full_name, inq.email, inq.phone, inq.country,
+            inq.product_categories, inq.capacity_need, inq.annual_volume, inq.application,
+            inq.source_page, inq.status, inq.created_at,
+            COALESCE((
+              SELECT CASE
+                WHEN bool_or(status = 'dead')    THEN 'dead'
+                WHEN bool_or(status = 'pending') THEN 'pending'
+                WHEN bool_or(status = 'sending') THEN 'sending'
+                WHEN count(*) > 0                THEN 'sent'
+                ELSE 'none'
+              END FROM mail_outbox WHERE inquiry_id = inq.id
+            ), 'none') AS mail_status
+     FROM inquiries inq WHERE ${where.join(' AND ').replace(/\b(is_deleted|status|email|company|full_name|reference)\b/g, 'inq.$1')}
+     ORDER BY inq.created_at DESC
      LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params
   );
   const total = await one(
-    `SELECT count(*)::int AS n FROM inquiries WHERE ${where.join(' AND ')}`,
+    `SELECT count(*)::int AS n FROM inquiries inq WHERE ${where.join(' AND ').replace(/\b(is_deleted|status|email|company|full_name|reference)\b/g, 'inq.$1')}`,
     params.slice(0, params.length - 2)
   );
   const stats = await one(
@@ -195,7 +207,15 @@ router.get('/', requireAuth, async (req, res) => {
        count(*) FILTER (WHERE created_at > now() - interval '7 days')::int AS week
      FROM inquiries WHERE is_deleted = FALSE`
   );
-  res.json({ items: rows, total: total ? total.n : 0, stats, limit, offset });
+  // Surface mail queue alarms so the inquiry list can show an SMTP-broken banner.
+  const mailQueue = await one(
+    `SELECT
+       count(*) FILTER (WHERE status = 'dead')::int    AS dead,
+       count(*) FILTER (WHERE status = 'pending'
+                          AND attempts > 0)::int       AS retrying
+     FROM mail_outbox WHERE created_at > now() - interval '30 days'`
+  );
+  res.json({ items: rows, total: total ? total.n : 0, stats, mailQueue, limit, offset });
 });
 
 router.get('/:id', requireAuth, async (req, res) => {
