@@ -7,7 +7,7 @@ function signToken(user) {
   return jwt.sign(
     { sub: user.id, email: user.email, role: user.role, name: user.name },
     process.env.JWT_SECRET || 'dev-secret',
-    { expiresIn: process.env.JWT_EXPIRES_IN || '12h' }
+    { expiresIn: process.env.JWT_EXPIRES_IN || '4h' }
   );
 }
 
@@ -20,7 +20,7 @@ function setAuthCookie(res, token) {
     httpOnly: true,
     sameSite: 'lax',
     secure: useSecure,
-    maxAge: 1000 * 60 * 60 * 12,
+    maxAge: 1000 * 60 * 60 * 4,    // matches the JWT expiry above
     path: '/',
   });
 }

@@ -41,6 +41,7 @@
       }
       const err = new Error((json && json.error) || ('HTTP ' + res.status));
       err.status = res.status;
+      err.detail = json || null;
       throw err;
     }
     return json;
