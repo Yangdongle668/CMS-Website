@@ -80,9 +80,17 @@
       location.href = next && next.startsWith('/admin/') ? next : '/admin/index.html';
     } catch (err) {
       status.style.color = 'var(--a-danger)';
-      const msg = err.message === 'invalid_credentials' ? '邮箱或密码不正确。'
-        : err.message === 'password_too_short' ? '首次创建管理员密码至少需要 8 位。'
-        : '登录失败：' + err.message;
+      let msg;
+      if (err.message === 'invalid_credentials') msg = '邮箱或密码不正确。';
+      else if (err.message === 'password_too_short') msg = '首次创建管理员密码至少需要 8 位。';
+      else if (err.message === 'account_locked') {
+        // err.detail.seconds is set by /api/auth/login when the lockout ladder triggers.
+        const secs = (err.detail && parseInt(err.detail.seconds, 10)) || 300;
+        const mins = Math.max(1, Math.ceil(secs / 60));
+        msg = `账号已临时锁定，请 ${mins} 分钟后再试。如忘记密码请联系管理员。`;
+      }
+      else if (err.message === 'too_many_attempts') msg = '尝试次数太多，请稍后再试。';
+      else msg = '登录失败：' + err.message;
       status.textContent = msg;
     } finally {
       submitBtn.disabled = false;

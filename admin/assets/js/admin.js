@@ -45,6 +45,7 @@
       }
       const err = new Error((json && json.error) || ('HTTP ' + res.status));
       err.status = res.status;
+      err.detail = json || null;        // expose full body so callers can show "locked for N min" etc.
       throw err;
     }
     return json;
