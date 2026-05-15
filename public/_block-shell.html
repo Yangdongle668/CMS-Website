@@ -3,11 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- Title / meta are filled in by client-side hydration from /api/pages/by-slug/<slug>.
-     A safe placeholder is shown while the request is in flight. -->
+<!-- The server injects title / meta / og / canonical at the marker below
+     before sending this shell, so social-card bots see real values without
+     having to run JS. If the marker isn't replaced (shell served raw),
+     these placeholders are still safe defaults. -->
 <title>Loading…</title>
 <meta name="description" content="">
-<link rel="stylesheet" href="/styles.css?v=21">
+<!--META-->
+<link rel="stylesheet" href="/styles.css?v=22">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -41,9 +44,9 @@
 <div id="footer-mount"></div>
 <div id="sidemenu-mount"></div>
 
-<script src="/render.js?v=21"></script>
-<script src="/partials.js?v=21"></script>
-<script src="/script.js?v=21"></script>
+<script src="/render.js?v=22"></script>
+<script src="/partials.js?v=22"></script>
+<script src="/script.js?v=22"></script>
 
 <script>
 (function () {

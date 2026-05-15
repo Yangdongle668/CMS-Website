@@ -166,6 +166,12 @@ app.use(
 // (a published pages row should win over the generic _template.html fallback
 // for the same URL).
 const blockShellPath = path.join(ROOT, 'public', '_block-shell.html');
+let blockShellTemplate = null;   // cached file contents
+function loadShellTemplate() {
+  if (blockShellTemplate == null) blockShellTemplate = fs.readFileSync(blockShellPath, 'utf8');
+  return blockShellTemplate;
+}
+
 const slugLookupCache = new Map();              // slug -> { has, expires }
 const SLUG_CACHE_MS = 60 * 1000;
 async function hasBlockPage(slug) {
@@ -195,6 +201,75 @@ function invalidateSlugCache(slug) {
 }
 app.locals.invalidateSlugCache = invalidateSlugCache;
 
+// Server-side meta injection. The block-shell is otherwise a pure
+// client-render shell, but social-card / OG / canonical tags MUST be in the
+// initial HTML because LinkedIn / Twitter / Slack bots don't execute JS.
+// We read the page row (already fetched for hasBlockPage indirectly), then
+// substitute a marker block in the shell with the per-page meta. The shell
+// template includes <!--META--> as the substitution point.
+function htmlEscape(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+function findFirstHeroImage(blocks) {
+  if (!Array.isArray(blocks)) return '';
+  for (const b of blocks) {
+    if (!b || !b.data) continue;
+    if ((b.type === 'hero' || b.type === 'page-hero') && b.data.image) return String(b.data.image);
+  }
+  return '';
+}
+async function serveBlockShell(req, res, slug) {
+  // We refetch the page row here because hasBlockPage only returned a boolean.
+  // Cheap because the row is small and indexed by slug.
+  let row = null;
+  try {
+    const { one } = require('./db/client');
+    row = await one(
+      `SELECT slug, title, meta_title, meta_description, hero_image, blocks
+         FROM pages
+        WHERE slug = $1 AND status = 'published'`,
+      [slug]
+    );
+  } catch (err) {
+    console.error('[block-shell] page fetch failed', slug, err.message);
+  }
+  if (!row) return res.sendFile(blockShellPath); // graceful: serve raw shell so client can show 404
+
+  const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
+  const path = slug === 'home' ? '/' : '/' + slug.replace(/\/index$/, '/');
+  const canonical = publicUrl ? publicUrl + path : path;
+  const title = row.meta_title || row.title || 'Acme Battery';
+  const desc  = row.meta_description || '';
+  const image = row.hero_image || findFirstHeroImage(row.blocks) || '';
+  const siteName = process.env.SITE_NAME || 'Acme Battery';
+
+  const metaHtml = [
+    `<title>${htmlEscape(title)}</title>`,
+    `<meta name="description" content="${htmlEscape(desc)}">`,
+    `<link rel="canonical" href="${htmlEscape(canonical)}">`,
+    `<meta property="og:type" content="website">`,
+    `<meta property="og:site_name" content="${htmlEscape(siteName)}">`,
+    `<meta property="og:title" content="${htmlEscape(title)}">`,
+    `<meta property="og:description" content="${htmlEscape(desc)}">`,
+    image ? `<meta property="og:image" content="${htmlEscape(image)}">` : '',
+    `<meta property="og:url" content="${htmlEscape(canonical)}">`,
+    `<meta name="twitter:card" content="${image ? 'summary_large_image' : 'summary'}">`,
+    `<meta name="twitter:title" content="${htmlEscape(title)}">`,
+    `<meta name="twitter:description" content="${htmlEscape(desc)}">`,
+    image ? `<meta name="twitter:image" content="${htmlEscape(image)}">` : '',
+  ].filter(Boolean).join('\n');
+
+  const shell = loadShellTemplate()
+    .replace(/<title>[^<]*<\/title>/, '')                       // strip placeholder title
+    .replace(/<meta name="description"[^>]*>/, '')              // strip placeholder description
+    .replace('<!--META-->', metaHtml);
+
+  res.setHeader('Cache-Control', 'no-cache');
+  res.type('html').send(shell);
+}
+
 // ----- Pretty URLs for products / blog / applications -----
 //   1. specific static file (legacy hand-coded pages)
 //   2. published pages row with blocks (operator-edited via /admin/pages.html)
@@ -216,7 +291,7 @@ app.get(['/products/:slug', '/applications/:slug', '/blog/:slug'], async (req, r
   // operator who's migrated a page via /admin/pages.html overrides the
   // generic template even though both reference the same URL.
   const pageSlug = `${dir}/${slug.replace(/\.html$/i, '')}`;
-  if (await hasBlockPage(pageSlug)) return res.sendFile(blockShellPath);
+  if (await hasBlockPage(pageSlug)) return serveBlockShell(req, res, pageSlug);
   // API-driven template fallback
   const tpl = path.join(ROOT, 'public', dir, '_template.html');
   if (fs.existsSync(tpl)) return res.sendFile(tpl);
@@ -249,7 +324,7 @@ app.get('*', async (req, res, next) => {
 
   const slug = pathToSlug(req.path);
   const has = await hasBlockPage(slug);
-  if (has) return res.sendFile(blockShellPath);
+  if (has) return serveBlockShell(req, res, slug);
   return next();
 });
 

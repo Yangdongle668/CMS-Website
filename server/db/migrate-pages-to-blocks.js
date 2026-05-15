@@ -751,6 +751,172 @@ function solutionsMassProductionBlocks() {
 }
 
 // =============================================================================
+//  HOMEPAGE
+// =============================================================================
+
+function homeBlocks() {
+  return [
+    // 1. Hero — full-viewport with two CTAs.
+    blk('hero', {
+      image: 'https://images.unsplash.com/photo-1593642634443-44adaa06623a?w=1920&q=80',
+      title: 'Custom Batteries,<br>Engineered Precisely.',
+      subtitle: 'Lithium-polymer and lithium-ion solutions for AR/VR, medical, wearable and IoT devices.',
+      primary:   { label: 'Request a Quote',     url: '/contact.html' },
+      secondary: { label: 'Custom Capabilities', url: '/solutions/' },
+    }),
+    // 2. Trust strip — compliance badges across the top.
+    blk('trust-strip', {
+      label: 'Compliant with',
+      items: ['ISO 9001', 'UN 38.3', 'IEC 62133', 'CE', 'UL 1642', 'RoHS', 'REACH', 'MSDS'],
+    }),
+    // 3. Pillar grid — the three product lines.
+    blk('pillar-grid', {
+      background: 'light',
+      eyebrow: 'Product Lines',
+      title: 'Three pillar lines, one quality system.',
+      lead: 'Polymer pouch for thin form factors, custom-shaped polymer for non-standard envelopes, and cylindrical steel-shell for high-cycle applications — all manufactured under one ISO 9001 roof.',
+      cards: [
+        { image: 'https://images.unsplash.com/photo-1620455243023-2c80b3a02ee3?w=1200&q=80',
+          pill: 'Polymer Li-Po', title: 'Polymer Lithium Battery',
+          desc: 'Pouch cells from 30 mAh to 20 Ah. Standard catalogue and full custom — thin profiles, JST/Molex/FPC connectors, integrated PCM.',
+          specs: [
+            { value: '30 - 20,000', unit: 'mAh' },
+            { value: '≥ 500',       unit: 'cycles' },
+            { value: '0.4 mm',      unit: 'min thick' },
+          ],
+          link: '/products/polymer-lithium-battery', linkText: 'Explore the line →' },
+        { image: 'https://images.unsplash.com/photo-1592478411213-6153e4ebc07d?w=1200&q=80',
+          pill: 'Custom-Shape',  title: 'Custom-Shaped Polymer',
+          desc: 'Round, curved, stepped and ultra-thin polymer cells. Send a STEP model — we deliver a feasibility study in 5 working days.',
+          specs: [
+            { value: '20 - 8,000', unit: 'mAh' },
+            { value: 'R 25 mm',    unit: 'min radius' },
+            { value: '3.7 / 3.85', unit: 'V' },
+          ],
+          link: '/products/custom-shaped-polymer-lithium-battery', linkText: 'Start a custom project →' },
+        { image: 'https://images.unsplash.com/photo-1569466896818-335b1bedfcce?w=1200&q=80',
+          pill: 'Cylindrical', title: 'Cylindrical Steel-Shell',
+          desc: '14500, 18650, 21700, 26650, 32700 in INR (NMC) and IFR (LFP). Cells, welded packs and BMS-integrated modules.',
+          specs: [
+            { value: '1,500 - 6,500', unit: 'mAh' },
+            { value: '≥ 3,000',       unit: 'LFP cycles' },
+            { value: '30 A',          unit: 'peak' },
+          ],
+          link: '/products/cylindrical-steel-shell-lithium-battery', linkText: 'Compare formats →' },
+      ],
+    }),
+    // 4. Applications — Tesla-style horizontal slider.
+    blk('tesla-slider', {
+      background: 'grey',
+      eyebrow: 'Applications',
+      title: 'Powering the next generation of devices.',
+      lead: 'Each industry brings its own certifications, abuse profiles and lifecycle expectations — we engineer the cell around them. Swipe through to see where our cells live today.',
+      slides: [
+        { image: 'https://images.unsplash.com/photo-1592478411213-6153e4ebc07d?w=1600&q=80',
+          label: 'Application 01 · AR / VR Glasses', title: 'AR / VR',
+          subtitle: 'Ultra-thin cells for slim temples and headsets · 320 mAh @ 0.4 mm',
+          primaryCta: 'Explore Application', secondaryCta: 'Request a Quote',
+          link: '/applications/ar-vr' },
+        { image: 'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=1600&q=80',
+          label: 'Application 02 · Medical Devices', title: 'Medical',
+          subtitle: 'ISO 13485-aligned · IEC 60601 leakage · 5-yr shelf life',
+          primaryCta: 'Explore Application', secondaryCta: 'Start a Medical Project',
+          link: '/applications/medical' },
+        { image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1600&q=80',
+          label: 'Application 03 · Wearables', title: 'Wearables',
+          subtitle: 'Curved & shaped cells for watches, earbuds, rings · 25 - 600 mAh',
+          primaryCta: 'Explore Application', secondaryCta: 'Get a Quote',
+          link: '/applications/wearables' },
+        { image: 'https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=1600&q=80',
+          label: 'Application 04 · IoT Devices', title: 'IoT',
+          subtitle: 'Long-life cells for sensors, trackers, gateways · 5-yr shelf, <2% SD/mo',
+          primaryCta: 'Explore Application', secondaryCta: 'Get a Quote',
+          link: '/applications/iot' },
+      ],
+    }),
+    // 5. How we work — four numbered steps.
+    blk('steps-grid', {
+      background: 'grey',
+      eyebrow: 'How We Work',
+      title: 'From inquiry to delivery, in four steps.',
+      lead: 'Most projects from first call to first samples in 4-6 weeks. Mass production typically follows 8-10 weeks later, after qualification.',
+      steps: [
+        { num: '1', title: 'Tell us your specs', body: 'Capacity, dimensions, cycle life, certifications, target volume. NDA available before drawings exchange.', points: [] },
+        { num: '2', title: '5-day feasibility', body: 'Our cell engineers return a feasibility note: realistic capacity, cycle-life model, BOM cost, lead time.', points: [] },
+        { num: '3', title: 'Tooling & samples', body: 'Tooling and first-article samples in 25-35 days. UN 38.3 test summary shipped with samples.', points: [] },
+        { num: '4', title: 'Mass production', body: 'Serial-level traceability, SPC monitoring, IEC 62133 / CE / UL documentation. Air-shipping ready.', points: [] },
+      ],
+    }),
+    // 6. Manufacturing snapshot — image + paragraphs.
+    blk('content-split', {
+      background: 'light',
+      eyebrow: 'Manufacturing',
+      title: 'Korean and Japanese automation. ISO 9001 certified.',
+      subtitle: 'Three lines, one quality system.',
+      paragraphs: [
+        'Polymer Li-Po, custom-shaped Li-Po and cylindrical Li-Ion run on automated equipment with in-line OCV/IR/CCD inspection. Every cell is graded into A/B grades with serial-number traceability.',
+        'For medical and aerospace customers we operate a separate cleanroom assembly line with full ISO 13485 documentation.',
+      ],
+      image: 'https://images.unsplash.com/photo-1565514020179-026b92b84bb6?w=1000&q=80',
+      imagePosition: 'right',
+      imageAlt: 'Battery production line',
+      link: { label: 'Take the factory tour', url: '/about/factory' },
+    }),
+    // 7. Why us — animated stat strip on dark.
+    blk('stat-strip', {
+      dark: true,
+      eyebrow: 'Why us',
+      title: 'A battery partner, not just a supplier.',
+      stats: [
+        { value: '8',        unit: 'yrs', label: 'since 2018' },
+        { value: '100',      unit: '+',   label: 'team members' },
+        { value: '3',        unit: '',    label: 'tier-1 OEM programs' },
+        { value: 'ISO 9001', unit: '',    label: 'certified' },
+      ],
+    }),
+    // 8. Latest insights — blog grid hydrated from /api/articles.
+    blk('blog-grid', {
+      background: 'grey',
+      eyebrow: 'Latest Insights',
+      title: 'Engineering deep-dives from our cell team.',
+      lead: 'Hands-on guidance on chemistry selection, cell sizing, BMS design, certification and thermal management.',
+      source: 'latest',
+      limit: 3,
+      allLink: '/blog/',
+      allLinkText: 'Browse all insights →',
+    }),
+    // 9. Certifications wall.
+    blk('cert-wall', {
+      background: 'light',
+      eyebrow: 'Certifications',
+      title: 'Independently certified across formats and chemistries.',
+      lead: 'Each shipment carries a valid UN 38.3 test summary, MSDS and Certificate of Conformity. Additional reports on request.',
+      chips: ['ISO 9001', 'ISO 13485', 'UN 38.3', 'IEC 62133-1', 'IEC 62133-2', 'CE', 'UL 1642', 'UL 2054', 'KC 62133', 'PSE', 'RoHS', 'REACH', 'MSDS'],
+    }),
+    // 10. FAQ teaser — 5 questions.
+    blk('faq', {
+      background: 'grey',
+      eyebrow: 'Common Questions',
+      title: 'Answers from the engineering team.',
+      items: [
+        { q: 'What is the typical MOQ?',                       a: 'Custom designs typically start at 3,000 pcs. Catalogue cells start at 500 pcs. For NPI samples we accept 50-200 pcs.' },
+        { q: 'How long from RFQ to first sample?',             a: 'Catalogue items: 3-5 days. Custom designs: 25-35 days from drawing freeze to first samples (includes tooling).' },
+        { q: 'Are your batteries certified for air shipping?', a: 'Yes. Every shipment includes a valid UN 38.3 test summary. We air-ship from Hong Kong / Shenzhen with proper IATA labelling and packing.' },
+        { q: 'Do you sign NDAs?',                              a: 'Routinely. We sign mutual NDAs before any drawings or BOM exchange.' },
+        { q: 'Can you support medical-device programs?',       a: 'Yes — we operate an ISO 13485 documented line with biocompatibility-aligned materials, leakage testing per IEC 60601, and full DHF support.' },
+      ],
+    }),
+    // 11. CTA band — close the page.
+    blk('cta-band', {
+      background: 'dark',
+      title: 'Have a project in mind?',
+      subtitle: 'Share your device specs — we will respond with a feasibility assessment within one business day.',
+      button: { label: 'Start a Conversation', url: '/contact.html' },
+    }),
+  ];
+}
+
+// =============================================================================
 //  FAQ
 // =============================================================================
 
@@ -1024,6 +1190,8 @@ function legalBlocks() {
 // =============================================================================
 
 const MIGRATIONS = {
+  'home':                     homeBlocks,
+
   'about/index':              aboutIndexBlocks,
   'about/profile':            aboutProfileBlocks,
   'about/factory':            aboutFactoryBlocks,
