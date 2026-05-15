@@ -91,9 +91,18 @@
   .sortable-drag { background: #fff !important; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
 
   /* Preview iframe overlay */
-  .pb-preview-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.6); z-index: 200; display: flex; align-items: center; justify-content: center; }
-  .pb-preview-overlay__close { position: absolute; top: 14px; right: 14px; background: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
-  .pb-preview-iframe { width: 92%; height: 90%; background: #fff; border: none; border-radius: 10px; }
+  .pb-preview-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.7); z-index: 200; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
+  .pb-preview-toolbar { display: flex; gap: 8px; align-items: center; background: #fff; padding: 8px; border-radius: 999px; box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
+  .pb-preview-toolbar button { background: transparent; border: 1px solid transparent; padding: 6px 14px; font-size: 12.5px; border-radius: 999px; cursor: pointer; color: #475569; }
+  .pb-preview-toolbar button:hover { background: #f1f5f9; }
+  .pb-preview-toolbar button.is-active { background: #0b3a82; color: #fff; }
+  .pb-preview-toolbar .pb-preview-close { color: #b91c1c; }
+  .pb-preview-frame-wrap {
+    background: #fff; border-radius: 10px; box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+    transition: width 0.25s ease, height 0.25s ease;
+    overflow: hidden;
+  }
+  .pb-preview-iframe { width: 100%; height: 100%; background: #fff; border: none; display: block; }
 </style>
 </head>
 <body>
@@ -541,7 +550,12 @@
     });
   }
 
-  // ----- Preview button -----
+  // ----- Preview button with device toggle -----
+  const DEVICE_SIZES = {
+    mobile:  { w: 390,  h: 740,  label: '📱 手机' },
+    tablet:  { w: 820,  h: 900,  label: '◽ 平板' },
+    desktop: { w: 1280, h: 800,  label: '🖥 桌面' },
+  };
   document.getElementById('preview-btn').addEventListener('click', () => {
     if (!pageInfo || !pageInfo.slug) {
       toast('页面 slug 未知，无法预览', 'error');
@@ -550,10 +564,27 @@
     const overlay = document.createElement('div');
     overlay.className = 'pb-preview-overlay';
     overlay.innerHTML = `
-      <button class="pb-preview-overlay__close">关闭</button>
-      <iframe class="pb-preview-iframe" src="/${pageInfo.slug}"></iframe>
+      <div class="pb-preview-toolbar">
+        ${Object.entries(DEVICE_SIZES).map(([k, v]) =>
+          `<button data-device="${k}" class="${k === 'desktop' ? 'is-active' : ''}">${v.label}</button>`).join('')}
+        <button class="pb-preview-close" data-close>✕ 关闭</button>
+      </div>
+      <div class="pb-preview-frame-wrap" style="width:${DEVICE_SIZES.desktop.w}px; height:${DEVICE_SIZES.desktop.h}px; max-width:96vw; max-height:80vh;">
+        <iframe class="pb-preview-iframe" src="/${pageInfo.slug}"></iframe>
+      </div>
     `;
-    overlay.querySelector('.pb-preview-overlay__close').addEventListener('click', () => overlay.remove());
+
+    const wrap = overlay.querySelector('.pb-preview-frame-wrap');
+    overlay.querySelectorAll('[data-device]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const dev = DEVICE_SIZES[btn.dataset.device];
+        if (!dev) return;
+        overlay.querySelectorAll('[data-device]').forEach((b) => b.classList.toggle('is-active', b === btn));
+        wrap.style.width = dev.w + 'px';
+        wrap.style.height = dev.h + 'px';
+      });
+    });
+    overlay.querySelector('[data-close]').addEventListener('click', () => overlay.remove());
     overlay.addEventListener('click', (ev) => { if (ev.target === overlay) overlay.remove(); });
     document.body.appendChild(overlay);
   });
