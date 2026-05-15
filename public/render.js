@@ -162,6 +162,33 @@
 </section>`;
     },
 
+    // ---- PAGE-HERO -----------------------------------------------------------
+    // Inner-page hero: ~half-height (not full viewport), breadcrumbs row,
+    // centered title + lead. Used by About / Applications / Solutions / Legal.
+    'page-hero'(d) {
+      d = d || {};
+      const img = safeImg(d.image);
+      const bg = img
+        ? `style="background-image: url('${h(bgUrl(img))}'); background-image: ${bgImageSet(img)};"`
+        : '';
+      const crumbs = arr(d.breadcrumbs);
+      return `
+<section class="page-hero" ${bg}>
+  ${crumbs.length ? `<div class="breadcrumbs">
+    ${crumbs.map((c, i) => {
+      const isLast = i === crumbs.length - 1;
+      const label = h(c.label || '');
+      const url = c.url ? h(safeUrl(c.url)) : '';
+      return (isLast || !url)
+        ? `<span>${label}</span>`
+        : `<a href="${url}">${label}</a><span>/</span>`;
+    }).join('')}
+  </div>` : ''}
+  <h1>${htitle(d.title || '')}</h1>
+  ${d.subtitle ? `<p>${h(d.subtitle)}</p>` : ''}
+</section>`;
+    },
+
     // ---- TRUST-STRIP --------------------------------------------------------
     'trust-strip'(d) {
       d = d || {};

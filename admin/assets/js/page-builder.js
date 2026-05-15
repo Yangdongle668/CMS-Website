@@ -30,6 +30,7 @@
   -------------------------------------------------------------------------- */
   const BLOCK_TYPES = {
     'hero':         { name: 'Hero 大图标题',   icon: '🖼',  desc: '满屏背景图 + 主标题 + 副标题 + 两个按钮',     enabled: true },
+    'page-hero':    { name: '内页 Hero',        icon: '▤',  desc: '半屏带面包屑的内页标题区',                    enabled: true },
     'trust-strip':  { name: '信任徽章带',       icon: '✓',  desc: '一排认证 / 客户标识',                       enabled: true },
     'pillar-grid':  { name: '三大产品线卡片',   icon: '◉◉◉', desc: '3 张产品线卡片，带图、标签、规格',          enabled: true },
     'tesla-slider': { name: '横向应用滑动卡',   icon: '⇄',  desc: 'Tesla 风格横向滑动应用展示',               enabled: true },
@@ -55,6 +56,16 @@
       subtitle: '副标题：用一句话告诉访客你能解决什么问题。',
       primary: { label: 'Request a Quote', url: '/contact.html' },
       secondary: { label: '了解更多', url: '#' },
+    }),
+    'page-hero': () => ({
+      image: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=1920&q=80',
+      title: '内页标题',
+      subtitle: '副标题：用一两句话介绍本页面要讲什么。',
+      breadcrumbs: [
+        { label: 'Home', url: '/' },
+        { label: '当前栏目', url: '#' },
+        { label: '本页' },
+      ],
     }),
     'trust-strip': () => ({
       label: 'Compliant with',
@@ -602,6 +613,7 @@
     const n = (arr) => Array.isArray(arr) ? arr.length : 0;
     switch (b.type) {
       case 'hero':          return d.title || d.subtitle || '(空)';
+      case 'page-hero':     return d.title || d.subtitle || '(空)';
       case 'trust-strip':   return `${n(d.items)} 个标识 · ${d.label || ''}`;
       case 'pillar-grid':   return `${n(d.cards)} 张卡片 · ${d.title || ''}`;
       case 'tesla-slider':  return `${n(d.slides)} 张幻灯片 · ${d.title || ''}`;
@@ -1288,6 +1300,23 @@
       d.items = Array.isArray(d.items) ? d.items : [];
       fieldText(body, '左侧小标签', () => d.label, (v) => d.label = v, { hint: '例如 "Compliant with"。留空就只显示标识。' });
       fieldStringList(body, '标识列表', () => d.items, (arr) => d.items = arr, { placeholder: '例如 ISO 9001', addLabel: '+ 加一个标识' });
+    },
+
+    'page-hero': (body, block) => {
+      const d = block.data;
+      d.breadcrumbs = Array.isArray(d.breadcrumbs) ? d.breadcrumbs : [];
+      fieldImage(body, '背景图', () => d.image, (v) => d.image = v);
+      fieldText(body, 'H1 主标题', () => d.title, (v) => d.title = v);
+      fieldText(body, '副标题',   () => d.subtitle, (v) => d.subtitle = v, { textarea: true });
+      fieldObjectList(body, '面包屑', () => d.breadcrumbs, (arr) => d.breadcrumbs = arr, {
+        singular: '面包屑',
+        itemTitle: (c, i) => c.label || `层级 ${i + 1}`,
+        newItem: () => ({ label: '', url: '' }),
+        renderItem: (mount, c) => {
+          fieldText(mount, '文字',   () => c.label, (v) => c.label = v);
+          fieldLink(mount, '链接（最后一级留空）', () => c.url, (v) => c.url = v);
+        },
+      });
     },
 
     'pillar-grid': (body, block) => {

@@ -190,11 +190,17 @@ const blockShellPath = path.join(ROOT, 'public', '_block-shell.html');
 const slugLookupCache = new Map();              // slug -> { has, expires }
 const SLUG_CACHE_MS = 60 * 1000;
 function pathToSlug(p) {
+  // /                       -> home
+  // /about/                 -> about/index  (directory index)
+  // /about/profile          -> about/profile
+  // /about/profile.html     -> about/profile
+  // /privacy.html           -> privacy
+  const endsWithSlash = /\/$/.test(p) && p !== '/';
   let s = p.replace(/^\/+|\/+$/g, '');
   if (!s) return 'home';
   s = s.replace(/\.html$/i, '');
-  if (s.endsWith('/index')) s = s.slice(0, -6);
-  return s || 'home';
+  if (endsWithSlash) s = s + '/index';
+  return s;
 }
 async function hasBlockPage(slug) {
   const now = Date.now();
@@ -385,7 +391,11 @@ app.listen(PORT, () => {
   console.log(`[battery-cms] running on http://localhost:${PORT}`);
   autoMigrate()
     .catch((err) => console.error('[migrate] error:', err))
-    .finally(() => {
+    .finally(async () => {
+      // One-shot migration that seeds blocks for the legacy about/* pages.
+      // Idempotent — only writes rows whose blocks are still empty.
+      try { await require('./db/migrate-pages-to-blocks').run(); }
+      catch (err) { console.error('[migrate-blocks] error:', err); }
       try { require('./jobs/mail-worker').start(); }
       catch (err) { console.error('[mail-worker] failed to start:', err); }
       try { scheduleRetentionSweep(); }

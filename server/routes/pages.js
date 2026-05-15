@@ -17,8 +17,7 @@ const FIELDS = `
 // allowlist. Unknown types are dropped silently so a broken admin save can't
 // corrupt the page render.
 const ALLOWED_BLOCK_TYPES = new Set([
-  'hero', 'pillar-grid', 'cta-band',
-  // future block types added here as we build them out
+  'hero', 'page-hero', 'pillar-grid', 'cta-band',
   'trust-strip', 'tesla-slider', 'content-split', 'feat-grid', 'steps-grid',
   'stat-strip', 'spec-table', 'cert-wall', 'faq', 'blog-grid', 'quote-form', 'rich-text',
 ]);

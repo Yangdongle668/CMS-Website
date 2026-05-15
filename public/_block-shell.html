@@ -7,7 +7,7 @@
      A safe placeholder is shown while the request is in flight. -->
 <title>Loading…</title>
 <meta name="description" content="">
-<link rel="stylesheet" href="/styles.css?v=20">
+<link rel="stylesheet" href="/styles.css?v=21">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -41,9 +41,9 @@
 <div id="footer-mount"></div>
 <div id="sidemenu-mount"></div>
 
-<script src="/render.js?v=20"></script>
-<script src="/partials.js?v=20"></script>
-<script src="/script.js?v=20"></script>
+<script src="/render.js?v=21"></script>
+<script src="/partials.js?v=21"></script>
+<script src="/script.js?v=21"></script>
 
 <script>
 (function () {
@@ -56,17 +56,18 @@
     }[c]));
   }
 
-  // Convert a request path into a page slug:
+  // Convert a request path into a page slug — must match server/index.js.
   //   /                       -> home
-  //   /faq.html               -> faq
-  //   /solutions/storage      -> solutions/storage
+  //   /about/                 -> about/index    (directory index)
   //   /about/profile          -> about/profile
+  //   /faq.html               -> faq
   function pathToSlug(p) {
+    const endsWithSlash = /\/$/.test(p) && p !== '/';
     let s = p.replace(/^\/+|\/+$/g, '');
     if (!s) return 'home';
     s = s.replace(/\.html$/, '');
-    if (s.endsWith('/index')) s = s.slice(0, -6);
-    return s || 'home';
+    if (endsWithSlash) s = s + '/index';
+    return s;
   }
 
   function setMeta(page) {
