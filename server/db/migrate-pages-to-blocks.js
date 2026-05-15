@@ -336,13 +336,438 @@ function aboutTeamBlocks() {
   ];
 }
 
-// -----------------------------------------------------------------------------
+// =============================================================================
+//  APPLICATIONS
+// =============================================================================
+
+function applicationsIndexBlocks() {
+  return [
+    blk('page-hero', {
+      image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=1920&q=80',
+      title: 'Where we ship today.',
+      subtitle: 'Four core domains and a long tail of bespoke programs — every cell engineered for the device it lives in.',
+      breadcrumbs: [{ label: 'Home', url: '/' }, { label: 'Applications' }],
+    }),
+    blk('content-split', {
+      background: 'light',
+      eyebrow: 'How we approach a new application',
+      title: 'Each industry brings its own physics — and its own paperwork.',
+      paragraphs: [
+        'A cell that runs an AR headset is a different chemistry, geometry and certification stack from one that runs a glucose monitor. So we don\'t treat applications as a catalogue lookup — we treat them as engineering problems with regulatory constraints.',
+        'You send us the device, the duty cycle and the markets you\'re shipping into. We come back with a cell spec, a chemistry choice, a certification plan and a sample timeline.',
+      ],
+      image: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=1000&q=80',
+      imagePosition: 'right',
+    }),
+    blk('feat-grid', {
+      background: 'grey',
+      eyebrow: 'Core domains',
+      title: 'Four domains we ship into every week.',
+      columns: 4,
+      items: [
+        { icon: '▤', title: 'AR / VR Glasses',  desc: 'Ultra-thin cells that fit inside slim temples and headsets without adding weight.' },
+        { icon: '✚', title: 'Medical Devices',  desc: 'ISO 13485-aligned production for wearable monitors, hearing aids and pumps.' },
+        { icon: '◔', title: 'Wearables',        desc: 'Curved and shaped cells for smartwatches, TWS earbuds, fitness trackers and rings.' },
+        { icon: '◈', title: 'IoT Devices',      desc: 'Long-life cells for sensors, trackers and asset-monitoring edge devices.' },
+      ],
+    }),
+    blk('feat-grid', {
+      background: 'light',
+      eyebrow: 'Long tail',
+      title: 'Don\'t see your category?',
+      lead: 'These are programs we run regularly but don\'t front-page. Send a brief and we\'ll match you to the closest existing program.',
+      columns: 3,
+      items: [
+        { icon: '⌖', title: 'Drones & Robotics', desc: 'High-discharge LiPo packs (40-80C peak), thermal-runaway hardened pouches, BMS with CAN.' },
+        { icon: '⚡', title: 'Power Tools',       desc: '21700 NMC and LFP packs with bus-bar welded tabs, 18-60V configurations.' },
+        { icon: '⌬', title: 'E-Mobility',        desc: 'Pouch and prismatic packs for e-scooters, e-bikes and last-mile delivery vehicles.' },
+        { icon: '☢', title: 'Aerospace',         desc: 'UN 38.3 + DO-160 documentation. Custom 18650 and prismatic builds for UAVs and avionics.' },
+        { icon: '◉', title: 'Energy Storage',    desc: 'LFP modules for residential and small-commercial ESS, 5-15 kWh class.' },
+        { icon: '★', title: 'One-off bespoke',   desc: 'Send a CAD model and a duty cycle. We\'ll quote feasibility in 5 working days.' },
+      ],
+    }),
+    blk('cta-band', {
+      background: 'dark',
+      title: 'Tell us what you\'re building.',
+      subtitle: 'Programs start with a 30-minute engineering call. NDA in 24 hours so you can share drawings on day one.',
+      button: { label: 'Start a Conversation', url: '/contact.html' },
+    }),
+  ];
+}
+
+function applicationsArVrBlocks() {
+  return [
+    blk('page-hero', {
+      image: 'https://images.unsplash.com/photo-1592478411213-6153e4ebc07d?w=1920&q=80',
+      title: 'AR / VR Glasses',
+      subtitle: 'Ultra-thin polymer cells for slim temples and headsets — engineered to fit, not retrofitted.',
+      breadcrumbs: [{ label: 'Home', url: '/' }, { label: 'Applications', url: '/applications/' }, { label: 'AR / VR Glasses' }],
+    }),
+    blk('feat-grid', {
+      background: 'light',
+      eyebrow: 'Why teams pick us',
+      title: 'Slim temples, all-day runtime.',
+      columns: 2,
+      items: [
+        { icon: '◔', title: 'Ultra-thin pouch cells', desc: 'Down to 0.4 mm thick. Round, rectangular, stepped — sized to fit your existing temple geometry without forcing a redesign.' },
+        { icon: '🌡', title: 'Thermal-aware BMS',    desc: 'Skin-contact temperature kept under 41 °C even at peak draw. Active cell balancing for paired temple packs.' },
+        { icon: '⚡', title: 'Fast charging',         desc: '1.5C fast-charge profiles supported with cycle-life models showing < 5% SOH loss over 500 cycles.' },
+        { icon: '↻', title: 'High cycle count',      desc: '500+ cycles to 80% SOH at 0.5C / 1C protocols. Verified on 20-cell representative samples per build.' },
+      ],
+    }),
+    blk('spec-table', {
+      background: 'grey',
+      eyebrow: 'Typical specs',
+      title: 'What we usually ship into AR/VR.',
+      headers: ['Parameter', 'Range', 'Notes'],
+      rows: [
+        ['Capacity',       '120 - 800 mAh',         'Higher capacities for paired temple builds'],
+        ['Thickness',      '0.4 - 3.5 mm',          'Sub-1 mm builds available with NDA'],
+        ['Voltage',        '3.7 V / 3.85 V',         'High-voltage 4.45V chemistries on request'],
+        ['Form factor',    'Pouch (custom shape)',  'Round, stepped, notched all supported'],
+        ['Cycle life',     '500+ @ 0.5C / 0.5C',    'Tested per IEC 62133-2'],
+        ['Operating temp', '-10 °C to +55 °C',      'Skin-contact safe to 41 °C surface'],
+      ],
+    }),
+    blk('cta-band', {
+      background: 'dark',
+      title: 'Building the next pair of glasses?',
+      subtitle: 'Send a STEP file and the runtime target — we\'ll quote a custom cell in 5 working days.',
+      button: { label: 'Request a Quote', url: '/contact.html' },
+    }),
+  ];
+}
+
+function applicationsMedicalBlocks() {
+  return [
+    blk('page-hero', {
+      image: 'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=1920&q=80',
+      title: 'Medical Devices',
+      subtitle: 'ISO 13485-aligned production for wearable monitors, hearing aids, insulin pumps and single-use devices.',
+      breadcrumbs: [{ label: 'Home', url: '/' }, { label: 'Applications', url: '/applications/' }, { label: 'Medical Devices' }],
+    }),
+    blk('feat-grid', {
+      background: 'light',
+      eyebrow: 'Why medical OEMs pick us',
+      title: 'Built for audited supply chains.',
+      columns: 3,
+      items: [
+        { icon: '✓', title: 'ISO 13485 Alignment',     desc: 'Dedicated clean-room line, document control, CAPA and design-history-file support.' },
+        { icon: '✓', title: 'Biocompatible Materials', desc: 'USP Class VI casings and adhesives for skin-contact wearables.' },
+        { icon: '✓', title: 'Low Self-Discharge',      desc: '< 2% per month — critical for devices stocked on hospital shelves.' },
+        { icon: '✓', title: 'Long Shelf Life',         desc: 'Up to 5 years storage with controlled SOC and humidity.' },
+        { icon: '✓', title: 'Sterilization Compatible',desc: 'EtO-stable formulations for sterile-packaged single-use devices.' },
+        { icon: '✓', title: 'Serial-Level Traceability',desc: 'Every cell links to its process, materials and test data — retrievable 10 years later.' },
+      ],
+    }),
+    blk('content-split', {
+      background: 'grey',
+      eyebrow: 'What we power today',
+      title: 'Programs already in the field.',
+      paragraphs: [
+        'Continuous glucose monitors (CGM), wearable cardiac monitors, neurostimulator implants, smart inhalers and hearing aids — all running on cells we manufacture under one quality system.',
+        'For Class II and Class III devices we provide a Device Master File extract on request, plus annual change-control updates so your 510(k) or CE-MDR submission stays current.',
+      ],
+      image: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=1000&q=80',
+      imagePosition: 'right',
+    }),
+    blk('cta-band', {
+      background: 'dark',
+      title: 'Working on a medical program?',
+      subtitle: 'Send NDA + intended use. We\'ll come back with a chemistry recommendation, a certification path and a DMF excerpt.',
+      button: { label: 'Start a Medical Project', url: '/contact.html' },
+    }),
+  ];
+}
+
+function applicationsWearablesBlocks() {
+  return [
+    blk('page-hero', {
+      image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1920&q=80',
+      title: 'Wearables',
+      subtitle: 'Curved, shaped and round cells that bend around your product — not the other way around.',
+      breadcrumbs: [{ label: 'Home', url: '/' }, { label: 'Applications', url: '/applications/' }, { label: 'Wearables' }],
+    }),
+    blk('feat-grid', {
+      background: 'light',
+      eyebrow: 'Geometries we ship',
+      title: 'The cell bends around the product, not the other way.',
+      columns: 2,
+      items: [
+        { icon: '◯', title: 'Curved & shaped pouches', desc: 'R ≥ 25 mm bend radius, stepped profiles for slim wristbands, ring-shaped pouches for smart rings.' },
+        { icon: '●', title: 'Round coin cells for earbuds & rings', desc: 'LIR 1054 / 1254 / 1454 in stainless steel, reflow-compatible, 500-1000 cycles.' },
+      ],
+    }),
+    blk('content-split', {
+      background: 'grey',
+      eyebrow: 'Device-level guidance',
+      title: 'We help size the cell into the product.',
+      paragraphs: [
+        'Send us the enclosure CAD and the runtime target. We respond with a cell geometry that fits, a chemistry that hits your cycle-life requirement, and a feasibility note on charging speed + skin-contact temperature.',
+        'For TWS earbuds we typically pair a coin cell in each bud with a primary or secondary battery in the case. We can spec all three from one BOM.',
+      ],
+      image: 'https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?w=1000&q=80',
+      imagePosition: 'right',
+    }),
+    blk('cta-band', {
+      background: 'dark',
+      title: 'Send us the enclosure.',
+      subtitle: 'NDA in 24 hours. Feasibility note in 5 working days. Samples in 2-4 weeks.',
+      button: { label: 'Request a Quote', url: '/contact.html' },
+    }),
+  ];
+}
+
+function applicationsIotBlocks() {
+  return [
+    blk('page-hero', {
+      image: 'https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=1920&q=80',
+      title: 'IoT Devices',
+      subtitle: 'Long-life cells for sensors, trackers and asset-monitoring edge devices. From -40 °C cold chain to +85 °C industrial.',
+      breadcrumbs: [{ label: 'Home', url: '/' }, { label: 'Applications', url: '/applications/' }, { label: 'IoT Devices' }],
+    }),
+    blk('feat-grid', {
+      background: 'light',
+      eyebrow: 'Why IoT vendors pick us',
+      title: 'An IoT node is only as reliable as its cell.',
+      columns: 3,
+      items: [
+        { icon: '❆', title: 'Wide Temperature',  desc: '−40 °C to +85 °C variants for cold-chain, outdoor and industrial deployments.' },
+        { icon: '⌛', title: 'Long Shelf Life',   desc: 'Li-SOCl₂ primaries with 10+ year passive life. Li-MnO₂ for higher pulse current.' },
+        { icon: '⚡', title: 'High-Pulse Ready',  desc: 'Hybrid cell + supercap modules for LoRa, NB-IoT and LTE-M transmission bursts.' },
+        { icon: '↻', title: 'Rechargeable Options', desc: 'LiFePO4 and Li-ion for solar-harvesting or wired backup configurations.' },
+        { icon: '▣', title: 'IP67 / IP68 Packs', desc: 'Sealed enclosures with gas-vent membranes for outdoor and underground use.' },
+        { icon: '✓', title: 'UN 38.3 & ATEX',    desc: 'Certification support for hazardous-area, aerospace and maritime deployments.' },
+      ],
+    }),
+    blk('content-split', {
+      background: 'grey',
+      eyebrow: 'What we\'ve powered in the field',
+      title: 'Programs already running.',
+      paragraphs: [
+        'Asset trackers shipped on cargo containers across three continents, gas-meter modules in EU smart grids, cold-chain temperature loggers in vaccine distribution, NB-IoT water meters in municipal deployments.',
+        'For each we provide a Battery Life Calculator (BLC) — a sheet that takes your duty cycle as input and predicts cell life in months, so you can confidently quote service intervals to your end customer.',
+      ],
+      image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1000&q=80',
+      imagePosition: 'right',
+    }),
+    blk('cta-band', {
+      background: 'dark',
+      title: 'Specifying a node for 10 years in the field?',
+      subtitle: 'Send the duty cycle and the deployment environment — we\'ll come back with a cell, a pack design and a BLC tuned to your numbers.',
+      button: { label: 'Talk to an Engineer', url: '/contact.html' },
+    }),
+  ];
+}
+
+// =============================================================================
+//  SOLUTIONS
+// =============================================================================
+
+function solutionsIndexBlocks() {
+  return [
+    blk('page-hero', {
+      image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1920&q=80',
+      title: 'From napkin sketch to mass production.',
+      subtitle: 'Three connected stages — design support, prototyping, mass production — run by the same engineering team. No hand-offs.',
+      breadcrumbs: [{ label: 'Home', url: '/' }, { label: 'Custom Solutions ★' }],
+    }),
+    blk('feat-grid', {
+      background: 'light',
+      eyebrow: 'Stages',
+      title: 'How a custom program runs.',
+      columns: 3,
+      items: [
+        { icon: '①', title: 'Design Support',  desc: 'DFM proposal in 3 working days. Cell sizing, chemistry match, thermal simulation, BMS topology.' },
+        { icon: '②', title: 'Prototyping',     desc: 'A-, B- and C-sample stages on a dedicated low-MOQ line. 2-6 weeks per stage.' },
+        { icon: '③', title: 'Mass Production', desc: 'Same engineering team, same quality system. 4-6 weeks for first MP lot, 3-4 weeks for repeats.' },
+      ],
+    }),
+    blk('content-split', {
+      background: 'grey',
+      eyebrow: 'Speed',
+      title: 'What "fast" actually means.',
+      paragraphs: [
+        'DFM proposal: 3 working days. NDA: 24 hours. Feasibility analysis: 5 working days. A-samples: 2 weeks. B-samples: 3-4 weeks. C-samples: 4-6 weeks. First MP lot: 4-6 weeks after sample approval.',
+        'These are not best-case numbers — they\'re the typical lead times we hit across the customer book. If we can\'t hit them for your program, you\'ll know in the first feasibility note, not in week four.',
+      ],
+      image: 'https://images.unsplash.com/photo-1581092920534-2d9c0b1d3ebd?w=1000&q=80',
+      imagePosition: 'right',
+    }),
+    blk('feat-grid', {
+      background: 'light',
+      eyebrow: 'Why hardware leads stay',
+      title: 'The reasons hardware leads tell us they stayed.',
+      columns: 3,
+      items: [
+        { icon: '◈', title: 'One PM, end to end',         desc: 'The engineer who quotes the program also signs off the production routing. No hand-offs.' },
+        { icon: '◯', title: 'Pilot ≡ MP',                 desc: 'Pilot line uses the same winding, stacking and sealing equipment as MP — process parameters transfer cleanly.' },
+        { icon: '⇄', title: 'NDA in 1 day',               desc: 'Mutual NDA, no legal back-and-forth. We sign so you can send drawings and BOMs.' },
+        { icon: '△', title: 'Compliance owned by us',     desc: 'UN 38.3, IEC 62133, UL 1642, KC, CE — we file, you receive certificates with shipment.' },
+        { icon: '⌥', title: 'BOM transparency',           desc: 'You see actual cathode, anode, separator, electrolyte and casing suppliers. No black-box BOMs.' },
+        { icon: '✎', title: 'Datasheet within 5 days',    desc: 'Full datasheet (electrical, mechanical, abuse, transport) released with first samples — not after MP.' },
+      ],
+    }),
+    blk('cta-band', {
+      background: 'dark',
+      title: 'Start a custom program.',
+      subtitle: 'Send NDA + a spec sheet (or just a sketch). We\'ll come back within 24 hours with the first engineering questions.',
+      button: { label: 'Request a Quote', url: '/contact.html' },
+    }),
+  ];
+}
+
+function solutionsDesignBlocks() {
+  return [
+    blk('page-hero', {
+      image: 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=1920&q=80',
+      title: 'Design Support',
+      subtitle: 'A DFM proposal in 3 working days. Cell sizing, chemistry match, thermal simulation, BMS topology — all engineering-led.',
+      breadcrumbs: [{ label: 'Home', url: '/' }, { label: 'Custom Solutions', url: '/solutions/' }, { label: 'Design Support' }],
+    }),
+    blk('feat-grid', {
+      background: 'light',
+      eyebrow: 'What you get',
+      title: 'A DFM proposal in 3 working days.',
+      columns: 3,
+      items: [
+        { icon: '◈', title: 'Cell Sizing',         desc: 'Capacity, thickness and shape optimized against your duty cycle and runtime target.' },
+        { icon: '◯', title: 'Chemistry Match',     desc: 'LCO, NMC, LFP, HV, LTO — we select for your energy/power/cycle trade-off.' },
+        { icon: '⇄', title: 'Cycle-Life Model',    desc: 'Predicted SOH at 1, 2 and 3 years based on your real use pattern.' },
+        { icon: '△', title: 'Thermal Simulation',  desc: 'FEA for skin-contact limits, enclosure heat paths and fast-charge behaviour.' },
+        { icon: '⌥', title: 'BMS Topology',        desc: 'PCM, fuel gauge, smart-battery, wireless front-end — spec and reference design.' },
+        { icon: '✓', title: 'Compliance Pre-check',desc: 'IEC 62133, UN 38.3, FCC, KC — risks flagged before sample tooling.' },
+      ],
+    }),
+    blk('content-split', {
+      background: 'grey',
+      eyebrow: 'Inputs we need',
+      title: 'The shorter, the better.',
+      paragraphs: [
+        'Minimum: a CAD model (or sketch) of the cell cavity, a runtime target, and the markets you\'re shipping into. That\'s it.',
+        'Optional but speeds things up: existing cell datasheet you\'re replacing, charger spec, expected duty cycle (e.g. "30 minutes use, 2 hours rest, 8 hours charge"), and certification deadlines.',
+      ],
+      image: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=1000&q=80',
+      imagePosition: 'right',
+    }),
+    blk('cta-band', {
+      background: 'dark',
+      title: 'Send us what you have.',
+      subtitle: 'Even a Whatsapp screenshot of the enclosure is enough to start the conversation. DFM proposal back in 3 working days.',
+      button: { label: 'Start Design Support', url: '/contact.html' },
+    }),
+  ];
+}
+
+function solutionsPrototypingBlocks() {
+  return [
+    blk('page-hero', {
+      image: 'https://images.unsplash.com/photo-1581093588401-fbb62a02f120?w=1920&q=80',
+      title: 'Prototyping',
+      subtitle: 'A dedicated line for low-MOQ runs. A-, B- and C-sample stages with full data on every batch.',
+      breadcrumbs: [{ label: 'Home', url: '/' }, { label: 'Custom Solutions', url: '/solutions/' }, { label: 'Prototyping' }],
+    }),
+    blk('feat-grid', {
+      background: 'light',
+      eyebrow: 'Stages',
+      title: 'A dedicated line for low-MOQ runs.',
+      columns: 3,
+      items: [
+        { icon: 'A', title: 'A-sample: feasibility (2 weeks)', desc: 'Hand-built samples (10-30 pcs) to validate the geometry, chemistry and basic electrical envelope.' },
+        { icon: 'B', title: 'B-sample: integration (3-4 weeks)', desc: 'Pilot-line batch (50-200 pcs) with full BMS integration, charging profiles and abuse pre-checks.' },
+        { icon: 'C', title: 'C-sample: pre-production (4-6 weeks)', desc: 'MP-equivalent batch (500-1000 pcs) with full QC data, certification submission and DGR packaging.' },
+      ],
+    }),
+    blk('feat-grid', {
+      background: 'grey',
+      eyebrow: 'Data with every batch',
+      title: 'What ships with every batch.',
+      columns: 3,
+      items: [
+        { icon: '⎓', title: 'Capacity & IR',        desc: '100% of cells measured. Min/max/avg, σ, cpk on every batch.' },
+        { icon: '↺', title: 'Cycle Data',           desc: 'Representative samples cycled to provide expected SOH curves.' },
+        { icon: '🌡', title: 'Thermal Profile',      desc: 'Surface temperature under your real load, with thermal camera images.' },
+        { icon: '⚠', title: 'Abuse Pre-check',      desc: 'Sample-size overcharge, short-circuit and nail-penetration before certification submission.' },
+        { icon: '✎', title: 'Dimensional Report',   desc: 'CMM measurements against your CAD — tolerances on thickness, length, width.' },
+        { icon: '📎', title: 'Full Traceability',   desc: 'Every sample links to its winding machine, shift, materials lot and operator.' },
+      ],
+    }),
+    blk('cta-band', {
+      background: 'dark',
+      title: 'Ready to move from CAD to hardware?',
+      subtitle: 'Send specs + NDA. A-samples land on your bench in 2 weeks.',
+      button: { label: 'Start Prototyping', url: '/contact.html' },
+    }),
+  ];
+}
+
+function solutionsMassProductionBlocks() {
+  return [
+    blk('page-hero', {
+      image: 'https://images.unsplash.com/photo-1565043666747-69f6646db940?w=1920&q=80',
+      title: 'Mass Production',
+      subtitle: 'One facility, one certified line. The same engineering team that ran your prototype runs your MP — no hand-offs, no chemistry drift.',
+      breadcrumbs: [{ label: 'Home', url: '/' }, { label: 'Custom Solutions', url: '/solutions/' }, { label: 'Mass Production' }],
+    }),
+    blk('feat-grid', {
+      background: 'light',
+      eyebrow: 'How we ship at scale',
+      title: 'One facility, one certified line.',
+      columns: 3,
+      items: [
+        { icon: '▦', title: 'Automated Winding & Stacking', desc: 'Laser-aligned electrode stacking with inline CCD inspection.' },
+        { icon: '✓', title: '100% Electrical Screening',    desc: 'Every cell undergoes capacity, IR, OCV-drop and self-discharge aging before shipment.' },
+        { icon: '🔒', title: 'Cell-ID Traceability',         desc: 'Laser-engraved serial on every cell links to materials lot, line, shift, operator and test results.' },
+        { icon: '⚠', title: 'Safety Testing',               desc: 'Sample-based nail penetration, overcharge, thermal abuse, drop, crush and short-circuit.' },
+        { icon: '📦', title: 'DGR Packaging',                desc: 'UN 38.3-compliant packaging for air, sea and rail. DDP shipping available.' },
+        { icon: '⏱', title: 'Lead Time',                    desc: '4–6 weeks after sample approval for first MP lot. 3–4 weeks for repeat orders.' },
+      ],
+    }),
+    blk('cert-wall', {
+      background: 'grey',
+      eyebrow: 'Compliance',
+      title: 'Certifications that matter to your buyer.',
+      lead: 'Every shipment includes the matching certificate as part of the documentation pack. Reports available under NDA.',
+      chips: ['UN 38.3', 'IEC 62133-1', 'IEC 62133-2', 'UL 1642', 'UL 2054', 'CE', 'KC 62133', 'PSE Diamond', 'PSE Round', 'BIS', 'RoHS / REACH', 'MSDS / SDS'],
+    }),
+    blk('steps-grid', {
+      background: 'light',
+      eyebrow: 'Lifecycle',
+      title: 'How a typical MP program runs.',
+      steps: [
+        { num: '01', title: 'Pre-production', body: 'Final BOM lock, materials qualified at pilot scale, equipment changeover scheduled.', points: ['Final BOM frozen', 'CoA for every material lot', 'Equipment changeover plan'] },
+        { num: '02', title: 'Ramp-up',         body: 'First MP lot 5-10k pcs. Full statistical QC review before scaling up.', points: ['Cpk > 1.33 on every metric', 'Engineering PM on-site', 'Daily yield review'] },
+        { num: '03', title: 'Steady state',    body: '20k+ pcs per month. Quarterly review meeting + monthly metric dashboard.', points: ['Yield trends', 'Field failure rate', 'Cost-down opportunities'] },
+        { num: '04', title: 'End of life',     body: '6-month notice on chemistry transitions. Last-buy + spares-buy windows offered.', points: ['Last-buy + spares window', '5-year material retention', 'Migration plan to replacement chemistry'] },
+      ],
+    }),
+    blk('cta-band', {
+      background: 'dark',
+      title: 'Ready to lock in your MP supply?',
+      subtitle: 'Send your approved sample + forecast. We\'ll come back within 48 hours with a production schedule and a 12-month price commitment.',
+      button: { label: 'Lock in MP Capacity', url: '/contact.html' },
+    }),
+  ];
+}
+
+// =============================================================================
 
 const MIGRATIONS = {
-  'about/index':   aboutIndexBlocks,
-  'about/profile': aboutProfileBlocks,
-  'about/factory': aboutFactoryBlocks,
-  'about/team':    aboutTeamBlocks,
+  'about/index':              aboutIndexBlocks,
+  'about/profile':            aboutProfileBlocks,
+  'about/factory':            aboutFactoryBlocks,
+  'about/team':               aboutTeamBlocks,
+
+  'applications/index':       applicationsIndexBlocks,
+  'applications/ar-vr':       applicationsArVrBlocks,
+  'applications/medical':     applicationsMedicalBlocks,
+  'applications/wearables':   applicationsWearablesBlocks,
+  'applications/iot':         applicationsIotBlocks,
+
+  'solutions/index':          solutionsIndexBlocks,
+  'solutions/design':         solutionsDesignBlocks,
+  'solutions/prototyping':    solutionsPrototypingBlocks,
+  'solutions/mass-production': solutionsMassProductionBlocks,
 };
 
 async function run() {

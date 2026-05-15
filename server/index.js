@@ -161,47 +161,13 @@ app.use(
   })
 );
 
-// ----- Pretty URLs for products / blog / applications -----
-app.get(['/products/:slug', '/applications/:slug', '/blog/:slug'], (req, res, next) => {
-  const segments = req.path.split('/').filter(Boolean);
-  const dir = segments[0];
-  const slug = segments[1];
-  if (!slug) return next();
-  const candidates = [
-    path.join(ROOT, 'public', dir, `${slug}.html`),
-    path.join(ROOT, 'public', dir, slug, 'index.html'),
-  ];
-  for (const f of candidates) {
-    if (fs.existsSync(f)) return res.sendFile(f);
-  }
-  // Fallback to template that fetches via API
-  const tpl = path.join(ROOT, 'public', dir, '_template.html');
-  if (fs.existsSync(tpl)) return res.sendFile(tpl);
-  return next();
-});
-
-// ----- Block-driven pages -----
-// Anything that wasn't matched by static files / pretty product URLs and looks
-// like a regular page request is checked against the `pages` table. If we find
-// a row with non-empty blocks, serve the block shell — the client fetches the
-// row again via /api/pages/by-slug/<slug> and renders the blocks. Cached
-// briefly so we don't hit Postgres on every 404 attempt.
+// ----- Block-driven pages: shared lookup + cache -----
+// Helpers defined here so the pretty-URL handler below can also consult them
+// (a published pages row should win over the generic _template.html fallback
+// for the same URL).
 const blockShellPath = path.join(ROOT, 'public', '_block-shell.html');
 const slugLookupCache = new Map();              // slug -> { has, expires }
 const SLUG_CACHE_MS = 60 * 1000;
-function pathToSlug(p) {
-  // /                       -> home
-  // /about/                 -> about/index  (directory index)
-  // /about/profile          -> about/profile
-  // /about/profile.html     -> about/profile
-  // /privacy.html           -> privacy
-  const endsWithSlash = /\/$/.test(p) && p !== '/';
-  let s = p.replace(/^\/+|\/+$/g, '');
-  if (!s) return 'home';
-  s = s.replace(/\.html$/i, '');
-  if (endsWithSlash) s = s + '/index';
-  return s;
-}
 async function hasBlockPage(slug) {
   const now = Date.now();
   const c = slugLookupCache.get(slug);
@@ -223,13 +189,53 @@ async function hasBlockPage(slug) {
   slugLookupCache.set(slug, { has, expires: now + SLUG_CACHE_MS });
   return has;
 }
-// Bust the cache whenever the admin saves a page so a freshly created /
-// edited block-driven page works without waiting for the TTL.
 function invalidateSlugCache(slug) {
   if (slug == null) slugLookupCache.clear();
   else slugLookupCache.delete(slug);
 }
 app.locals.invalidateSlugCache = invalidateSlugCache;
+
+// ----- Pretty URLs for products / blog / applications -----
+//   1. specific static file (legacy hand-coded pages)
+//   2. published pages row with blocks (operator-edited via /admin/pages.html)
+//   3. API-driven _template.html (products / applications managed in their own admin pages)
+//   4. next() → 404
+app.get(['/products/:slug', '/applications/:slug', '/blog/:slug'], async (req, res, next) => {
+  const segments = req.path.split('/').filter(Boolean);
+  const dir = segments[0];
+  const slug = segments[1];
+  if (!slug) return next();
+  const candidates = [
+    path.join(ROOT, 'public', dir, `${slug}.html`),
+    path.join(ROOT, 'public', dir, slug, 'index.html'),
+  ];
+  for (const f of candidates) {
+    if (fs.existsSync(f)) return res.sendFile(f);
+  }
+  // Block-driven page takes precedence over the API-template fallback so an
+  // operator who's migrated a page via /admin/pages.html overrides the
+  // generic template even though both reference the same URL.
+  const pageSlug = `${dir}/${slug.replace(/\.html$/i, '')}`;
+  if (await hasBlockPage(pageSlug)) return res.sendFile(blockShellPath);
+  // API-driven template fallback
+  const tpl = path.join(ROOT, 'public', dir, '_template.html');
+  if (fs.existsSync(tpl)) return res.sendFile(tpl);
+  return next();
+});
+
+function pathToSlug(p) {
+  // /                       -> home
+  // /about/                 -> about/index  (directory index)
+  // /about/profile          -> about/profile
+  // /about/profile.html     -> about/profile
+  // /privacy.html           -> privacy
+  const endsWithSlash = /\/$/.test(p) && p !== '/';
+  let s = p.replace(/^\/+|\/+$/g, '');
+  if (!s) return 'home';
+  s = s.replace(/\.html$/i, '');
+  if (endsWithSlash) s = s + '/index';
+  return s;
+}
 
 app.get('*', async (req, res, next) => {
   if (req.method !== 'GET') return next();
