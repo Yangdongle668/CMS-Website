@@ -59,6 +59,7 @@
         <div class="panel__head">
           <h2>${isNew ? '新建文章' : '编辑：' + escapeHtml(a.title)}</h2>
           <div style="display:flex; gap:8px;">
+            ${!isNew ? `<button class="btn btn--ghost btn--sm" id="article-history">⏱ 历史</button>` : ''}
             ${!isNew ? `<a target="_blank" class="btn btn--ghost btn--sm" href="/blog/${escapeHtml(a.slug)}">预览 ↗</a>` : ''}
             <a href="/admin/articles.html" class="btn btn--ghost btn--sm">返回</a>
           </div>
@@ -148,6 +149,72 @@
         toast('已删除', 'success');
         setTimeout(() => location.href = '/admin/articles.html', 500);
       });
+      panel.querySelector('#article-history').addEventListener('click', () => openArticleHistory(a.id));
+    }
+  }
+
+  /* ---------- Version history modal ---------------------------------------
+     Mirrors the page-builder history modal. Restore reloads the editor so
+     the form picks up the snapshot's fields cleanly.
+  ------------------------------------------------------------------------ */
+  async function openArticleHistory(articleId) {
+    const mask = document.createElement('div');
+    mask.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:60; display:flex; align-items:center; justify-content:center; padding:20px;';
+    mask.innerHTML = `
+      <div style="background:#fff; border-radius:14px; padding:22px; width:100%; max-width:680px; max-height:80vh; overflow-y:auto;" onclick="event.stopPropagation()">
+        <h3 style="margin:0 0 4px; font-size:16px;">文章历史版本</h3>
+        <p style="margin:0 0 16px; font-size:13px; color:var(--a-mute2);">每次保存自动留快照，最近 50 次保留。回滚会先把当前状态再存一份，所以也能撤销。</p>
+        <div id="ah-list" style="max-height:54vh; overflow-y:auto; margin:0 -6px;">
+          <div class="empty" style="padding:30px;">加载中…</div>
+        </div>
+        <div style="text-align:right; margin-top:14px;">
+          <button class="btn btn--ghost btn--sm" id="ah-close">关闭</button>
+        </div>
+      </div>`;
+    document.body.appendChild(mask);
+    const close = () => mask.remove();
+    mask.addEventListener('click', close);
+    mask.querySelector('#ah-close').addEventListener('click', close);
+
+    const list = mask.querySelector('#ah-list');
+    try {
+      const r = await api(`/api/articles/${articleId}/versions`);
+      const items = r.items || [];
+      if (!items.length) {
+        list.innerHTML = '<div class="empty" style="padding:30px;">这篇文章还没有历史快照。</div>';
+        return;
+      }
+      list.innerHTML = items.map((v, i) => `
+        <div style="display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center; padding:12px 14px; border-bottom:1px solid var(--a-line);">
+          <div>
+            <div style="font-weight:600; font-size:13px;">
+              ${i === 0 ? '<span class="pill pill--published" style="margin-right:6px;">当前</span>' : ''}
+              v${v.id}: ${escapeHtml(v.summary || '保存')}
+            </div>
+            <div style="font-size:11.5px; color:var(--a-mute2); margin-top:2px;">
+              ${escapeHtml(v.creator_email || '系统')} · ${formatDate(v.created_at)} · ${v.content_length || 0} 字符
+            </div>
+          </div>
+          <button class="btn btn--ghost btn--sm" data-restore="${v.id}" ${i === 0 ? 'disabled style="opacity:.4;cursor:not-allowed;"' : ''}>${i === 0 ? '当前' : '回滚到此'}</button>
+        </div>
+      `).join('');
+      list.querySelectorAll('[data-restore]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const vid = btn.dataset.restore;
+          if (!confirm(`确认回滚到 v${vid}？\n\n当前内容会先存一个快照（可撤销）。`)) return;
+          btn.disabled = true; btn.textContent = '回滚中…';
+          try {
+            await api(`/api/articles/${articleId}/versions/${vid}/restore`, { method: 'POST' });
+            toast('已回滚，正在重新加载…', 'success');
+            setTimeout(() => location.reload(), 400);
+          } catch (err) {
+            btn.disabled = false; btn.textContent = '回滚到此';
+            toast('回滚失败：' + err.message, 'error');
+          }
+        });
+      });
+    } catch (err) {
+      list.innerHTML = `<div class="empty" style="padding:30px; color:#cf1322;">加载失败：${escapeHtml(err.message)}</div>`;
     }
   }
 

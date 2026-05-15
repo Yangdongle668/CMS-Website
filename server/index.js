@@ -437,6 +437,20 @@ async function autoMigrate() {
        created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
      )`,
     `CREATE INDEX IF NOT EXISTS idx_page_versions_page ON page_versions (page_id, created_at DESC)`,
+
+    // Article version history — symmetrical to page_versions. Operators get
+    // the same undo / rollback safety net for blog articles as for static
+    // pages, with the same UI in /admin/articles.html.
+    `CREATE TABLE IF NOT EXISTS article_versions (
+       id            SERIAL PRIMARY KEY,
+       article_id    INT     NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+       snapshot      JSONB   NOT NULL,
+       summary       TEXT    NOT NULL DEFAULT '',
+       created_by    INT REFERENCES users(id) ON DELETE SET NULL,
+       creator_email VARCHAR(190) NOT NULL DEFAULT '',
+       created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+     )`,
+    `CREATE INDEX IF NOT EXISTS idx_article_versions_article ON article_versions (article_id, created_at DESC)`,
   ];
   for (const sql of stmts) {
     try { await query(sql); }
