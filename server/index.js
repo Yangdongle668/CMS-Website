@@ -93,6 +93,26 @@ const apiLimiter = rateLimit({
 });
 app.use('/api/', apiLimiter);
 
+// ----- Health & readiness probes -----
+// /api/health: fast process-is-alive check for Docker / k8s liveness probes;
+//              doesn't touch the DB so it stays cheap at high probe rate.
+// /api/ready:  actually pings Postgres so a load balancer can drain traffic
+//              from a node whose DB connection is broken.
+const bootedAt = Date.now();
+app.get('/api/health', (_req, res) => {
+  res.json({ ok: true, uptime_s: Math.round((Date.now() - bootedAt) / 1000) });
+});
+app.get('/api/ready', async (_req, res) => {
+  const started = Date.now();
+  try {
+    const { one } = require('./db/client');
+    await one('SELECT 1 AS ok');
+    res.json({ ok: true, db_latency_ms: Date.now() - started });
+  } catch (err) {
+    res.status(503).json({ ok: false, error: 'db_unavailable', detail: err.message });
+  }
+});
+
 // ----- Public env (Turnstile site key + SEO defaults for the client) -----
 app.get('/api/public/config', async (_req, res) => {
   // Read latest seo settings so the SPA can populate analytics/verification
@@ -392,6 +412,11 @@ async function autoMigrate() {
     `CREATE INDEX IF NOT EXISTS idx_outbox_ready   ON mail_outbox(next_attempt_at) WHERE status = 'pending'`,
     `CREATE INDEX IF NOT EXISTS idx_outbox_inquiry ON mail_outbox(inquiry_id)`,
     `CREATE INDEX IF NOT EXISTS idx_outbox_status  ON mail_outbox(status, created_at DESC)`,
+
+    // Login lockout state (per-account brute-force defence).
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_login_attempts INT NOT NULL DEFAULT 0`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TIMESTAMPTZ`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS last_failed_login_at TIMESTAMPTZ`,
   ];
   for (const sql of stmts) {
     try { await query(sql); }
@@ -450,7 +475,46 @@ async function autoMigrate() {
   } catch (err) {
     console.error('[mail-worker] failed to start:', err.message);
   }
+
+  // In-process hourly retention sweep: hard-deletes soft-deleted inquiries
+  // past their grace period, soft-deletes inquiries past the GDPR retention
+  // window, and purges old consent + audit + mail rows. Cheap (a few DELETEs)
+  // so no need for an external cron.
+  scheduleRetentionSweep();
+
   app.listen(PORT, () => {
     console.log(`[battery-cms] running on http://localhost:${PORT}`);
   });
 })();
+
+function scheduleRetentionSweep() {
+  const { query } = require('./db/client');
+  async function sweep() {
+    try {
+      const retention = parseInt(process.env.GDPR_RETENTION_DAYS || '365', 10);
+      const softDays  = parseInt(process.env.GDPR_SOFT_DELETE_DAYS || '30', 10);
+      const r1 = await query(
+        `DELETE FROM inquiries WHERE is_deleted = TRUE AND deleted_at < now() - ($1 || ' days')::interval`,
+        [softDays]
+      );
+      const r2 = await query(
+        `UPDATE inquiries
+            SET is_deleted = TRUE, deleted_at = now()
+          WHERE is_deleted = FALSE AND created_at < now() - ($1 || ' days')::interval`,
+        [retention]
+      );
+      const r3 = await query(`DELETE FROM consent_logs WHERE created_at < now() - interval '365 days'`);
+      const r4 = await query(`DELETE FROM audit_logs   WHERE created_at < now() - interval '730 days'`);
+      const r5 = await query(`DELETE FROM mail_outbox  WHERE status = 'sent' AND sent_at < now() - interval '90 days'`);
+      if (r1.rowCount + r2.rowCount + r3.rowCount + r4.rowCount + r5.rowCount > 0) {
+        console.log(
+          `[retention] hard=${r1.rowCount} soft=${r2.rowCount} consent=${r3.rowCount} audit=${r4.rowCount} mail=${r5.rowCount}`
+        );
+      }
+    } catch (err) {
+      console.error('[retention] sweep failed:', err.message);
+    }
+  }
+  setTimeout(sweep, 60_000);                       // first sweep 60s after boot
+  setInterval(sweep, 60 * 60 * 1000);              // then hourly
+}
