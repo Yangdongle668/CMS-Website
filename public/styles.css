@@ -4140,3 +4140,45 @@ img[src=""] {
   .eyebrow.reveal::after,
   .cert-chip.reveal { animation: none !important; }
 }
+
+
+/* =============================================================
+   Print stylesheet
+   -------------------------------------------------------------
+   Hides nav / footer / floating CTA / sliders so an operator
+   printing an inquiry-confirmation page or saving a quote as
+   PDF gets a clean black-on-white document. Decouples paper
+   from screen entirely.
+   ============================================================= */
+@media print {
+  #site-header,
+  #site-footer,
+  #sidemenu-mount,
+  .floating-quote,
+  .cookie-banner,
+  .tesla-slider__arrow,
+  .tesla-slider__dots { display: none !important; }
+
+  body { background: #fff !important; color: #000 !important; }
+  .hero,
+  .page-hero {
+    min-height: auto !important;
+    padding: 24px 0 !important;
+    color: #000 !important;
+    background: none !important;
+    text-shadow: none !important;
+  }
+  .hero::before,
+  .page-hero::before { display: none !important; }
+  .section { padding: 24px 0 !important; break-inside: avoid; }
+  .section-dark,
+  .cta-band { background: #fff !important; color: #000 !important; }
+  .section-dark *,
+  .cta-band * { color: #000 !important; }
+  a { color: #000; text-decoration: underline; }
+
+  /* Ensure tables fit on the printed page rather than scroll horizontally. */
+  .spec-table { font-size: 12pt; }
+  .spec-table th,
+  .spec-table td { border: 1px solid #999 !important; padding: 4pt 6pt !important; }
+}
