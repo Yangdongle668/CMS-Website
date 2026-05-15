@@ -206,6 +206,7 @@ app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/ai-generate', require('./routes/ai-generate'));
 app.use('/api/mail-queue', require('./routes/mail-queue'));
 app.use('/api/blocks', require('./routes/blocks'));
+app.use('/api/templates', require('./routes/templates'));
 
 // ----- SEO endpoints -----
 app.use('/', require('./routes/seo'));
