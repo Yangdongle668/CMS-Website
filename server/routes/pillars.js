@@ -4,8 +4,10 @@ const { requireAuth } = require('../middleware/auth');
 const { recordAudit } = require('../middleware/audit');
 const { isSlug, trimStr, asJson, clamp } = require('../utils/validate');
 const { SEO_SELECT } = require('../utils/seo-fields');
+const cache = require('../services/cache');
 
 const router = express.Router();
+const CACHE_TTL = parseInt(process.env.CACHE_TTL_PILLAR || '300', 10); // 5min
 
 const PILLAR_FIELDS = `
   id, slug, name, short_name, meta_title, meta_description,
@@ -19,55 +21,66 @@ const PILLAR_FIELDS = `
 
 router.get('/', async (req, res) => {
   const status = req.query.status === 'all' ? null : 'published';
-  const rows = await many(
+  // Only cache the public (status='published') variant. Admin's
+  // ?status=all view stays uncached so editors see saves immediately.
+  const fetcher = async () => many(
     status
       ? `SELECT ${PILLAR_FIELDS} FROM pillar_pages WHERE status = $1 ORDER BY sort_order, id`
       : `SELECT ${PILLAR_FIELDS} FROM pillar_pages ORDER BY sort_order, id`,
     status ? [status] : []
   );
+  const rows = status
+    ? await cache.cached('pillar:list:published', CACHE_TTL, fetcher)
+    : await fetcher();
   res.json({ items: rows });
 });
 
 router.get('/:slug', async (req, res) => {
   const slug = String(req.params.slug);
   if (!isSlug(slug)) return res.status(400).json({ error: 'invalid_slug' });
-  const row = await one(`SELECT ${PILLAR_FIELDS} FROM pillar_pages WHERE slug = $1`, [slug]);
-  if (!row) return res.status(404).json({ error: 'not_found' });
 
-  // Cluster: latest related articles
-  const articles = await many(
-    `SELECT id, slug, title, excerpt, cover_url, reading_minutes, published_at
-     FROM articles
-     WHERE pillar_id = $1 AND status = 'published'
-     ORDER BY published_at DESC NULLS LAST LIMIT 6`,
-    [row.id]
-  );
-  // Related products
-  const products = await many(
-    `SELECT id, slug, name, model_no, tagline, cover_url, specs, is_custom
-     FROM products
-     WHERE pillar_id = $1 AND status = 'published'
-     ORDER BY sort_order, id LIMIT 12`,
-    [row.id]
-  );
-  // Cross-link: other pillars
-  const siblings = await many(
-    `SELECT id, slug, name, short_name, hero_image
-     FROM pillar_pages
-     WHERE id <> $1 AND status = 'published'
-     ORDER BY sort_order, id`,
-    [row.id]
-  );
-  // Application names lookup
-  const appSlugs = Array.isArray(row.applications) ? row.applications : [];
-  let appList = [];
-  if (appSlugs.length) {
-    appList = await many(
-      `SELECT slug, name, icon, summary FROM applications WHERE slug = ANY($1::text[]) AND status='published'`,
-      [appSlugs]
+  const cacheKey = `pillar:slug:${slug}`;
+  const payload = await cache.cached(cacheKey, CACHE_TTL, async () => {
+    const row = await one(`SELECT ${PILLAR_FIELDS} FROM pillar_pages WHERE slug = $1`, [slug]);
+    if (!row) return null;
+
+    // Cluster: latest related articles
+    const articles = await many(
+      `SELECT id, slug, title, excerpt, cover_url, reading_minutes, published_at
+       FROM articles
+       WHERE pillar_id = $1 AND status = 'published'
+       ORDER BY published_at DESC NULLS LAST LIMIT 6`,
+      [row.id]
     );
-  }
-  res.json({ pillar: row, articles, products, siblings, applications: appList });
+    // Related products
+    const products = await many(
+      `SELECT id, slug, name, model_no, tagline, cover_url, specs, is_custom
+       FROM products
+       WHERE pillar_id = $1 AND status = 'published'
+       ORDER BY sort_order, id LIMIT 12`,
+      [row.id]
+    );
+    // Cross-link: other pillars
+    const siblings = await many(
+      `SELECT id, slug, name, short_name, hero_image
+       FROM pillar_pages
+       WHERE id <> $1 AND status = 'published'
+       ORDER BY sort_order, id`,
+      [row.id]
+    );
+    // Application names lookup
+    const appSlugs = Array.isArray(row.applications) ? row.applications : [];
+    let appList = [];
+    if (appSlugs.length) {
+      appList = await many(
+        `SELECT slug, name, icon, summary FROM applications WHERE slug = ANY($1::text[]) AND status='published'`,
+        [appSlugs]
+      );
+    }
+    return { pillar: row, articles, products, siblings, applications: appList };
+  });
+  if (!payload) return res.status(404).json({ error: 'not_found' });
+  res.json(payload);
 });
 
 // ----- Admin -----
@@ -125,6 +138,11 @@ router.put('/:id', requireAuth, async (req, res) => {
   );
   await recordAudit({ req, action: 'update', entity: 'pillar', entityId: id, detail: { name: fields.name } });
   const row = await one(`SELECT ${PILLAR_FIELDS} FROM pillar_pages WHERE id = $1`, [id]);
+  // Bust both list and per-slug caches so the next reader sees fresh data
+  await cache.invalidate('pillar:');
+  // Articles related to this pillar may also need their cluster blocks
+  // refreshed, but we keep that scoped — pillar slug invalidation is enough
+  // for the SSR pillar page itself.
   res.json({ pillar: row });
 });
 

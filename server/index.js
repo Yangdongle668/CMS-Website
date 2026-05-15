@@ -591,6 +591,16 @@ async function autoMigrate() {
     console.error('[ai-settings] initial load failed:', err.message);
   }
 
+  // Initialize cache backend (Redis if REDIS_URL set, else in-memory).
+  // Failure to connect Redis automatically falls back to in-memory and
+  // the app continues; never blocks boot.
+  try {
+    const cache = require('./services/cache');
+    await cache.init();
+  } catch (err) {
+    console.error('[cache] init failed (continuing):', err && err.message);
+  }
+
   // Recover any rows a prior process had marked 'sending' before
   // crashing — they'd otherwise be stuck forever.
   try {
@@ -657,6 +667,10 @@ async function autoMigrate() {
     try {
       const healthAlert = require('./jobs/health-alert');
       healthAlert.stop();
+    } catch (_) {}
+    try {
+      const cache = require('./services/cache');
+      cache.close();
     } catch (_) {}
     server.close((err) => {
       if (err) console.error('[shutdown] http close error', err.message);
