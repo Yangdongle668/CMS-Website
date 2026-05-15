@@ -85,6 +85,9 @@
 
   // ----- Drag-and-drop state -----
   let draggedBlockId = null;
+  // When the parent's sidebar library tile is being dragged, this holds
+  // the block_type so drop zones know to insert (not reorder).
+  let pendingLibraryType = null;
 
   // ----- Block selection -----
   let selectedEl = null;
@@ -118,6 +121,7 @@
         <button data-act="down" title="下移">↓</button>
         <button data-act="hide" title="隐藏">⊘</button>
         <button data-act="duplicate" title="复制">⎘</button>
+        <button data-act="star" title="存为片段（复用到其他页面）">⭐</button>
         <button data-act="delete" title="删除">✕</button>
       `;
       el.appendChild(tb);
@@ -201,7 +205,16 @@
   }
 
   function readValue(fieldEl) {
-    // For multiline fields keep paragraph breaks; for single-line strip
+    // Rich fields preserve formatting tags (b/i/a/strong/em); plain
+    // fields take just innerText. We normalise <b>/<i> to <strong>/<em>
+    // for cleaner output markup.
+    if (fieldEl.dataset.editRich === '1') {
+      let html = fieldEl.innerHTML;
+      html = html.replace(/&nbsp;/g, ' ');
+      html = html.replace(/<b(\s|>)/g, '<strong$1').replace(/<\/b>/g, '</strong>');
+      html = html.replace(/<i(\s|>)/g, '<em$1').replace(/<\/i>/g, '</em>');
+      return html.trim();
+    }
     return fieldEl.innerText.replace(/ /g, ' ').trim();
   }
 
@@ -272,28 +285,39 @@
       setTimeout(() => slot.classList.remove('is-active'), 800);
     });
 
-    // ----- Also serve as drop target during drag-to-reorder -----
+    // ----- Drop target — for both block-reorder AND library-drop -----
     slot.addEventListener('dragover', (ev) => {
-      if (draggedBlockId == null) return;
+      if (draggedBlockId == null && pendingLibraryType == null) return;
       ev.preventDefault();
-      ev.dataTransfer.dropEffect = 'move';
+      ev.dataTransfer.dropEffect = pendingLibraryType ? 'copy' : 'move';
       slot.classList.add('is-over');
     });
     slot.addEventListener('dragleave', () => slot.classList.remove('is-over'));
     slot.addEventListener('drop', (ev) => {
-      if (draggedBlockId == null) return;
-      ev.preventDefault();
-      slot.classList.remove('is-over');
-      const fromId = draggedBlockId;
       const refId = parseInt(refBlockId, 10) || null;
-      if (fromId && refId && fromId !== refId) {
-        post('block-reorder', {
-          from_id: fromId,
+      if (pendingLibraryType) {
+        // Sidebar tile drop → insert new block
+        ev.preventDefault();
+        slot.classList.remove('is-over');
+        post('block-insert-drop', {
+          block_type: pendingLibraryType,
           ref_id: refId,
-          position,   // 'before' or 'after'
+          position,
         });
+        pendingLibraryType = null;
+        document.documentElement.classList.remove('cmsb-is-dragging');
+        return;
       }
-      draggedBlockId = null;
+      if (draggedBlockId != null) {
+        // Existing block drag → reorder
+        ev.preventDefault();
+        slot.classList.remove('is-over');
+        const fromId = draggedBlockId;
+        if (fromId && refId && fromId !== refId) {
+          post('block-reorder', { from_id: fromId, ref_id: refId, position });
+        }
+        draggedBlockId = null;
+      }
     });
     return slot;
   }
@@ -337,8 +361,35 @@
       case 'reload':
         location.reload();
         break;
+      case 'replace-block':
+        replaceBlockHtml(m.id, m.html);
+        break;
     }
   });
+
+  // ----- Hot-swap: replace a single block's HTML in place -----
+  // The parent fetches /api/blocks/:id/render after a save and posts
+  // the new outerHTML. We swap the DOM node and re-select if it was
+  // the active block, all without any iframe reload flicker.
+  function replaceBlockHtml(id, html) {
+    const old = document.querySelector(`[data-block-id="${id}"]`);
+    if (!old) return;
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html.trim();
+    const fresh = tmp.firstElementChild;
+    if (!fresh) return;
+    const wasSelected = old.classList.contains('cmsb-selected');
+    const rect = old.getBoundingClientRect();
+    const scrollDelta = rect.top;
+    old.replaceWith(fresh);
+    if (wasSelected) {
+      selectedEl = null;   // force re-init in selectBlock
+      selectBlock(fresh);
+    }
+    const newRect = fresh.getBoundingClientRect();
+    const drift = newRect.top - scrollDelta;
+    if (Math.abs(drift) > 4) window.scrollBy(0, drift);
+  }
 
   // ----- Public surface for inline event handlers -----
   window.cmsb = {
@@ -353,11 +404,193 @@
     }[c]));
   }
 
+  // ----- Floating rich-text toolbar -----
+  // Shows above the active selection while typing/selecting inside a
+  // [data-edit-rich] contenteditable. Bold / Italic / Link only — a
+  // deliberately tiny set; complex formatting belongs in the rich-text
+  // block (which uses a full editor). Uses document.execCommand for
+  // simplicity — deprecated by spec but still universally supported by
+  // browsers and the cleanest path for selection-based formatting.
+  let rtBar = null;
+  let rtLinkInput = null;
+
+  function ensureRtBar() {
+    if (rtBar) return rtBar;
+    rtBar = document.createElement('div');
+    rtBar.className = 'cmsb-rt-bar';
+    rtBar.innerHTML = `
+      <button type="button" data-rt="bold" title="加粗 (Ctrl+B)"><strong>B</strong></button>
+      <button type="button" data-rt="italic" title="斜体 (Ctrl+I)"><em>I</em></button>
+      <span class="cmsb-rt-bar__sep"></span>
+      <button type="button" data-rt="link" title="加链接">🔗</button>
+      <button type="button" data-rt="unlink" title="去掉链接">⊘🔗</button>
+    `;
+    document.body.appendChild(rtBar);
+    rtBar.addEventListener('mousedown', (ev) => {
+      // Buttons must not steal focus from the contenteditable
+      ev.preventDefault();
+    });
+    rtBar.addEventListener('click', (ev) => {
+      const btn = ev.target.closest('button');
+      if (!btn) return;
+      ev.preventDefault();
+      const cmd = btn.dataset.rt;
+      if (cmd === 'bold' || cmd === 'italic') {
+        document.execCommand(cmd, false, null);
+        syncRtBarState();
+        // Trigger save on the active field
+        const active = document.activeElement;
+        if (active && active.closest && active.closest('[data-edit-rich]')) {
+          scheduleSave(active.closest('[data-edit-rich]'));
+        }
+      } else if (cmd === 'link') {
+        promptForLink();
+      } else if (cmd === 'unlink') {
+        document.execCommand('unlink', false, null);
+        const active = document.activeElement;
+        if (active && active.closest && active.closest('[data-edit-rich]')) {
+          scheduleSave(active.closest('[data-edit-rich]'));
+        }
+      }
+    });
+    return rtBar;
+  }
+
+  function promptForLink() {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) {
+      toast('先选中要变成链接的文字');
+      return;
+    }
+    // Save the range — focusing the input will lose it otherwise
+    const range = sel.getRangeAt(0).cloneRange();
+    rtBar.innerHTML = `<input type="url" placeholder="https://…" autocomplete="off"><button data-rt="link-ok">✓</button><button data-rt="link-cancel">×</button>`;
+    const input = rtBar.querySelector('input');
+    rtLinkInput = input;
+    // Pre-fill if the selection is already inside an anchor
+    const a = range.startContainer.parentElement && range.startContainer.parentElement.closest('a');
+    if (a) input.value = a.getAttribute('href') || '';
+    setTimeout(() => input.focus(), 0);
+
+    function commit(cancel) {
+      const url = cancel ? null : input.value.trim();
+      // Restore selection
+      sel.removeAllRanges();
+      sel.addRange(range);
+      if (url) {
+        document.execCommand('createLink', false, url);
+        // Ensure target=_blank for external
+        const newA = sel.anchorNode && sel.anchorNode.parentElement && sel.anchorNode.parentElement.closest('a');
+        if (newA && /^https?:\/\//i.test(url)) {
+          newA.setAttribute('target', '_blank');
+          newA.setAttribute('rel', 'noopener');
+        }
+        const editField = sel.anchorNode && sel.anchorNode.parentElement && sel.anchorNode.parentElement.closest('[data-edit-rich]');
+        if (editField) scheduleSave(editField);
+      }
+      // Rebuild toolbar with original buttons
+      rtBar.innerHTML = '';
+      rtBar.remove();
+      rtBar = null;
+      ensureRtBar();
+      syncRtBarState();
+    }
+    rtBar.addEventListener('click', (ev) => {
+      const b = ev.target.closest('button');
+      if (!b) return;
+      ev.preventDefault();
+      commit(b.dataset.rt === 'link-cancel');
+    }, { once: false });
+    input.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') { ev.preventDefault(); commit(false); }
+      if (ev.key === 'Escape') { ev.preventDefault(); commit(true); }
+    });
+  }
+
+  function positionRtBar() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) { hideRtBar(); return; }
+    const anchor = sel.anchorNode && sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentElement : sel.anchorNode;
+    if (!anchor) { hideRtBar(); return; }
+    const field = anchor.closest && anchor.closest('[data-edit-rich]');
+    if (!field) { hideRtBar(); return; }
+    const range = sel.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    if (!rect || rect.width + rect.height === 0) { hideRtBar(); return; }
+    ensureRtBar();
+    const x = rect.left + rect.width / 2 + window.scrollX;
+    const y = rect.top + window.scrollY;
+    rtBar.style.left = x + 'px';
+    rtBar.style.top = y + 'px';
+    rtBar.classList.add('is-on');
+    syncRtBarState();
+  }
+
+  function hideRtBar() {
+    if (rtBar) rtBar.classList.remove('is-on');
+  }
+
+  function syncRtBarState() {
+    if (!rtBar) return;
+    const sel = window.getSelection();
+    if (!sel) return;
+    const isBold = document.queryCommandState && document.queryCommandState('bold');
+    const isItalic = document.queryCommandState && document.queryCommandState('italic');
+    const bBtn = rtBar.querySelector('[data-rt="bold"]');
+    const iBtn = rtBar.querySelector('[data-rt="italic"]');
+    if (bBtn) bBtn.classList.toggle('is-active', !!isBold);
+    if (iBtn) iBtn.classList.toggle('is-active', !!isItalic);
+  }
+
+  document.addEventListener('selectionchange', () => {
+    // Debounce a hair so the rt bar doesn't flicker during arrow-key
+    // selection extension.
+    clearTimeout(window.__cmsbRtT);
+    window.__cmsbRtT = setTimeout(positionRtBar, 50);
+  });
+
+  // ----- Sidebar-library drag-to-canvas -----
+  // Parent posts 'library-drag-start' with the block_type when an admin
+  // begins dragging a tile out of the right-side library. We add the
+  // same .cmsb-is-dragging class the in-iframe handle uses, so drop
+  // zones light up. On drop, we post 'block-insert' (vs reorder).
+  window.addEventListener('message', (ev) => {
+    const m = ev.data;
+    if (!m || m.source !== 'cms-builder-parent') return;
+    if (m.type === 'library-drag-start') {
+      pendingLibraryType = m.block_type || null;
+      document.documentElement.classList.add('cmsb-is-dragging');
+    } else if (m.type === 'library-drag-end') {
+      pendingLibraryType = null;
+      document.documentElement.classList.remove('cmsb-is-dragging');
+    }
+  });
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
+    }[c]));
+  }
+
+  // ----- Forward undo/redo shortcuts to the parent -----
+  // Inside a contenteditable, browser-native undo IS what the user
+  // wants (single keystroke roll-back). Outside any contenteditable
+  // (i.e. when the keyboard target is the canvas itself), forward to
+  // parent which holds the block-level history stack.
+  document.addEventListener('keydown', (ev) => {
+    if (!(ev.ctrlKey || ev.metaKey)) return;
+    const k = ev.key.toLowerCase();
+    if (k !== 'z' && k !== 'y') return;
+    const editable = document.activeElement && document.activeElement.closest
+      && document.activeElement.closest('[contenteditable="true"]');
+    if (editable) return;   // browser handles native field undo
+    ev.preventDefault();
+    if (k === 'z' && !ev.shiftKey) post('shortcut', { key: 'undo' });
+    else post('shortcut', { key: 'redo' });
+  });
+
   // ----- Initial paint -----
   injectInsertSlots();
 
-  // Re-inject slots whenever blocks are added/removed/reordered (the
-  // parent triggers a reload for now; later we can hot-swap individual
-  // blocks for smoother UX).
   post('ready', { url: location.pathname });
 })();

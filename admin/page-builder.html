@@ -157,6 +157,8 @@
             <button class="pb2-device" data-device="mobile">📱 手机</button>
           </div>
           <div class="pb2-toolbar__right">
+            <button class="btn btn--ghost btn--sm" id="undo-btn" title="撤销 (Ctrl+Z)" disabled>↶ 撤销</button>
+            <button class="btn btn--ghost btn--sm" id="redo-btn" title="重做 (Ctrl+Y)" disabled>↷ 重做</button>
             <span class="pb2-save" id="save-status">✓ 已加载</span>
             <a class="btn btn--ghost btn--sm" href="/${escapeHtml(slug)}" target="_blank">前台查看 ↗</a>
           </div>
@@ -169,8 +171,10 @@
       </div>
       <div class="pb2-side">
         <div class="pb2-side__tabs">
-          <button class="pb2-side__tab is-active" data-tab="settings">⚙ 当前区块</button>
-          <button class="pb2-side__tab" data-tab="library">＋ 区块库</button>
+          <button class="pb2-side__tab is-active" data-tab="settings">⚙ 区块</button>
+          <button class="pb2-side__tab" data-tab="library">＋ 库</button>
+          <button class="pb2-side__tab" data-tab="seo">🔍 SEO</button>
+          <button class="pb2-side__tab" data-tab="history">📜 历史</button>
         </div>
         <div class="pb2-side__body" id="side-body"></div>
       </div>
@@ -186,6 +190,83 @@
     saveStatus.className = 'pb2-save is-' + state;
     saveStatus.textContent = text;
   }
+
+  // ----- Undo / Redo (client-side history of full block state) -----
+  // Each user-initiated change captures the BEFORE state. Undo pops
+  // that off and bulk-replaces the page; the current state goes to
+  // the redo stack. A new edit after an undo clears the redo stack
+  // (standard linear history behavior).
+  const MAX_HISTORY = 50;
+  const undoStack = [];
+  const redoStack = [];
+
+  function snapshotBlocks() {
+    return blocks.map((b) => ({
+      block_type: b.block_type,
+      content: JSON.parse(JSON.stringify(b.content || {})),
+      is_visible: b.is_visible !== false,
+    }));
+  }
+
+  function pushUndo() {
+    undoStack.push(snapshotBlocks());
+    if (undoStack.length > MAX_HISTORY) undoStack.shift();
+    redoStack.length = 0;
+    updateHistoryUI();
+  }
+
+  function updateHistoryUI() {
+    const u = document.getElementById('undo-btn');
+    const r = document.getElementById('redo-btn');
+    if (u) u.disabled = !undoStack.length;
+    if (r) r.disabled = !redoStack.length;
+  }
+
+  async function restoreState(state) {
+    setStatus('saving', '恢复中…');
+    try {
+      await api('/api/blocks/replace-page', {
+        method: 'POST',
+        body: JSON.stringify({ page_id: pageId, blocks: state }),
+      });
+      const fresh = await api('/api/blocks/page/' + pageId);
+      blocks = fresh.items;
+      selectedId = null;
+      setStatus('saved', '✓ 已恢复');
+      reloadFrame();
+    } catch (e) {
+      setStatus('dirty', '恢复失败：' + e.message);
+    }
+  }
+
+  async function undo() {
+    if (!undoStack.length) return;
+    const prev = undoStack.pop();
+    redoStack.push(snapshotBlocks());
+    updateHistoryUI();
+    await restoreState(prev);
+  }
+
+  async function redo() {
+    if (!redoStack.length) return;
+    const next = redoStack.pop();
+    undoStack.push(snapshotBlocks());
+    updateHistoryUI();
+    await restoreState(next);
+  }
+
+  document.getElementById('undo-btn').addEventListener('click', undo);
+  document.getElementById('redo-btn').addEventListener('click', redo);
+
+  // Keyboard: Ctrl/Cmd+Z = undo, Ctrl+Shift+Z or Ctrl+Y = redo.
+  // The iframe forwards the same shortcuts via postMessage so the
+  // user doesn't need to click out of the canvas first.
+  document.addEventListener('keydown', (ev) => {
+    if (!(ev.ctrlKey || ev.metaKey)) return;
+    const k = ev.key.toLowerCase();
+    if (k === 'z' && !ev.shiftKey) { ev.preventDefault(); undo(); }
+    else if ((k === 'z' && ev.shiftKey) || k === 'y') { ev.preventDefault(); redo(); }
+  });
 
   // ----- Postmessage protocol -----
   function postToFrame(type, payload) {
@@ -223,6 +304,13 @@
       case 'image-edit-request':
         await pickImageForField(m.id, m.field);
         break;
+      case 'block-insert-drop':
+        await addBlockAt(m.block_type, m.ref_id, m.position);
+        break;
+      case 'shortcut':
+        if (m.key === 'undo') undo();
+        else if (m.key === 'redo') redo();
+        break;
     }
   });
 
@@ -231,6 +319,7 @@
     const fromIdx = blocks.findIndex((b) => b.id === fromId);
     const refIdx = blocks.findIndex((b) => b.id === refId);
     if (fromIdx < 0 || refIdx < 0 || fromId === refId) return;
+    pushUndo();
     const [moved] = blocks.splice(fromIdx, 1);
     // After removing, refIdx may have shifted by -1 if it was after fromIdx
     const adjustedRefIdx = blocks.findIndex((b) => b.id === refId);
@@ -255,13 +344,14 @@
     if (!block) return;
     const url = await pickFromMedia();
     if (!url) return;
+    pushUndo();
     block.content = block.content || {};
     block.content[field] = url;
     setStatus('saving', '保存中…');
     try {
       await api('/api/blocks/' + blockId, { method: 'PUT', body: JSON.stringify({ content: block.content }) });
       setStatus('saved', '✓ 已保存');
-      reloadFrame();
+      hotSwapBlock(blockId);
     } catch (e) {
       setStatus('dirty', '保存失败：' + e.message);
     }
@@ -271,15 +361,31 @@
   async function applyPartialEdit(id, fields) {
     const block = blocks.find((b) => b.id === id);
     if (!block) return;
+    pushUndo();
     Object.assign(block.content, fields);
     setStatus('saving', '保存中…');
     try {
       await api('/api/blocks/' + id, { method: 'PUT', body: JSON.stringify({ content: block.content }) });
       setStatus('saved', '✓ 已保存');
       postToFrame('block-saved');
-      if (activeTab === 'settings' && selectedId === id) renderSide();   // refresh side fields
+      // Hot-swap the changed block in the iframe instead of full reload —
+      // keeps the user's scroll position, focused selection and undo
+      // history exactly where they were.
+      hotSwapBlock(id);
+      if (activeTab === 'settings' && selectedId === id) renderSide();
     } catch (e) {
       setStatus('dirty', '保存失败：' + e.message);
+    }
+  }
+
+  async function hotSwapBlock(blockId) {
+    try {
+      const { html } = await api('/api/blocks/' + blockId + '/render');
+      postToFrame('replace-block', { id: blockId, html });
+    } catch (_) {
+      // If the render endpoint fails for any reason, fall back to full
+      // reload so the user at least sees fresh state.
+      reloadFrame();
     }
   }
 
@@ -288,6 +394,7 @@
     if (idx < 0) return;
     if (action === 'delete') {
       if (!confirm('删除这个区块？')) return;
+      pushUndo();
       try {
         await api('/api/blocks/' + id, { method: 'DELETE' });
         blocks.splice(idx, 1);
@@ -295,6 +402,7 @@
         reloadFrame();
       } catch (e) { alert('删除失败：' + e.message); }
     } else if (action === 'hide') {
+      pushUndo();
       const b = blocks[idx];
       try {
         await api('/api/blocks/' + id, { method: 'PUT', body: JSON.stringify({ is_visible: !b.is_visible }) });
@@ -304,13 +412,28 @@
     } else if (action === 'up' || action === 'down') {
       const target = action === 'up' ? idx - 1 : idx + 1;
       if (target < 0 || target >= blocks.length) return;
+      pushUndo();
       [blocks[idx], blocks[target]] = [blocks[target], blocks[idx]];
       const orderedIds = blocks.map((b) => b.id);
       try {
         await api('/api/blocks/reorder', { method: 'POST', body: JSON.stringify({ page_id: pageId, ordered_ids: orderedIds }) });
         reloadFrame();
       } catch (e) { alert('排序失败：' + e.message); }
+    } else if (action === 'star') {
+      const block = blocks[idx];
+      const def = typeMap[block.block_type];
+      const suggested = (block.content.title || block.content.headline || def?.label || block.block_type).slice(0, 60);
+      const name = prompt('给这个片段起个名字（之后在区块库里能找到）:', suggested);
+      if (!name || !name.trim()) return;
+      try {
+        await api('/api/blocks/snippets', {
+          method: 'POST',
+          body: JSON.stringify({ name: name.trim(), block_type: block.block_type, content: block.content }),
+        });
+        setStatus('saved', '✓ 已存为片段「' + name.trim() + '」');
+      } catch (e) { alert('保存片段失败：' + e.message); }
     } else if (action === 'duplicate') {
+      pushUndo();
       const orig = blocks[idx];
       try {
         const r = await api('/api/blocks', {
@@ -334,6 +457,7 @@
   }
 
   async function addBlockAt(type, refId, position) {
+    pushUndo();
     try {
       const r = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ page_id: pageId, block_type: type }) });
       // r is appended to end. If we want it elsewhere, reorder.
@@ -380,26 +504,313 @@
 
   function renderSide() {
     if (activeTab === 'library') return renderLibrary();
+    if (activeTab === 'seo') return renderSeoPanel();
+    if (activeTab === 'history') return renderHistoryPanel();
     return renderSettings();
   }
 
-  function renderLibrary() {
+  // ----- Page version history (autosave snapshots + manual save + restore) -----
+  async function renderHistoryPanel() {
     sideBody.innerHTML = `
       <div class="pb2-form__note">
-        点任一区块 → 加到当前页面末尾。可在 iframe 中拖拽 / 重排 / 点 + 在两个区块之间插入。
+        <strong>自动版本快照。</strong>系统每隔约 10 分钟在你做编辑后自动保存一个版本，
+        最多保留 50 个。也可以现在手动存一个标记重要的版本。
       </div>
+      <button class="btn btn--sm" id="snap-now" style="width:100%; margin-bottom:14px;">＋ 现在创建一个版本</button>
+      <div id="history-list" style="font-size:12px;">加载中…</div>
+    `;
+    document.getElementById('snap-now').addEventListener('click', async () => {
+      const label = prompt('给这个版本起个名字（可选）:', '手动保存') || 'manual';
+      try {
+        await api('/api/blocks/versions/' + pageId, { method: 'POST', body: JSON.stringify({ label }) });
+        renderHistoryPanel();
+        setStatus('saved', '✓ 已保存版本');
+      } catch (e) { alert('保存失败：' + e.message); }
+    });
+
+    let items = [];
+    try {
+      const r = await api('/api/blocks/versions/' + pageId);
+      items = r.items;
+    } catch (e) {
+      document.getElementById('history-list').innerHTML = `<p style="color:#b91c1c;">${escapeHtml(e.message)}</p>`;
+      return;
+    }
+    const listEl = document.getElementById('history-list');
+    if (!items.length) {
+      listEl.innerHTML = '<p style="color:#94a3b8; padding:14px 0; font-size:11.5px;">还没有快照。编辑几下，系统会自动保存。</p>';
+      return;
+    }
+    listEl.innerHTML = items.map((v) => {
+      const d = new Date(v.created_at);
+      const dateStr = d.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+      const isAuto = v.label === 'auto' || v.label === '';
+      return `
+        <div style="padding:10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; margin-bottom:6px;">
+          <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+            ${isAuto
+              ? '<span style="background:#e0e7ff; color:#3730a3; font-size:10px; padding:1px 6px; border-radius:3px;">AUTO</span>'
+              : '<span style="background:#fef3c7; color:#92400e; font-size:10px; padding:1px 6px; border-radius:3px;">手动</span>'}
+            <span style="font-weight:600; font-size:12px; color:#0f172a; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(v.label)}</span>
+            <span style="font-size:10.5px; color:#94a3b8;">${v.block_count} 块</span>
+          </div>
+          <div style="font-size:10.5px; color:#94a3b8; margin-bottom:6px;">
+            ${dateStr} · ${escapeHtml(v.author_name || v.author_email || '系统')}
+          </div>
+          <div style="display:flex; gap:4px;">
+            <button class="btn btn--ghost btn--sm" style="flex:1; font-size:11px;" data-restore="${v.id}">恢复此版本</button>
+            <button class="btn btn--ghost btn--sm" style="font-size:11px; color:#b91c1c;" data-del="${v.id}">×</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    listEl.querySelectorAll('[data-restore]').forEach((b) => {
+      b.addEventListener('click', async () => {
+        if (!confirm('确认恢复到这个版本？当前内容会先自动保存一个快照，可以再撤销。')) return;
+        try {
+          const r = await api('/api/blocks/versions/' + pageId + '/restore/' + b.dataset.restore, { method: 'POST' });
+          // After restore, fetch fresh blocks
+          const fresh = await api('/api/blocks/page/' + pageId);
+          blocks = fresh.items;
+          selectedId = null;
+          undoStack.length = 0;   // history reset is cleaner than tangling with pre-restore state
+          redoStack.length = 0;
+          updateHistoryUI();
+          setStatus('saved', `✓ 已恢复 ${r.restored} 个区块`);
+          reloadFrame();
+          renderHistoryPanel();   // refresh list with the new pre-restore snapshot
+        } catch (e) { alert('恢复失败：' + e.message); }
+      });
+    });
+    listEl.querySelectorAll('[data-del]').forEach((b) => {
+      b.addEventListener('click', async () => {
+        if (!confirm('删除这个版本快照？此操作不可撤销。')) return;
+        try {
+          await api('/api/blocks/versions/' + b.dataset.del, { method: 'DELETE' });
+          renderHistoryPanel();
+        } catch (e) { alert('删除失败：' + e.message); }
+      });
+    });
+  }
+
+  // ----- SEO panel (page-level meta) -----
+  let pageSeoCache = null;
+  async function renderSeoPanel() {
+    sideBody.innerHTML = `<p style="padding:20px;color:#94a3b8;">加载页面 SEO 设置…</p>`;
+    try {
+      const r = await api('/api/pages/admin/' + pageId);
+      pageSeoCache = r.page;
+    } catch (e) {
+      sideBody.innerHTML = `<p style="padding:20px;color:#b91c1c;">加载失败：${escapeHtml(e.message)}</p>`;
+      return;
+    }
+    const p = pageSeoCache;
+    const titleLen = (p.meta_title || p.title || '').length;
+    const descLen = (p.meta_description || '').length;
+    const titleHint = titleLen === 0 ? '⚠ 未设置' : (titleLen < 30 ? '⚠ 偏短' : (titleLen > 60 ? '⚠ 过长（>60 字符）' : '✓ 长度合适'));
+    const descHint = descLen === 0 ? '⚠ 未设置' : (descLen < 120 ? '⚠ 偏短' : (descLen > 160 ? '⚠ 过长（>160 字符）' : '✓ 长度合适'));
+    sideBody.innerHTML = `
+      <div class="pb2-form__note">
+        <strong>页面 SEO 设置</strong>。改完自动保存，前台立即生效。<br>
+        meta title 建议 50-60 字符；meta description 建议 130-155 字符。
+      </div>
+      <div class="pb2-form__field">
+        <label>Focus Keyword</label>
+        <input type="text" id="seo_focus" maxlength="190" placeholder="如：custom lithium battery">
+        <span class="hint">这一页围绕这个关键词做 SEO；后台用来打分。</span>
+      </div>
+      <div class="pb2-form__field">
+        <label>Meta Title <span style="color:${titleLen > 60 ? '#dc2626' : '#94a3b8'};">${titleLen}/60</span></label>
+        <input type="text" id="seo_meta_title" maxlength="255" placeholder="出现在搜索结果第一行">
+        <span class="hint">${titleHint}</span>
+      </div>
+      <div class="pb2-form__field">
+        <label>Meta Description <span style="color:${descLen > 160 ? '#dc2626' : '#94a3b8'};">${descLen}/160</span></label>
+        <textarea id="seo_meta_desc" rows="3" maxlength="320" placeholder="搜索结果第二行的摘要"></textarea>
+        <span class="hint">${descHint}</span>
+      </div>
+      <div class="pb2-form__field">
+        <label>Open Graph 图片（社交分享卡片）</label>
+        <div class="pb2-form__field--image">
+          <input type="text" id="seo_og_image" placeholder="/uploads/... or https://..." maxlength="500">
+          <button type="button" id="seo_og_pick">媒体库</button>
+        </div>
+        <div class="pb2-form__image-preview" id="seo_og_preview"></div>
+        <span class="hint">推荐 1200×630 px；不填则用站点默认图。</span>
+      </div>
+      <div class="pb2-form__field">
+        <label>Robots（爬虫指令，可选）</label>
+        <select id="seo_robots">
+          <option value="">默认（index, follow）</option>
+          <option value="noindex, follow">noindex, follow（不收录但允许爬链接）</option>
+          <option value="noindex, nofollow">noindex, nofollow（完全屏蔽）</option>
+        </select>
+      </div>
+      <div class="pb2-form__field">
+        <label>Canonical URL 覆盖（可选）</label>
+        <input type="url" id="seo_canonical" placeholder="留空则用当前页面 URL" maxlength="500">
+        <span class="hint">页面有多个入口时指向首选版本。</span>
+      </div>
+      <div style="margin-top:14px; padding:10px; background:#eff6ff; border-radius:6px; font-size:11.5px; color:#0b3a82;">
+        <strong>SERP 预览：</strong>
+        <div style="margin-top:6px; font-family:Arial,sans-serif;">
+          <div id="serp_title" style="color:#1a0dab; font-size:13.5px; line-height:1.3; margin-bottom:2px;"></div>
+          <div id="serp_url" style="color:#006621; font-size:11px; margin-bottom:3px;"></div>
+          <div id="serp_desc" style="color:#545454; font-size:11.5px; line-height:1.5;"></div>
+        </div>
+      </div>
+    `;
+
+    const focusEl = document.getElementById('seo_focus');
+    const titleEl = document.getElementById('seo_meta_title');
+    const descEl = document.getElementById('seo_meta_desc');
+    const ogEl = document.getElementById('seo_og_image');
+    const ogPv = document.getElementById('seo_og_preview');
+    const robotsEl = document.getElementById('seo_robots');
+    const canonEl = document.getElementById('seo_canonical');
+
+    focusEl.value = p.focus_keyword || '';
+    titleEl.value = p.meta_title || '';
+    descEl.value = p.meta_description || '';
+    ogEl.value = p.og_image_url || '';
+    robotsEl.value = p.robots || '';
+    canonEl.value = p.canonical_override || '';
+    syncOgPreview();
+    syncSerpPreview();
+
+    function syncOgPreview() {
+      if (ogEl.value) { ogPv.style.backgroundImage = `url('${ogEl.value}')`; ogPv.classList.add('has-image'); }
+      else ogPv.classList.remove('has-image');
+    }
+    function syncSerpPreview() {
+      const title = titleEl.value || p.title || pageInfo?.title || pageInfo?.slug || '';
+      const desc = descEl.value || '';
+      const url = (location.origin + '/' + (p.slug || '')).replace(/\/+$/, '/');
+      document.getElementById('serp_title').textContent = title.slice(0, 60);
+      document.getElementById('serp_url').textContent = url;
+      document.getElementById('serp_desc').textContent = desc.slice(0, 160) + (desc.length > 160 ? '…' : '');
+    }
+
+    let seoTimer = null;
+    function scheduleSeoSave() {
+      setStatus('dirty', 'SEO 未保存…');
+      clearTimeout(seoTimer);
+      seoTimer = setTimeout(saveSeoNow, 700);
+    }
+    async function saveSeoNow() {
+      setStatus('saving', '保存 SEO…');
+      // Merge our edits onto the full page row and PUT (existing endpoint
+      // requires all fields). We only mutate the SEO subset.
+      const payload = Object.assign({}, p, {
+        focus_keyword: focusEl.value,
+        meta_title: titleEl.value,
+        meta_description: descEl.value,
+        og_image_url: ogEl.value,
+        robots: robotsEl.value,
+        canonical_override: canonEl.value,
+      });
+      try {
+        await api('/api/pages/' + pageId, { method: 'PUT', body: JSON.stringify(payload) });
+        setStatus('saved', '✓ SEO 已保存');
+        // Update cached row + re-render header counts
+        Object.assign(p, payload);
+        // Live-update the SERP preview counters by re-rendering this tab
+        // — but we keep current scroll / focus so just call sync funcs:
+        syncOgPreview();
+        syncSerpPreview();
+      } catch (e) {
+        setStatus('dirty', 'SEO 保存失败：' + e.message);
+      }
+    }
+
+    [focusEl, titleEl, descEl, ogEl, robotsEl, canonEl].forEach((el) => {
+      el.addEventListener('input', () => { syncSerpPreview(); scheduleSeoSave(); });
+    });
+    ogEl.addEventListener('input', syncOgPreview);
+    document.getElementById('seo_og_pick').addEventListener('click', async () => {
+      const url = await pickFromMedia();
+      if (url) { ogEl.value = url; syncOgPreview(); scheduleSeoSave(); }
+    });
+  }
+
+  async function renderLibrary() {
+    sideBody.innerHTML = `
+      <div class="pb2-form__note">
+        <strong>添加方式：</strong> 拖拽到画布上任意位置 — 或点击加到页面末尾。
+      </div>
+      <div style="font-size:11px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.06em; margin: 4px 0 6px;">12 个标准区块</div>
       <div class="pb2-lib">
         ${TYPES.map((t) => `
-          <div class="pb2-lib__item" data-type="${t.id}" title="${escapeHtml(t.description)}">
+          <div class="pb2-lib__item" data-type="${t.id}" draggable="true" title="${escapeHtml(t.description)}">
             <div class="pb2-lib__icon">${escapeHtml(t.icon)}</div>
             <div class="pb2-lib__label">${escapeHtml(t.label)}</div>
           </div>
         `).join('')}
       </div>
+      <div style="font-size:11px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.06em; margin: 18px 0 6px;">⭐ 我的片段</div>
+      <div id="snippets-list" style="font-size:12px; color:#94a3b8;">加载中…</div>
     `;
     sideBody.querySelectorAll('[data-type]').forEach((el) => {
       el.addEventListener('click', () => addBlockAt(el.dataset.type, null, 'end'));
+      el.addEventListener('dragstart', (ev) => {
+        ev.dataTransfer.effectAllowed = 'copy';
+        try { ev.dataTransfer.setData('text/plain', el.dataset.type); } catch (_) {}
+        postToFrame('library-drag-start', { block_type: el.dataset.type });
+      });
+      el.addEventListener('dragend', () => postToFrame('library-drag-end'));
     });
+
+    // Load + render saved snippets
+    try {
+      const { items } = await api('/api/blocks/snippets');
+      const listEl = document.getElementById('snippets-list');
+      if (!items.length) {
+        listEl.innerHTML = '<p style="margin:0; font-size:11.5px;">还没有保存的片段。<br>在画布上选中区块 → 点工具栏 ⭐ 按钮保存。</p>';
+      } else {
+        listEl.innerHTML = items.map((s) => {
+          const def = typeMap[s.block_type];
+          return `
+            <div style="display:flex; align-items:center; gap:8px; padding:8px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; margin-bottom:5px; cursor:pointer;" data-snippet-id="${s.id}">
+              <span style="color:#0b3a82; font-size:14px;">${def ? escapeHtml(def.icon) : '?'}</span>
+              <div style="flex:1; min-width:0;">
+                <div style="font-weight:600; color:#0f172a; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(s.name)}</div>
+                <div style="color:#94a3b8; font-size:10.5px;">${def ? escapeHtml(def.label) : s.block_type}</div>
+              </div>
+              <button data-snippet-delete="${s.id}" title="删除片段" style="background:transparent; border:none; color:#94a3b8; padding:4px 6px; cursor:pointer; font-size:13px;">×</button>
+            </div>
+          `;
+        }).join('');
+        listEl.querySelectorAll('[data-snippet-id]').forEach((el) => {
+          const id = parseInt(el.dataset.snippetId, 10);
+          el.addEventListener('click', async (ev) => {
+            if (ev.target.closest('[data-snippet-delete]')) return;
+            try {
+              pushUndo();
+              const r = await api('/api/blocks/from-snippet', {
+                method: 'POST',
+                body: JSON.stringify({ page_id: pageId, snippet_id: id }),
+              });
+              blocks.push(r);
+              selectedId = r.id;
+              setStatus('saved', '✓ 已插入片段');
+              reloadFrame();
+            } catch (e) { alert('插入失败：' + e.message); }
+          });
+        });
+        listEl.querySelectorAll('[data-snippet-delete]').forEach((b) => {
+          b.addEventListener('click', async (ev) => {
+            ev.stopPropagation();
+            if (!confirm('删除这个片段？')) return;
+            try {
+              await api('/api/blocks/snippets/' + b.dataset.snippetDelete, { method: 'DELETE' });
+              renderLibrary();
+            } catch (e) { alert('删除失败：' + e.message); }
+          });
+        });
+      }
+    } catch (e) {
+      document.getElementById('snippets-list').innerHTML = '<p style="color:#b91c1c;">片段加载失败</p>';
+    }
   }
 
   function renderSettings() {
@@ -590,11 +1001,12 @@
       partialTimers.delete(blockId);
       const block = blocks.find((b) => b.id === blockId);
       if (!block) return;
+      pushUndo();
       setStatus('saving', '保存中…');
       try {
         await api('/api/blocks/' + blockId, { method: 'PUT', body: JSON.stringify({ content: block.content }) });
         setStatus('saved', '✓ 已保存');
-        reloadFrame();
+        hotSwapBlock(blockId);
       } catch (e) { setStatus('dirty', '失败：' + e.message); }
     }, 700));
   }
@@ -636,16 +1048,15 @@
 
   // ----- Insert-block popover -----
   function showInsertPopover(refId, position) {
-    // Switch to library tab and scroll into view
     activeTab = 'library';
     document.querySelectorAll('.pb2-side__tab').forEach((x) => x.classList.toggle('is-active', x.dataset.tab === 'library'));
     sideBody.innerHTML = `
       <div class="pb2-form__note">
-        在 <strong>${refId ? '指定位置' : '页面末尾'}</strong> 插入一个新区块。点选要添加的类型：
+        在 <strong>${refId ? '指定位置' : '页面末尾'}</strong> 插入一个新区块。点选或拖拽要添加的类型：
       </div>
       <div class="pb2-lib">
         ${TYPES.map((t) => `
-          <div class="pb2-lib__item" data-type="${t.id}" title="${escapeHtml(t.description)}">
+          <div class="pb2-lib__item" data-type="${t.id}" draggable="true" title="${escapeHtml(t.description)}">
             <div class="pb2-lib__icon">${escapeHtml(t.icon)}</div>
             <div class="pb2-lib__label">${escapeHtml(t.label)}</div>
           </div>
@@ -658,6 +1069,12 @@
         activeTab = 'settings';
         document.querySelectorAll('.pb2-side__tab').forEach((x) => x.classList.toggle('is-active', x.dataset.tab === 'settings'));
       });
+      el.addEventListener('dragstart', (ev) => {
+        ev.dataTransfer.effectAllowed = 'copy';
+        try { ev.dataTransfer.setData('text/plain', el.dataset.type); } catch (_) {}
+        postToFrame('library-drag-start', { block_type: el.dataset.type });
+      });
+      el.addEventListener('dragend', () => postToFrame('library-drag-end'));
     });
   }
 
