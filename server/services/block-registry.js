@@ -82,9 +82,9 @@ const BLOCKS = {
       const eyebrow = `<div class="block-hero__eyebrow"${edit('eyebrow')}${c.eyebrow ? '' : ' data-empty="1"'}>${esc(c.eyebrow || '')}</div>`;
       const subtitle = `<p class="block-hero__sub"${editRich('subtitle')}${c.subtitle ? '' : ' data-empty="1"'}>${richHtml(c.subtitle || '')}</p>`;
       const cta = c.cta_link
-        ? `<a class="block-hero__cta" href="${attr(c.cta_link)}"${edit('cta_text')}>${esc(c.cta_text || 'Get a Quote')}</a>` : '';
+        ? `<a class="block-hero__cta" href="${attr(c.cta_link)}"${edit('cta_text')} data-edit-link-field="cta_link">${esc(c.cta_text || 'Get a Quote')}</a>` : '';
       const cta2 = c.secondary_cta_link
-        ? `<a class="block-hero__cta block-hero__cta--secondary" href="${attr(c.secondary_cta_link)}"${edit('secondary_cta_text')}>${esc(c.secondary_cta_text || 'Learn more')}</a>` : '';
+        ? `<a class="block-hero__cta block-hero__cta--secondary" href="${attr(c.secondary_cta_link)}"${edit('secondary_cta_text')} data-edit-link-field="secondary_cta_link">${esc(c.secondary_cta_text || 'Learn more')}</a>` : '';
       return `
         <section class="block block-hero block-hero--${align}" data-edit-bg="image_url" ${bg}>
           <div class="block-hero__overlay"></div>
@@ -124,11 +124,11 @@ const BLOCKS = {
     ],
     render(c) {
       const cols = Array.isArray(c.columns) ? c.columns : [];
-      const items = cols.map((v) => `
-        <div class="block-vp__item">
-          <div class="block-vp__icon">${esc(v.icon || '')}</div>
-          <h3 class="block-vp__title">${esc(v.title || '')}</h3>
-          <p class="block-vp__text">${lineBreaks(v.text || '')}</p>
+      const items = cols.map((v, i) => `
+        <div class="block-vp__item" data-edit-path="columns.${i}">
+          <div class="block-vp__icon"${edit('icon')}>${esc(v.icon || '')}</div>
+          <h3 class="block-vp__title"${edit('title')}>${esc(v.title || '')}</h3>
+          <p class="block-vp__text"${edit('text')}>${lineBreaks(v.text || '')}</p>
         </div>`).join('');
       return `
         <section class="block block-vp">
@@ -345,12 +345,12 @@ const BLOCKS = {
       }),
     ],
     render(c) {
-      const items = (c.sections || []).map((s) => `
-        <div class="block-fs__row block-fs__row--${s.align === 'right' ? 'right' : 'left'}">
-          <div class="block-fs__media">${s.image ? `<img src="${attr(s.image)}" alt="${attr(s.title || '')}" loading="lazy" decoding="async">` : ''}</div>
+      const items = (c.sections || []).map((s, i) => `
+        <div class="block-fs__row block-fs__row--${s.align === 'right' ? 'right' : 'left'}" data-edit-path="sections.${i}">
+          <div class="block-fs__media">${s.image ? `<img src="${attr(s.image)}" alt="${attr(s.title || '')}" loading="lazy" decoding="async" data-edit-image="image">` : ''}</div>
           <div class="block-fs__text">
-            <h3>${esc(s.title || '')}</h3>
-            <p>${lineBreaks(s.text || '')}</p>
+            <h3${edit('title')}>${esc(s.title || '')}</h3>
+            <p${edit('text')}>${lineBreaks(s.text || '')}</p>
           </div>
         </div>`).join('');
       return `
@@ -416,10 +416,10 @@ const BLOCKS = {
       }),
     ],
     render(c) {
-      const items = (c.items || []).map((q) => `
-        <details class="block-faq__item">
-          <summary>${esc(q.q || '')}</summary>
-          <div class="block-faq__a">${lineBreaks(q.a || '')}</div>
+      const items = (c.items || []).map((q, i) => `
+        <details class="block-faq__item" data-edit-path="items.${i}">
+          <summary><span${edit('q')}>${esc(q.q || '')}</span></summary>
+          <div class="block-faq__a"${edit('a')}>${lineBreaks(q.a || '')}</div>
         </details>`).join('');
       // FAQPage JSON-LD for SEO
       const jsonld = (c.items || []).filter((q) => q.q && q.a).map((q) => ({
@@ -473,7 +473,7 @@ const BLOCKS = {
           <div class="block-cta__inner">
             <h2 class="block-cta__title"${edit('title')}>${esc(c.title || '')}</h2>
             <p class="block-cta__sub"${editRich('subtitle')}${c.subtitle ? '' : ' data-empty="1"'}>${richHtml(c.subtitle || '')}</p>
-            ${c.cta_link ? `<a class="block-cta__btn" href="${attr(c.cta_link)}"${edit('cta_text')}>${esc(c.cta_text || 'Get a Quote')}</a>` : ''}
+            ${c.cta_link ? `<a class="block-cta__btn" href="${attr(c.cta_link)}"${edit('cta_text')} data-edit-link-field="cta_link">${esc(c.cta_text || 'Get a Quote')}</a>` : ''}
           </div>
         </section>`;
     },
@@ -539,7 +539,7 @@ const BLOCKS = {
       const w = ['narrow', 'standard', 'wide', 'full'].includes(c.max_width) ? c.max_width : 'standard';
       return `
         <section class="block block-rt block-rt--${w}">
-          <div class="block-rt__inner">${c.html || ''}</div>
+          <div class="block-rt__inner" data-edit-field="html" data-edit-rich="1">${richHtml(c.html || '')}</div>
         </section>`;
     },
   },

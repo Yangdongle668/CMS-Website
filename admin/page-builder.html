@@ -362,20 +362,41 @@
     const block = blocks.find((b) => b.id === id);
     if (!block) return;
     pushUndo();
-    Object.assign(block.content, fields);
+    block.content = block.content || {};
+    // Field keys can be dotted paths (e.g. "columns.0.title") when an
+    // edit happens inside a [data-edit-path] container. Walk the path
+    // and set the leaf; create intermediate arrays/objects as needed.
+    for (const [path, value] of Object.entries(fields)) {
+      setByPath(block.content, path, value);
+    }
     setStatus('saving', '保存中…');
     try {
       await api('/api/blocks/' + id, { method: 'PUT', body: JSON.stringify({ content: block.content }) });
       setStatus('saved', '✓ 已保存');
       postToFrame('block-saved');
-      // Hot-swap the changed block in the iframe instead of full reload —
-      // keeps the user's scroll position, focused selection and undo
-      // history exactly where they were.
-      hotSwapBlock(id);
+      // Deliberately NO hot-swap for inline text edits — the DOM is
+      // already up-to-date (user just typed into it). Hot-swapping
+      // here would steal the cursor mid-typing if the user kept
+      // editing past the debounce window. Side-panel edits and image
+      // swaps still hot-swap via their own paths.
       if (activeTab === 'settings' && selectedId === id) renderSide();
     } catch (e) {
       setStatus('dirty', '保存失败：' + e.message);
     }
+  }
+
+  function setByPath(obj, path, value) {
+    const parts = String(path).split('.');
+    let cur = obj;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const key = parts[i];
+      const next = parts[i + 1];
+      if (cur[key] == null || typeof cur[key] !== 'object') {
+        cur[key] = /^\d+$/.test(next) ? [] : {};
+      }
+      cur = cur[key];
+    }
+    cur[parts[parts.length - 1]] = value;
   }
 
   async function hotSwapBlock(blockId) {

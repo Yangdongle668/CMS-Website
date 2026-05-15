@@ -306,6 +306,73 @@
 }
 .cmsb-rt-bar__sep { width: 1px; height: 18px; background: rgba(255,255,255,0.18); margin: 0 2px; }
 
+/* ----- Inline link-edit affordance ----- */
+/* Any <a> with data-edit-link-field gets a "🔗" badge in the upper-
+   right corner when its parent block is selected. Clicking the badge
+   pops up a URL input (runtime injects this dynamically). */
+.cmsb-on [data-block-id].cmsb-selected [data-edit-link-field] {
+  position: relative;
+}
+.cmsb-link-edit-btn {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  z-index: 9999;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #0b3a82;
+  color: #fff;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  font-family: 'Inter', system-ui, sans-serif;
+  user-select: none;
+}
+.cmsb-link-edit-btn:hover { background: #082c63; }
+.cmsb-link-edit-popover {
+  position: absolute;
+  z-index: 10000;
+  background: #0f172a;
+  padding: 6px;
+  border-radius: 6px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.cmsb-link-edit-popover input {
+  width: 260px;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  border: none;
+  border-radius: 4px;
+  outline: none;
+  font-family: inherit;
+}
+.cmsb-link-edit-popover button {
+  background: transparent;
+  border: none;
+  color: #fff;
+  padding: 6px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.cmsb-link-edit-popover button:hover { background: rgba(255,255,255,0.15); }
+
+/* ----- Nested-field hint (data-edit-path container) ----- */
+/* When hovering an item inside a repeater, show subtle dashed outline
+   on the whole item so editors realize the texts inside are editable. */
+.cmsb-on [data-edit-path]:hover {
+  outline: 1px dashed #f59e0b;
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
 /* ----- Drag block from sidebar onto canvas ----- */
 /* The parent posts 'library-drag-start' when an admin starts dragging a
    library tile. Runtime adds .cmsb-is-dragging just like the in-iframe
