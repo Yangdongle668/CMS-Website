@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex">
 <title>Preview</title>
-<link rel="stylesheet" href="/styles.css?v=18">
+<link rel="stylesheet" href="/styles.css?v=19">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -38,8 +38,9 @@
 <main id="page-blocks"></main>
 <div id="footer-mount"></div>
 
-<script src="/render.js?v=18"></script>
-<script src="/partials.js?v=18"></script>
+<script src="/render.js?v=19"></script>
+<script src="/partials.js?v=19"></script>
+<script src="/script.js?v=19"></script>
 
 <script>
 (function () {
@@ -52,6 +53,58 @@
       <p>点左侧的 <strong>+ 加一块</strong> 开始搭页面。右侧实时预览会显示你加的每一块。</p>
     </div>`;
 
+  // Some block types need post-render hydration to come alive (sliders bind
+  // arrow buttons, counters animate when scrolled into view, blog grid pulls
+  // from /api/articles). The functions invoked here are all defined in
+  // public/script.js — they're safe to call multiple times.
+  function hydrate() {
+    try { window.bindSliders && window.bindSliders(); } catch (_) {}
+    hydrateCounters();
+    hydrateBlogGrids();
+  }
+
+  function hydrateCounters() {
+    document.querySelectorAll('.counter').forEach((el) => {
+      const target = parseInt(el.dataset.target || '0', 10);
+      if (Number.isNaN(target)) return;
+      // For the preview, skip animation — just set the final number so the
+      // operator can SEE what it'll be. (Animations distract during editing.)
+      el.textContent = target >= 1000 ? target.toLocaleString('en-US') : String(target);
+    });
+  }
+
+  async function hydrateBlogGrids() {
+    const grids = document.querySelectorAll('[data-insights-grid]');
+    if (!grids.length) return;
+    try {
+      const r = await fetch('/api/articles?status=published&limit=6');
+      const j = await r.json();
+      const arts = j.items || j.articles || [];
+      grids.forEach((g) => {
+        const limit = parseInt(g.dataset.limit || '3', 10);
+        const items = arts.slice(0, limit);
+        if (!items.length) {
+          g.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#86878b;">还没有已发布的文章。</p>';
+          return;
+        }
+        g.innerHTML = items.map((a) => `
+          <a class="news-card" href="/blog/${encodeURIComponent(a.slug)}">
+            ${a.cover_url ? `<div class="news-card__media" style="background-image:url('${a.cover_url}');"></div>` : ''}
+            <div class="news-card__body">
+              <h3>${escapeHtml(a.title || '')}</h3>
+              <p>${escapeHtml(a.excerpt || '')}</p>
+              <span class="news-link">Read more →</span>
+            </div>
+          </a>`).join('');
+      });
+    } catch (_) { /* preview API may be unauthenticated; ignore */ }
+  }
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]));
+  }
+
   function render(blocks) {
     if (!Array.isArray(blocks) || !blocks.length) {
       mount.innerHTML = EMPTY;
@@ -63,6 +116,8 @@
       const html = window.CMSRender.renderBlock(b);
       return `<div class="render-block" data-block-id="${b.id || ''}" data-block-type="${b.type || ''}">${html}</div>`;
     }).join('');
+    // After DOM is in place, run hydration for interactive blocks.
+    setTimeout(hydrate, 0);
   }
 
   // Receive block JSON from the parent builder window.

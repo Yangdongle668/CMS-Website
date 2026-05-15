@@ -46,7 +46,28 @@
     return '';
   }
 
-  // -------- Block renderers --------
+  // Section wrapper helper. Every "content" block lives inside
+  // <section class="section section-<bg>"><div class="section-inner">...</div></section>.
+  // bg can be 'light' (default), 'grey', or 'dark'.
+  function section(bg, inner, extra) {
+    const cls = 'section section-' + (bg === 'grey' || bg === 'dark' ? bg : 'light') + (extra ? ' ' + extra : '');
+    return `<section class="${cls}"><div class="section-inner">${inner}</div></section>`;
+  }
+
+  // Eyebrow + h2 + lead trio — used by almost every block as a header.
+  function sectionHead(d) {
+    const parts = [];
+    if (d.eyebrow) parts.push(`<span class="eyebrow">${h(d.eyebrow)}</span>`);
+    if (d.title)   parts.push(`<h2>${htitle(d.title)}</h2>`);
+    if (d.lead)    parts.push(`<p class="lead">${h(d.lead)}</p>`);
+    return parts.join('');
+  }
+
+  function arr(v) { return Array.isArray(v) ? v : []; }
+
+  /* ========================================================================
+     Block renderers
+     ======================================================================== */
   const BLOCK_RENDERERS = {
 
     // ---- HERO ----------------------------------------------------------------
@@ -72,33 +93,82 @@
 </section>`;
     },
 
-    // ---- PILLAR-GRID (3 product-line cards) ----------------------------------
+    // ---- TRUST-STRIP --------------------------------------------------------
+    'trust-strip'(d) {
+      d = d || {};
+      const items = arr(d.items);
+      return `
+<section class="trust-strip">
+  <div class="trust-strip__inner">
+    ${d.label ? `<div class="trust-strip__label">${h(d.label)}</div>` : ''}
+    <div class="trust-strip__items">
+      ${items.map((it) => `<span>${h(typeof it === 'string' ? it : it.label)}</span>`).join('')}
+    </div>
+  </div>
+</section>`;
+    },
+
+    // ---- PILLAR-GRID --------------------------------------------------------
     'pillar-grid'(d) {
       d = d || {};
-      const cards = Array.isArray(d.cards) ? d.cards : [];
+      const cards = arr(d.cards);
+      return section(d.background, `
+        ${sectionHead(d)}
+        <div class="pillar-grid">
+          ${cards.map((c) => {
+            c = c || {};
+            const link = h(safeUrl(c.link));
+            const img = safeImg(c.image);
+            const specs = arr(c.specs);
+            return `
+            <a class="pillar-card" href="${link}">
+              ${img ? `<div class="pillar-card__media" style="background-image:url('${h(img)}');"></div>` : ''}
+              <div class="pillar-card__body">
+                ${c.pill ? `<span class="pillar-card__pill">${h(c.pill)}</span>` : ''}
+                ${c.title ? `<h3>${h(c.title)}</h3>` : ''}
+                ${c.desc ? `<p>${h(c.desc)}</p>` : ''}
+                ${specs.length ? `<div class="pillar-card__specs">
+                  ${specs.map((s) => `<span><strong>${h(s.value)}</strong>${h(s.unit || '')}</span>`).join('')}
+                </div>` : ''}
+                ${c.linkText ? `<span class="news-link">${h(c.linkText)}</span>` : ''}
+              </div>
+            </a>`;
+          }).join('')}
+        </div>`);
+    },
+
+    // ---- TESLA-SLIDER -------------------------------------------------------
+    'tesla-slider'(d) {
+      d = d || {};
+      const slides = arr(d.slides);
+      const hasIntro = d.eyebrow || d.title || d.lead;
+      const intro = hasIntro
+        ? `<div class="section-inner">${sectionHead(d)}</div>`
+        : '';
+      const wrapperCls = 'section section-' + (d.background === 'grey' || d.background === 'dark' ? d.background : 'grey');
       return `
-<section class="section section-light">
-  <div class="section-inner">
-    ${d.eyebrow ? `<span class="eyebrow">${h(d.eyebrow)}</span>` : ''}
-    ${d.title ? `<h2>${htitle(d.title)}</h2>` : ''}
-    ${d.lead ? `<p class="lead">${h(d.lead)}</p>` : ''}
-    <div class="pillar-grid">
-      ${cards.map((c) => {
-        c = c || {};
-        const link = h(safeUrl(c.link));
-        const img = safeImg(c.image);
-        const specs = Array.isArray(c.specs) ? c.specs : [];
+<section class="${wrapperCls}">
+  ${intro}
+  <div class="tesla-slider" data-slider>
+    <button type="button" class="tesla-slider__arrow tesla-slider__arrow--prev" aria-label="Previous">‹</button>
+    <button type="button" class="tesla-slider__arrow tesla-slider__arrow--next" aria-label="Next">›</button>
+    <div class="tesla-slider__track" data-slider-track>
+      ${slides.map((s, i) => {
+        s = s || {};
+        const img = safeImg(s.image);
+        const label = s.label || `Application ${String(i + 1).padStart(2, '0')}`;
+        const bg = img ? `style="background-image:url('${h(img)}');"` : '';
         return `
-        <a class="pillar-card" href="${link}">
-          ${img ? `<div class="pillar-card__media" style="background-image:url('${h(img)}');"></div>` : ''}
-          <div class="pillar-card__body">
-            ${c.pill ? `<span class="pillar-card__pill">${h(c.pill)}</span>` : ''}
-            ${c.title ? `<h3>${h(c.title)}</h3>` : ''}
-            ${c.desc ? `<p>${h(c.desc)}</p>` : ''}
-            ${specs.length ? `<div class="pillar-card__specs">
-              ${specs.map((s) => `<span><strong>${h(s.value)}</strong>${h(s.unit || '')}</span>`).join('')}
-            </div>` : ''}
-            ${c.linkText ? `<span class="news-link">${h(c.linkText)}</span>` : ''}
+        <a class="tesla-slide" href="${h(safeUrl(s.link))}" ${bg}>
+          <div class="tesla-slide__label">${h(label)}</div>
+          <div class="tesla-slide__bottom">
+            ${s.title ? `<h3 class="tesla-slide__title">${h(s.title)}</h3>` : ''}
+            ${s.subtitle ? `<span class="tesla-slide__sub">${h(s.subtitle)}</span>` : ''}
+            ${(s.primaryCta || s.secondaryCta) ? `
+              <div class="tesla-slide__ctas">
+                ${s.primaryCta ? `<span class="tesla-slide__cta tesla-slide__cta--primary">${h(s.primaryCta)}</span>` : ''}
+                ${s.secondaryCta ? `<span class="tesla-slide__cta tesla-slide__cta--secondary">${h(s.secondaryCta)}</span>` : ''}
+              </div>` : ''}
           </div>
         </a>`;
       }).join('')}
@@ -107,15 +177,160 @@
 </section>`;
     },
 
-    // ---- CTA-BAND ------------------------------------------------------------
+    // ---- CONTENT-SPLIT ------------------------------------------------------
+    'content-split'(d) {
+      d = d || {};
+      const reverse = d.imagePosition === 'left' ? ' reverse' : '';
+      const img = safeImg(d.image);
+      const link = (d.link && d.link.label && d.link.url)
+        ? `<a href="${h(safeUrl(d.link.url))}" class="news-link">${h(d.link.label)} &rarr;</a>`
+        : '';
+      return section(d.background, `
+        ${(d.eyebrow || d.title) ? `${d.eyebrow ? `<span class="eyebrow">${h(d.eyebrow)}</span>` : ''}${d.title ? `<h2>${htitle(d.title)}</h2>` : ''}` : ''}
+        <div class="content-split${reverse}">
+          <div class="text-col">
+            ${d.subtitle ? `<h3>${h(d.subtitle)}</h3>` : ''}
+            ${arr(d.paragraphs).map((p) => `<p>${h(p)}</p>`).join('')}
+            ${link}
+          </div>
+          <div class="img-col">
+            ${img ? `<img src="${h(img)}" alt="${h(d.imageAlt || d.title || '')}">` : ''}
+          </div>
+        </div>`);
+    },
+
+    // ---- FEAT-GRID ----------------------------------------------------------
+    'feat-grid'(d) {
+      d = d || {};
+      const items = arr(d.items);
+      const cols = d.columns === 2 || d.columns === '2' ? 2
+                 : d.columns === 4 || d.columns === '4' ? 4
+                 : 3;
+      const style = cols === 3 ? '' : ` style="grid-template-columns: repeat(${cols}, 1fr);"`;
+      return section(d.background, `
+        ${sectionHead(d)}
+        <div class="feat-grid"${style}>
+          ${items.map((it) => {
+            it = it || {};
+            return `
+            <div class="feat-item">
+              ${it.icon ? `<div class="feat-icon">${h(it.icon)}</div>` : ''}
+              ${it.title ? `<h3>${h(it.title)}</h3>` : ''}
+              ${it.desc ? `<p>${h(it.desc)}</p>` : ''}
+            </div>`;
+          }).join('')}
+        </div>`);
+    },
+
+    // ---- STEPS-GRID ---------------------------------------------------------
+    'steps-grid'(d) {
+      d = d || {};
+      const steps = arr(d.steps);
+      return section(d.background, `
+        ${sectionHead(d)}
+        <div class="steps-grid">
+          ${steps.map((st, i) => {
+            st = st || {};
+            const num = st.num || String(i + 1).padStart(2, '0');
+            const list = arr(st.points);
+            return `
+            <div class="step-card">
+              <div class="step-num">${h(num)}</div>
+              ${st.title ? `<h3>${h(st.title)}</h3>` : ''}
+              ${st.body ? `<p>${h(st.body)}</p>` : ''}
+              ${list.length ? `<ul class="step-list">${list.map((p) => `<li>${h(p)}</li>`).join('')}</ul>` : ''}
+            </div>`;
+          }).join('')}
+        </div>`);
+    },
+
+    // ---- STAT-STRIP ---------------------------------------------------------
+    'stat-strip'(d) {
+      d = d || {};
+      const stats = arr(d.stats);
+      const cls = d.dark ? 'section section-dark' : 'section section-light';
+      return `
+<section class="${cls}">
+  <div class="section-inner">
+    ${sectionHead(d)}
+    <div class="about-stats" data-stats-grid>
+      ${stats.map((s) => {
+        s = s || {};
+        const value = s.value || '';
+        const isNum = /^[0-9][0-9,]*$/.test(String(value).replace(/,/g, ''));
+        const target = isNum ? String(value).replace(/,/g, '') : '';
+        const inner = isNum
+          ? `<span class="counter" data-target="${h(target)}">0</span>${s.unit ? `<span>${h(s.unit)}</span>` : ''}`
+          : `${h(value)}${s.unit ? `<span>${h(s.unit)}</span>` : ''}`;
+        return `<div><strong>${inner}</strong><em>${h(s.label || '')}</em></div>`;
+      }).join('')}
+    </div>
+  </div>
+</section>`;
+    },
+
+    // ---- SPEC-TABLE ---------------------------------------------------------
+    'spec-table'(d) {
+      d = d || {};
+      const headers = arr(d.headers);
+      const rows = arr(d.rows);
+      return section(d.background, `
+        ${sectionHead(d)}
+        <table class="spec-table">
+          ${headers.length ? `<thead><tr>${headers.map((hd) => `<th>${h(hd)}</th>`).join('')}</tr></thead>` : ''}
+          <tbody>
+            ${rows.map((row) => {
+              const cells = arr(row);
+              return `<tr>${cells.map((c) => `<td>${h(c)}</td>`).join('')}</tr>`;
+            }).join('')}
+          </tbody>
+        </table>`);
+    },
+
+    // ---- CERT-WALL ----------------------------------------------------------
+    'cert-wall'(d) {
+      d = d || {};
+      const chips = arr(d.chips);
+      return section(d.background, `
+        ${sectionHead(d)}
+        <div class="cert-wall">
+          ${chips.map((c) => `<span class="cert-chip">${h(typeof c === 'string' ? c : c.label)}</span>`).join('')}
+        </div>`);
+    },
+
+    // ---- FAQ ----------------------------------------------------------------
+    'faq'(d) {
+      d = d || {};
+      const items = arr(d.items);
+      return section(d.background, `
+        ${sectionHead(d)}
+        <div class="faq-list">
+          ${items.map((f) => `
+            <details>
+              <summary>${h(f.q || '')}</summary>
+              <p>${h(f.a || '')}</p>
+            </details>`).join('')}
+        </div>`);
+    },
+
+    // ---- BLOG-GRID ----------------------------------------------------------
+    // Hydrated client-side from /api/articles. Renders a placeholder grid
+    // with the right shape; cms-page.js (or a small inline script) fills it.
+    'blog-grid'(d) {
+      d = d || {};
+      const limit = parseInt(d.limit, 10) || 3;
+      const source = d.source === 'pillar' ? `data-source="pillar"` : `data-source="latest"`;
+      return section(d.background, `
+        ${sectionHead(d)}
+        <div class="blog-grid" data-insights-grid ${source} data-limit="${limit}" style="margin-top: 40px;"></div>
+        ${d.allLink ? `<div style="margin-top: 32px;"><a href="${h(safeUrl(d.allLink))}" class="news-link">${h(d.allLinkText || 'Browse all insights →')}</a></div>` : ''}`);
+    },
+
+    // ---- CTA-BAND -----------------------------------------------------------
     'cta-band'(d) {
       d = d || {};
-      const bg = d.background || 'dark'; // dark | light | grey
-      const sectionClass = bg === 'light'
-        ? 'section section-light cta-band'
-        : bg === 'grey'
-        ? 'section section-grey cta-band'
-        : 'section section-dark cta-band';
+      const bg = d.background || 'dark';
+      const sectionClass = 'section section-' + (bg === 'light' ? 'light' : bg === 'grey' ? 'grey' : 'dark') + ' cta-band';
       const btnLabel = (d.button && d.button.label) || d.button_label;
       const btnUrl   = (d.button && d.button.url)   || d.button_url;
       return `
@@ -128,30 +343,84 @@
 </section>`;
     },
 
-    // Placeholders for the not-yet-built block types so an admin saving an
-    // unknown block sees a friendly message instead of a blank section.
-    // (When we ship each block we replace its placeholder above.)
-    'trust-strip'(d)    { return placeholder('Trust strip', d); },
-    'tesla-slider'(d)   { return placeholder('Application slider', d); },
-    'content-split'(d)  { return placeholder('Content split', d); },
-    'feat-grid'(d)      { return placeholder('Feature grid', d); },
-    'steps-grid'(d)     { return placeholder('Steps grid', d); },
-    'stat-strip'(d)     { return placeholder('Stat strip', d); },
-    'spec-table'(d)     { return placeholder('Spec table', d); },
-    'cert-wall'(d)      { return placeholder('Certification wall', d); },
-    'faq'(d)            { return placeholder('FAQ', d); },
-    'blog-grid'(d)      { return placeholder('Blog grid', d); },
-    'quote-form'(d)     { return placeholder('Quote form', d); },
-    'rich-text'(d)      { return placeholder('Rich text', d); },
+    // ---- QUOTE-FORM ---------------------------------------------------------
+    // Minimal inline RFQ. Real submission still goes through /api/inquiries.
+    // The form is intentionally simple — for the full version operators link
+    // to /contact.html. This is for "embed a quick form on a landing page".
+    'quote-form'(d) {
+      d = d || {};
+      return section(d.background, `
+        ${sectionHead(d)}
+        <form class="rfq-mini" action="/api/inquiries" method="post" style="max-width: 640px; margin: 32px auto 0; display: grid; gap: 12px;">
+          <input type="text" name="full_name" placeholder="${h(d.placeholders?.name || '姓名 / Name')}" required style="padding:12px 14px; border:1px solid #d4d4d4; border-radius:8px;">
+          <input type="email" name="email" placeholder="${h(d.placeholders?.email || '工作邮箱 / Work email')}" required style="padding:12px 14px; border:1px solid #d4d4d4; border-radius:8px;">
+          <input type="text" name="company" placeholder="${h(d.placeholders?.company || '公司 / Company')}" style="padding:12px 14px; border:1px solid #d4d4d4; border-radius:8px;">
+          <textarea name="message" placeholder="${h(d.placeholders?.message || '简单描述你的需求 / Briefly describe your need')}" rows="4" required style="padding:12px 14px; border:1px solid #d4d4d4; border-radius:8px; resize:vertical;"></textarea>
+          <label style="font-size:12.5px; color:#5c5e62; display:flex; gap:8px; align-items:flex-start;">
+            <input type="checkbox" name="consent_given" required style="margin-top:2px;">
+            <span>${h(d.consentText || '我同意按隐私政策处理我的数据 / I consent to data processing under the privacy policy.')}</span>
+          </label>
+          <button type="submit" class="btn btn-primary" style="justify-self: start;">${h(d.buttonLabel || 'Request a Quote')}</button>
+        </form>`);
+    },
+
+    // ---- RICH-TEXT ----------------------------------------------------------
+    // Operator-supplied long-form text. Block stores plain text + a few
+    // markers, and we render H2/H3/lists/paragraphs from very simple
+    // conventions (markdown-ish) so it stays safe.
+    'rich-text'(d) {
+      d = d || {};
+      const body = renderRichText(d.body || '');
+      return section(d.background, `
+        ${sectionHead(d)}
+        <div class="rich-text" style="max-width: 760px; margin: 0 auto; font-size: 16px; line-height: 1.75; color: #393c41;">
+          ${body}
+        </div>`);
+    },
   };
 
-  function placeholder(name, d) {
-    return `<section class="section section-light">
-      <div class="section-inner" style="text-align:center; padding:60px 20px; border:2px dashed #d4d4d4; border-radius:12px;">
-        <div style="font-size:14px; font-weight:600; color:#5c5e62; letter-spacing:1px; text-transform:uppercase;">${h(name)} · 即将上线</div>
-        <p style="margin-top:8px; color:#86878b;">这种积木还没实现渲染。已保存的数据：${h(JSON.stringify(d || {}).slice(0, 120))}</p>
-      </div>
-    </section>`;
+  /* ========================================================================
+     Markdown-ish converter for rich-text block.
+     Supports:  ## H2, ### H3, - list, blank-line paragraphs, **bold**, [link](url)
+     Anything else is treated as plain paragraph text.
+     ======================================================================== */
+  function renderRichText(src) {
+    const lines = String(src).split(/\r?\n/);
+    const out = [];
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i];
+      if (!line.trim()) { i++; continue; }
+      if (/^### /.test(line)) { out.push(`<h3>${inline(line.slice(4))}</h3>`); i++; continue; }
+      if (/^## /.test(line))  { out.push(`<h2>${inline(line.slice(3))}</h2>`); i++; continue; }
+      if (/^[*-] /.test(line)) {
+        const items = [];
+        while (i < lines.length && /^[*-] /.test(lines[i])) {
+          items.push(`<li>${inline(lines[i].slice(2))}</li>`);
+          i++;
+        }
+        out.push(`<ul>${items.join('')}</ul>`);
+        continue;
+      }
+      // Paragraph: gather contiguous lines
+      const buf = [];
+      while (i < lines.length && lines[i].trim() && !/^(#{2,3} |[*-] )/.test(lines[i])) {
+        buf.push(lines[i]); i++;
+      }
+      out.push(`<p>${inline(buf.join(' '))}</p>`);
+    }
+    return out.join('');
+  }
+  function inline(s) {
+    let t = h(s);
+    // bold
+    t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    // links: [label](url)
+    t = t.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, label, url) => {
+      const u = safeUrl(url);
+      return `<a href="${h(u)}">${label}</a>`;
+    });
+    return t;
   }
 
   function renderBlock(b) {
@@ -173,7 +442,6 @@
     return blocks.map(renderBlock).join('');
   }
 
-  // -------- Public API --------
   const api = { renderBlocks, renderBlock, BLOCK_RENDERERS };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

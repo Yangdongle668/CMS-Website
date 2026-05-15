@@ -29,22 +29,21 @@
      placeholders.
   -------------------------------------------------------------------------- */
   const BLOCK_TYPES = {
-    'hero':         { name: 'Hero 大图标题',   icon: '🖼',  desc: '满屏背景图 + 主标题 + 副标题 + 两个按钮', enabled: true },
-    'pillar-grid':  { name: '三大产品线卡片',   icon: '◉◉◉', desc: '3 张产品线卡片，带图、标签、规格', enabled: true },
-    'cta-band':     { name: '行动召唤条',       icon: '➤',  desc: '深色或浅色背景的转化条，带一个按钮', enabled: true },
-
-    'trust-strip':  { name: '信任徽章带',       icon: '✓',  desc: '一排认证 / 客户标识', enabled: false },
-    'tesla-slider': { name: '横向应用滑动卡',   icon: '⇄',  desc: 'Tesla 风格横向滑动应用展示', enabled: false },
-    'content-split':{ name: '图文左右分栏',     icon: '◐',  desc: '左侧文字 + 右侧图，或反转', enabled: false },
-    'feat-grid':    { name: '图标/数字网格',    icon: '◰',  desc: '2/3/4 列特性卡片', enabled: false },
-    'steps-grid':   { name: '步骤卡',           icon: '①',  desc: '编号步骤，每步带要点列表', enabled: false },
-    'stat-strip':   { name: '统计数字带',       icon: '#',  desc: '4 个大数字 + 标签', enabled: false },
-    'spec-table':   { name: '规格表',           icon: '▦',  desc: '可配置的参数对比表', enabled: false },
-    'cert-wall':    { name: '认证标签墙',       icon: '◇',  desc: '一排认证胶囊', enabled: false },
-    'faq':          { name: 'FAQ 折叠',         icon: '?',  desc: '问答对列表', enabled: false },
-    'blog-grid':    { name: '博客文章卡',       icon: '✎',  desc: '自动拉取最新文章', enabled: false },
-    'quote-form':   { name: '询盘表单',         icon: '✉',  desc: '内嵌迷你 RFQ 表单', enabled: false },
-    'rich-text':    { name: '富文本段落',       icon: 'T',  desc: '长篇文字 + 标题 + 列表', enabled: false },
+    'hero':         { name: 'Hero 大图标题',   icon: '🖼',  desc: '满屏背景图 + 主标题 + 副标题 + 两个按钮',     enabled: true },
+    'trust-strip':  { name: '信任徽章带',       icon: '✓',  desc: '一排认证 / 客户标识',                       enabled: true },
+    'pillar-grid':  { name: '三大产品线卡片',   icon: '◉◉◉', desc: '3 张产品线卡片，带图、标签、规格',          enabled: true },
+    'tesla-slider': { name: '横向应用滑动卡',   icon: '⇄',  desc: 'Tesla 风格横向滑动应用展示',               enabled: true },
+    'content-split':{ name: '图文左右分栏',     icon: '◐',  desc: '左侧文字 + 右侧图，或反转',                 enabled: true },
+    'feat-grid':    { name: '图标/数字网格',    icon: '◰',  desc: '2/3/4 列特性卡片',                         enabled: true },
+    'steps-grid':   { name: '步骤卡',           icon: '①',  desc: '编号步骤，每步带要点列表',                   enabled: true },
+    'stat-strip':   { name: '统计数字带',       icon: '#',  desc: '大数字 + 单位 + 标签的统计带',              enabled: true },
+    'spec-table':   { name: '规格表',           icon: '▦',  desc: '可配置的参数对比表（表头 + 多行）',         enabled: true },
+    'cert-wall':    { name: '认证标签墙',       icon: '◇',  desc: '一排认证胶囊',                             enabled: true },
+    'faq':          { name: 'FAQ 折叠',         icon: '?',  desc: '问答对列表（点击展开）',                    enabled: true },
+    'blog-grid':    { name: '博客文章卡',       icon: '✎',  desc: '自动拉取最新文章',                         enabled: true },
+    'cta-band':     { name: '行动召唤条',       icon: '➤',  desc: '深色或浅色背景的转化条，带一个按钮',         enabled: true },
+    'quote-form':   { name: '询盘表单',         icon: '✉',  desc: '内嵌迷你 RFQ 表单',                        enabled: true },
+    'rich-text':    { name: '富文本段落',       icon: 'T',  desc: '长篇文字 + 标题 + 列表（Markdown 风格）',    enabled: true },
   };
 
   /* ---------- Default data for new blocks --------------------------------- */
@@ -57,7 +56,12 @@
       primary: { label: 'Request a Quote', url: '/contact.html' },
       secondary: { label: '了解更多', url: '#' },
     }),
+    'trust-strip': () => ({
+      label: 'Compliant with',
+      items: ['ISO 9001', 'UN 38.3', 'IEC 62133', 'CE', 'UL 1642', 'RoHS', 'REACH'],
+    }),
     'pillar-grid': () => ({
+      background: 'light',
       eyebrow: 'Product Lines',
       title: '产品线总览',
       lead: '介绍这三个产品线分别面向什么场景。',
@@ -67,11 +71,119 @@
           specs: [{ value: '示例', unit: '' }], link: '#', linkText: '了解更多 →' },
       ],
     }),
+    'tesla-slider': () => ({
+      background: 'grey',
+      eyebrow: 'Applications',
+      title: 'Powering the next generation of devices.',
+      lead: '横滑查看我们覆盖的行业。',
+      slides: [
+        { image: 'https://images.unsplash.com/photo-1592478411213-6153e4ebc07d?w=1600&q=80',
+          label: 'Application 01 · AR / VR Glasses', title: 'AR / VR',
+          subtitle: 'Ultra-thin cells for slim temples and headsets · 320 mAh @ 0.4 mm',
+          primaryCta: 'Explore Application', secondaryCta: 'Request a Quote',
+          link: '/applications/ar-vr.html' },
+      ],
+    }),
+    'content-split': () => ({
+      background: 'light',
+      eyebrow: '',
+      title: '左右图文区块',
+      subtitle: '左侧标题',
+      paragraphs: ['第一段文字。可以加多个段落。', '第二段文字。'],
+      image: 'https://images.unsplash.com/photo-1565514020179-026b92b84bb6?w=1000&q=80',
+      imageAlt: '',
+      imagePosition: 'right',
+      link: { label: '了解更多', url: '#' },
+    }),
+    'feat-grid': () => ({
+      background: 'light',
+      eyebrow: '',
+      title: '我们的特点',
+      lead: '用 3 - 6 个要点说明你的优势。',
+      columns: 3,
+      items: [
+        { icon: '①', title: '要点 1', desc: '简短描述。' },
+        { icon: '②', title: '要点 2', desc: '简短描述。' },
+        { icon: '③', title: '要点 3', desc: '简短描述。' },
+      ],
+    }),
+    'steps-grid': () => ({
+      background: 'grey',
+      eyebrow: 'Process',
+      title: '我们怎么做',
+      lead: '4 个清晰的步骤。',
+      steps: [
+        { num: '01', title: '需求沟通', body: '了解你的具体需求和应用场景。', points: ['尺寸限制', '容量目标', '认证要求'] },
+        { num: '02', title: '方案设计', body: '工程师给出可行性分析。', points: ['BOM 评估', '初步报价', '样品计划'] },
+      ],
+    }),
+    'stat-strip': () => ({
+      dark: true,
+      eyebrow: 'By the numbers',
+      title: '一组关键数据。',
+      stats: [
+        { value: '8',   unit: 'yrs', label: 'since 2018' },
+        { value: '100', unit: '+',   label: 'team members' },
+        { value: '3',   unit: '',    label: 'tier-1 OEM programs' },
+        { value: 'ISO 9001', unit: '', label: 'certified' },
+      ],
+    }),
+    'spec-table': () => ({
+      background: 'light',
+      eyebrow: 'Specs',
+      title: '规格对比',
+      lead: '',
+      headers: ['参数', '规格', '备注'],
+      rows: [
+        ['容量', '100 mAh', '可定制'],
+        ['电压', '3.7 V', '标称'],
+      ],
+    }),
+    'cert-wall': () => ({
+      background: 'light',
+      eyebrow: 'Recognition',
+      title: '认证与合规。',
+      lead: 'Reports available under NDA on request.',
+      chips: ['ISO 9001', 'ISO 13485', 'UN 38.3', 'IEC 62133', 'CE', 'UL 1642', 'RoHS', 'REACH'],
+    }),
+    'faq': () => ({
+      background: 'grey',
+      eyebrow: 'FAQ',
+      title: '常见问题',
+      lead: '',
+      items: [
+        { q: '最小起订量是多少？', a: '标准型号 1000 pcs 起；定制型号样品 100 pcs 起。' },
+        { q: '从打样到量产要多久？', a: '一般 4-6 周，复杂定制 8-10 周。' },
+      ],
+    }),
+    'blog-grid': () => ({
+      background: 'grey',
+      eyebrow: 'Latest Insights',
+      title: 'Engineering deep-dives from our cell team.',
+      lead: '',
+      source: 'latest',
+      limit: 3,
+      allLink: '/blog/',
+      allLinkText: 'Browse all insights →',
+    }),
     'cta-band': () => ({
       background: 'dark',
       title: '准备好开始你的项目了吗？',
       subtitle: '把规格丢过来，48 小时内我们给出可行性分析。',
       button: { label: 'Request a Quote', url: '/contact.html' },
+    }),
+    'quote-form': () => ({
+      background: 'light',
+      eyebrow: '',
+      title: '快速发起询盘',
+      lead: '留下基本信息，工程师 1 个工作日内回复。',
+      buttonLabel: 'Request a Quote',
+      consentText: '我同意按隐私政策处理我的数据。',
+    }),
+    'rich-text': () => ({
+      background: 'light',
+      title: '',
+      body: '## 副标题\n\n这里是段落文字。支持 **加粗** 和 [链接](https://example.com)。\n\n- 列表项 1\n- 列表项 2\n\n### 子标题\n\n再写一段。',
     }),
   };
 
@@ -358,9 +470,24 @@
 
   function blockSummary(b) {
     const d = b.data || {};
-    if (b.type === 'hero')         return d.title || d.subtitle || '(空)';
-    if (b.type === 'pillar-grid')  return `${(d.cards || []).length} 张卡片 · ${d.title || ''}`;
-    if (b.type === 'cta-band')     return d.title || '(空)';
+    const n = (arr) => Array.isArray(arr) ? arr.length : 0;
+    switch (b.type) {
+      case 'hero':          return d.title || d.subtitle || '(空)';
+      case 'trust-strip':   return `${n(d.items)} 个标识 · ${d.label || ''}`;
+      case 'pillar-grid':   return `${n(d.cards)} 张卡片 · ${d.title || ''}`;
+      case 'tesla-slider':  return `${n(d.slides)} 张幻灯片 · ${d.title || ''}`;
+      case 'content-split': return d.title || d.subtitle || '(空)';
+      case 'feat-grid':     return `${n(d.items)} 项 / ${d.columns || 3} 列 · ${d.title || ''}`;
+      case 'steps-grid':    return `${n(d.steps)} 步 · ${d.title || ''}`;
+      case 'stat-strip':    return `${n(d.stats)} 个数字 · ${d.title || ''}`;
+      case 'spec-table':    return `${n(d.headers)} 列 × ${n(d.rows)} 行`;
+      case 'cert-wall':     return `${n(d.chips)} 个认证 · ${d.title || ''}`;
+      case 'faq':           return `${n(d.items)} 条问答 · ${d.title || ''}`;
+      case 'blog-grid':     return `最多 ${d.limit || 3} 篇 · ${d.title || ''}`;
+      case 'cta-band':      return d.title || '(空)';
+      case 'quote-form':    return d.title || '(空)';
+      case 'rich-text':     return (d.body || '').slice(0, 60) || '(空)';
+    }
     return '';
   }
 
@@ -559,14 +686,123 @@
     if (b) row.textContent = blockSummary(b);
   }
 
+  // Background selector shared by content blocks.
+  function fieldBg(container, d) {
+    fieldSelect(container, '区块背景',
+      [{ value: 'light', label: '白色（默认）' }, { value: 'grey', label: '浅灰' }, { value: 'dark', label: '深色' }],
+      () => d.background || 'light',
+      (v) => d.background = v,
+    );
+  }
+
+  // Generic string-list repeater (e.g. trust-strip items, cert chips,
+  // content-split paragraphs, step-card points).
+  function fieldStringList(container, label, getList, setList, opts) {
+    opts = opts || {};
+    fieldGroup(container, label);
+    const wrap = document.createElement('div');
+    container.appendChild(wrap);
+    function rerender() {
+      wrap.innerHTML = '';
+      const list = getList();
+      list.forEach((val, idx) => {
+        const r = document.createElement('div');
+        r.style.display = 'grid';
+        r.style.gridTemplateColumns = '1fr 28px';
+        r.style.gap = '6px';
+        r.style.marginBottom = '6px';
+        const inputTag = opts.textarea ? `<textarea rows="2"`: `<input`;
+        r.innerHTML = `
+          ${inputTag} placeholder="${escapeHtml(opts.placeholder || '')}" style="padding:7px 9px; border:1px solid var(--a-line); border-radius:6px; font-size:12.5px; font-family:inherit;">${opts.textarea ? `${escapeHtml(val)}</textarea>` : ''}
+          <button class="block-row__btn danger" title="删除">✕</button>`;
+        const inp = r.children[0];
+        const del = r.children[1];
+        if (!opts.textarea) inp.value = val;
+        inp.addEventListener('input', () => {
+          const arr = getList(); arr[idx] = inp.value; setList(arr);
+          markDirty(); schedulePreview();
+        });
+        del.addEventListener('click', () => {
+          const arr = getList(); arr.splice(idx, 1); setList(arr);
+          rerender(); markDirty(); schedulePreview(); refreshBlockRowSummary();
+        });
+        wrap.appendChild(r);
+      });
+      const add = document.createElement('button');
+      add.className = 'add-block-btn';
+      add.style.padding = '6px 10px';
+      add.style.fontSize = '12px';
+      add.style.marginTop = '4px';
+      add.textContent = opts.addLabel || '+ 加一项';
+      add.addEventListener('click', () => {
+        const arr = getList(); arr.push(''); setList(arr);
+        rerender(); markDirty(); schedulePreview(); refreshBlockRowSummary();
+      });
+      wrap.appendChild(add);
+    }
+    rerender();
+    return rerender;
+  }
+
+  // Generic object-list repeater. `renderItem(body, item, idx)` populates
+  // the per-item collapsible drawer with whatever inputs the block needs.
+  function fieldObjectList(container, label, getList, setList, opts) {
+    opts = opts || {};
+    fieldGroup(container, label);
+    const wrap = document.createElement('div');
+    container.appendChild(wrap);
+    function rerender() {
+      wrap.innerHTML = '';
+      const list = getList();
+      list.forEach((item, idx) => {
+        const ttl = (opts.itemTitle ? opts.itemTitle(item, idx) : null) || `${opts.singular || '项'} ${idx + 1}`;
+        const it = document.createElement('div');
+        it.className = 'repeater__item';
+        it.innerHTML = `
+          <div class="repeater__head" data-toggle>
+            <span class="repeater__handle">⠿</span>
+            <span class="ttl">${escapeHtml(ttl)}</span>
+            <button class="block-row__btn danger" data-del-it title="删除">✕</button>
+            <span class="caret">▸</span>
+          </div>
+          <div class="repeater__body"></div>`;
+        wrap.appendChild(it);
+        opts.renderItem(it.querySelector('.repeater__body'), item, idx);
+        it.querySelector('[data-toggle]').addEventListener('click', (ev) => {
+          if (ev.target.closest('[data-del-it]')) return;
+          it.classList.toggle('is-open');
+        });
+        it.querySelector('[data-del-it]').addEventListener('click', () => {
+          if (!confirm('确认删除？')) return;
+          const arr = getList(); arr.splice(idx, 1); setList(arr);
+          rerender(); markDirty(); schedulePreview(); refreshBlockRowSummary();
+        });
+      });
+      const add = document.createElement('button');
+      add.className = 'add-block-btn';
+      add.style.marginTop = '6px';
+      add.textContent = opts.addLabel || `+ 加一个${opts.singular || '项'}`;
+      add.addEventListener('click', () => {
+        const arr = getList();
+        arr.push(opts.newItem ? opts.newItem() : {});
+        setList(arr);
+        rerender(); markDirty(); schedulePreview(); refreshBlockRowSummary();
+      });
+      wrap.appendChild(add);
+    }
+    rerender();
+    return rerender;
+  }
+
   /* ---------- Block form implementations --------------------------------- */
   const FORMS = {
+
     'hero': (body, block) => {
       const d = block.data;
-      fieldText(body, '背景图 URL',  () => d.image,    (v) => d.image = v, { hint: '满屏背景，使用 Unsplash 链接或自己上传的图片 URL。' });
+      fieldText(body, '背景图 URL', () => d.image,    (v) => d.image = v, { hint: '满屏背景，使用 Unsplash 链接或自己上传的图片 URL。' });
       fieldText(body, 'Eyebrow（标题上方小字）', () => d.eyebrow, (v) => d.eyebrow = v);
-      fieldText(body, 'H1 主标题',   () => d.title,    (v) => d.title = v,    { hint: '支持简单 <br> 换行。' });
-      fieldText(body, '副标题',      () => d.subtitle, (v) => d.subtitle = v, { textarea: true });
+      fieldText(body, 'H1 主标题',  () => d.title,    (v) => d.title = v, { hint: '支持简单 <br> 换行。' });
+      fieldText(body, '副标题',     () => d.subtitle, (v) => d.subtitle = v, { textarea: true });
       fieldGroup(body, '按钮 1（主按钮）');
       fieldText(body, '按钮 1 文字', () => d.primary?.label, (v) => { d.primary = d.primary || {}; d.primary.label = v; });
       fieldText(body, '按钮 1 链接', () => d.primary?.url,   (v) => { d.primary = d.primary || {}; d.primary.url = v; }, { hint: '例如 /contact.html 或完整 URL。' });
@@ -575,10 +811,276 @@
       fieldText(body, '按钮 2 链接', () => d.secondary?.url,   (v) => { d.secondary = d.secondary || {}; d.secondary.url = v; });
     },
 
+    'trust-strip': (body, block) => {
+      const d = block.data;
+      d.items = Array.isArray(d.items) ? d.items : [];
+      fieldText(body, '左侧小标签', () => d.label, (v) => d.label = v, { hint: '例如 "Compliant with"。留空就只显示标识。' });
+      fieldStringList(body, '标识列表', () => d.items, (arr) => d.items = arr, { placeholder: '例如 ISO 9001', addLabel: '+ 加一个标识' });
+    },
+
+    'pillar-grid': (body, block) => {
+      const d = block.data;
+      d.cards = Array.isArray(d.cards) ? d.cards : [];
+      fieldBg(body, d);
+      fieldText(body, 'Eyebrow', () => d.eyebrow, (v) => d.eyebrow = v);
+      fieldText(body, '标题',    () => d.title,   (v) => d.title = v);
+      fieldText(body, '引言',    () => d.lead,    (v) => d.lead = v, { textarea: true });
+      fieldObjectList(body, '卡片', () => d.cards, (arr) => d.cards = arr, {
+        singular: '卡片',
+        itemTitle: (c, i) => c.title || c.pill || '卡片 ' + (i + 1),
+        newItem: () => ({ image: '', pill: '', title: '新卡片', desc: '', specs: [], link: '#', linkText: '了解更多 →' }),
+        renderItem: (mount, c) => {
+          fieldText(mount, '图片 URL',  () => c.image,    (v) => c.image = v);
+          fieldText(mount, '小标签 Pill', () => c.pill,   (v) => c.pill = v);
+          fieldText(mount, '卡片标题',   () => c.title,   (v) => c.title = v);
+          fieldText(mount, '描述',       () => c.desc,    (v) => c.desc = v, { textarea: true });
+          fieldText(mount, '链接 URL',   () => c.link,    (v) => c.link = v);
+          fieldText(mount, '链接文字',   () => c.linkText, (v) => c.linkText = v);
+          fieldGroup(mount, '规格（数字 / 单位）');
+          const specsWrap = document.createElement('div');
+          mount.appendChild(specsWrap);
+          function renderSpecs() {
+            c.specs = Array.isArray(c.specs) ? c.specs : [];
+            specsWrap.innerHTML = '';
+            c.specs.forEach((sp, idx) => {
+              const r = document.createElement('div');
+              r.style.cssText = 'display:grid; grid-template-columns:1fr 1fr 28px; gap:6px; margin-bottom:6px;';
+              r.innerHTML = `
+                <input placeholder="数字" value="${escapeHtml(sp.value || '')}" style="padding:7px 9px; border:1px solid var(--a-line); border-radius:6px; font-size:12.5px;"/>
+                <input placeholder="单位" value="${escapeHtml(sp.unit  || '')}" style="padding:7px 9px; border:1px solid var(--a-line); border-radius:6px; font-size:12.5px;"/>
+                <button class="block-row__btn danger" title="删除">✕</button>`;
+              const [v, u, del] = r.children;
+              v.addEventListener('input', () => { sp.value = v.value; markDirty(); schedulePreview(); });
+              u.addEventListener('input', () => { sp.unit  = u.value; markDirty(); schedulePreview(); });
+              del.addEventListener('click', () => { c.specs.splice(idx, 1); renderSpecs(); markDirty(); schedulePreview(); });
+              specsWrap.appendChild(r);
+            });
+            const add = document.createElement('button');
+            add.className = 'add-block-btn';
+            add.style.cssText = 'padding:6px 10px; font-size:12px; margin-top:4px;';
+            add.textContent = '+ 加一条规格';
+            add.addEventListener('click', () => { c.specs.push({ value: '', unit: '' }); renderSpecs(); markDirty(); schedulePreview(); });
+            specsWrap.appendChild(add);
+          }
+          renderSpecs();
+        },
+      });
+    },
+
+    'tesla-slider': (body, block) => {
+      const d = block.data;
+      d.slides = Array.isArray(d.slides) ? d.slides : [];
+      fieldBg(body, d);
+      fieldText(body, 'Eyebrow', () => d.eyebrow, (v) => d.eyebrow = v);
+      fieldText(body, '标题',    () => d.title,   (v) => d.title = v);
+      fieldText(body, '引言',    () => d.lead,    (v) => d.lead = v, { textarea: true });
+      fieldObjectList(body, '幻灯片', () => d.slides, (arr) => d.slides = arr, {
+        singular: '幻灯片',
+        itemTitle: (s, i) => s.title || `幻灯片 ${i + 1}`,
+        newItem: () => ({ image: '', label: '', title: '新幻灯片', subtitle: '', primaryCta: 'Explore', secondaryCta: '', link: '#' }),
+        renderItem: (mount, s) => {
+          fieldText(mount, '背景图 URL', () => s.image,        (v) => s.image = v);
+          fieldText(mount, '顶部小字',   () => s.label,        (v) => s.label = v, { hint: '例如 "Application 01 · AR / VR"' });
+          fieldText(mount, '标题',       () => s.title,        (v) => s.title = v);
+          fieldText(mount, '副标题',     () => s.subtitle,     (v) => s.subtitle = v, { textarea: true });
+          fieldText(mount, '主按钮文字', () => s.primaryCta,   (v) => s.primaryCta = v);
+          fieldText(mount, '副按钮文字', () => s.secondaryCta, (v) => s.secondaryCta = v);
+          fieldText(mount, '链接 URL',   () => s.link,         (v) => s.link = v);
+        },
+      });
+    },
+
+    'content-split': (body, block) => {
+      const d = block.data;
+      d.paragraphs = Array.isArray(d.paragraphs) ? d.paragraphs : [];
+      fieldBg(body, d);
+      fieldText(body, 'Eyebrow', () => d.eyebrow, (v) => d.eyebrow = v);
+      fieldText(body, '上方主标题 (H2)', () => d.title, (v) => d.title = v);
+      fieldText(body, '左栏标题 (H3)',   () => d.subtitle, (v) => d.subtitle = v);
+      fieldStringList(body, '左栏段落', () => d.paragraphs, (arr) => d.paragraphs = arr, { textarea: true, placeholder: '一段文字', addLabel: '+ 加一段' });
+      fieldGroup(body, '可选链接');
+      fieldText(body, '链接文字', () => d.link?.label, (v) => { d.link = d.link || {}; d.link.label = v; });
+      fieldText(body, '链接 URL', () => d.link?.url,   (v) => { d.link = d.link || {}; d.link.url   = v; });
+      fieldGroup(body, '右栏图片');
+      fieldText(body, '图片 URL', () => d.image,    (v) => d.image = v);
+      fieldText(body, '图片 alt', () => d.imageAlt, (v) => d.imageAlt = v, { hint: 'SEO + 无障碍。一句话描述图里是什么。' });
+      fieldSelect(body, '图片位置',
+        [{ value: 'right', label: '右侧（默认）' }, { value: 'left', label: '左侧（反转）' }],
+        () => d.imagePosition || 'right',
+        (v) => d.imagePosition = v,
+      );
+    },
+
+    'feat-grid': (body, block) => {
+      const d = block.data;
+      d.items = Array.isArray(d.items) ? d.items : [];
+      fieldBg(body, d);
+      fieldText(body, 'Eyebrow', () => d.eyebrow, (v) => d.eyebrow = v);
+      fieldText(body, '标题',    () => d.title,   (v) => d.title = v);
+      fieldText(body, '引言',    () => d.lead,    (v) => d.lead = v, { textarea: true });
+      fieldSelect(body, '列数',
+        [{ value: '2', label: '2 列' }, { value: '3', label: '3 列（默认）' }, { value: '4', label: '4 列' }],
+        () => String(d.columns || 3),
+        (v) => d.columns = parseInt(v, 10),
+      );
+      fieldObjectList(body, '特性卡', () => d.items, (arr) => d.items = arr, {
+        singular: '特性',
+        itemTitle: (it, i) => it.title || '特性 ' + (i + 1),
+        newItem: () => ({ icon: '◆', title: '新特性', desc: '简短描述。' }),
+        renderItem: (mount, it) => {
+          fieldText(mount, '图标（一个字符或数字）', () => it.icon, (v) => it.icon = v, { hint: '例如 ① / ✓ / 01 / 任何一个字符。' });
+          fieldText(mount, '标题', () => it.title, (v) => it.title = v);
+          fieldText(mount, '描述', () => it.desc,  (v) => it.desc  = v, { textarea: true });
+        },
+      });
+    },
+
+    'steps-grid': (body, block) => {
+      const d = block.data;
+      d.steps = Array.isArray(d.steps) ? d.steps : [];
+      fieldBg(body, d);
+      fieldText(body, 'Eyebrow', () => d.eyebrow, (v) => d.eyebrow = v);
+      fieldText(body, '标题',    () => d.title,   (v) => d.title = v);
+      fieldText(body, '引言',    () => d.lead,    (v) => d.lead = v, { textarea: true });
+      fieldObjectList(body, '步骤', () => d.steps, (arr) => d.steps = arr, {
+        singular: '步骤',
+        itemTitle: (st, i) => st.title || `步骤 ${i + 1}`,
+        newItem: () => ({ num: '', title: '新步骤', body: '', points: [] }),
+        renderItem: (mount, st) => {
+          fieldText(mount, '编号', () => st.num,   (v) => st.num   = v, { hint: '留空就用序号 01/02/03。可以写文字如 "Day 1"。' });
+          fieldText(mount, '标题', () => st.title, (v) => st.title = v);
+          fieldText(mount, '说明', () => st.body,  (v) => st.body  = v, { textarea: true });
+          st.points = Array.isArray(st.points) ? st.points : [];
+          fieldStringList(mount, '要点列表（可选）', () => st.points, (arr) => st.points = arr, { placeholder: '一条要点', addLabel: '+ 加一条要点' });
+        },
+      });
+    },
+
+    'stat-strip': (body, block) => {
+      const d = block.data;
+      d.stats = Array.isArray(d.stats) ? d.stats : [];
+      fieldSelect(body, '背景',
+        [{ value: 'dark', label: '深色（默认）' }, { value: 'light', label: '浅色' }],
+        () => d.dark === false ? 'light' : 'dark',
+        (v) => d.dark = (v === 'dark'),
+      );
+      fieldText(body, 'Eyebrow', () => d.eyebrow, (v) => d.eyebrow = v);
+      fieldText(body, '标题',    () => d.title,   (v) => d.title = v);
+      fieldText(body, '引言',    () => d.lead,    (v) => d.lead = v, { textarea: true });
+      fieldObjectList(body, '数字', () => d.stats, (arr) => d.stats = arr, {
+        singular: '数字',
+        itemTitle: (s, i) => (s.value || '') + (s.unit ? ' ' + s.unit : '') || `数字 ${i + 1}`,
+        newItem: () => ({ value: '0', unit: '', label: '' }),
+        renderItem: (mount, s) => {
+          fieldText(mount, '数字 / 文字', () => s.value, (v) => s.value = v, { hint: '纯数字会自动滚动动画；写文字如 "ISO 9001" 直接显示。' });
+          fieldText(mount, '单位（可选）', () => s.unit,  (v) => s.unit  = v, { hint: '例如 yrs / + / m²。' });
+          fieldText(mount, '下方标签',     () => s.label, (v) => s.label = v);
+        },
+      });
+    },
+
+    'spec-table': (body, block) => {
+      const d = block.data;
+      d.headers = Array.isArray(d.headers) ? d.headers : [];
+      d.rows = Array.isArray(d.rows) ? d.rows : [];
+      fieldBg(body, d);
+      fieldText(body, 'Eyebrow', () => d.eyebrow, (v) => d.eyebrow = v);
+      fieldText(body, '标题',    () => d.title,   (v) => d.title = v);
+      fieldText(body, '引言',    () => d.lead,    (v) => d.lead = v, { textarea: true });
+      fieldStringList(body, '表头（每一列）', () => d.headers, (arr) => {
+        d.headers = arr;
+        // adjust rows to match column count
+        d.rows = d.rows.map((r) => {
+          const out = Array.isArray(r) ? r.slice() : [];
+          while (out.length < arr.length) out.push('');
+          return out.slice(0, arr.length);
+        });
+      }, { placeholder: '列名', addLabel: '+ 加一列' });
+
+      fieldGroup(body, `数据行（${d.rows.length}）`);
+      const rowsWrap = document.createElement('div');
+      body.appendChild(rowsWrap);
+      function renderRows() {
+        rowsWrap.innerHTML = '';
+        const cols = d.headers.length || 1;
+        d.rows.forEach((row, idx) => {
+          row = Array.isArray(row) ? row : [];
+          while (row.length < cols) row.push('');
+          d.rows[idx] = row;
+          const r = document.createElement('div');
+          r.style.cssText = `display:grid; grid-template-columns:repeat(${cols}, 1fr) 28px; gap:4px; margin-bottom:4px;`;
+          r.innerHTML = row.map((cell) => `<input value="${escapeHtml(cell)}" style="padding:6px 8px; border:1px solid var(--a-line); border-radius:5px; font-size:12px;">`).join('')
+            + `<button class="block-row__btn danger" title="删除整行">✕</button>`;
+          [...r.children].slice(0, cols).forEach((inp, ci) => {
+            inp.addEventListener('input', () => { d.rows[idx][ci] = inp.value; markDirty(); schedulePreview(); });
+          });
+          r.lastElementChild.addEventListener('click', () => {
+            d.rows.splice(idx, 1); renderRows(); markDirty(); schedulePreview(); refreshBlockRowSummary();
+          });
+          rowsWrap.appendChild(r);
+        });
+        const add = document.createElement('button');
+        add.className = 'add-block-btn';
+        add.style.cssText = 'padding:6px 10px; font-size:12px; margin-top:4px;';
+        add.textContent = '+ 加一行';
+        add.addEventListener('click', () => {
+          d.rows.push(new Array(d.headers.length || 1).fill(''));
+          renderRows(); markDirty(); schedulePreview(); refreshBlockRowSummary();
+        });
+        rowsWrap.appendChild(add);
+      }
+      renderRows();
+    },
+
+    'cert-wall': (body, block) => {
+      const d = block.data;
+      d.chips = Array.isArray(d.chips) ? d.chips : [];
+      fieldBg(body, d);
+      fieldText(body, 'Eyebrow', () => d.eyebrow, (v) => d.eyebrow = v);
+      fieldText(body, '标题',    () => d.title,   (v) => d.title = v);
+      fieldText(body, '引言',    () => d.lead,    (v) => d.lead = v, { textarea: true });
+      fieldStringList(body, '认证标签', () => d.chips, (arr) => d.chips = arr, { placeholder: '例如 ISO 9001', addLabel: '+ 加一个认证' });
+    },
+
+    'faq': (body, block) => {
+      const d = block.data;
+      d.items = Array.isArray(d.items) ? d.items : [];
+      fieldBg(body, d);
+      fieldText(body, 'Eyebrow', () => d.eyebrow, (v) => d.eyebrow = v);
+      fieldText(body, '标题',    () => d.title,   (v) => d.title = v);
+      fieldText(body, '引言',    () => d.lead,    (v) => d.lead = v, { textarea: true });
+      fieldObjectList(body, '问答', () => d.items, (arr) => d.items = arr, {
+        singular: '问答',
+        itemTitle: (f, i) => f.q || '问题 ' + (i + 1),
+        newItem: () => ({ q: '', a: '' }),
+        renderItem: (mount, f) => {
+          fieldText(mount, '问题', () => f.q, (v) => f.q = v);
+          fieldText(mount, '回答', () => f.a, (v) => f.a = v, { textarea: true, rows: 4 });
+        },
+      });
+    },
+
+    'blog-grid': (body, block) => {
+      const d = block.data;
+      fieldBg(body, d);
+      fieldText(body, 'Eyebrow', () => d.eyebrow, (v) => d.eyebrow = v);
+      fieldText(body, '标题',    () => d.title,   (v) => d.title = v);
+      fieldText(body, '引言',    () => d.lead,    (v) => d.lead = v, { textarea: true });
+      fieldSelect(body, '来源',
+        [{ value: 'latest', label: '所有最新文章' }, { value: 'pillar', label: '当前页对应的支柱页' }],
+        () => d.source || 'latest',
+        (v) => d.source = v,
+      );
+      fieldText(body, '显示数量', () => d.limit, (v) => d.limit = parseInt(v, 10) || 3, { type: 'number' });
+      fieldGroup(body, '底部"查看全部"链接（可选）');
+      fieldText(body, '链接文字', () => d.allLinkText, (v) => d.allLinkText = v);
+      fieldText(body, '链接 URL', () => d.allLink,     (v) => d.allLink = v);
+    },
+
     'cta-band': (body, block) => {
       const d = block.data;
-      fieldText(body, '主标题',  () => d.title,    (v) => d.title = v);
-      fieldText(body, '副标题',  () => d.subtitle, (v) => d.subtitle = v, { textarea: true });
+      fieldText(body, '主标题', () => d.title,    (v) => d.title = v);
+      fieldText(body, '副标题', () => d.subtitle, (v) => d.subtitle = v, { textarea: true });
       fieldText(body, '按钮文字', () => d.button?.label, (v) => { d.button = d.button || {}; d.button.label = v; });
       fieldText(body, '按钮链接', () => d.button?.url,   (v) => { d.button = d.button || {}; d.button.url = v; });
       fieldSelect(body, '背景',
@@ -588,102 +1090,22 @@
       );
     },
 
-    'pillar-grid': (body, block) => {
+    'quote-form': (body, block) => {
       const d = block.data;
-      d.cards = Array.isArray(d.cards) ? d.cards : [];
-      fieldText(body, '区块 Eyebrow', () => d.eyebrow, (v) => d.eyebrow = v);
-      fieldText(body, '区块标题', () => d.title, (v) => d.title = v);
-      fieldText(body, '区块引言', () => d.lead, (v) => d.lead = v, { textarea: true });
+      fieldBg(body, d);
+      fieldText(body, 'Eyebrow',  () => d.eyebrow, (v) => d.eyebrow = v);
+      fieldText(body, '标题',     () => d.title,   (v) => d.title = v);
+      fieldText(body, '引言',     () => d.lead,    (v) => d.lead = v, { textarea: true });
+      fieldText(body, '提交按钮文字', () => d.buttonLabel, (v) => d.buttonLabel = v);
+      fieldText(body, '同意条款文字', () => d.consentText, (v) => d.consentText = v, { textarea: true, hint: 'GDPR 同意框旁的说明。' });
+    },
 
-      fieldGroup(body, `卡片（${d.cards.length}）`);
-      const cardsWrap = document.createElement('div');
-      cardsWrap.id = 'cards-wrap';
-      body.appendChild(cardsWrap);
-
-      function rerenderCards() {
-        cardsWrap.innerHTML = '';
-        d.cards.forEach((c, i) => {
-          const item = document.createElement('div');
-          item.className = 'repeater__item';
-          item.innerHTML = `
-            <div class="repeater__head" data-toggle>
-              <span class="repeater__handle">⠿</span>
-              <span class="ttl">${escapeHtml(c.title || c.pill || '卡片 ' + (i + 1))}</span>
-              <button class="block-row__btn danger" data-del-card="${i}" title="删除卡片">✕</button>
-              <span class="caret">▸</span>
-            </div>
-            <div class="repeater__body"></div>`;
-          cardsWrap.appendChild(item);
-          const cardBody = item.querySelector('.repeater__body');
-          fieldText(cardBody, '图片 URL',  () => c.image,    (v) => c.image = v);
-          fieldText(cardBody, '小标签 Pill', () => c.pill,    (v) => c.pill = v);
-          fieldText(cardBody, '卡片标题',   () => c.title,    (v) => c.title = v);
-          fieldText(cardBody, '描述',       () => c.desc,     (v) => c.desc = v, { textarea: true });
-          fieldText(cardBody, '链接 URL',   () => c.link,     (v) => c.link = v);
-          fieldText(cardBody, '链接文字',   () => c.linkText, (v) => c.linkText = v);
-          // Specs
-          fieldGroup(cardBody, '规格（每行一个：数字 / 单位）');
-          const specsWrap = document.createElement('div');
-          cardBody.appendChild(specsWrap);
-          renderSpecs(c, specsWrap);
-
-          item.querySelector('[data-toggle]').addEventListener('click', (ev) => {
-            if (ev.target.closest('[data-del-card]')) return;
-            item.classList.toggle('is-open');
-          });
-          item.querySelector('[data-del-card]').addEventListener('click', () => {
-            if (!confirm('删除这张卡片？')) return;
-            d.cards.splice(i, 1);
-            markDirty();
-            rerenderCards();
-            schedulePreview();
-            refreshBlockRowSummary();
-          });
-        });
-
-        const addBtn = document.createElement('button');
-        addBtn.className = 'add-block-btn';
-        addBtn.style.marginTop = '6px';
-        addBtn.textContent = '＋ 加一张卡片';
-        addBtn.addEventListener('click', () => {
-          d.cards.push({ image: '', pill: '', title: '新卡片', desc: '', specs: [], link: '#', linkText: '了解更多 →' });
-          markDirty();
-          rerenderCards();
-          schedulePreview();
-          refreshBlockRowSummary();
-        });
-        cardsWrap.appendChild(addBtn);
-      }
-
-      function renderSpecs(card, mount) {
-        card.specs = Array.isArray(card.specs) ? card.specs : [];
-        mount.innerHTML = '';
-        card.specs.forEach((sp, idx) => {
-          const r = document.createElement('div');
-          r.style.display = 'grid';
-          r.style.gridTemplateColumns = '1fr 1fr 28px';
-          r.style.gap = '6px';
-          r.style.marginBottom = '6px';
-          r.innerHTML = `
-            <input placeholder="数字 (e.g. 30 - 20,000)" value="${escapeHtml(sp.value || '')}" style="padding:6px 8px; border:1px solid var(--a-line); border-radius:6px; font-size:12.5px;"/>
-            <input placeholder="单位 (e.g. mAh)" value="${escapeHtml(sp.unit || '')}" style="padding:6px 8px; border:1px solid var(--a-line); border-radius:6px; font-size:12.5px;"/>
-            <button class="block-row__btn danger" title="删除">✕</button>`;
-          const [valInp, unitInp, delBtn] = r.children;
-          valInp.addEventListener('input',  () => { sp.value = valInp.value; markDirty(); schedulePreview(); });
-          unitInp.addEventListener('input', () => { sp.unit  = unitInp.value; markDirty(); schedulePreview(); });
-          delBtn.addEventListener('click', () => { card.specs.splice(idx, 1); renderSpecs(card, mount); markDirty(); schedulePreview(); });
-          mount.appendChild(r);
-        });
-        const add = document.createElement('button');
-        add.className = 'add-block-btn';
-        add.style.padding = '6px 10px';
-        add.style.fontSize = '12px';
-        add.textContent = '+ 加一条规格';
-        add.addEventListener('click', () => { card.specs.push({ value: '', unit: '' }); renderSpecs(card, mount); markDirty(); schedulePreview(); });
-        mount.appendChild(add);
-      }
-
-      rerenderCards();
+    'rich-text': (body, block) => {
+      const d = block.data;
+      fieldBg(body, d);
+      fieldText(body, '小标题（可选）', () => d.title, (v) => d.title = v);
+      fieldText(body, '正文', () => d.body, (v) => d.body = v, { textarea: true, rows: 14,
+        hint: 'Markdown 风格：## 标题；### 子标题；- 列表项；空行分段；**加粗**；[文字](链接)。' });
     },
   };
 
