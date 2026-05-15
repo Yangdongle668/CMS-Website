@@ -97,6 +97,7 @@
     selectedEl = el;
     el.classList.add('cmsb-selected');
     ensureToolbar(el);
+    ensureLinkEditButtons(el);
     post('block-selected', { id: parseInt(el.dataset.blockId, 10), type: el.dataset.blockType });
   }
   function deselect() {
@@ -106,6 +107,8 @@
       selectedEl.querySelectorAll('[contenteditable]').forEach((n) => {
         n.removeAttribute('contenteditable');
       });
+      // Remove link-edit badges so they don't leak across blocks
+      selectedEl.querySelectorAll('.cmsb-link-edit-btn').forEach((n) => n.remove());
       selectedEl = null;
       post('block-deselected');
     }
@@ -158,6 +161,68 @@
       btn.className = 'cmsb-edit-bg-btn';
       btn.innerHTML = '📷 <span>换背景图</span>';
       el.appendChild(btn);
+    }
+  }
+
+  // For every <a> in the selected block with data-edit-link-field, add a
+  // tiny 🔗 badge at the top-right that opens a URL popover. Removed
+  // automatically on deselect.
+  function ensureLinkEditButtons(el) {
+    el.querySelectorAll('[data-edit-link-field]').forEach((anchor) => {
+      if (anchor.querySelector(':scope > .cmsb-link-edit-btn')) return;
+      const badge = document.createElement('span');
+      badge.className = 'cmsb-link-edit-btn';
+      badge.textContent = '🔗';
+      badge.title = '编辑链接';
+      anchor.appendChild(badge);
+      badge.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        openLinkPopover(anchor);
+      });
+    });
+  }
+
+  function openLinkPopover(anchor) {
+    // Close any existing popover first
+    document.querySelectorAll('.cmsb-link-edit-popover').forEach((n) => n.remove());
+
+    const block = anchor.closest('[data-block-id]');
+    if (!block) return;
+    const blockId = parseInt(block.dataset.blockId, 10);
+    const fieldName = anchor.dataset.editLinkField;
+    const currentUrl = anchor.getAttribute('href') || '';
+
+    const pop = document.createElement('div');
+    pop.className = 'cmsb-link-edit-popover';
+    pop.innerHTML = `
+      <input type="url" placeholder="https://… 或 /quote.html" value="${currentUrl.replace(/"/g, '&quot;')}">
+      <button data-act="save" title="保存">✓</button>
+      <button data-act="cancel" title="取消">×</button>
+    `;
+    // Position above the anchor
+    const rect = anchor.getBoundingClientRect();
+    pop.style.top = (rect.top + window.scrollY - 50) + 'px';
+    pop.style.left = (rect.left + window.scrollX) + 'px';
+    document.body.appendChild(pop);
+    const input = pop.querySelector('input');
+    setTimeout(() => input.focus(), 0);
+    input.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') { ev.preventDefault(); commit(); }
+      else if (ev.key === 'Escape') { ev.preventDefault(); pop.remove(); }
+    });
+    pop.querySelector('[data-act="save"]').addEventListener('click', commit);
+    pop.querySelector('[data-act="cancel"]').addEventListener('click', () => pop.remove());
+
+    function commit() {
+      const url = input.value.trim();
+      // Patch the anchor href in-place for immediate visual feedback
+      anchor.setAttribute('href', url);
+      // Persist via the same partial-edit channel as text edits
+      const fields = {};
+      fields[fieldName] = url;
+      post('block-edit-partial', { id: blockId, fields });
+      pop.remove();
     }
   }
 
@@ -218,14 +283,33 @@
     return fieldEl.innerText.replace(/ /g, ' ').trim();
   }
 
+  // Resolve the full content-path for a field, walking up through any
+  // [data-edit-path] containers. Examples:
+  //   <h1 data-edit-field="title">                            → "title"
+  //   <div data-edit-path="columns.0"><h3 data-edit-field="title">
+  //                                                            → "columns.0.title"
+  function getFieldPath(fieldEl) {
+    const field = fieldEl.dataset.editField;
+    if (!field) return null;
+    let path = field;
+    let parent = fieldEl.parentElement;
+    while (parent && !parent.hasAttribute('data-block-id')) {
+      if (parent.dataset.editPath) {
+        path = parent.dataset.editPath + '.' + path;
+      }
+      parent = parent.parentElement;
+    }
+    return path;
+  }
+
   function scheduleSave(fieldEl) {
     const block = fieldEl.closest('[data-block-id]');
     if (!block) return;
     const id = parseInt(block.dataset.blockId, 10);
-    const field = fieldEl.dataset.editField;
-    if (!id || !field) return;
+    const path = getFieldPath(fieldEl);
+    if (!id || !path) return;
     if (!pendingEdits.has(id)) pendingEdits.set(id, {});
-    pendingEdits.get(id)[field] = readValue(fieldEl);
+    pendingEdits.get(id)[path] = readValue(fieldEl);
     if (editTimers.has(id)) clearTimeout(editTimers.get(id));
     editTimers.set(id, setTimeout(() => flushSave(fieldEl), DEBOUNCE_MS));
   }
