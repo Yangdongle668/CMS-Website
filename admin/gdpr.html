@@ -47,7 +47,7 @@
     `;
     document.querySelectorAll('[data-complete]').forEach((b) => b.addEventListener('click', async () => {
       const t = b.dataset.type;
-      const msg = t === 'delete' ? 'Mark this delete request as completed? This will soft-delete all inquiries with the requester\'s email address.' : '确认完成此请求？';
+      const msg = t === 'delete' ? '确认完成此删除请求？这会软删除该邮箱地址下的所有询盘。' : '确认完成此请求？';
       if (!confirm(msg)) return;
       await api('/api/gdpr/' + b.dataset.complete + '/complete', { method: 'POST' });
       toast('请求已完成', 'success');

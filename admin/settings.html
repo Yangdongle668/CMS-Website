@@ -395,7 +395,7 @@ https://twitter.com/zufek">${escapeHtml((org.sameAs || []).join('\n'))}</textare
         await api('/api/settings/' + k, { method: 'PUT', body: JSON.stringify({ value: v }) });
       }
       toast('设置已保存', 'success');
-    } catch (err) { toast('保存 failed: ' + err.message, 'error'); }
+    } catch (err) { toast('保存失败: ' + err.message, 'error'); }
   });
 
   // SEO 一键自检：抓取首页，看看每项 SEO meta / 验证码是否已落地

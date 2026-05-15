@@ -289,7 +289,7 @@
         await api('/api/pillars/' + p.id, { method: 'PUT', body: JSON.stringify(payload) });
         toast('支柱页已保存', 'success');
       } catch (err) {
-        toast('保存 failed: ' + err.message, 'error');
+        toast('保存失败: ' + err.message, 'error');
       }
     });
   }

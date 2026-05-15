@@ -83,7 +83,7 @@
     panel.innerHTML = `
       <div class="panel">
         <div class="panel__head">
-          <h2>${isNew ? '新建页面' : '编辑: ' + escapeHtml(p.slug)}</h2>
+          <h2>${isNew ? '新建页面' : '编辑：' + escapeHtml(p.slug)}</h2>
           <div style="display:flex; gap:8px;">
             ${!isNew && previewUrl ? `<a target="_blank" class="btn btn--primary btn--sm" href="/admin/visual-edit.html?url=${encodeURIComponent(previewUrl)}&back=${encodeURIComponent(location.pathname + location.search)}">🎨 可视化编辑 ↗</a>` : ''}
             ${!isNew && previewUrl ? `<a target="_blank" class="btn btn--ghost btn--sm" href="${escapeHtml(previewUrl)}">预览 ↗</a>` : ''}
@@ -221,7 +221,7 @@
     panel.querySelector('#save').addEventListener('click', save);
     if (!isNew) {
       panel.querySelector('#delete').addEventListener('click', async () => {
-        if (!confirm('删除 this page?')) return;
+        if (!confirm('确认删除这个页面？')) return;
         await api('/api/pages/' + p.id, { method: 'DELETE' });
         toast('已删除', 'success');
         setTimeout(() => location.href = '/admin/pages.html', 500);
