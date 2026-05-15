@@ -201,6 +201,8 @@ CREATE TABLE IF NOT EXISTS inquiries (
   policy_version  VARCHAR(20) NOT NULL DEFAULT '',
   content_hash    VARCHAR(64)  NOT NULL DEFAULT '',   -- dedupe key (email + msg + company)
   score           INT          NOT NULL DEFAULT 0,    -- lead score, populated on insert
+  source_widget   VARCHAR(40)  NOT NULL DEFAULT 'main_form',  -- main_form | mini_rfq | exit_intent | resource_pack
+  replied_at      TIMESTAMPTZ,                         -- when sales hit "replied" status
   status          VARCHAR(20) NOT NULL DEFAULT 'new',  -- new|read|replied|spam|archived
   notes           TEXT NOT NULL DEFAULT '',
   is_deleted      BOOLEAN NOT NULL DEFAULT FALSE,
@@ -217,6 +219,8 @@ CREATE TABLE IF NOT EXISTS inquiries (
 -- exits, putting the container in a restart loop.
 ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS content_hash VARCHAR(64) NOT NULL DEFAULT '';
 ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS score INT NOT NULL DEFAULT 0;
+ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS source_widget VARCHAR(40) NOT NULL DEFAULT 'main_form';
+ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS replied_at TIMESTAMPTZ;
 
 CREATE INDEX IF NOT EXISTS idx_inquiries_status ON inquiries(status, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_inquiries_email ON inquiries(email);

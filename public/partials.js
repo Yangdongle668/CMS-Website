@@ -442,6 +442,166 @@ function applyGa4Consent() {
   });
 }
 
+// ----- Mini RFQ widget (Sprint 2 — inquiry funnel) -----
+// 3-field inline form anchored bottom-right. Lighter touch than
+// /contact.html for visitors who want to ask a quick question without
+// filling out the full quote form. Reuses /api/inquiries with
+// source_widget='mini_rfq' so funnel analytics can attribute it.
+//
+// We only mount it on high-intent pages (products / applications /
+// blog articles) so it doesn't clutter the home page or legal pages.
+function shouldShowMiniRFQ() {
+  if (location.pathname.startsWith('/admin/')) return false;
+  if (location.pathname === '/contact.html' || location.pathname === '/quote.html') return false;
+  // High-intent surfaces only
+  return (
+    /^\/products(\/|$)/.test(location.pathname) ||
+    /^\/applications(\/|$)/.test(location.pathname) ||
+    /^\/blog(\/|$)/.test(location.pathname)
+  );
+}
+
+const MINI_RFQ_DISMISSED_KEY = 'cms_mini_rfq_dismissed';
+const MINI_RFQ_SUBMITTED_KEY = 'cms_mini_rfq_submitted';
+const MINI_RFQ_HTML = `
+  <button class="mini-rfq__toggle" type="button" aria-expanded="false" aria-controls="mini-rfq-panel">
+    <span class="mini-rfq__toggle-icon">✎</span>
+    <span class="mini-rfq__toggle-label">快速咨询</span>
+  </button>
+  <div class="mini-rfq__panel" id="mini-rfq-panel" role="dialog" aria-label="Quick inquiry" hidden>
+    <button class="mini-rfq__close" type="button" aria-label="Close">×</button>
+    <div class="mini-rfq__panel-inner">
+      <h3 class="mini-rfq__title">Have a question?</h3>
+      <p class="mini-rfq__sub">Leave your email — our sales engineer replies within 1 business day.</p>
+      <form class="mini-rfq__form" novalidate>
+        <input class="mini-rfq__honeypot" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <label class="mini-rfq__field">
+          <span class="mini-rfq__label">Business email *</span>
+          <input type="email" name="email" required autocomplete="email">
+        </label>
+        <label class="mini-rfq__field">
+          <span class="mini-rfq__label">Company</span>
+          <input type="text" name="company" autocomplete="organization" maxlength="100">
+        </label>
+        <label class="mini-rfq__field">
+          <span class="mini-rfq__label">What do you need?</span>
+          <textarea name="message" rows="3" placeholder="e.g. 5000 pcs of 18650 cells for medical scanner"></textarea>
+        </label>
+        <label class="mini-rfq__consent">
+          <input type="checkbox" name="consent" required>
+          <span>I agree to the <a href="/privacy" target="_blank" rel="noopener">privacy policy</a>.</span>
+        </label>
+        <div class="mini-rfq__turnstile" data-turnstile></div>
+        <button class="mini-rfq__submit" type="submit">Send</button>
+        <p class="mini-rfq__status" role="status" aria-live="polite"></p>
+      </form>
+    </div>
+  </div>
+`;
+
+function injectMiniRFQ() {
+  if (!shouldShowMiniRFQ()) return;
+  if (document.querySelector('.mini-rfq')) return;
+  if (sessionStorage.getItem(MINI_RFQ_SUBMITTED_KEY)) return;   // already submitted this session
+  const root = document.createElement('div');
+  root.className = 'mini-rfq';
+  root.innerHTML = MINI_RFQ_HTML;
+  document.body.appendChild(root);
+
+  const toggle = root.querySelector('.mini-rfq__toggle');
+  const panel = root.querySelector('.mini-rfq__panel');
+  const closeBtn = root.querySelector('.mini-rfq__close');
+  const form = root.querySelector('.mini-rfq__form');
+  const status = root.querySelector('.mini-rfq__status');
+  const submit = root.querySelector('.mini-rfq__submit');
+
+  function open() {
+    panel.hidden = false;
+    toggle.setAttribute('aria-expanded', 'true');
+    root.classList.add('is-open');
+    // Auto-mount Turnstile in this panel once visible
+    if (window.CMS && window.CMS.state && window.CMS.state.config) {
+      const mount = panel.querySelector('[data-turnstile]');
+      if (mount && !mount.__mounted) {
+        document.dispatchEvent(new CustomEvent('cms:turnstile-rescan', { detail: { root: panel } }));
+      }
+    }
+  }
+  function close() {
+    panel.hidden = true;
+    toggle.setAttribute('aria-expanded', 'false');
+    root.classList.remove('is-open');
+  }
+
+  toggle.addEventListener('click', () => panel.hidden ? open() : close());
+  closeBtn.addEventListener('click', () => {
+    close();
+    sessionStorage.setItem(MINI_RFQ_DISMISSED_KEY, '1');
+  });
+
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    if (submit.disabled) return;
+    const fd = new FormData(form);
+    if (fd.get('website')) {  // honeypot trip
+      status.textContent = 'Thanks.';
+      sessionStorage.setItem(MINI_RFQ_SUBMITTED_KEY, '1');
+      return;
+    }
+    if (!fd.get('consent')) {
+      status.textContent = 'Please agree to the privacy policy.';
+      status.className = 'mini-rfq__status is-error';
+      return;
+    }
+    submit.disabled = true;
+    submit.textContent = 'Sending…';
+    let utm = {};
+    try { utm = JSON.parse(localStorage.getItem('cms_utm') || '{}'); } catch (_) {}
+
+    try {
+      const res = await fetch('/api/inquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: fd.get('email'),
+          company: fd.get('company') || '',
+          message: fd.get('message') || '',
+          consent_given: true,
+          source_page: location.pathname,
+          source_widget: 'mini_rfq',
+          utm,
+          'cf-turnstile-response': fd.get('cf-turnstile-response') || 'dev-bypass',
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && json.ok) {
+        status.textContent = `✓ Got it (ref ${json.reference}). We'll reply by email shortly.`;
+        status.className = 'mini-rfq__status is-ok';
+        sessionStorage.setItem(MINI_RFQ_SUBMITTED_KEY, '1');
+        form.querySelectorAll('input, textarea, button').forEach((el) => { el.disabled = true; });
+        // Auto-close after 4s
+        setTimeout(close, 4000);
+      } else {
+        const errMap = {
+          consent_required: 'Please agree to the privacy policy.',
+          invalid_email: 'That email looks invalid.',
+          turnstile_failed: 'Anti-bot check failed. Try again.',
+          too_many_inquiries: 'Slow down — try again in a few minutes.',
+        };
+        status.textContent = errMap[json.error] || 'Could not send. Please try the full contact form.';
+        status.className = 'mini-rfq__status is-error';
+        submit.disabled = false;
+        submit.textContent = 'Send';
+      }
+    } catch (_) {
+      status.textContent = 'Network error. Please email us directly.';
+      status.className = 'mini-rfq__status is-error';
+      submit.disabled = false;
+      submit.textContent = 'Send';
+    }
+  });
+}
+
 // Floating "Quick Quote" button (sitewide) — appears after the user has
 // scrolled past the hero. Hidden on /contact.html and on the admin shell.
 function injectFloatingQuote() {
@@ -482,6 +642,7 @@ function injectFloatingQuote() {
   document.body.insertAdjacentHTML('beforeend', COOKIE_BANNER_HTML);
   bindCookieBanner();
   injectFloatingQuote();
+  injectMiniRFQ();
   // 3. Inject Organization + WebSite JSON-LD with FALLBACK values now so
   //    even a JS-rendering scraper that snapshots immediately sees them.
   //    They get re-injected (idempotent) after live settings arrive.

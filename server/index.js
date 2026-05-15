@@ -534,6 +534,10 @@ async function autoMigrate() {
     `ALTER TABLE media ADD COLUMN IF NOT EXISTS srcset   JSONB NOT NULL DEFAULT '{}'::jsonb`,
     `ALTER TABLE media ADD COLUMN IF NOT EXISTS width    INT   NOT NULL DEFAULT 0`,
     `ALTER TABLE media ADD COLUMN IF NOT EXISTS height   INT   NOT NULL DEFAULT 0`,
+    // ----- Inquiry funnel tracking (Sprint 2) -----
+    `ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS source_widget VARCHAR(40) NOT NULL DEFAULT 'main_form'`,
+    `ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS replied_at TIMESTAMPTZ`,
+    `CREATE INDEX IF NOT EXISTS idx_inquiries_widget ON inquiries(source_widget, created_at DESC) WHERE is_deleted = FALSE`,
     // ----- Acme → Zufek cleanup (legacy seed data) -----
     `UPDATE articles SET author = 'Zufek Engineering' WHERE author ILIKE '%acme%' OR author = '' OR author IS NULL`,
     `UPDATE articles SET content = REPLACE(content, 'Acme Engineering', 'Zufek Engineering') WHERE content LIKE '%Acme%'`,

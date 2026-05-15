@@ -220,12 +220,13 @@ window.handleContactSubmit = handleContactSubmit;
 })();
 
 // ===== Turnstile auto-mount =====
+// Re-queries on every cms:ready and on cms:turnstile-rescan events so
+// widgets injected after this script loaded (mini RFQ, exit-intent
+// modal) get their data-turnstile elements bound too.
 (function () {
-  const targets = document.querySelectorAll('[data-turnstile]');
-  if (!targets.length) return;
-  document.addEventListener('cms:ready', () => {
+  function mountAll() {
     const key = (window.CMS && window.CMS.state.config && window.CMS.state.config.turnstileSiteKey) || '';
-    targets.forEach((mount) => {
+    document.querySelectorAll('[data-turnstile]').forEach((mount) => {
       if (mount.__mounted) return;
       mount.__mounted = true;
       if (!key || key.startsWith('0x000')) {
@@ -246,7 +247,9 @@ window.handleContactSubmit = handleContactSubmit;
       mount.innerHTML = '';
       mount.appendChild(w);
     });
-  });
+  }
+  document.addEventListener('cms:ready', mountAll);
+  document.addEventListener('cms:turnstile-rescan', mountAll);
 })();
 
 // ===== Tesla-style horizontal slider =====
