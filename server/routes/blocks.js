@@ -18,6 +18,7 @@ const { clamp, trimStr, asBool, asJson } = require('../utils/validate');
 const registry = require('../services/block-registry');
 const cache = require('../services/cache');
 const versions = require('../services/page-versions');
+const importer = require('../services/page-importer');
 
 const router = express.Router();
 
@@ -379,9 +380,6 @@ router.post('/import-static/:page_id', requireAuth, async (req, res) => {
   if (!pageId) return res.status(400).json({ error: 'invalid_page_id' });
 
   try {
-    // Only select columns the pages table actually has. CTAs / primary
-    // links do NOT live on pages (those belong to pillar_pages); for
-    // pages they sometimes appear inside pages.sections JSONB instead.
     const page = await one(
       `SELECT id, slug, hero_eyebrow, hero_title, hero_subtitle, hero_image,
               body_html, sections
@@ -398,22 +396,27 @@ router.post('/import-static/:page_id', requireAuth, async (req, res) => {
       });
     }
 
-    // Some pages stash CTA copy in pages.sections.hero_cta_primary_text /
-    // _link or as a nested object { text, link }. Probe both shapes.
-    const sections = (page.sections && typeof page.sections === 'object' && !Array.isArray(page.sections))
-      ? page.sections : {};
-    function pickCta(prefix) {
-      const obj = sections[prefix];
-      if (obj && typeof obj === 'object') return { text: obj.text || '', link: obj.link || '' };
-      const flatText = sections[prefix + '_text'];
-      const flatLink = sections[prefix + '_link'];
-      if (typeof flatText === 'string' || typeof flatLink === 'string') {
-        return { text: flatText || '', link: flatLink || '' };
-      }
-      return { text: '', link: '' };
+    // Use the cheerio-based parser to walk the static HTML (or body_html)
+    // and produce typed blocks for each detected pattern. Falls back to
+    // rich_text for sections it can't classify, so nothing is ever lost.
+    const { blocks: parsed, source } = importer.parsePageToBlocks(page);
+
+    if (!parsed.length) {
+      return res.status(400).json({
+        error: 'no_content',
+        detail: '该页面没有可导入的内容（hero / body / 静态文件都为空）。',
+      });
     }
-    const primaryCta   = pickCta('hero_cta_primary');
-    const secondaryCta = pickCta('hero_cta_secondary');
+
+    // Validate every block_type is registered
+    for (const b of parsed) {
+      if (!registry.getBlockType(b.block_type)) {
+        return res.status(400).json({
+          error: 'unknown_block_type',
+          detail: `parser produced unknown block type: ${b.block_type}`,
+        });
+      }
+    }
 
     const created = [];
     const client = await pool.connect();
@@ -422,44 +425,15 @@ router.post('/import-static/:page_id', requireAuth, async (req, res) => {
       if (req.body && req.body.force) {
         await client.query('DELETE FROM page_blocks WHERE page_id = $1', [pageId]);
       }
-
-      let order = 0;
-
-      // 1. Hero block from pages.hero_* + (optional) CTAs from sections
-      const hasHero = (page.hero_title && String(page.hero_title).trim()) ||
-                      (page.hero_subtitle && String(page.hero_subtitle).trim()) ||
-                      (page.hero_image && String(page.hero_image).trim());
-      if (hasHero) {
-        const heroContent = {
-          eyebrow: page.hero_eyebrow || '',
-          title: page.hero_title || '',
-          subtitle: page.hero_subtitle || '',
-          image_url: page.hero_image || '',
-          cta_text: primaryCta.text,
-          cta_link: primaryCta.link,
-          secondary_cta_text: secondaryCta.text,
-          secondary_cta_link: secondaryCta.link,
-          align: 'left',
-        };
+      for (let i = 0; i < parsed.length; i++) {
+        const b = parsed[i];
         const r = await client.query(
           `INSERT INTO page_blocks (page_id, block_type, sort_order, content, is_visible)
-           VALUES ($1, 'hero_banner', $2, $3, TRUE) RETURNING id`,
-          [pageId, order++, JSON.stringify(heroContent)]
+           VALUES ($1, $2, $3, $4, TRUE) RETURNING id`,
+          [pageId, b.block_type, i, JSON.stringify(b.content || {})]
         );
-        created.push({ id: r.rows[0].id, block_type: 'hero_banner' });
+        created.push({ id: r.rows[0].id, block_type: b.block_type });
       }
-
-      // 2. Rich-text block from pages.body_html
-      if (page.body_html && String(page.body_html).trim()) {
-        const rtContent = { html: page.body_html, max_width: 'standard' };
-        const r = await client.query(
-          `INSERT INTO page_blocks (page_id, block_type, sort_order, content, is_visible)
-           VALUES ($1, 'rich_text', $2, $3, TRUE) RETURNING id`,
-          [pageId, order++, JSON.stringify(rtContent)]
-        );
-        created.push({ id: r.rows[0].id, block_type: 'rich_text' });
-      }
-
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK').catch(() => {});
@@ -470,14 +444,13 @@ router.post('/import-static/:page_id', requireAuth, async (req, res) => {
 
     await recordAudit({
       req, action: 'import_static', entity: 'page', entityId: pageId,
-      detail: { created_count: created.length },
+      detail: { created_count: created.length, source, types: created.map((c) => c.block_type) },
     });
     await bustPageCache();
     await maybeSnapshot(req, pageId);
 
-    res.json({ ok: true, created, total: created.length });
+    res.json({ ok: true, created, total: created.length, source });
   } catch (err) {
-    // Log full stack server-side so we can diagnose if it ever 500s again
     console.error('[import-static] failed for page', pageId, err && err.stack ? err.stack : err);
     res.status(500).json({
       error: 'import_failed',
