@@ -62,16 +62,27 @@ async function maybeAutoSnapshot(pageId, userId) {
 }
 
 async function listVersions(pageId, limit) {
-  return many(
-    `SELECT pv.id, pv.label, pv.created_at, u.email AS author_email, u.name AS author_name,
-            jsonb_array_length(pv.blocks_snapshot) AS block_count
-     FROM page_versions pv
-     LEFT JOIN users u ON u.id = pv.created_by
-     WHERE pv.page_id = $1
-     ORDER BY pv.created_at DESC
-     LIMIT $2`,
-    [pageId, Math.min(100, limit || 50)]
-  );
+  // Wrapped in try/catch so a missing table on a fresh deployment doesn't
+  // 500 the page-builder side panel. jsonb_typeof guards against rows
+  // where blocks_snapshot was accidentally stored as a non-array.
+  try {
+    return await many(
+      `SELECT pv.id, pv.label, pv.created_at,
+              u.email AS author_email, u.name AS author_name,
+              CASE WHEN jsonb_typeof(pv.blocks_snapshot) = 'array'
+                   THEN jsonb_array_length(pv.blocks_snapshot)
+                   ELSE 0 END AS block_count
+       FROM page_versions pv
+       LEFT JOIN users u ON u.id = pv.created_by
+       WHERE pv.page_id = $1
+       ORDER BY pv.created_at DESC
+       LIMIT $2`,
+      [pageId, Math.min(100, limit || 50)]
+    );
+  } catch (err) {
+    console.warn('[page-versions] listVersions failed:', err && err.message);
+    return [];
+  }
 }
 
 async function getVersion(versionId) {
