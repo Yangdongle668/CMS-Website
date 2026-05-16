@@ -543,6 +543,238 @@ const BLOCKS = {
         </section>`;
     },
   },
+
+  // -------- 13. Stats Grid (animated counters — about-stats CSS) --------
+  stats_grid: {
+    id: 'stats_grid',
+    label: 'Stats / Counters',
+    icon: '#',
+    description: '动画数字面板 — 4 列计数器（年限/产能/规模/客户数）',
+    defaultContent: () => ({
+      title: '',
+      items: [
+        { value: '8', unit: '+', label: 'Years', desc: 'Founded 2018' },
+        { value: '850', unit: '', label: 'Staff', desc: 'Engineers + ops' },
+        { value: '300', unit: '+', label: 'Programs', desc: 'Active customers' },
+        { value: '100', unit: 'k/mo', label: 'Cell capacity', desc: 'Polymer + steel' },
+      ],
+    }),
+    schema: [
+      F('text', 'title', '区块标题（可选）', { max: 120 }),
+      F('repeater', 'items', '数字条目（4 个推荐）', {
+        fields: [
+          F('text', 'value', '数字', { max: 12 }),
+          F('text', 'unit', '单位（如 + / k/mo）', { max: 12 }),
+          F('text', 'label', '标签', { max: 60 }),
+          F('text', 'desc', '描述（可选）', { max: 200 }),
+        ],
+      }),
+    ],
+    render(c) {
+      const items = (c.items || []).map((s, i) => `
+        <div data-edit-path="items.${i}">
+          <strong>
+            <span class="counter" data-target="${attr(s.value || '0')}"${edit('value')}>${esc(s.value || '0')}</span>
+            ${s.unit ? `<span${edit('unit')}>${esc(s.unit)}</span>` : ''}
+          </strong>
+          <em${edit('label')}>${esc(s.label || '')}</em>
+          ${s.desc ? `<p${edit('desc')}>${esc(s.desc)}</p>` : ''}
+        </div>`).join('');
+      return `
+        <section class="block block-stats">
+          <div class="block-stats__inner" style="max-width:1200px; margin:0 auto; padding:0 24px;">
+            ${c.title ? `<h2 class="block-stats__heading"${edit('title')} style="font-size:28px; font-weight:800; margin:0 0 28px; text-align:center; color:#0f172a;">${esc(c.title)}</h2>` : ''}
+            <div class="about-stats">${items}</div>
+          </div>
+        </section>`;
+    },
+  },
+
+  // -------- 14. Icon Feature Grid (feat-grid CSS — most-used pattern) --------
+  icon_feature_grid: {
+    id: 'icon_feature_grid',
+    label: 'Feature Grid (icons)',
+    icon: '⊞',
+    description: '图标功能网格 — 3-6 列（feat-grid 风格，覆盖现有 40+ 实例）',
+    defaultContent: () => ({
+      title: '',
+      columns: 3,
+      items: [
+        { icon: '①', title: 'Speed', text: 'Sample within 7 days from spec freeze.' },
+        { icon: '②', title: 'Compliance', text: 'IATF 16949 / ISO 14001 audited.' },
+        { icon: '③', title: 'Engineering', text: 'In-house cell + BMS + tooling.' },
+      ],
+    }),
+    schema: [
+      F('text', 'title', '区块标题（可选）', { max: 120 }),
+      F('number', 'columns', '列数 (3 或 6)', { min: 2, max: 6 }),
+      F('repeater', 'items', '功能条目', {
+        fields: [
+          F('text', 'icon', '图标（如 ① / ✓ / 🔧）', { max: 8 }),
+          F('text', 'title', '标题', { max: 80 }),
+          F('textarea', 'text', '描述', { max: 400 }),
+        ],
+      }),
+    ],
+    render(c) {
+      const cols = Math.min(6, Math.max(2, parseInt(c.columns || 3, 10)));
+      const items = (c.items || []).map((it, i) => `
+        <div class="feat-item" data-edit-path="items.${i}">
+          <div class="feat-icon"${edit('icon')}>${esc(it.icon || '')}</div>
+          <h3${edit('title')}>${esc(it.title || '')}</h3>
+          <p${edit('text')}>${lineBreaks(it.text || '')}</p>
+        </div>`).join('');
+      return `
+        <section class="block block-fg" style="padding:60px 24px;">
+          <div style="max-width:1200px; margin:0 auto;">
+            ${c.title ? `<h2${edit('title')} style="font-size:28px; font-weight:800; margin:0 0 32px; text-align:center; color:#0f172a;">${esc(c.title)}</h2>` : ''}
+            <div class="feat-grid feat-grid--${cols}">${items}</div>
+          </div>
+        </section>`;
+    },
+  },
+
+  // -------- 15. Image + Text Split (content-split CSS, alternating) --------
+  image_text_split: {
+    id: 'image_text_split',
+    label: 'Image + Text Split',
+    icon: '◧',
+    description: '图文左右分栏 — 内容详解 + 配图（可正反向）',
+    defaultContent: () => ({
+      title: 'In-house tooling',
+      text: 'Mold-making and SMT lines under one roof — 30% faster NPI than working with two suppliers.',
+      image_url: '',
+      image_align: 'right',
+    }),
+    schema: [
+      F('text', 'title', '小标题', { max: 200 }),
+      F('textarea', 'text', '段落文字', { max: 2000 }),
+      F('image', 'image_url', '配图', {}),
+      F('select', 'image_align', '图片在左还是右', { options: ['left', 'right'] }),
+    ],
+    render(c) {
+      const reverse = c.image_align === 'left' ? ' reverse' : '';
+      return `
+        <section class="block block-its" style="padding:60px 24px;">
+          <div style="max-width:1200px; margin:0 auto;">
+            <div class="content-split${reverse}">
+              <div class="text-col">
+                <h3${edit('title')}>${esc(c.title || '')}</h3>
+                <p${editRich('text')}${c.text ? '' : ' data-empty="1"'}>${richHtml(c.text || '')}</p>
+              </div>
+              <div class="img-col">
+                ${c.image_url ? `<img src="${attr(c.image_url)}" alt="${attr(c.title || '')}" loading="lazy" decoding="async" data-edit-image="image_url">` : '<div style="background:#f1f5f9; aspect-ratio:4/3; border-radius:8px; display:grid; place-items:center; color:#94a3b8;">No image yet</div>'}
+              </div>
+            </div>
+          </div>
+        </section>`;
+    },
+  },
+
+  // -------- 16. Process Steps (steps-grid CSS — numbered + sub-list) --------
+  process_steps: {
+    id: 'process_steps',
+    label: 'Process Steps',
+    icon: '⇉',
+    description: '编号步骤卡片 — 3-4 步流程（可带子要点列表）',
+    defaultContent: () => ({
+      title: 'How we work',
+      items: [
+        { num: '01', title: 'Design', text: 'Cell sizing, chemistry match, BMS topology.', sub: ['DFM review', 'Compliance plan', 'BOM cost target'] },
+        { num: '02', title: 'Prototyping', text: 'Pilot line samples in 7 days.', sub: ['First articles', 'Cycle test', 'Drop test'] },
+        { num: '03', title: 'Mass Production', text: 'Cell-ID traceable lines.', sub: ['100% screening', 'PPAP', 'Air-DGR docs'] },
+      ],
+    }),
+    schema: [
+      F('text', 'title', '区块标题', { max: 120 }),
+      F('repeater', 'items', '步骤', {
+        fields: [
+          F('text', 'num', '编号（如 01 / 02）', { max: 8 }),
+          F('text', 'title', '步骤标题', { max: 80 }),
+          F('textarea', 'text', '说明', { max: 400 }),
+          F('repeater', 'sub', '子要点（可选）', {
+            fields: [
+              F('text', 'item', '要点文字', { max: 200 }),
+            ],
+          }),
+        ],
+      }),
+    ],
+    render(c) {
+      const items = (c.items || []).map((s, i) => {
+        const sub = Array.isArray(s.sub) ? s.sub : [];
+        const subHtml = sub.length
+          ? `<ul class="step-list">${sub.map((x, j) => `<li${edit('item')} data-edit-path="sub.${j}">${esc(typeof x === 'string' ? x : x.item || '')}</li>`).join('')}</ul>`
+          : '';
+        return `
+          <div class="step-card" data-edit-path="items.${i}">
+            <div class="step-num"${edit('num')}>${esc(s.num || '')}</div>
+            <h3${edit('title')}>${esc(s.title || '')}</h3>
+            <p${edit('text')}>${lineBreaks(s.text || '')}</p>
+            ${subHtml}
+          </div>`;
+      }).join('');
+      return `
+        <section class="block block-ps" style="padding:60px 24px;">
+          <div style="max-width:1200px; margin:0 auto;">
+            ${c.title ? `<h2${edit('title')} style="font-size:28px; font-weight:800; margin:0 0 32px; text-align:center; color:#0f172a;">${esc(c.title)}</h2>` : ''}
+            <div class="steps-grid">${items}</div>
+          </div>
+        </section>`;
+    },
+  },
+
+  // -------- 17. Compliance Badges (trust-strip OR cert-wall) --------
+  compliance_badges: {
+    id: 'compliance_badges',
+    label: 'Compliance Badges',
+    icon: '◈',
+    description: '认证 / 合规标识墙 — 横排徽章或方块墙',
+    defaultContent: () => ({
+      title: 'Compliant with',
+      layout: 'strip',
+      items: [
+        { text: 'ISO 9001' },
+        { text: 'IATF 16949' },
+        { text: 'IEC 62133' },
+        { text: 'UN38.3' },
+        { text: 'CE / UKCA' },
+        { text: 'RoHS / REACH' },
+      ],
+    }),
+    schema: [
+      F('text', 'title', '标签文字（可选）', { max: 80 }),
+      F('select', 'layout', '排版', { options: ['strip', 'wall'] }),
+      F('repeater', 'items', '徽章', {
+        fields: [
+          F('text', 'text', '认证名', { max: 60 }),
+        ],
+      }),
+    ],
+    render(c) {
+      const layout = c.layout === 'wall' ? 'wall' : 'strip';
+      const items = (c.items || []).map((b, i) => {
+        const cls = layout === 'wall' ? 'cert-chip' : '';
+        return `<span class="${cls}" data-edit-path="items.${i}"${edit('text')}>${esc(b.text || '')}</span>`;
+      }).join('');
+      if (layout === 'wall') {
+        return `
+          <section class="block block-cb" style="padding:48px 24px; background:#f8fafc;">
+            <div style="max-width:1200px; margin:0 auto;">
+              ${c.title ? `<div${edit('title')} style="font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:#64748b; text-align:center; margin:0 0 18px; font-weight:600;">${esc(c.title)}</div>` : ''}
+              <div class="cert-wall">${items}</div>
+            </div>
+          </section>`;
+      }
+      return `
+        <section class="block block-cb trust-strip">
+          <div class="trust-strip__inner">
+            ${c.title ? `<span class="trust-strip__label"${edit('title')}>${esc(c.title)}</span>` : ''}
+            <div class="trust-strip__items">${items}</div>
+          </div>
+        </section>`;
+    },
+  },
 };
 
 function listBlockTypes() {

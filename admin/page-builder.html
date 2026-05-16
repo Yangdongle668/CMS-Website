@@ -8,10 +8,88 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/admin/assets/css/admin.css"/>
 <style>
+  /* ===== Fullscreen mode (?fs=1) — hide admin shell entirely ===== */
+  /* When launched via window.open from /admin/pages.html, the builder
+     takes the whole viewport WordPress-style: no sidebar, no shell topbar,
+     just our own custom topbar with everything in one place. */
+  body.is-fs { background: #f5f7fb; }
+  body.is-fs .sidebar,
+  body.is-fs .topbar { display: none !important; }
+  body.is-fs .admin-shell { grid-template-columns: 1fr !important; }
+  body.is-fs .main { padding: 0; }
+  body.is-fs .page { padding: 0; max-width: none; }
+
+  /* Custom fullscreen topbar */
+  .pb2-fs-bar {
+    display: none;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 16px;
+    background: #fff;
+    border-bottom: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(15,23,42,0.05);
+    height: 56px;
+    box-sizing: border-box;
+  }
+  body.is-fs .pb2-fs-bar { display: flex; }
+  .pb2-fs-bar__brand {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+    color: #fff; display: grid; place-items: center;
+    font-weight: 800; font-size: 14px; flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(37,99,235,0.35);
+  }
+  .pb2-fs-bar__title {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; gap: 1px;
+  }
+  .pb2-fs-bar__title input {
+    border: 1px solid transparent;
+    background: transparent;
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    padding: 4px 10px;
+    border-radius: 6px;
+    width: 100%;
+    max-width: 480px;
+    transition: background 140ms, border-color 140ms;
+    letter-spacing: -0.01em;
+  }
+  .pb2-fs-bar__title input:hover { background: #f1f5f9; }
+  .pb2-fs-bar__title input:focus { outline: none; background: #fff; border-color: #2563eb; box-shadow: 0 0 0 4px rgba(37,99,235,0.18); }
+  .pb2-fs-bar__title small {
+    font-size: 11px; color: #94a3b8;
+    padding-left: 11px;
+    letter-spacing: 0.02em;
+  }
+  .pb2-fs-bar__title small code {
+    font-family: 'JetBrains Mono', monospace;
+    background: #f1f5f9;
+    padding: 1px 6px;
+    border-radius: 3px;
+    color: #475569;
+    font-size: 10.5px;
+  }
+  .pb2-fs-bar__center { display: flex; gap: 2px; }
+  .pb2-fs-bar__right { display: flex; gap: 8px; align-items: center; }
+  .pb2-fs-bar__close {
+    background: transparent;
+    border: 1px solid #e2e8f0;
+    padding: 7px 12px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    color: #475569;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .pb2-fs-bar__close:hover { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; }
+
   /* Full-bleed editor — replace admin shell content area with a 2-column
      layout: iframe (left, big) + side panel (right, narrow). */
-  .pb2 { display: grid; grid-template-columns: 1fr 360px; gap: 0; height: calc(100vh - 100px); background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
-  @media (max-width: 1100px) { .pb2 { grid-template-columns: 1fr 320px; } }
+  .pb2 { display: grid; grid-template-columns: 1fr 380px; gap: 0; height: calc(100vh - 100px); background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+  body.is-fs .pb2 { height: calc(100vh - 56px); border: none; border-radius: 0; }
+  @media (max-width: 1100px) { .pb2 { grid-template-columns: 1fr 340px; } }
 
   /* Top toolbar inside the canvas */
   .pb2-toolbar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #fff; border-bottom: 1px solid #e2e8f0; }
@@ -136,13 +214,37 @@
               (pageInfo.hero_image && pageInfo.hero_image.trim()));
   }
 
-  const shell = await bootShell({
-    title: '搭积木：' + (pageInfo ? pageInfo.title || pageInfo.slug : '#' + pageId),
-    crumbs: '内容 / 页面 / 构建器',
-  });
-  if (!shell) return;
-
-  shell.actions.innerHTML = `<a class="btn btn--ghost btn--sm" href="/admin/pages.html">返回列表</a>`;
+  // ----- Fullscreen vs. admin-shell mode -----
+  // ?fs=1 → take over the entire viewport (window.open from /admin/pages.html)
+  // default → render inside the admin shell (sidebar + topbar visible)
+  const isFullscreen = new URLSearchParams(location.search).get('fs') === '1';
+  let shell;
+  if (isFullscreen) {
+    document.body.classList.add('is-fs');
+    // Skip auth verification via bootShell — assume cookie present from
+    // opener window. If it isn't, the API calls will 401 and bounce to login.
+    try {
+      await api('/api/auth/me');
+    } catch (_) {
+      location.href = '/admin/login.html?next=' + encodeURIComponent(location.pathname + location.search);
+      return;
+    }
+    // Build a minimal shell — body has no sidebar, just the host divs
+    const root = document.querySelector('[data-admin-shell]');
+    root.innerHTML = `
+      <main class="main">
+        <div class="page" data-page-content></div>
+      </main>
+    `;
+    shell = { content: root.querySelector('[data-page-content]'), actions: null };
+  } else {
+    shell = await bootShell({
+      title: '搭积木：' + (pageInfo ? pageInfo.title || pageInfo.slug : '#' + pageId),
+      crumbs: '内容 / 页面 / 构建器',
+    });
+    if (!shell) return;
+    shell.actions.innerHTML = `<a class="btn btn--ghost btn--sm" href="/admin/pages.html">返回列表</a>`;
+  }
 
   // ----- Load block types + current blocks in parallel -----
   const [typesResp, blocksResp] = await Promise.all([
@@ -159,13 +261,37 @@
   const slug = pageInfo && pageInfo.slug ? pageInfo.slug : '';
   const iframeSrc = (slug ? '/' + slug : '/' + pageId) + '?builder=1&_t=' + Date.now();
 
+  const fsBarHtml = isFullscreen ? `
+    <div class="pb2-fs-bar">
+      <div class="pb2-fs-bar__brand">Z</div>
+      <div class="pb2-fs-bar__title">
+        <input id="fs-title" type="text" placeholder="未命名页面" value="${escapeHtml(pageInfo ? pageInfo.title || '' : '')}">
+        <small>slug: <code>${escapeHtml(slug)}</code> · <span id="fs-blockcount">${blocks.length}</span> 区块</small>
+      </div>
+      <div class="pb2-fs-bar__center">
+        <button class="pb2-device is-active" data-device="desktop">🖥 桌面</button>
+        <button class="pb2-device" data-device="tablet">◽ 平板</button>
+        <button class="pb2-device" data-device="mobile">📱 手机</button>
+      </div>
+      <div class="pb2-fs-bar__right">
+        <button class="btn btn--ghost btn--sm" id="undo-btn" title="撤销 (Ctrl+Z)" disabled>↶</button>
+        <button class="btn btn--ghost btn--sm" id="redo-btn" title="重做 (Ctrl+Y)" disabled>↷</button>
+        <span class="pb2-save" id="save-status">✓ 已加载</span>
+        <a class="btn btn--ghost btn--sm" href="/${escapeHtml(slug)}" target="_blank">前台 ↗</a>
+        <button class="pb2-fs-bar__close" id="fs-close">✕ 关闭</button>
+      </div>
+    </div>
+  ` : '';
+
   shell.content.innerHTML = `
+    ${fsBarHtml}
     <div class="pb2">
       <div class="pb2-canvas">
+        ${isFullscreen ? '' : `
         <div class="pb2-toolbar">
           <div class="pb2-toolbar__title">
             🧱 ${escapeHtml(pageInfo ? pageInfo.title || pageInfo.slug : '#' + pageId)}
-            <small>(${blocks.length} 区块)</small>
+            <small>(<span id="blockcount-inline">${blocks.length}</span> 区块)</small>
           </div>
           <div class="pb2-toolbar__center">
             <button class="pb2-device is-active" data-device="desktop">🖥 桌面</button>
@@ -179,6 +305,7 @@
             <a class="btn btn--ghost btn--sm" href="/${escapeHtml(slug)}" target="_blank">前台查看 ↗</a>
           </div>
         </div>
+        `}
         <div class="pb2-frame-wrap">
           <div class="pb2-frame pb2-frame--desktop" id="frame-wrap">
             <iframe id="canvas" src="${escapeHtml(iframeSrc)}"></iframe>
@@ -187,6 +314,7 @@
       </div>
       <div class="pb2-side">
         <div class="pb2-side__tabs">
+          <button class="pb2-side__tab" data-tab="page">📄 页面</button>
           <button class="pb2-side__tab is-active" data-tab="settings">⚙ 区块</button>
           <button class="pb2-side__tab" data-tab="library">＋ 库</button>
           <button class="pb2-side__tab" data-tab="seo">🔍 SEO</button>
@@ -196,6 +324,34 @@
       </div>
     </div>
   `;
+
+  // ----- Fullscreen-mode wiring: title inline edit, close button -----
+  if (isFullscreen) {
+    const titleInput = document.getElementById('fs-title');
+    let titleSaveT = null;
+    titleInput.addEventListener('input', () => {
+      setStatus('dirty', '未保存…');
+      clearTimeout(titleSaveT);
+      titleSaveT = setTimeout(async () => {
+        try {
+          const payload = Object.assign({}, pageInfo, { title: titleInput.value });
+          await api('/api/pages/' + pageId, { method: 'PUT', body: JSON.stringify(payload) });
+          pageInfo.title = titleInput.value;
+          setStatus('saved', '✓ 标题已保存');
+        } catch (e) { setStatus('dirty', '标题保存失败：' + e.message); }
+      }, 700);
+    });
+    document.getElementById('fs-close').addEventListener('click', () => {
+      if (window.opener && !window.opener.closed) {
+        // Tell opener to refresh, then close this window
+        try { window.opener.postMessage({ source: 'cms-builder-window', type: 'closed', page_id: pageId }, '*'); } catch (_) {}
+      }
+      window.close();
+      // If browser blocked window.close (some browsers won't let scripts close a tab they didn't open),
+      // fall back to navigating back to the page list.
+      setTimeout(() => { if (!window.closed) location.href = '/admin/pages.html'; }, 200);
+    });
+  }
 
   const sideBody = document.getElementById('side-body');
   const saveStatus = document.getElementById('save-status');
@@ -549,8 +705,10 @@
   }
 
   function updateCount() {
-    const el = document.querySelector('.pb2-toolbar__title small');
-    if (el) el.textContent = `(${blocks.length} 区块)`;
+    const inline = document.getElementById('blockcount-inline');
+    if (inline) inline.textContent = blocks.length;
+    const fs = document.getElementById('fs-blockcount');
+    if (fs) fs.textContent = blocks.length;
   }
 
   // ----- Side panel rendering -----
@@ -563,10 +721,119 @@
   });
 
   function renderSide() {
+    if (activeTab === 'page') return renderPagePanel();
     if (activeTab === 'library') return renderLibrary();
     if (activeTab === 'seo') return renderSeoPanel();
     if (activeTab === 'history') return renderHistoryPanel();
     return renderSettings();
+  }
+
+  // ----- Page-level settings (slug / title / nav / status) -----
+  async function renderPagePanel() {
+    sideBody.innerHTML = `<p style="padding:20px;color:#94a3b8;">加载页面信息…</p>`;
+    let p;
+    try {
+      const r = await api('/api/pages/admin/' + pageId);
+      p = r.page;
+      pageInfo = p;
+    } catch (e) {
+      sideBody.innerHTML = `<p style="padding:20px;color:#b91c1c;">加载失败：${escapeHtml(e.message)}</p>`;
+      return;
+    }
+
+    sideBody.innerHTML = `
+      <div class="pb2-form__note">
+        <strong>页面级设置。</strong>这些字段影响整页的标题、URL、导航归属和发布状态。
+      </div>
+      <div class="pb2-form__field">
+        <label>页面标题</label>
+        <input type="text" id="page_title" maxlength="255" value="${escapeHtml(p.title || '')}">
+        <span class="hint">显示在标签页 / 浏览器标题栏 / sitemap。</span>
+      </div>
+      <div class="pb2-form__field">
+        <label>URL 路径 <span style="color:#dc2626;">改这个会让旧链接失效</span></label>
+        <input type="text" id="page_slug" maxlength="190" value="${escapeHtml(p.slug || '')}" pattern="[a-z0-9/_-]+">
+        <span class="hint">前台访问地址：<code>/${escapeHtml(p.slug || '')}</code>。只能用小写字母、数字、-、_、/。</span>
+      </div>
+      <div class="pb2-form__field">
+        <label>顶部导航高亮组</label>
+        <select id="page_nav">
+          <option value="" ${!p.nav ? 'selected' : ''}>无（不归属）</option>
+          <option value="home" ${p.nav === 'home' ? 'selected' : ''}>Home</option>
+          <option value="products" ${p.nav === 'products' ? 'selected' : ''}>Products</option>
+          <option value="applications" ${p.nav === 'applications' ? 'selected' : ''}>Applications</option>
+          <option value="solutions" ${p.nav === 'solutions' ? 'selected' : ''}>Solutions</option>
+          <option value="about" ${p.nav === 'about' ? 'selected' : ''}>About</option>
+          <option value="blog" ${p.nav === 'blog' ? 'selected' : ''}>Blog</option>
+        </select>
+        <span class="hint">访问此页面时，顶部导航上对应这一项会高亮。</span>
+      </div>
+      <div class="pb2-form__field">
+        <label>状态</label>
+        <select id="page_status">
+          <option value="published" ${p.status === 'published' ? 'selected' : ''}>✓ 已发布</option>
+          <option value="draft" ${p.status === 'draft' ? 'selected' : ''}>○ 草稿</option>
+        </select>
+        <span class="hint">草稿状态访客访问会 404；管理员预览仍可见。</span>
+      </div>
+
+      <div style="margin-top:24px; padding:14px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px;">
+        <div style="font-weight:700; color:#b91c1c; font-size:12px; margin-bottom:8px;">⚠ 危险操作</div>
+        <button class="btn btn--ghost btn--sm" id="del-page" style="color:#b91c1c; border-color:#fca5a5;">🗑 删除整个页面</button>
+        <p style="font-size:11.5px; color:#7f1d1d; margin:8px 0 0;">删除后页面 + 所有区块 + 历史快照都会移除，且不可恢复。</p>
+      </div>
+    `;
+
+    const titleEl = document.getElementById('page_title');
+    const slugEl = document.getElementById('page_slug');
+    const navEl = document.getElementById('page_nav');
+    const statusEl = document.getElementById('page_status');
+
+    let savePageT = null;
+    function schedulePageSave() {
+      setStatus('dirty', '页面设置未保存…');
+      clearTimeout(savePageT);
+      savePageT = setTimeout(async () => {
+        const payload = Object.assign({}, p, {
+          title: titleEl.value,
+          slug: slugEl.value,
+          nav: navEl.value,
+          status: statusEl.value,
+        });
+        try {
+          await api('/api/pages/' + pageId, { method: 'PUT', body: JSON.stringify(payload) });
+          Object.assign(p, payload);
+          pageInfo = p;
+          setStatus('saved', '✓ 页面设置已保存');
+          // Sync the fullscreen title input
+          const fsT = document.getElementById('fs-title');
+          if (fsT && fsT.value !== titleEl.value) fsT.value = titleEl.value;
+        } catch (e) {
+          setStatus('dirty', '保存失败：' + e.message);
+        }
+      }, 700);
+    }
+    [titleEl, slugEl, navEl, statusEl].forEach((el) => el.addEventListener('input', schedulePageSave));
+    statusEl.addEventListener('change', schedulePageSave);
+    navEl.addEventListener('change', schedulePageSave);
+
+    document.getElementById('del-page').addEventListener('click', async () => {
+      const sure = prompt(`确认删除？输入页面 slug "${p.slug}" 来确认：`);
+      if (sure !== p.slug) {
+        if (sure !== null) alert('输入不匹配，已取消。');
+        return;
+      }
+      try {
+        await api('/api/pages/' + pageId, { method: 'DELETE' });
+        if (isFullscreen && window.opener) {
+          try { window.opener.postMessage({ source: 'cms-builder-window', type: 'deleted', page_id: pageId }, '*'); } catch (_) {}
+          window.close();
+          setTimeout(() => location.href = '/admin/pages.html', 200);
+        } else {
+          location.href = '/admin/pages.html';
+        }
+      } catch (e) { alert('删除失败：' + e.message); }
+    });
   }
 
   // ----- Page version history (autosave snapshots + manual save + restore) -----

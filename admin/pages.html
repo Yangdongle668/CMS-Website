@@ -7,272 +7,171 @@
 <title>页面 | 后台管理</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+<style>
+  .pages-hint { margin: 0 0 16px; color: var(--a-mute2); font-size: 13px; line-height: 1.6; }
+  .pages-hint strong { color: var(--a-brand); }
+  .new-modal { position: fixed; inset: 0; background: rgba(15,23,42,0.55); backdrop-filter: blur(4px); display: grid; place-items: center; z-index: 200; }
+  .new-modal__box { background: #fff; border-radius: 14px; width: 420px; max-width: 92%; padding: 26px 28px; box-shadow: 0 30px 60px rgba(0,0,0,0.25); }
+  .new-modal__box h3 { margin: 0 0 6px; font-size: 17px; }
+  .new-modal__box p { margin: 0 0 18px; color: var(--a-mute2); font-size: 13px; }
+  .new-modal__actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+</style>
 </head>
 <body>
 <div data-admin-shell></div>
 <script src="/admin/assets/js/admin.js"></script>
-<script src="/admin/assets/js/quill-editor.js"></script>
-<script src="/admin/assets/js/image-picker.js"></script>
-<script src="/admin/assets/js/iframe-text-editor.js"></script>
-<script src="/admin/assets/js/seo-panel.js"></script>
 <script>
 (async function () {
   const { api, escapeHtml, formatDate, toast, bootShell } = window.AdminAPI;
   const shell = await bootShell({ title: '页面', crumbs: '内容 / 静态页面' });
   if (!shell) return;
-  shell.actions.innerHTML = `<button class="btn btn--sm" id="new">+ 新建页面</button>`;
+  shell.actions.innerHTML = `
+    <a href="/admin/templates.html" class="btn btn--ghost btn--sm">★ 从模板创建</a>
+    <button class="btn btn--sm" id="new-btn">+ 新建空白页面</button>
+  `;
 
-  let bodyEditor = null;
-  let heroPicker = null;
+  function slugToFrontUrl(slug) {
+    if (slug === 'home') return '/';
+    if (['faq', 'contact', 'privacy', 'terms', 'legal', 'gdpr', 'cookies'].includes(slug)) return '/' + slug + '.html';
+    if (slug.endsWith('/index')) return '/' + slug.replace(/\/index$/, '/');
+    return '/' + slug;
+  }
 
-  const wantId = new URLSearchParams(location.search).get('id');
+  // Open the visual builder in a new window. WordPress-style — the
+  // builder takes the entire viewport (no admin shell), all editing
+  // (page settings, blocks, SEO, history) happens in that one window.
+  function openBuilder(pageId) {
+    const w = window.open(
+      '/admin/page-builder.html?page=' + pageId + '&fs=1',
+      'cms-builder-' + pageId,
+      'width=1500,height=950,resizable=yes,scrollbars=yes'
+    );
+    if (!w) {
+      toast('浏览器拦了弹窗，已在当前页打开。下次允许弹窗体验会更好。', 'error');
+      location.href = '/admin/page-builder.html?page=' + pageId + '&fs=1';
+      return;
+    }
+    w.focus();
+  }
+
+  // When the builder window closes or saves, refresh the list so any
+  // title/slug/status changes show up immediately.
+  window.addEventListener('message', (ev) => {
+    const m = ev.data;
+    if (m && m.source === 'cms-builder-window' && (m.type === 'closed' || m.type === 'deleted')) {
+      refresh();
+    }
+  });
 
   async function refresh() {
-    const { items } = await api('/api/pages/admin');
+    let items = [];
+    try { ({ items } = await api('/api/pages/admin')); }
+    catch (e) {
+      shell.content.innerHTML = '<div class="panel"><div class="empty">加载失败：' + escapeHtml(e.message) + '</div></div>';
+      return;
+    }
     shell.content.innerHTML = `
-      <div class="panel" id="list-panel">
-        <p style="margin:0 0 16px; color:var(--a-mute2); font-size:13px;">
-          编辑 hero、meta、面包屑、正文与每页结构化区块（首页配置块）。
-          所有修改都是<strong>左右分屏</strong>实时预览：左边表单 → 右边 iframe 立即看到效果。
-          页面里出现的图片可以直接点缩略图替换。
+      <div class="panel">
+        <p class="pages-hint">
+          点击页面行的 <strong>✎ 编辑</strong> 会在新窗口打开可视化编辑器：
+          页面级设置（slug/标题/导航/状态）、区块拖拽、SEO 配置、历史快照
+          全部集成在一个全屏界面里——所见即所得。
         </p>
         <table class="table">
-          <thead><tr><th>Slug</th><th>标题</th><th>导航</th><th>状态</th><th>更新于</th><th></th></tr></thead>
+          <thead>
+            <tr>
+              <th>Slug / URL</th>
+              <th>标题</th>
+              <th>导航</th>
+              <th>状态</th>
+              <th>更新于</th>
+              <th></th>
+            </tr>
+          </thead>
           <tbody>
             ${items.length ? items.map((p) => `
-              <tr>
-                <td><span class="mono" style="font-weight:600;">${escapeHtml(p.slug)}</span></td>
-                <td>${escapeHtml(p.title || '')}<div style="font-size:11.5px; color:var(--a-mute2);">${escapeHtml(p.hero_title || '')}</div></td>
-                <td><span class="pill pill--read">${escapeHtml(p.nav || '-')}</span></td>
-                <td><span class="pill pill--${p.status}">${p.status}</span></td>
-                <td>${formatDate(p.updated_at)}</td>
+              <tr data-id="${p.id}" style="cursor:pointer;">
                 <td>
-                  <a class="btn btn--ghost btn--sm" href="/admin/page-builder.html?page=${p.id}" title="拖拽搭积木">🧱 积木</a>
-                  <a class="btn btn--ghost btn--sm" href="?id=${p.id}">编辑</a>
-                  <a class="btn btn--ghost btn--sm" target="_blank" href="${slugToUrl(p.slug)}">预览 ↗</a>
+                  <span class="mono" style="font-weight:600;">${escapeHtml(p.slug)}</span>
+                  <div style="font-size:11px; color:var(--a-mute2); margin-top:2px;">
+                    <a href="${escapeHtml(slugToFrontUrl(p.slug))}" target="_blank" rel="noopener" style="color:inherit;" onclick="event.stopPropagation();">${escapeHtml(slugToFrontUrl(p.slug))} ↗</a>
+                  </div>
+                </td>
+                <td>
+                  <div style="font-weight:600;">${escapeHtml(p.title || '(未命名)')}</div>
+                  <div style="font-size:11.5px; color:var(--a-mute2);">${escapeHtml(p.hero_title || '')}</div>
+                </td>
+                <td>${p.nav ? `<span class="pill pill--read">${escapeHtml(p.nav)}</span>` : '<span style="color:var(--a-mute3);">—</span>'}</td>
+                <td><span class="pill pill--${p.status}">${p.status === 'published' ? '已发布' : '草稿'}</span></td>
+                <td style="font-size:12px; color:var(--a-mute2);">${formatDate(p.updated_at)}</td>
+                <td style="text-align:right;">
+                  <button class="btn btn--sm" data-edit="${p.id}" onclick="event.stopPropagation();">✎ 编辑</button>
                 </td>
               </tr>
-            `).join('') : '<tr><td colspan="6"><div class="empty">没有页面。</div></td></tr>'}
+            `).join('') : '<tr><td colspan="6"><div class="empty">还没有任何页面。点上方"+ 新建空白页面"或"★ 从模板创建"开始。</div></td></tr>'}
           </tbody>
         </table>
       </div>
-      <div id="edit-panel"></div>
     `;
-    if (wantId) {
-      const p = items.find((x) => String(x.id) === wantId);
-      if (p) renderEditor(p);
-    }
+
+    // Click row = open builder
+    shell.content.querySelectorAll('tr[data-id]').forEach((tr) => {
+      tr.addEventListener('click', () => openBuilder(parseInt(tr.dataset.id, 10)));
+    });
+    shell.content.querySelectorAll('[data-edit]').forEach((btn) => {
+      btn.addEventListener('click', () => openBuilder(parseInt(btn.dataset.edit, 10)));
+    });
   }
 
-  function slugToUrl(slug) {
-    if (slug === 'home') return '/';
-    if (slug === 'faq') return '/faq.html';
-    if (slug === 'contact') return '/contact.html';
-    if (['privacy','terms','legal','gdpr'].includes(slug)) return '/' + slug + '.html';
-    if (slug.endsWith('/index')) return '/' + slug.replace(/\/index$/, '/');
-    return '/' + slug + '.html';
-  }
-
-  function renderEditor(p) {
-    p = p || { slug: '', status: 'published', hero_breadcrumbs: [], sections: {} };
-    const isNew = !p.id;
-    const previewUrl = isNew ? '' : slugToUrl(p.slug);
-    document.getElementById('list-panel').style.display = 'none';
-    const panel = document.getElementById('edit-panel');
-    const breadcrumbsJson = JSON.stringify(p.hero_breadcrumbs || [], null, 2);
-    const sectionsJson = JSON.stringify(p.sections || {}, null, 2);
-    panel.innerHTML = `
-      <div class="panel">
-        <div class="panel__head">
-          <h2>${isNew ? '新建页面' : '编辑: ' + escapeHtml(p.slug)}</h2>
-          <div style="display:flex; gap:8px;">
-            ${!isNew && previewUrl ? `<a target="_blank" class="btn btn--primary btn--sm" href="/admin/visual-edit.html?url=${encodeURIComponent(previewUrl)}&back=${encodeURIComponent(location.pathname + location.search)}">🎨 可视化编辑 ↗</a>` : ''}
-            ${!isNew && previewUrl ? `<a target="_blank" class="btn btn--ghost btn--sm" href="${escapeHtml(previewUrl)}">预览 ↗</a>` : ''}
-            <a href="/admin/pages.html" class="btn btn--ghost btn--sm">返回</a>
-          </div>
+  // ----- "+ 新建空白页面" — minimal modal asking for slug + title only -----
+  document.addEventListener('click', (ev) => {
+    if (ev.target.id !== 'new-btn') return;
+    const overlay = document.createElement('div');
+    overlay.className = 'new-modal';
+    overlay.innerHTML = `
+      <div class="new-modal__box">
+        <h3>新建空白页面</h3>
+        <p>填写 slug 和标题就行；其他所有内容（hero、区块、SEO 等）在编辑器里完成。</p>
+        <div class="field">
+          <label>URL Slug *</label>
+          <input id="new-slug" placeholder="例如 about/team 或 services-2026" maxlength="190" autofocus>
+          <span class="hint">只能小写字母、数字、- _ /。前台访问 /<slug> 或 /<slug>.html</span>
         </div>
-
-        <div class="page-editor-fullform">
-          <div class="page-editor-form">
-            <div class="tabs">
-              <button class="tabs__btn is-active" data-tab="hero">Hero &amp; Meta</button>
-              <button class="tabs__btn" data-tab="body">正文内容</button>
-              <button class="tabs__btn" data-tab="seo">SEO</button>
-              <button class="tabs__btn" data-tab="sections">结构化区块 (JSON)</button>
-              <button class="tabs__btn" data-tab="advanced">高级</button>
-            </div>
-
-            <div data-pane="hero">
-              <div class="field-row">
-                <div class="field"><label>Slug <span class="hint">（URL 标识，例如 about/profile）</span></label><input id="f-slug" value="${escapeHtml(p.slug)}" ${isNew ? '' : 'readonly'}/></div>
-                <div class="field"><label>导航高亮 <span class="hint">（顶部导航的 slug）</span></label><input id="f-nav" value="${escapeHtml(p.nav || '')}"/></div>
-              </div>
-              <div class="field"><label>Title <span class="hint">（内部标签）</span></label><input id="f-title" value="${escapeHtml(p.title || '')}"/></div>
-              <div class="field"><label>Hero Eyebrow <span class="hint">（H1 上方的小字）</span></label><input id="f-heyebrow" value="${escapeHtml(p.hero_eyebrow || '')}"/></div>
-              <div class="field"><label>Hero 主标题 (H1)</label><input id="f-htitle" value="${escapeHtml(p.hero_title || '')}"/></div>
-              <div class="field"><label>Hero 副标题</label><textarea id="f-hsub" rows="2">${escapeHtml(p.hero_subtitle || '')}</textarea></div>
-              <div class="field">
-                <label>Hero 背景图 <span class="hint">（满屏背景图，建议 1920×1080，WebP/JPG）</span></label>
-                <div id="f-himg-mount"></div>
-              </div>
-              <div class="field"><label>面包屑（JSON 数组：{label, url}）</label><textarea id="f-crumbs" class="mono" rows="4">${escapeHtml(breadcrumbsJson)}</textarea></div>
-
-              <h3 style="margin-top:24px; font-size:14px;">SEO</h3>
-              <div class="field"><label>Meta 标题 <span class="hint">（浏览器标签 + Google 搜索结果）</span></label><input id="f-mtitle" value="${escapeHtml(p.meta_title || '')}"/></div>
-              <div class="field"><label>Meta 描述</label><textarea id="f-mdesc" rows="3">${escapeHtml(p.meta_description || '')}</textarea></div>
-            </div>
-
-            <div data-pane="body" style="display:none;">
-              <p style="font-size:13px; color:var(--a-mute2);">用可视化编辑器替换 <strong>Hero 之后的正文区</strong>。留空保留页面默认内容。需要直接编辑 HTML 时点编辑器底部"查看 HTML 源代码"。</p>
-              <p style="font-size:13px; color:var(--a-warning);"><strong>注意：</strong>静态 HTML 中必须包含 <code>&lt;div data-page-body&gt;...&lt;/div&gt;</code> 包裹层才会生效。没有该层的页面只会更新 Hero 和 Meta。</p>
-              <div class="field"><div id="f-body"></div></div>
-            </div>
-
-            <div data-pane="seo" style="display:none;">
-              <div id="f-seo-mount"></div>
-            </div>
-
-            <div data-pane="sections" style="display:none;">
-              <p style="font-size:13px; color:var(--a-mute2);">每页结构化数据。首页用它驱动产品 / why us / CTA 区块。编辑为 JSON。</p>
-              <div class="field"><textarea id="f-sections" rows="20" class="mono">${escapeHtml(sectionsJson)}</textarea></div>
-            </div>
-
-            <div data-pane="advanced" style="display:none;">
-              <div class="field-row">
-                <div class="field"><label>状态</label><select id="f-status"><option value="published" ${p.status === 'published' ? 'selected' : ''}>已发布</option><option value="draft" ${p.status === 'draft' ? 'selected' : ''}>草稿</option></select></div>
-                <div class="field"><label>更新于</label><input value="${escapeHtml(formatDate(p.updated_at) || '-')}" readonly/></div>
-              </div>
-            </div>
-
-            <div class="form-actions">
-              <button class="btn btn--primary" id="save">保存</button>
-              ${!isNew ? '<button class="btn btn--danger" id="delete">删除</button>' : ''}
-              <a href="/admin/pages.html" class="btn btn--ghost">取消</a>
-              ${!isNew && previewUrl ? `<a target="_blank" class="btn btn--ghost" href="/admin/visual-edit.html?url=${encodeURIComponent(previewUrl)}&back=${encodeURIComponent(location.pathname + location.search)}">🎨 进入可视化编辑 ↗</a>` : ''}
-            </div>
-          </div>
+        <div class="field">
+          <label>页面标题 *</label>
+          <input id="new-title" placeholder="如：关于我们 / About Us" maxlength="255">
+        </div>
+        <div class="new-modal__actions">
+          <button class="btn btn--ghost" data-close>取消</button>
+          <button class="btn" data-create>创建并打开编辑器</button>
         </div>
       </div>
     `;
-
-    /* Tabs */
-    panel.querySelectorAll('.tabs__btn').forEach((b) => b.addEventListener('click', () => {
-      panel.querySelectorAll('.tabs__btn').forEach((x) => x.classList.toggle('is-active', x === b));
-      panel.querySelectorAll('[data-pane]').forEach((x) => x.style.display = x.dataset.pane === b.dataset.tab ? '' : 'none');
-    }));
-
-    /* Hero image picker (replaces the old plain URL textarea) */
-    try {
-      heroPicker = window.ImagePicker.mount('f-himg-mount', {
-        initialUrl: p.hero_image || '',
-        onChange: () => { /* no-op until save */ },
-      });
-    } catch (err) {
-      // Fallback to a plain input if image-picker fails to load
-      document.getElementById('f-himg-mount').innerHTML =
-        `<input id="f-himg-fallback" value="${escapeHtml(p.hero_image || '')}" placeholder="/uploads/hero.webp"/>`;
-    }
-
-    /* SEO panel — RankMath-style focus keyword + SERP preview + checks */
-    let seoPanel = null;
-    try {
-      seoPanel = window.SEOPanel.mount('f-seo-mount', {
-        entity: 'page',
-        siteHost: location.host,
-        initial: p,
-        getContext: () => ({
-          title: (panel.querySelector('#f-mtitle') || {}).value
-                 || (panel.querySelector('#f-title') || {}).value
-                 || (panel.querySelector('#f-htitle') || {}).value
-                 || '',
-          description: (panel.querySelector('#f-mdesc') || {}).value || '',
-          slug: (panel.querySelector('#f-slug') || {}).value || '',
-          body: bodyEditor ? bodyEditor.getHtml() : (p.body_html || ''),
-          coverUrl: heroPicker ? heroPicker.getValue() : (p.hero_image || ''),
-        }),
-      });
-    } catch (err) {
-      document.getElementById('f-seo-mount').innerHTML =
-        '<p style="color:var(--a-mute2); font-size:12px;">SEO 面板加载失败：' + escapeHtml(err.message) + '</p>';
-    }
-    // Re-paint the SEO score whenever the operator edits any field that
-    // feeds into the checks (title, description, slug, body).
-    panel.addEventListener('input', () => seoPanel && seoPanel.repaint());
-
-    /* Body Quill editor */
-    bodyEditor = null;
-    (async () => {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay || e.target.matches('[data-close]')) overlay.remove();
+    });
+    overlay.querySelector('[data-create]').addEventListener('click', async () => {
+      const slug = overlay.querySelector('#new-slug').value.trim().toLowerCase();
+      const title = overlay.querySelector('#new-title').value.trim();
+      if (!slug || !title) { toast('slug 和标题都得填', 'error'); return; }
+      if (!/^[a-z0-9_\-\/]+$/.test(slug)) { toast('slug 含非法字符', 'error'); return; }
       try {
-        bodyEditor = await window.QuillEditor.mount('f-body', p.body_html || '', {
-          placeholder: '撰写 hero 之后的正文区…图片直接拖拽或粘贴会上传到媒体库。',
+        const r = await api('/api/pages', {
+          method: 'POST',
+          body: JSON.stringify({ slug, title, status: 'published' }),
         });
-      } catch (err) {
-        const host = panel.querySelector('#f-body');
-        host.innerHTML = `<textarea id="f-body-fallback" rows="20" class="mono" style="width:100%;">${escapeHtml(p.body_html || '')}</textarea>`;
-        toast('可视化编辑器加载失败（' + err.message + '），已退回到 HTML 文本框', 'error');
-      }
-    })();
-
-    // Visual editing (click images / click text inside the rendered page)
-    // is no longer wired into a side iframe — it lives in its own full-
-    // screen page at /admin/visual-edit.html. The "进入可视化编辑 ↗"
-    // button at the top of this form opens it in a new tab.
-
-    /* Save handler */
-    panel.querySelector('#save').addEventListener('click', save);
-    if (!isNew) {
-      panel.querySelector('#delete').addEventListener('click', async () => {
-        if (!confirm('删除 this page?')) return;
-        await api('/api/pages/' + p.id, { method: 'DELETE' });
-        toast('已删除', 'success');
-        setTimeout(() => location.href = '/admin/pages.html', 500);
-      });
-    }
-
-    async function save() {
-      let crumbs, sections;
-      try { crumbs = JSON.parse(panel.querySelector('#f-crumbs').value || '[]'); }
-      catch (_) { return toast('面包屑 JSON 格式错误', 'error'); }
-      try { sections = JSON.parse(panel.querySelector('#f-sections').value || '{}'); }
-      catch (_) { return toast('结构化区块 JSON 格式错误', 'error'); }
-      const fallbackBody = panel.querySelector('#f-body-fallback');
-      const bodyHtml = bodyEditor ? bodyEditor.getHtml()
-        : (fallbackBody ? fallbackBody.value : '');
-      const fallbackHero = panel.querySelector('#f-himg-fallback');
-      const heroImage = heroPicker ? heroPicker.getValue()
-        : (fallbackHero ? fallbackHero.value : '');
-      const seoVals = seoPanel ? seoPanel.getValues() : {};
-      const payload = Object.assign({
-        slug: panel.querySelector('#f-slug').value,
-        nav: panel.querySelector('#f-nav').value,
-        title: panel.querySelector('#f-title').value,
-        meta_title: panel.querySelector('#f-mtitle').value,
-        meta_description: panel.querySelector('#f-mdesc').value,
-        hero_eyebrow: panel.querySelector('#f-heyebrow').value,
-        hero_title: panel.querySelector('#f-htitle').value,
-        hero_subtitle: panel.querySelector('#f-hsub').value,
-        hero_image: heroImage,
-        hero_breadcrumbs: crumbs,
-        body_html: bodyHtml,
-        sections,
-        status: panel.querySelector('#f-status').value,
-      }, seoVals);
-      try {
-        if (isNew) {
-          await api('/api/pages', { method: 'POST', body: JSON.stringify(payload) });
-          toast('已创建', 'success');
-          setTimeout(() => location.href = '/admin/pages.html?id=fresh', 500);
-        } else {
-          await api('/api/pages/' + p.id, { method: 'PUT', body: JSON.stringify(payload) });
-          toast('已保存', 'success');
-        }
-      } catch (err) { toast('保存失败：' + err.message, 'error'); }
-    }
-  }
-
-  document.addEventListener('click', (ev) => {
-    if (ev.target.id === 'new') renderEditor();
+        overlay.remove();
+        // The endpoint returns { id }. Open builder for the new page.
+        const newId = r.id || (r.page && r.page.id);
+        if (newId) openBuilder(newId);
+        // Refresh list so the new row appears (after builder window opens)
+        setTimeout(refresh, 400);
+      } catch (e) { toast('创建失败：' + e.message, 'error'); }
+    });
+    document.body.appendChild(overlay);
+    setTimeout(() => overlay.querySelector('#new-slug').focus(), 50);
   });
+
   refresh();
 })();
 </script>
