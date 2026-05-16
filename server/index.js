@@ -243,6 +243,9 @@ app.use(htmlTokenMiddleware);
 
 // ----- Static caching strategy -----
 // HTML:        no-cache (so admin edits go live immediately on next visit)
+// /admin/*:    no-cache for all files except images (admin assets don't
+//              have version hashes and change frequently — long caching
+//              causes "I updated CSS but browser still shows old" pain)
 // /dist/*:     1 year + immutable (filenames are content-hashed)
 // Uploads:     30 days (filenames already include a hash; safe to long-cache)
 // Fonts:       1 year
@@ -250,6 +253,17 @@ app.use(htmlTokenMiddleware);
 const staticHeaders = (res, filePath) => {
   if (filePath.endsWith('.html')) {
     res.setHeader('Cache-Control', 'no-cache');
+    return;
+  }
+  // Admin assets are unversioned and pushed frequently — never cache.
+  if (filePath.includes(path.sep + 'admin' + path.sep)) {
+    // Still allow images to be cached briefly so the admin UI itself
+    // doesn't re-download icons on every navigation.
+    if (/\.(png|jpe?g|webp|avif|gif|svg|ico)$/i.test(filePath)) {
+      res.setHeader('Cache-Control', 'public, max-age=600');   // 10 min
+    } else {
+      res.setHeader('Cache-Control', 'no-cache');
+    }
     return;
   }
   // Anything served out of the built bundle directory is content-hashed
