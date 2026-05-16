@@ -113,12 +113,28 @@
     return;
   }
 
-  // Load page info for slug
+  // Load page info for slug + content checks. We fetch the FULL row
+  // (not just the list) so we can detect "page has hero / body_html
+  // but no blocks" — the trigger for showing the migration prompt.
   let pageInfo = null;
   try {
-    const r = await api('/api/pages/admin');
-    pageInfo = r.items.find((p) => p.id === pageId);
-  } catch (_) {}
+    const r = await api('/api/pages/admin/' + pageId);
+    pageInfo = r.page;
+  } catch (_) {
+    // Fall back to the list endpoint (limited fields) if /admin/:id fails
+    try {
+      const r2 = await api('/api/pages/admin');
+      pageInfo = r2.items.find((p) => p.id === pageId);
+    } catch (_) {}
+  }
+
+  function pageHasStaticContent() {
+    if (!pageInfo) return false;
+    return !!((pageInfo.body_html && pageInfo.body_html.trim()) ||
+              (pageInfo.hero_title && pageInfo.hero_title.trim()) ||
+              (pageInfo.hero_subtitle && pageInfo.hero_subtitle.trim()) ||
+              (pageInfo.hero_image && pageInfo.hero_image.trim()));
+  }
 
   const shell = await bootShell({
     title: '搭积木：' + (pageInfo ? pageInfo.title || pageInfo.slug : '#' + pageId),
@@ -478,6 +494,29 @@
   }
 
   async function addBlockAt(type, refId, position) {
+    // Safety: warn user if they're about to add a block to a page that
+    // has existing static content (hero/body_html) and zero blocks. The
+    // first block would otherwise visually replace the static content
+    // and look like "I lost everything I had". Offer one-click migration.
+    if (blocks.length === 0 && pageHasStaticContent()) {
+      const choice = confirm(
+        '⚠ 这个页面有现成内容（hero 或正文）。\n\n' +
+        '直接添加区块会把它们隐藏起来（不会从数据库删除，但前台只显示积木）。\n\n' +
+        '建议先点 "确定" 一键把现有内容导入为积木 — 内容不丢，还能继续编辑。\n' +
+        '点 "取消" 跳过导入直接添加新区块（原内容会被积木覆盖显示）。'
+      );
+      if (choice) {
+        try {
+          await api('/api/blocks/import-static/' + pageId, { method: 'POST', body: JSON.stringify({}) });
+          const fresh = await api('/api/blocks/page/' + pageId);
+          blocks = fresh.items;
+          updateCount();
+          setStatus('saved', '✓ 现有内容已导入为积木');
+        } catch (e) {
+          alert('导入失败：' + e.message + '\n继续添加新区块。');
+        }
+      }
+    }
     pushUndo();
     try {
       const r = await api('/api/blocks', { method: 'POST', body: JSON.stringify({ page_id: pageId, block_type: type }) });
@@ -836,14 +875,55 @@
 
   function renderSettings() {
     if (!selectedId) {
+      const hasContent = pageHasStaticContent();
+      const hasBlocks = blocks.length > 0;
+      // Special CTA for pages that were created BEFORE the block builder
+      // existed — their hero / body_html live in pages columns, not in
+      // page_blocks. One-click migration converts them so the user can
+      // edit existing content as blocks (instead of getting wiped on
+      // first block add).
+      const migrateBanner = (!hasBlocks && hasContent) ? `
+        <div style="padding:16px; background:linear-gradient(135deg, #fef3c7 0%, #fef9c3 100%); border:1px solid #f59e0b; border-radius:10px; margin-bottom:14px;">
+          <div style="font-weight:700; color:#92400e; font-size:13px; margin-bottom:6px;">📥 这个页面有现成内容</div>
+          <p style="font-size:12.5px; color:#78350f; line-height:1.55; margin:0 0 12px;">
+            这个页面是在旧版后台创建的，内容存在另一个地方而不是积木里。
+            <strong>一键导入</strong>可以把现有的 hero 和正文转换成对应的积木区块，之后就能用积木编辑、拖拽、加新区块了。
+          </p>
+          <button class="btn btn--sm" style="width:100%;" id="migrate-static-btn">📥 一键导入现有内容为积木</button>
+        </div>
+      ` : '';
+
       sideBody.innerHTML = `
+        ${migrateBanner}
         <div class="pb2-side__empty">
           <p style="font-size:18px; margin:0 0 10px;">👆</p>
-          <p>点击左侧画布上的任一区块开始编辑</p>
-          <p style="margin-top:10px;"><strong style="color:#0b3a82;">提示：</strong>直接在画布上点标题/段落即可输入</p>
-          <p style="margin-top:14px; font-size:11.5px;">没有区块？切到 <strong>＋ 区块库</strong> 添加一个</p>
+          <p>${hasBlocks ? '点击左侧画布上的任一区块开始编辑' : '这个页面还没有任何区块'}</p>
+          <p style="margin-top:10px;"><strong style="color:#0b3a82;">提示：</strong>${hasBlocks ? '直接在画布上点标题/段落即可输入' : '切到 <strong>＋ 库</strong> 添加第一个区块'}</p>
         </div>
       `;
+
+      const migrateBtn = document.getElementById('migrate-static-btn');
+      if (migrateBtn) {
+        migrateBtn.addEventListener('click', async () => {
+          if (!confirm('确认把现有的 hero 和正文导入为积木区块？\n（不会删除原有数据，只是创建对应的积木副本，之后就能用积木编辑）')) return;
+          migrateBtn.disabled = true;
+          migrateBtn.textContent = '导入中…';
+          try {
+            const r = await api('/api/blocks/import-static/' + pageId, { method: 'POST', body: JSON.stringify({}) });
+            // Refresh blocks list + reload iframe
+            const fresh = await api('/api/blocks/page/' + pageId);
+            blocks = fresh.items;
+            updateCount();
+            setStatus('saved', `✓ 已导入 ${r.total} 个区块`);
+            reloadFrame();
+            renderSide();
+          } catch (e) {
+            migrateBtn.disabled = false;
+            migrateBtn.textContent = '📥 一键导入现有内容为积木';
+            alert('导入失败：' + e.message);
+          }
+        });
+      }
       return;
     }
     const block = blocks.find((b) => b.id === selectedId);

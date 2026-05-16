@@ -298,8 +298,16 @@ router.delete('/snippets/:id', requireAuth, async (req, res) => {
 router.get('/versions/:page_id', requireAuth, async (req, res) => {
   const pageId = clamp(req.params.page_id, 1, 1e9, 0);
   if (!pageId) return res.status(400).json({ error: 'invalid_page_id' });
-  const items = await versions.listVersions(pageId, 50);
-  res.json({ items });
+  try {
+    const items = await versions.listVersions(pageId, 50);
+    res.json({ items });
+  } catch (err) {
+    // Surface a 200 with empty list rather than 500ing — the history
+    // panel is non-critical and should never block the rest of the
+    // builder UI from working. Real errors still get logged.
+    console.warn('[versions] route failed:', err && err.message);
+    res.json({ items: [], error: err && err.message });
+  }
 });
 
 router.post('/versions/:page_id', requireAuth, async (req, res) => {
@@ -355,6 +363,101 @@ router.delete('/versions/:vid', requireAuth, async (req, res) => {
   await query('DELETE FROM page_versions WHERE id = $1', [vid]);
   await recordAudit({ req, action: 'delete', entity: 'page_version', entityId: vid });
   res.json({ ok: true });
+});
+
+// =====================================================================
+// One-click migration: convert a page's existing static content
+// (pages.hero_* + body_html) into block_builder blocks.
+//
+// This is the fix for "I opened a page in the block builder and it
+// was empty / adding my first block wiped the existing content".
+// Many pages were created BEFORE block builder existed — their text
+// lives in pages columns, not page_blocks rows.
+// =====================================================================
+router.post('/import-static/:page_id', requireAuth, async (req, res) => {
+  const pageId = clamp(req.params.page_id, 1, 1e9, 0);
+  if (!pageId) return res.status(400).json({ error: 'invalid_page_id' });
+
+  const page = await one(
+    `SELECT id, slug, hero_eyebrow, hero_title, hero_subtitle, hero_image,
+            primary_cta_text, primary_cta_link, body_html
+     FROM pages WHERE id = $1`,
+    [pageId]
+  );
+  if (!page) return res.status(404).json({ error: 'page_not_found' });
+
+  const existing = await one(`SELECT count(*)::int AS n FROM page_blocks WHERE page_id = $1`, [pageId]);
+  if (existing && existing.n > 0 && !req.body?.force) {
+    return res.status(409).json({
+      error: 'already_has_blocks',
+      detail: '该页面已经有区块了。如要重新导入，传 { force: true } 会先清空当前所有区块。',
+    });
+  }
+
+  const created = [];
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    // If force, wipe existing blocks first
+    if (req.body && req.body.force) {
+      await client.query('DELETE FROM page_blocks WHERE page_id = $1', [pageId]);
+    }
+
+    let order = 0;
+
+    // 1. Hero block from pages.hero_*
+    const hasHero = (page.hero_title && page.hero_title.trim()) ||
+                    (page.hero_subtitle && page.hero_subtitle.trim()) ||
+                    (page.hero_image && page.hero_image.trim());
+    if (hasHero) {
+      const heroContent = {
+        eyebrow: page.hero_eyebrow || '',
+        title: page.hero_title || '',
+        subtitle: page.hero_subtitle || '',
+        image_url: page.hero_image || '',
+        cta_text: page.primary_cta_text || '',
+        cta_link: page.primary_cta_link || '',
+        secondary_cta_text: '',
+        secondary_cta_link: '',
+        align: 'left',
+      };
+      const r = await client.query(
+        `INSERT INTO page_blocks (page_id, block_type, sort_order, content, is_visible)
+         VALUES ($1, 'hero_banner', $2, $3, TRUE) RETURNING id`,
+        [pageId, order++, JSON.stringify(heroContent)]
+      );
+      created.push({ id: r.rows[0].id, block_type: 'hero_banner' });
+    }
+
+    // 2. Rich-text block from pages.body_html
+    if (page.body_html && page.body_html.trim()) {
+      const rtContent = { html: page.body_html, max_width: 'standard' };
+      const r = await client.query(
+        `INSERT INTO page_blocks (page_id, block_type, sort_order, content, is_visible)
+         VALUES ($1, 'rich_text', $2, $3, TRUE) RETURNING id`,
+        [pageId, order++, JSON.stringify(rtContent)]
+      );
+      created.push({ id: r.rows[0].id, block_type: 'rich_text' });
+    }
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+
+  await recordAudit({
+    req, action: 'import_static', entity: 'page', entityId: pageId,
+    detail: { created_count: created.length },
+  });
+  await bustPageCache();
+
+  // Snapshot the new state so the operator can undo the import
+  await maybeSnapshot(req, pageId);
+
+  res.json({ ok: true, created, total: created.length });
 });
 
 // Create a block from a snippet (place at end of page; reorder if needed)
