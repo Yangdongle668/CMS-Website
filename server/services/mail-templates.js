@@ -50,6 +50,22 @@ function buildInquiryInternalMail(inq, opts) {
   opts = opts || {};
   const subjectPrefix = process.env.INQUIRY_SUBJECT_PREFIX || '[Inquiry]';
   const hot = (inq.score || 0) >= 60 ? '[HOT] ' : '';
+  const attachments = Array.isArray(opts.attachments) ? opts.attachments : [];
+  // Show the visitor-uploaded files inline in the body so sales sees
+  // them at a glance even if their mail client hides the attachment
+  // tray. Each row links to the original visitor filename + (KB) size.
+  const attachmentsList = (inq.attachments || []).filter((a) => a && a.url);
+  const attachmentsBlock = attachmentsList.length ? `
+    <h3 style="margin:24px 0 8px;">📎 Attached files</h3>
+    <ul style="margin:0; padding-left:18px; font-size:13.5px; line-height:1.7;">
+      ${attachmentsList.map((a) => {
+        const name = escapeHtml(a.original_name || a.filename || 'file');
+        const sizeKb = a.size ? Math.round(a.size / 1024) + ' KB' : '';
+        return `<li>${name} ${sizeKb ? '<span style="color:#64748b;">· ' + sizeKb + '</span>' : ''}</li>`;
+      }).join('')}
+    </ul>
+    <p style="margin-top:8px; font-size:12px; color:#64748b;">附件已经附加在邮件里，也可以从 admin 后台询盘详情页下载。</p>` : '';
+
   const internalHtml = `
     <div style="font-family:Inter,Arial,sans-serif;max-width:680px;margin:0 auto;color:#0f172a;">
       <h2 style="margin:0 0 16px;color:#0b3a82;">${hot ? '🔥 ' : ''}New B2B Inquiry</h2>
@@ -60,16 +76,17 @@ function buildInquiryInternalMail(inq, opts) {
       <div style="white-space:pre-wrap;background:#f8fafc;padding:12px;border:1px solid #e5e7eb;border-radius:6px;">${escapeHtml(
         inq.message || ''
       )}</div>
+      ${attachmentsBlock}
       <p style="margin-top:24px;font-size:12px;color:#64748b;">Sent automatically by the CMS. Do not reply directly to the visitor's address before reviewing the request.</p>
     </div>`;
 
   return {
     to: inquiryRecipients().join(','),
     replyTo: inq.email,
-    subject: `${hot}${subjectPrefix} ${inq.reference} - ${inq.company || inq.full_name}`,
+    subject: `${hot}${subjectPrefix} ${inq.reference} - ${inq.company || inq.full_name}${attachments.length ? ' (' + attachments.length + ' files)' : ''}`,
     html: internalHtml,
-    text: `New inquiry ${inq.reference}\nFrom: ${inq.full_name} <${inq.email}>\nScore: ${inq.score || 0}\n\n${inq.message}`,
-    attachments: opts.attachments || [],
+    text: `New inquiry ${inq.reference}\nFrom: ${inq.full_name} <${inq.email}>\nScore: ${inq.score || 0}\n${attachments.length ? 'Attached files: ' + attachments.length + '\n' : ''}\n${inq.message}`,
+    attachments,
   };
 }
 

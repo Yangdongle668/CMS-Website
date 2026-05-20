@@ -7,7 +7,6 @@ const { requireAuth } = require('../middleware/auth');
 const { recordAudit } = require('../middleware/audit');
 const { clamp, trimStr } = require('../utils/validate');
 const imageProcessor = require('../services/image-processor');
-const imageAi = require('../services/image-ai');
 
 const router = express.Router();
 
@@ -125,45 +124,6 @@ router.post('/:id/reprocess', requireAuth, async (req, res) => {
   );
   await recordAudit({ req, action: 'reprocess', entity: 'media', entityId: id });
   res.json({ ok: true, variants: result.variants, srcset: result.srcset });
-});
-
-// ----- Update alt text (manual save from media library) -----
-router.put('/:id/alt', requireAuth, async (req, res) => {
-  const id = clamp(req.params.id, 1, 1e9, 0);
-  if (!id) return res.status(400).json({ error: 'invalid_id' });
-  const alt = trimStr(req.body && req.body.alt_text, 255);
-  const r = await query('UPDATE media SET alt_text = $1 WHERE id = $2 RETURNING id', [alt, id]);
-  if (!r.rows.length) return res.status(404).json({ error: 'not_found' });
-  await recordAudit({ req, action: 'update_alt', entity: 'media', entityId: id });
-  res.json({ ok: true, alt_text: alt });
-});
-
-// ----- AI auto-alt -----
-// Sends the image to a vision-capable LLM and stores the suggested alt
-// text. Admin-triggered (button on media library) rather than automatic
-// on upload so they get explicit control + cost visibility.
-router.post('/:id/auto-alt', requireAuth, async (req, res) => {
-  const id = clamp(req.params.id, 1, 1e9, 0);
-  if (!id) return res.status(400).json({ error: 'invalid_id' });
-  const row = await one('SELECT id, url, mime, original FROM media WHERE id = $1', [id]);
-  if (!row) return res.status(404).json({ error: 'not_found' });
-  if (!row.mime || !row.mime.startsWith('image/')) {
-    return res.status(400).json({ error: 'not_an_image' });
-  }
-  if (row.mime === 'image/svg+xml') {
-    return res.status(400).json({ error: 'svg_not_supported' });
-  }
-  try {
-    const result = await imageAi.generateAlt(row.url, row.original || '');
-    await query('UPDATE media SET alt_text = $1 WHERE id = $2', [result.alt, id]);
-    await recordAudit({ req, action: 'auto_alt', entity: 'media', entityId: id, detail: { provider: result.provider } });
-    res.json({ ok: true, alt: result.alt, provider: result.provider, model: result.model });
-  } catch (err) {
-    res.status(err.code === 'ai_not_configured' ? 503 : 502).json({
-      error: err.code || 'generate_failed',
-      detail: err.message,
-    });
-  }
 });
 
 router.delete('/:id', requireAuth, async (req, res) => {

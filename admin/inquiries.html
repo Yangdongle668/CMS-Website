@@ -125,6 +125,18 @@
       </div>
       <h3 style="font-size:13px; margin-top:18px;">内容</h3>
       <div style="background:#fff; border:1px solid var(--a-line); border-radius:8px; padding:14px; white-space:pre-wrap; font-size:13.5px;">${escapeHtml(inquiry.message)}</div>
+      ${(Array.isArray(inquiry.attachments) && inquiry.attachments.length) ? `
+        <h3 style="font-size:13px; margin-top:18px;">📎 附件（${inquiry.attachments.length}）</h3>
+        <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:6px;">
+          ${inquiry.attachments.filter((a) => a && a.url).map((a) => `
+            <li style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--a-surface-2); border:1px solid var(--a-line); border-radius:6px; font-size:13px;">
+              <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(a.original_name || a.filename || '附件')}</span>
+              <span style="font-size:11.5px; color:var(--a-mute2); flex-shrink:0;">${a.size ? Math.round(a.size/1024) + ' KB' : ''}</span>
+              <a href="${escapeHtml(a.url)}" target="_blank" class="btn btn--ghost btn--sm" style="flex-shrink:0;" download="${escapeHtml(a.original_name || a.filename || '')}">下载</a>
+            </li>
+          `).join('')}
+        </ul>
+      ` : ''}
       <h3 style="font-size:13px; margin-top:18px;">内部备注</h3>
       <textarea id="notes" style="width:100%; min-height:80px; border:1px solid var(--a-line); border-radius:8px; padding:10px; font-size:13.5px;">${escapeHtml(inquiry.notes || '')}</textarea>
       <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">

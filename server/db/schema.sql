@@ -355,59 +355,6 @@ CREATE TABLE IF NOT EXISTS pages (
 );
 CREATE INDEX IF NOT EXISTS idx_pages_status ON pages(status);
 
--- ----- page blocks (Sprint 3 — block-based page builder) -----
--- A page is a sequence of typed blocks. The admin page-builder lets a
--- non-technical operator drag block types out of a library, fill in a
--- structured form, and have the SSR layer render them into HTML on
--- request. content is a JSONB blob whose shape is governed by
--- server/services/block-registry.js — the registry knows how to render
--- each block_type and how to validate writes.
-CREATE TABLE IF NOT EXISTS page_blocks (
-  id          SERIAL PRIMARY KEY,
-  page_id     INT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
-  block_type  VARCHAR(40) NOT NULL,
-  sort_order  INT NOT NULL DEFAULT 0,
-  content     JSONB NOT NULL DEFAULT '{}'::jsonb,
-  is_visible  BOOLEAN NOT NULL DEFAULT TRUE,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS idx_page_blocks_page
-  ON page_blocks(page_id, sort_order);
-
-CREATE INDEX IF NOT EXISTS idx_page_blocks_visible
-  ON page_blocks(page_id, sort_order)
-  WHERE is_visible = TRUE;
-
--- ----- block snippets (Sprint 3 — reusable block presets) -----
--- An admin can save any current block as a named snippet, then add a
--- new block from the snippet anywhere. Think of it as "favorite/copy
--- this configured block for re-use."
-CREATE TABLE IF NOT EXISTS block_snippets (
-  id          SERIAL PRIMARY KEY,
-  name        VARCHAR(120) NOT NULL,
-  block_type  VARCHAR(40)  NOT NULL,
-  content     JSONB        NOT NULL DEFAULT '{}'::jsonb,
-  created_by  INT REFERENCES users(id) ON DELETE SET NULL,
-  created_at  TIMESTAMPTZ  NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS idx_block_snippets_type ON block_snippets(block_type, created_at DESC);
-
--- ----- page versions (Sprint 3 — autosave history) -----
--- Periodic snapshots of a page's blocks_snapshot JSONB, so editors can
--- roll back to any prior moment. Captures the full block list so
--- restore is one bulk-replace transaction; storage is cheap.
-CREATE TABLE IF NOT EXISTS page_versions (
-  id              SERIAL PRIMARY KEY,
-  page_id         INT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
-  label           VARCHAR(120) NOT NULL DEFAULT 'auto',   -- 'auto' or admin-supplied
-  blocks_snapshot JSONB NOT NULL,
-  created_by      INT REFERENCES users(id) ON DELETE SET NULL,
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS idx_page_versions_page ON page_versions(page_id, created_at DESC);
-
 -- ----- navigation -----
 CREATE TABLE IF NOT EXISTS navigation (
   id         SERIAL PRIMARY KEY,

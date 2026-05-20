@@ -97,6 +97,17 @@
           <textarea name="message" rows="6" required minlength="10" placeholder="Target capacity, dimensions, cycle life, certification needs, timeline, expected annual volume…"></textarea>
         </label>
 
+        <label class="rfq-attach" data-rfq-attach style="display:block;">
+          <span>Attach drawings / spec sheets / sample photos <small style="color:#a1a1a6; font-weight:400;">(optional · max 5 files · 8MB each · PDF / images / Office docs)</small></span>
+          <div class="rfq-attach__zone" data-rfq-attach-zone>
+            <input type="file" data-rfq-file-input multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.doc,.docx,.xls,.xlsx,.zip,.txt,.csv" hidden>
+            <div class="rfq-attach__hint">
+              <strong>+ Choose files</strong> &nbsp;or drag here
+            </div>
+          </div>
+          <ul class="rfq-attach__list" data-rfq-attach-list></ul>
+        </label>
+
         <div data-turnstile data-turnstile-theme="dark" style="display:flex; justify-content:center;"></div>
 
         <label class="cookie-opt" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); padding:14px; border-radius:8px;">

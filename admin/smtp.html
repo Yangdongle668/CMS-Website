@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>SMTP / 邮件设置 | 后台管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+<style>
+  .smtp-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 1100px) { .smtp-grid { grid-template-columns: 1fr; } }
+  .preset-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; margin: 10px 0 16px; }
+  .preset-tile { background: var(--a-surface-2); border: 1px solid var(--a-line); border-radius: 6px; padding: 10px 12px; cursor: pointer; font-size: 12.5px; }
+  .preset-tile:hover { border-color: var(--a-brand); background: var(--a-brand-soft); color: var(--a-brand); }
+  .preset-tile strong { display: block; font-weight: 700; margin-bottom: 2px; }
+  .preset-tile small { color: var(--a-mute2); font-size: 11px; }
+  .status-line { font-size: 12px; padding: 8px 12px; border-radius: 5px; }
+  .status-line.is-ok { background: var(--a-success-soft); color: var(--a-success); }
+  .status-line.is-warn { background: var(--a-warning-soft); color: var(--a-warning); }
+  .field-pair { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+</style>
+</head>
+<body>
+<div data-admin-shell></div>
+<script src="/admin/assets/js/admin.js"></script>
+<script>
+(async function () {
+  const { api, escapeHtml, toast, bootShell } = window.AdminAPI;
+  const shell = await bootShell({ title: 'SMTP / 邮件设置', crumbs: '设置 / SMTP' });
+  if (!shell) return;
+
+  let cfg = {};
+  try {
+    const r = await api('/api/smtp');
+    cfg = r.config || {};
+  } catch (e) {
+    shell.content.innerHTML = '<div class="panel"><div class="empty">加载失败：' + escapeHtml(e.message) + '</div></div>';
+    return;
+  }
+
+  const status = cfg.host && cfg.user && cfg.pass_set
+    ? '<span class="status-line is-ok">✓ SMTP 已配置 · 询盘邮件会通过 ' + escapeHtml(cfg.host) + ' 发出</span>'
+    : '<span class="status-line is-warn">⚠ SMTP 未完整配置 · 询盘会保存但邮件只写到日志</span>';
+
+  shell.content.innerHTML = `
+    <div class="smtp-grid">
+      <div class="panel">
+        <div class="panel__head"><h2>SMTP 服务器配置</h2></div>
+
+        <p style="font-size:12.5px; color:var(--a-mute2); margin:0 0 6px;">常用 SMTP 预设（点击自动填表）：</p>
+        <div class="preset-row" id="presets">
+          <div class="preset-tile" data-preset='{"host":"smtp.gmail.com","port":465,"secure":true}'>
+            <strong>Gmail</strong><small>smtp.gmail.com · 465 / TLS</small>
+          </div>
+          <div class="preset-tile" data-preset='{"host":"smtp.qq.com","port":465,"secure":true}'>
+            <strong>QQ 邮箱</strong><small>smtp.qq.com · 465 / TLS</small>
+          </div>
+          <div class="preset-tile" data-preset='{"host":"smtp.163.com","port":465,"secure":true}'>
+            <strong>163 邮箱</strong><small>smtp.163.com · 465 / TLS</small>
+          </div>
+          <div class="preset-tile" data-preset='{"host":"smtp-mail.outlook.com","port":587,"secure":false}'>
+            <strong>Outlook / 365</strong><small>smtp-mail.outlook.com · 587 / STARTTLS</small>
+          </div>
+          <div class="preset-tile" data-preset='{"host":"smtp.sendgrid.net","port":587,"secure":false}'>
+            <strong>SendGrid</strong><small>smtp.sendgrid.net · 587 / STARTTLS</small>
+          </div>
+          <div class="preset-tile" data-preset='{"host":"smtp.mailgun.org","port":587,"secure":false}'>
+            <strong>Mailgun</strong><small>smtp.mailgun.org · 587 / STARTTLS</small>
+          </div>
+          <div class="preset-tile" data-preset='{"host":"email-smtp.us-east-1.amazonaws.com","port":587,"secure":false}'>
+            <strong>AWS SES</strong><small>region 自行替换 · 587 / STARTTLS</small>
+          </div>
+          <div class="preset-tile" data-preset='{"host":"smtp.postmarkapp.com","port":587,"secure":false}'>
+            <strong>Postmark</strong><small>smtp.postmarkapp.com · 587 / STARTTLS</small>
+          </div>
+        </div>
+
+        ${status}
+
+        <div class="field-pair" style="margin-top:16px;">
+          <div class="field">
+            <label>SMTP 服务器地址 *</label>
+            <input id="f-host" value="${escapeHtml(cfg.host || '')}" placeholder="smtp.example.com">
+          </div>
+          <div class="field">
+            <label>端口</label>
+            <input id="f-port" type="number" min="1" max="65535" value="${cfg.port || 465}">
+            <span class="hint">465=SSL · 587=STARTTLS · 25=明文</span>
+          </div>
+        </div>
+
+        <div class="field field--check">
+          <input id="f-secure" type="checkbox" ${cfg.secure ? 'checked' : ''}>
+          <label for="f-secure">使用 SSL/TLS 直连（端口 465 选这个；587 取消勾选用 STARTTLS）</label>
+        </div>
+
+        <div class="field">
+          <label>用户名 / 登录邮箱 *</label>
+          <input id="f-user" value="${escapeHtml(cfg.user || '')}" placeholder="sales@yourcompany.com" autocomplete="off">
+        </div>
+
+        <div class="field">
+          <label>密码 / 授权码 ${cfg.pass_set ? '<span class="hint">（已设置 · 留空保持不变）</span>' : '*'}</label>
+          <input id="f-pass" type="password" value="" placeholder="${cfg.pass_set ? '保持现有 (' + escapeHtml(cfg.pass_preview || '****') + ')' : '应用专用密码 / 授权码'}" autocomplete="off">
+          <span class="hint">QQ/163 需要 <strong>授权码</strong> 不是登录密码；Gmail 需要 <strong>应用密码</strong>。</span>
+        </div>
+
+        <div class="field">
+          <label>From 发件地址</label>
+          <input id="f-from" value="${escapeHtml(cfg.from || '')}" placeholder='"Sales Team" &lt;sales@yourcompany.com&gt;'>
+          <span class="hint">支持 RFC 5322 格式：<code>"姓名" &lt;邮箱&gt;</code>；留空则使用用户名。</span>
+        </div>
+
+        <div class="field">
+          <label>询盘通知接收人</label>
+          <input id="f-recipients" value="${escapeHtml((cfg.recipients || []).join(', '))}" placeholder="sales@you.com, manager@you.com">
+          <span class="hint">多个邮箱用英文逗号分隔；询盘进来时系统会通知这些地址。</span>
+        </div>
+
+        <div class="field field--check">
+          <input id="f-auto" type="checkbox" ${cfg.auto_reply !== false ? 'checked' : ''}>
+          <label for="f-auto">自动回复访客（确认收到询盘）</label>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn" id="save-btn">保存配置</button>
+          <span class="form-status" id="save-status"></span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel__head"><h2>测试发送</h2></div>
+        <p style="font-size:13px; color:var(--a-mute2); margin:0 0 14px; line-height:1.55;">
+          保存配置后，给一个邮箱发一封测试邮件检查是否能正确发出。
+          失败时这里会显示完整的错误信息（鉴权失败、超时、TLS 问题等），方便排查。
+        </p>
+        <div class="field">
+          <label>测试收件人</label>
+          <input id="t-to" type="email" placeholder="your.test@email.com">
+        </div>
+        <div class="form-actions" style="border:none; padding-top:0; margin-top:6px;">
+          <button class="btn btn--ghost" id="test-btn">✉ 发送测试邮件</button>
+        </div>
+        <div id="test-result" style="margin-top:14px;"></div>
+
+        <hr class="divider" style="border:0; height:1px; background:var(--a-line-soft); margin:20px 0;">
+        <h3 style="font-size:13px; margin:0 0 8px;">当前生效的配置（来源）</h3>
+        <div style="font-size:12px; color:var(--a-mute2); line-height:1.7;">
+          <div>SMTP 服务器：<strong style="color:var(--a-fg);">${escapeHtml(cfg.host || '(未设置)')}</strong></div>
+          <div>端口 / 加密：${cfg.port || '?'} · ${cfg.secure ? 'SSL/TLS' : 'STARTTLS'}</div>
+          <div>用户名：<code>${escapeHtml(cfg.user || '(未设置)')}</code></div>
+          <div>密码：${cfg.pass_set ? '<span style="color:var(--a-success);">✓ 已设置</span>' : '<span style="color:var(--a-warning);">⚠ 未设置</span>'}</div>
+          <div>From：<code>${escapeHtml(cfg.from || '(沿用用户名)')}</code></div>
+          <div>接收人：${(cfg.recipients || []).length ? (cfg.recipients || []).map(escapeHtml).join(', ') : '(未设置)'}</div>
+          <div style="margin-top:6px;">配置来源：${cfg.source && cfg.source.host === 'env+db' ? '环境变量 + 后台覆盖' : (cfg.source && cfg.source.host === 'db' ? '后台' : '未配置')}</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Wire presets
+  shell.content.querySelectorAll('[data-preset]').forEach((el) => {
+    el.addEventListener('click', () => {
+      const p = JSON.parse(el.dataset.preset);
+      document.getElementById('f-host').value = p.host;
+      document.getElementById('f-port').value = p.port;
+      document.getElementById('f-secure').checked = !!p.secure;
+    });
+  });
+
+  // Save handler
+  document.getElementById('save-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('save-btn');
+    const stat = document.getElementById('save-status');
+    btn.disabled = true; btn.textContent = '保存中…';
+    stat.textContent = '';
+    stat.className = 'form-status';
+    try {
+      const payload = {
+        host:       document.getElementById('f-host').value.trim(),
+        port:       parseInt(document.getElementById('f-port').value, 10) || 465,
+        secure:     document.getElementById('f-secure').checked,
+        user:       document.getElementById('f-user').value.trim(),
+        pass:       document.getElementById('f-pass').value,
+        from:       document.getElementById('f-from').value.trim(),
+        recipients: document.getElementById('f-recipients').value,
+        auto_reply: document.getElementById('f-auto').checked,
+      };
+      const r = await api('/api/smtp', { method: 'PUT', body: JSON.stringify(payload) });
+      cfg = r.config;
+      stat.textContent = '✓ 已保存。下一封邮件会用新配置。';
+      stat.className = 'form-status is-ok';
+      toast('SMTP 配置已保存', 'success');
+    } catch (err) {
+      stat.textContent = '保存失败：' + err.message;
+      stat.className = 'form-status is-error';
+    } finally {
+      btn.disabled = false; btn.textContent = '保存配置';
+    }
+  });
+
+  // Test handler
+  document.getElementById('test-btn').addEventListener('click', async () => {
+    const to = document.getElementById('t-to').value.trim();
+    const result = document.getElementById('test-result');
+    if (!to) { toast('先填测试收件人', 'error'); return; }
+    const btn = document.getElementById('test-btn');
+    btn.disabled = true; btn.textContent = '发送中…';
+    result.innerHTML = '<div class="status-line">发送中…</div>';
+    try {
+      const r = await api('/api/smtp/test', { method: 'POST', body: JSON.stringify({ to }) });
+      result.innerHTML = `
+        <div class="status-line is-ok">✓ 发送成功</div>
+        <pre style="margin-top:10px; padding:10px; background:var(--a-surface-2); border-radius:5px; font-size:11.5px; line-height:1.5; max-height:200px; overflow:auto;">${escapeHtml(JSON.stringify(r.result, null, 2))}</pre>
+        <p style="font-size:12px; color:var(--a-mute2); margin-top:8px;">检查收件人邮箱（可能在垃圾邮件里）。如果几分钟内没收到，看上面的 messageId 跟 SMTP 服务商对帐。</p>
+      `;
+    } catch (err) {
+      let detail = err.message;
+      try {
+        const j = JSON.parse(err.message.split(' ').pop() || '{}');
+        if (j.detail) detail = j.detail;
+      } catch (_) {}
+      result.innerHTML = `
+        <div class="status-line is-warn">✗ 发送失败</div>
+        <pre style="margin-top:10px; padding:10px; background:var(--a-danger-soft); color:var(--a-danger); border-radius:5px; font-size:11.5px; line-height:1.5;">${escapeHtml(detail)}</pre>
+        <p style="font-size:12px; color:var(--a-mute2); margin-top:8px;">
+          常见原因：① 密码用错（QQ/163 要用<strong>授权码</strong>不是登录密码；Gmail 要用<strong>应用密码</strong>）<br>
+          ② 端口/加密不匹配（465 必须勾 SSL，587 取消勾选）<br>
+          ③ From 地址被 SMTP 服务器拒绝（很多家要求 From 必须用用户名同域邮箱）
+        </p>
+      `;
+    } finally {
+      btn.disabled = false; btn.textContent = '✉ 发送测试邮件';
+    }
+  });
+})();
+</script>
+</body>
+</html>

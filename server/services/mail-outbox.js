@@ -71,7 +71,7 @@ async function claimBatch(limit = 5) {
 }
 
 async function processOne(job) {
-  const t = getTransporter();
+  const t = await getTransporter();
   const fromAddr = defaultFrom();
   try {
     await t.sendMail({

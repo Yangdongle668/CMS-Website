@@ -205,8 +205,8 @@ app.use('/api/seo-check', require('./routes/seo-check'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/ai-generate', require('./routes/ai-generate'));
 app.use('/api/mail-queue', require('./routes/mail-queue'));
-app.use('/api/blocks', require('./routes/blocks'));
-app.use('/api/templates', require('./routes/templates'));
+app.use('/api/smtp', require('./routes/smtp'));
+app.use('/api/notifications', require('./routes/notifications'));
 
 // ----- SEO endpoints -----
 app.use('/', require('./routes/seo'));
@@ -243,9 +243,6 @@ app.use(htmlTokenMiddleware);
 
 // ----- Static caching strategy -----
 // HTML:        no-cache (so admin edits go live immediately on next visit)
-// /admin/*:    no-cache for all files except images (admin assets don't
-//              have version hashes and change frequently — long caching
-//              causes "I updated CSS but browser still shows old" pain)
 // /dist/*:     1 year + immutable (filenames are content-hashed)
 // Uploads:     30 days (filenames already include a hash; safe to long-cache)
 // Fonts:       1 year
@@ -253,17 +250,6 @@ app.use(htmlTokenMiddleware);
 const staticHeaders = (res, filePath) => {
   if (filePath.endsWith('.html')) {
     res.setHeader('Cache-Control', 'no-cache');
-    return;
-  }
-  // Admin assets are unversioned and pushed frequently — never cache.
-  if (filePath.includes(path.sep + 'admin' + path.sep)) {
-    // Still allow images to be cached briefly so the admin UI itself
-    // doesn't re-download icons on every navigation.
-    if (/\.(png|jpe?g|webp|avif|gif|svg|ico)$/i.test(filePath)) {
-      res.setHeader('Cache-Control', 'public, max-age=600');   // 10 min
-    } else {
-      res.setHeader('Cache-Control', 'no-cache');
-    }
     return;
   }
   // Anything served out of the built bundle directory is content-hashed
@@ -356,61 +342,6 @@ app.get(['/products/:slug', '/applications/:slug', '/blog/:slug'], async (req, r
   ];
   if (await tryServeHtml(req, res, candidates, { canonicalPath: req.path })) return;
   return next();
-});
-
-// ----- Pages-table fallback (Sprint 3 — block builder) -----
-// A page created via /admin/templates.html or page-builder lives ONLY
-// in the pages + page_blocks tables — no static HTML in /public/. Serve
-// such pages by feeding the /public/_page-shell.html through the
-// existing applyPageOverrides + block-renderer chain. This keeps every
-// pages.slug reachable without anyone having to drop a file on disk.
-app.use(async (req, res, next) => {
-  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
-  if (req.path.startsWith('/api/') || req.path.startsWith('/admin')) return next();
-  if (req.path.startsWith('/uploads/')) return next();
-  if (/\.[a-z0-9]+$/i.test(req.path)) return next();   // skip clear asset paths
-  try {
-    const { one } = require('./db/client');
-    const slug = req.path.replace(/^\/+/, '').replace(/\/+$/, '') || 'home';
-    const page = await one(`SELECT slug FROM pages WHERE slug = $1 AND status = 'published'`, [slug]);
-    if (!page) return next();
-    // Inject data-page="<slug>" into the shell BEFORE running through
-    // applyPageOverrides so the pipeline knows which CMS row drives this
-    // request. The token + override layers do the rest.
-    const shellPath = path.join(ROOT, 'public', '_page-shell.html');
-    if (!fs.existsSync(shellPath)) return next();
-    let html = fs.readFileSync(shellPath, 'utf8');
-    html = html.replace(/<body([^>]*)>/, `<body data-page="${slug}"$1>`);
-    // Serve through tryServeHtml-style pipeline manually
-    const { replaceTokens, buildContext, applyPageOverrides, applySavedTextOverrides } = require('./middleware/html-tokens');
-    const { isBuilderRequest, injectBuilderRuntime } = require('./middleware/html-tokens');
-    // We need access to the helper functions. They're not exported by
-    // name; instead, use the public tryServeHtml by writing the shell
-    // to a temp candidate. Simpler: inline the pipeline.
-    const ctx = buildContext(req, req.path);
-    let out = replaceTokens(html, ctx);
-    out = await applyPageOverrides(out, { builderMode: req.query.builder === '1' });
-    out = applySavedTextOverrides(out);
-    // Builder-mode injection — replicate the tryServeHtml decision logic
-    if (req.query.builder === '1') {
-      const jwt = require('jsonwebtoken');
-      const tok = req.cookies && req.cookies.cms_session;
-      if (tok) {
-        try {
-          jwt.verify(tok, process.env.JWT_SECRET || 'dev-secret');
-          out = out.replace('</head>',
-            '\n<link rel="stylesheet" href="/builder-runtime.css">\n' +
-            '<script defer src="/builder-runtime.js"></script>\n</head>');
-        } catch (_) {}
-      }
-    }
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.send(out);
-  } catch (err) {
-    console.error('[page-fallback]', err && err.message);
-    next();
-  }
 });
 
 // ----- 404 -----
@@ -609,40 +540,6 @@ async function autoMigrate() {
     `ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS source_widget VARCHAR(40) NOT NULL DEFAULT 'main_form'`,
     `ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS replied_at TIMESTAMPTZ`,
     `CREATE INDEX IF NOT EXISTS idx_inquiries_widget ON inquiries(source_widget, created_at DESC) WHERE is_deleted = FALSE`,
-    // ----- Page blocks (Sprint 3 — block-based page builder) -----
-    `CREATE TABLE IF NOT EXISTS page_blocks (
-       id          SERIAL PRIMARY KEY,
-       page_id     INT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
-       block_type  VARCHAR(40) NOT NULL,
-       sort_order  INT NOT NULL DEFAULT 0,
-       content     JSONB NOT NULL DEFAULT '{}'::jsonb,
-       is_visible  BOOLEAN NOT NULL DEFAULT TRUE,
-       created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-       updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-     )`,
-    `CREATE INDEX IF NOT EXISTS idx_page_blocks_page ON page_blocks(page_id, sort_order)`,
-    `CREATE INDEX IF NOT EXISTS idx_page_blocks_visible
-       ON page_blocks(page_id, sort_order) WHERE is_visible = TRUE`,
-    // ----- Block snippets (Sprint 3 — reusable presets) -----
-    `CREATE TABLE IF NOT EXISTS block_snippets (
-       id          SERIAL PRIMARY KEY,
-       name        VARCHAR(120) NOT NULL,
-       block_type  VARCHAR(40)  NOT NULL,
-       content     JSONB        NOT NULL DEFAULT '{}'::jsonb,
-       created_by  INT REFERENCES users(id) ON DELETE SET NULL,
-       created_at  TIMESTAMPTZ  NOT NULL DEFAULT now()
-     )`,
-    `CREATE INDEX IF NOT EXISTS idx_block_snippets_type ON block_snippets(block_type, created_at DESC)`,
-    // ----- Page versions (Sprint 3 — autosave history) -----
-    `CREATE TABLE IF NOT EXISTS page_versions (
-       id              SERIAL PRIMARY KEY,
-       page_id         INT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
-       label           VARCHAR(120) NOT NULL DEFAULT 'auto',
-       blocks_snapshot JSONB NOT NULL,
-       created_by      INT REFERENCES users(id) ON DELETE SET NULL,
-       created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
-     )`,
-    `CREATE INDEX IF NOT EXISTS idx_page_versions_page ON page_versions(page_id, created_at DESC)`,
     // ----- Acme → Zufek cleanup (legacy seed data) -----
     `UPDATE articles SET author = 'Zufek Engineering' WHERE author ILIKE '%acme%' OR author = '' OR author IS NULL`,
     `UPDATE articles SET content = REPLACE(content, 'Acme Engineering', 'Zufek Engineering') WHERE content LIKE '%Acme%'`,
@@ -711,6 +608,27 @@ async function autoMigrate() {
     console.log('[ai-settings] snapshot loaded');
   } catch (err) {
     console.error('[ai-settings] initial load failed:', err.message);
+  }
+
+  // Hydrate SMTP config snapshot from settings.smtp so the first email
+  // doesn't pay the DB round-trip + so describeConfig() returns
+  // meaningful state for /api/smtp GET on a fresh boot.
+  try {
+    const mailer = require('./services/mailer');
+    await mailer.loadConfig();
+    console.log('[smtp] config snapshot loaded');
+  } catch (err) {
+    console.warn('[smtp] initial load failed:', err && err.message);
+  }
+
+  // Same hydration trick for notification channel config so the first
+  // inquiry doesn't pay a settings-table round trip
+  try {
+    const notif = require('./services/notifications');
+    await notif.loadConfig();
+    console.log('[notifications] config loaded');
+  } catch (err) {
+    console.warn('[notifications] initial load failed:', err && err.message);
   }
 
   // Initialize cache backend (Redis if REDIS_URL set, else in-memory).

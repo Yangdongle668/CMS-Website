@@ -166,6 +166,11 @@ async function handleContactSubmit(e) {
   };
   try { data.utm = JSON.parse(localStorage.getItem('cms_utm') || '{}'); } catch (_) { data.utm = {}; }
 
+  // Attach any files the visitor selected (already uploaded via /api/inquiries/upload).
+  // The attachment widget stores its uploaded-file objects on the form's __attachments
+  // property — we serialize that array into the submission payload here.
+  data.attachments = Array.isArray(form.__attachments) ? form.__attachments : [];
+
   try {
     const res = await fetch('/api/inquiries', {
       method: 'POST',
@@ -415,5 +420,99 @@ window.addEventListener('scroll', () => {
       card.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-3px)`;
     });
     card.addEventListener('pointerleave', () => { card.style.transform = ''; });
+  });
+})();
+
+// ===== Inquiry attachment uploader =====
+// Picks up <label class="rfq-attach"> on any form (typically /contact.html).
+// On file select / drop, POST each file to /api/inquiries/upload and
+// stash the returned URL on form.__attachments. handleContactSubmit
+// reads form.__attachments when submitting the inquiry.
+(function () {
+  document.querySelectorAll('[data-rfq-attach]').forEach((wrap) => {
+    const form = wrap.closest('form');
+    if (!form) return;
+    if (!form.__attachments) form.__attachments = [];
+
+    const zone = wrap.querySelector('[data-rfq-attach-zone]');
+    const input = wrap.querySelector('[data-rfq-file-input]');
+    const list = wrap.querySelector('[data-rfq-attach-list]');
+
+    function renderList() {
+      list.innerHTML = form.__attachments.map((a, i) => `
+        <li class="rfq-attach__row" data-i="${i}">
+          <span class="rfq-attach__name">${a.original_name || a.filename || 'file'}</span>
+          <span class="rfq-attach__size">${a.size ? Math.round(a.size / 1024) + ' KB' : ''}</span>
+          <button type="button" class="rfq-attach__remove" data-i="${i}" aria-label="Remove">×</button>
+        </li>
+      `).join('');
+      list.querySelectorAll('.rfq-attach__remove').forEach((b) => {
+        b.addEventListener('click', () => {
+          form.__attachments.splice(parseInt(b.dataset.i, 10), 1);
+          renderList();
+        });
+      });
+    }
+
+    async function uploadFiles(files) {
+      const remaining = 5 - form.__attachments.length;
+      const picked = Array.from(files).slice(0, Math.max(0, remaining));
+      for (const file of picked) {
+        if (file.size > 8 * 1024 * 1024) {
+          showError(file.name + ' 超过 8MB 上限，已跳过');
+          continue;
+        }
+        const placeholder = { original_name: file.name, size: file.size, url: '', _uploading: true };
+        form.__attachments.push(placeholder);
+        renderList();
+        try {
+          const fd = new FormData();
+          fd.append('file', file);
+          const res = await fetch('/api/inquiries/upload', {
+            method: 'POST', credentials: 'include', body: fd,
+          });
+          const json = await res.json().catch(() => ({}));
+          const idx = form.__attachments.indexOf(placeholder);
+          if (!res.ok || !json.url) {
+            if (idx >= 0) form.__attachments.splice(idx, 1);
+            showError(file.name + ' 上传失败：' + (json.error || res.status));
+          } else if (idx >= 0) {
+            form.__attachments[idx] = json;
+          }
+        } catch (err) {
+          const idx = form.__attachments.indexOf(placeholder);
+          if (idx >= 0) form.__attachments.splice(idx, 1);
+          showError(file.name + ' 上传失败：' + err.message);
+        }
+        renderList();
+      }
+    }
+
+    function showError(msg) {
+      let bar = wrap.querySelector('.rfq-attach__error');
+      if (!bar) {
+        bar = document.createElement('div');
+        bar.className = 'rfq-attach__error';
+        wrap.appendChild(bar);
+      }
+      bar.textContent = msg;
+      clearTimeout(bar.__t);
+      bar.__t = setTimeout(() => { bar.remove(); }, 4000);
+    }
+
+    zone.addEventListener('click', () => input.click());
+    input.addEventListener('change', () => {
+      if (input.files && input.files.length) uploadFiles(input.files);
+      input.value = '';
+    });
+    ['dragenter', 'dragover'].forEach((evt) => zone.addEventListener(evt, (e) => {
+      e.preventDefault(); zone.classList.add('is-dragover');
+    }));
+    ['dragleave', 'drop'].forEach((evt) => zone.addEventListener(evt, (e) => {
+      e.preventDefault(); zone.classList.remove('is-dragover');
+    }));
+    zone.addEventListener('drop', (e) => {
+      if (e.dataTransfer && e.dataTransfer.files) uploadFiles(e.dataTransfer.files);
+    });
   });
 })();
