@@ -16,6 +16,7 @@ const {
 } = require('../services/mail-templates');
 const { scoreInquiry } = require('../services/lead-scoring');
 const emergency = require('../services/emergency-store');
+const notificationService = require('../services/notifications');
 
 const router = express.Router();
 
@@ -301,6 +302,15 @@ router.post('/', submitLimiter, async (req, res) => {
     // The next /readyz probe will surface any outbox lag.
     console.error('[inquiries] outbox enqueue failed', err && err.message);
   }
+
+  // Fire realtime notifications (WeChat / Telegram / Slack / generic
+  // webhook). Strictly fire-and-forget — we don't await, so a slow
+  // webhook can't delay the visitor's response. Per-channel failures
+  // are logged inside the service. The visitor sees the same instant
+  // success either way.
+  notificationService.notifyInquiry(inquiry).catch((err) => {
+    console.warn('[notify] dispatch failed:', err && err.message);
+  });
 
   res.json({ ok: true, reference });
 });

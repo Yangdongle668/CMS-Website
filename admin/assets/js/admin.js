@@ -30,6 +30,7 @@
     { group: '设置', items: [
       { label: '站点设置', href: '/admin/settings.html', icon: '⚙' },
       { label: 'SMTP / 邮件', href: '/admin/smtp.html', icon: '✉' },
+      { label: '即时通知推送', href: '/admin/notifications.html', icon: '📡' },
       { label: '用户', href: '/admin/users.html', icon: '◉' },
     ]},
   ];

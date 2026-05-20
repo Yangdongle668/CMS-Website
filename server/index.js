@@ -206,6 +206,7 @@ app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/ai-generate', require('./routes/ai-generate'));
 app.use('/api/mail-queue', require('./routes/mail-queue'));
 app.use('/api/smtp', require('./routes/smtp'));
+app.use('/api/notifications', require('./routes/notifications'));
 
 // ----- SEO endpoints -----
 app.use('/', require('./routes/seo'));
@@ -618,6 +619,16 @@ async function autoMigrate() {
     console.log('[smtp] config snapshot loaded');
   } catch (err) {
     console.warn('[smtp] initial load failed:', err && err.message);
+  }
+
+  // Same hydration trick for notification channel config so the first
+  // inquiry doesn't pay a settings-table round trip
+  try {
+    const notif = require('./services/notifications');
+    await notif.loadConfig();
+    console.log('[notifications] config loaded');
+  } catch (err) {
+    console.warn('[notifications] initial load failed:', err && err.message);
   }
 
   // Initialize cache backend (Redis if REDIS_URL set, else in-memory).

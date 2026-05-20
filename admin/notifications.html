@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>询盘通知推送 | 后台管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+<style>
+  .ch-card { background: var(--a-surface); border: 1px solid var(--a-line); border-radius: 9px; padding: 18px 20px; margin-bottom: 14px; }
+  .ch-card__head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .ch-card__icon { width: 36px; height: 36px; display: grid; place-items: center; background: var(--a-surface-2); border-radius: 6px; font-size: 18px; }
+  .ch-card__title { flex: 1; font-weight: 700; font-size: 14.5px; color: var(--a-fg); }
+  .ch-card__toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--a-mute2); }
+  .ch-card__toggle input { margin: 0; }
+  .ch-card.is-disabled { opacity: 0.6; }
+  .ch-card__hint { font-size: 12px; color: var(--a-mute2); line-height: 1.6; margin: 4px 0 12px; }
+  .ch-card__hint code { font-size: 11.5px; }
+  .ch-card__test-result { margin-top: 8px; }
+  .ch-card__test-result pre { background: var(--a-surface-2); padding: 8px 10px; border-radius: 4px; font-size: 11px; line-height: 1.5; max-height: 160px; overflow: auto; }
+</style>
+</head>
+<body>
+<div data-admin-shell></div>
+<script src="/admin/assets/js/admin.js"></script>
+<script>
+(async function () {
+  const { api, escapeHtml, toast, bootShell } = window.AdminAPI;
+  const shell = await bootShell({ title: '询盘通知推送', crumbs: '设置 / 即时通知' });
+  if (!shell) return;
+
+  let cfg = {};
+  try {
+    const r = await api('/api/notifications');
+    cfg = r.config || {};
+  } catch (e) {
+    shell.content.innerHTML = '<div class="panel"><div class="empty">加载失败：' + escapeHtml(e.message) + '</div></div>';
+    return;
+  }
+
+  shell.content.innerHTML = `
+    <div class="panel">
+      <div class="panel__head">
+        <h2>即时通知设置</h2>
+      </div>
+      <p style="font-size:13px; color:var(--a-mute2); margin:0 0 18px; line-height:1.6;">
+        询盘提交后，<strong>除了发邮件给销售</strong>，还可以同时把通知推送到手机端
+        IM。这样不需要一直盯着邮箱，新询盘进来手机会响。<br>
+        所有通道都是<strong>异步触发</strong>，失败不会影响询盘入库 / 邮件发送 / 访客体验。
+      </p>
+
+      <h3 style="font-size:14px; margin: 20px 0 8px;">触发条件</h3>
+      <div class="field-row">
+        <div class="field">
+          <label>最低线索分数</label>
+          <input type="number" id="trigger_score" min="0" max="100" value="${cfg.trigger && cfg.trigger.score_min || 0}">
+          <span class="hint">询盘分数 ≥ 这个值才推送。0 = 推送所有；60 = 只推 [HOT] 高分线索。</span>
+        </div>
+        <div class="field">
+          <label>仅特定来源</label>
+          <input type="text" id="trigger_widgets" value="${escapeHtml(((cfg.trigger && cfg.trigger.widgets) || []).join(','))}" placeholder="留空 = 全部">
+          <span class="hint">逗号分隔：main_form,mini_rfq,exit_intent — 只推这些触点的询盘。</span>
+        </div>
+      </div>
+
+      <!-- WeChat Work -->
+      <div class="ch-card ${cfg.wechat && cfg.wechat.enabled ? '' : 'is-disabled'}" id="ch-wechat">
+        <div class="ch-card__head">
+          <div class="ch-card__icon" style="background:#e8fbe9; color:#22c55e;">💬</div>
+          <div class="ch-card__title">企业微信群机器人 (WeChat Work)</div>
+          <label class="ch-card__toggle">
+            <input type="checkbox" id="wechat_enabled" ${cfg.wechat && cfg.wechat.enabled ? 'checked' : ''}> 启用
+          </label>
+        </div>
+        <div class="ch-card__hint">
+          在企业微信群里 → <strong>添加群机器人</strong> → 复制 Webhook 地址粘贴下面。
+          形如：<code>https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=XXX</code>
+        </div>
+        <div class="field">
+          <label>Webhook URL</label>
+          <input type="url" id="wechat_url" placeholder="${cfg.wechat && cfg.wechat.configured ? '已设置（' + escapeHtml(cfg.wechat.webhook_url_preview || '') + '）留空保留' : 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=...'}">
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn--sm btn--ghost" data-test="wechat">📤 测试发送</button>
+        </div>
+        <div class="ch-card__test-result" id="test-wechat"></div>
+      </div>
+
+      <!-- Telegram -->
+      <div class="ch-card ${cfg.telegram && cfg.telegram.enabled ? '' : 'is-disabled'}" id="ch-telegram">
+        <div class="ch-card__head">
+          <div class="ch-card__icon" style="background:#e0f2fe; color:#0284c7;">✈</div>
+          <div class="ch-card__title">Telegram Bot</div>
+          <label class="ch-card__toggle">
+            <input type="checkbox" id="telegram_enabled" ${cfg.telegram && cfg.telegram.enabled ? 'checked' : ''}> 启用
+          </label>
+        </div>
+        <div class="ch-card__hint">
+          找 <code>@BotFather</code> 创建 bot 拿到 token；找 <code>@userinfobot</code> 拿到你的 chat_id
+          （或群组 chat_id，群组要先拉 bot 入群）。
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Bot Token</label>
+            <input type="text" id="telegram_token" placeholder="${cfg.telegram && cfg.telegram.configured ? '已设置（' + escapeHtml(cfg.telegram.bot_token_preview || '') + '）留空保留' : '123456:ABC-DEF...'}">
+          </div>
+          <div class="field">
+            <label>Chat ID</label>
+            <input type="text" id="telegram_chat" value="${escapeHtml(cfg.telegram && cfg.telegram.chat_id || '')}" placeholder="123456789 或 -100123...">
+          </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn--sm btn--ghost" data-test="telegram">📤 测试发送</button>
+        </div>
+        <div class="ch-card__test-result" id="test-telegram"></div>
+      </div>
+
+      <!-- Slack / Lark -->
+      <div class="ch-card ${cfg.slack && cfg.slack.enabled ? '' : 'is-disabled'}" id="ch-slack">
+        <div class="ch-card__head">
+          <div class="ch-card__icon" style="background:#fce7f3; color:#be185d;">#</div>
+          <div class="ch-card__title">Slack / Lark / Mattermost 兼容 Webhook</div>
+          <label class="ch-card__toggle">
+            <input type="checkbox" id="slack_enabled" ${cfg.slack && cfg.slack.enabled ? 'checked' : ''}> 启用
+          </label>
+        </div>
+        <div class="ch-card__hint">
+          Slack：App → Incoming Webhook → 复制 URL；Lark、Mattermost 同样支持 Slack 兼容格式。
+        </div>
+        <div class="field">
+          <label>Webhook URL</label>
+          <input type="url" id="slack_url" placeholder="${cfg.slack && cfg.slack.configured ? '已设置（' + escapeHtml(cfg.slack.webhook_url_preview || '') + '）留空保留' : 'https://hooks.slack.com/services/T.../B.../...'}">
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn--sm btn--ghost" data-test="slack">📤 测试发送</button>
+        </div>
+        <div class="ch-card__test-result" id="test-slack"></div>
+      </div>
+
+      <!-- Generic webhook -->
+      <div class="ch-card ${cfg.generic && cfg.generic.enabled ? '' : 'is-disabled'}" id="ch-generic">
+        <div class="ch-card__head">
+          <div class="ch-card__icon" style="background:#f3f4f6; color:#475569;">⚙</div>
+          <div class="ch-card__title">通用 Webhook（自建接收端）</div>
+          <label class="ch-card__toggle">
+            <input type="checkbox" id="generic_enabled" ${cfg.generic && cfg.generic.enabled ? 'checked' : ''}> 启用
+          </label>
+        </div>
+        <div class="ch-card__hint">
+          POST 一个 JSON <code>{ event: 'inquiry_created', inquiry: {...} }</code> 到你自己的服务，
+          可以做 CRM 同步、短信、第三方对接等。
+        </div>
+        <div class="field">
+          <label>接收地址</label>
+          <input type="url" id="generic_url" value="${escapeHtml(cfg.generic && cfg.generic.url || '')}" placeholder="https://your-server.com/hooks/inquiry">
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn--sm btn--ghost" data-test="generic">📤 测试发送</button>
+        </div>
+        <div class="ch-card__test-result" id="test-generic"></div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn" id="save-btn">保存所有配置</button>
+        <span class="form-status" id="save-status"></span>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('save-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('save-btn');
+    const stat = document.getElementById('save-status');
+    btn.disabled = true; btn.textContent = '保存中…';
+    stat.textContent = '';
+    stat.className = 'form-status';
+    try {
+      const payload = {
+        wechat: {
+          enabled: document.getElementById('wechat_enabled').checked,
+          webhook_url: document.getElementById('wechat_url').value,
+        },
+        telegram: {
+          enabled: document.getElementById('telegram_enabled').checked,
+          bot_token: document.getElementById('telegram_token').value,
+          chat_id: document.getElementById('telegram_chat').value,
+        },
+        slack: {
+          enabled: document.getElementById('slack_enabled').checked,
+          webhook_url: document.getElementById('slack_url').value,
+        },
+        generic: {
+          enabled: document.getElementById('generic_enabled').checked,
+          url: document.getElementById('generic_url').value,
+        },
+        trigger: {
+          score_min: parseInt(document.getElementById('trigger_score').value, 10) || 0,
+          widgets: document.getElementById('trigger_widgets').value
+            .split(',').map((s) => s.trim()).filter(Boolean),
+        },
+      };
+      const r = await api('/api/notifications', { method: 'PUT', body: JSON.stringify(payload) });
+      cfg = r.config;
+      stat.textContent = '✓ 已保存。下一条询盘会用新配置推送。';
+      stat.className = 'form-status is-ok';
+      toast('通知设置已保存', 'success');
+    } catch (err) {
+      stat.textContent = '保存失败：' + err.message;
+      stat.className = 'form-status is-error';
+    } finally {
+      btn.disabled = false; btn.textContent = '保存所有配置';
+    }
+  });
+
+  document.querySelectorAll('[data-test]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const channel = btn.dataset.test;
+      const result = document.getElementById('test-' + channel);
+      result.innerHTML = '<div style="font-size:12px; color:var(--a-mute2);">发送中…</div>';
+      btn.disabled = true;
+      try {
+        const r = await api('/api/notifications/test/' + channel, { method: 'POST' });
+        result.innerHTML = `<div class="form-status is-ok" style="margin:8px 0 0;">✓ 已发送测试消息到 ${channel}</div>`;
+      } catch (err) {
+        let detail = err.message;
+        try { const j = JSON.parse(err.message); if (j.detail) detail = j.detail; } catch (_) {}
+        result.innerHTML = `
+          <div class="form-status is-error" style="margin:8px 0 0;">✗ ${channel} 测试失败</div>
+          <pre>${escapeHtml(detail)}</pre>
+        `;
+      } finally { btn.disabled = false; }
+    });
+  });
+})();
+</script>
+</body>
+</html>
