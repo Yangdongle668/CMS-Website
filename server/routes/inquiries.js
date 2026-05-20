@@ -1,4 +1,7 @@
+const path = require('path');
+const fs = require('fs');
 const express = require('express');
+const multer = require('multer');
 const rateLimit = require('express-rate-limit');
 const { many, one, query } = require('../db/client');
 const { requireAuth } = require('../middleware/auth');
@@ -16,12 +19,78 @@ const emergency = require('../services/emergency-store');
 
 const router = express.Router();
 
+const ROOT = path.join(__dirname, '..', '..');
+const INQUIRY_UPLOADS = path.join(ROOT, 'uploads', 'inquiries');
+if (!fs.existsSync(INQUIRY_UPLOADS)) fs.mkdirSync(INQUIRY_UPLOADS, { recursive: true });
+
 const submitLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'too_many_inquiries' },
+});
+
+// Separate rate limit for the public upload endpoint. Stricter than
+// inquiry submission since uploads cost disk + bandwidth.
+const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'too_many_uploads' },
+});
+
+// ---------- Attachment upload (public, rate-limited) ----------
+// Visitors attach datasheets / drawings / sample photos to their RFQ.
+// Files go to /uploads/inquiries/<random>.<ext>; the URL is returned to
+// the client, which then includes it in the inquiry submission's
+// `attachments` array. Files stick around even if the visitor abandons
+// the form — that's fine (~few MB max each, GDPR retention job
+// auto-cleans inquiry deletes).
+const ALLOWED_ATTACHMENT_MIME = new Set([
+  'application/pdf',
+  'image/png', 'image/jpeg', 'image/webp', 'image/gif',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/zip',
+  'application/x-zip-compressed',
+  'text/plain',
+  'text/csv',
+]);
+
+const attachmentStorage = multer.diskStorage({
+  destination: INQUIRY_UPLOADS,
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase().slice(0, 8) || '.bin';
+    const base = path.basename(file.originalname, ext)
+      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60);
+    const stamp = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    cb(null, `${stamp}-${base || 'file'}${ext}`);
+  },
+});
+
+const attachmentUpload = multer({
+  storage: attachmentStorage,
+  limits: { fileSize: 8 * 1024 * 1024, files: 5 },
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_ATTACHMENT_MIME.has(file.mimetype)) return cb(null, true);
+    cb(new Error('file_type_not_allowed: ' + file.mimetype));
+  },
+});
+
+router.post('/upload', uploadLimiter, attachmentUpload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'no_file' });
+  const url = '/uploads/inquiries/' + req.file.filename;
+  res.json({
+    url,
+    filename: req.file.filename,
+    original_name: req.file.originalname,
+    mime: req.file.mimetype,
+    size: req.file.size,
+  });
 });
 
 // Allowed widget origins. Anything else collapses to 'main_form' so an
@@ -186,8 +255,31 @@ router.post('/', submitLimiter, async (req, res) => {
   // Hand off email delivery to the outbox worker. enqueue() is a single
   // INSERT — never awaits SMTP — so the response below returns in
   // milliseconds even if the mail server is down.
+  // Convert visitor-supplied attachments (URLs we issued earlier from
+  // POST /api/inquiries/upload) to nodemailer-style {filename, path}
+  // entries. We validate each URL points into /uploads/inquiries/ and
+  // that the file actually exists; anything outside that path or
+  // missing on disk is silently dropped (defense against a client
+  // forging URLs to attach arbitrary server files).
+  const mailAttachments = (inquiry.attachments || [])
+    .map((a) => {
+      if (!a || typeof a !== 'object') return null;
+      const url = String(a.url || '');
+      if (!url.startsWith('/uploads/inquiries/')) return null;
+      const fname = url.slice('/uploads/inquiries/'.length);
+      if (fname.includes('/') || fname.includes('..')) return null;
+      const abs = path.join(INQUIRY_UPLOADS, fname);
+      if (!fs.existsSync(abs)) return null;
+      return {
+        filename: a.original_name || a.filename || fname,
+        path: abs,
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 5);
+
   try {
-    const internal = buildInquiryInternalMail(inquiry);
+    const internal = buildInquiryInternalMail(inquiry, { attachments: mailAttachments });
     await enqueue({
       kind: 'inquiry_internal',
       relatedType: 'inquiry',
