@@ -23,6 +23,32 @@ function escapeHtml(s) {
   }[c]));
 }
 
+// Look up a single text value in the server-injected text-overrides map.
+// The server normalises whitespace before matching, so we do the same.
+function resolveTextOverride(text) {
+  const overrides = window.__CMS_TEXT_OVERRIDES__ || {};
+  const key = String(text == null ? '' : text).replace(/\s+/g, ' ').trim();
+  return Object.prototype.hasOwnProperty.call(overrides, key) ? overrides[key] : text;
+}
+
+// Walk all text nodes inside `root` and apply exact-match substitutions.
+// Used after setting innerHTML (e.g. body_html) where the raw DB value may
+// contain strings that have been overridden via the visual text editor.
+function applyTextOverridesToDom(root) {
+  const overrides = window.__CMS_TEXT_OVERRIDES__ || {};
+  if (!Object.keys(overrides).length) return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  let n;
+  while ((n = walker.nextNode())) nodes.push(n);
+  for (const node of nodes) {
+    const key = node.textContent.replace(/\s+/g, ' ').trim();
+    if (key && Object.prototype.hasOwnProperty.call(overrides, key)) {
+      node.textContent = node.textContent.replace(key, overrides[key]);
+    }
+  }
+}
+
 async function hydrate() {
   const slug = document.body.dataset.page;
   if (!slug) return;
@@ -114,24 +140,26 @@ async function hydrate() {
     if (crumbs && Array.isArray(page.hero_breadcrumbs) && page.hero_breadcrumbs.length) {
       crumbs.innerHTML = page.hero_breadcrumbs.map((c, i, arr) => {
         const sep = i < arr.length - 1 ? '<span>/</span>' : '';
+        const label = escapeHtml(resolveTextOverride(c.label));
         if (c.url && i < arr.length - 1) {
-          return `<a href="${escapeHtml(c.url)}">${escapeHtml(c.label)}</a>${sep}`;
+          return `<a href="${escapeHtml(c.url)}">${label}</a>${sep}`;
         }
-        return `<span>${escapeHtml(c.label)}</span>${sep}`;
+        return `<span>${label}</span>${sep}`;
       }).join('');
     }
     // h1 (handle homepage's nested .hero-top h1 too)
     const h1 = hero.querySelector('h1');
-    if (h1 && page.hero_title) h1.innerHTML = escapeHtml(page.hero_title).replace(/\n/g, '<br>');
+    if (h1 && page.hero_title) h1.innerHTML = escapeHtml(resolveTextOverride(page.hero_title)).replace(/\n/g, '<br>');
     // first <p> (subtitle / .subtitle)
     const subEl = hero.querySelector('.subtitle, p');
-    if (subEl && page.hero_subtitle) subEl.textContent = page.hero_subtitle;
+    if (subEl && page.hero_subtitle) subEl.textContent = resolveTextOverride(page.hero_subtitle);
   }
 
   // Body override
   const bodyMount = document.querySelector('[data-page-body]');
   if (bodyMount && page.body_html && page.body_html.trim()) {
     bodyMount.innerHTML = page.body_html;
+    applyTextOverridesToDom(bodyMount);
   }
 
   // Section-level overrides (used by homepage)
@@ -141,11 +169,11 @@ async function hydrate() {
       const el = document.querySelector(`[data-section="${key}"]`);
       if (!el) continue;
       // If the value is a string → text content
-      if (typeof value === 'string') { el.textContent = value; continue; }
+      if (typeof value === 'string') { el.textContent = resolveTextOverride(value); continue; }
       // If it's an object with .text and .href (a CTA), update child <a>
       if (value && typeof value === 'object') {
         if ('text' in value && el.tagName === 'A') {
-          el.textContent = value.text;
+          el.textContent = resolveTextOverride(value.text);
           if (value.link) el.setAttribute('href', value.link);
           continue;
         }
