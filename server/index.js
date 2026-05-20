@@ -205,6 +205,7 @@ app.use('/api/seo-check', require('./routes/seo-check'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/ai-generate', require('./routes/ai-generate'));
 app.use('/api/mail-queue', require('./routes/mail-queue'));
+app.use('/api/smtp', require('./routes/smtp'));
 
 // ----- SEO endpoints -----
 app.use('/', require('./routes/seo'));
@@ -606,6 +607,17 @@ async function autoMigrate() {
     console.log('[ai-settings] snapshot loaded');
   } catch (err) {
     console.error('[ai-settings] initial load failed:', err.message);
+  }
+
+  // Hydrate SMTP config snapshot from settings.smtp so the first email
+  // doesn't pay the DB round-trip + so describeConfig() returns
+  // meaningful state for /api/smtp GET on a fresh boot.
+  try {
+    const mailer = require('./services/mailer');
+    await mailer.loadConfig();
+    console.log('[smtp] config snapshot loaded');
+  } catch (err) {
+    console.warn('[smtp] initial load failed:', err && err.message);
   }
 
   // Initialize cache backend (Redis if REDIS_URL set, else in-memory).
