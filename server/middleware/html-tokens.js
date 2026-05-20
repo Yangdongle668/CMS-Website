@@ -607,6 +607,14 @@ async function tryServeHtml(req, res, candidates, options) {
     if (Object.keys(textOverrides).length) {
       out = applyTextOverrides(out, textOverrides);
     }
+    // Expose the text-overrides map to cms-page.js so client-side hydration
+    // can re-apply the same substitutions after updating the DOM from the
+    // pages API. Without this, hydration overwrites the server's correctly-
+    // rendered text and the operator's edits appear to "revert".
+    if (Object.keys(textOverrides).length) {
+      const safe = JSON.stringify(textOverrides).replace(/<\/script>/gi, '<\\/script>');
+      out = out.replace('</body>', `<script>window.__CMS_TEXT_OVERRIDES__=${safe};</script>\n</body>`);
+    }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     if (!res.getHeader('Cache-Control')) res.setHeader('Cache-Control', 'no-cache');
     if (opts.status) res.status(opts.status);
