@@ -109,9 +109,12 @@ services:
       # CACHE_TTL_PRODUCT: 300
     ports:
       - "${APP_PORT:-3000}:3000"
+      - "80:80"    # ACME HTTP-01 challenges + HTTP→HTTPS redirect
+      - "443:443"  # HTTPS (started automatically once a cert is provisioned)
     volumes:
       - uploads:/app/uploads
       - cms-data:/app/data
+      - certs:/app/certs
     # Use `node` to probe since the bookworm-slim base image lacks
     # wget/curl. The probe hits /healthz which never touches PG, so it
     # stays reliable even when the database is briefly down.
@@ -128,3 +131,4 @@ volumes:
   db-data:
   uploads:
   cms-data:
+  certs:

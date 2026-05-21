@@ -207,6 +207,7 @@ app.use('/api/ai-generate', require('./routes/ai-generate'));
 app.use('/api/mail-queue', require('./routes/mail-queue'));
 app.use('/api/smtp', require('./routes/smtp'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/domain', require('./routes/domain'));
 
 // ----- SEO endpoints -----
 app.use('/', require('./routes/seo'));
@@ -685,6 +686,35 @@ async function autoMigrate() {
     }
   }
 
+  // ----- SSL / custom domain -----
+  // Register the Express app with the SSL server manager so it can be
+  // passed to the HTTPS server when a cert is provisioned.
+  const sslServer = require('./services/ssl-server');
+  sslServer.setApp(app);
+
+  // If a domain is already active (container restarted with a valid cert),
+  // re-start the HTTP+HTTPS listeners immediately so traffic isn't lost.
+  try {
+    const { getDomainConfig } = require('./routes/domain');
+    const acme = require('./services/acme-manager');
+    const domainCfg = await getDomainConfig();
+    if (domainCfg.status === 'active' && domainCfg.domain && acme.certExists(domainCfg.domain)) {
+      sslServer.ensureHttpServer();
+      sslServer.reloadCert(domainCfg.domain);
+      console.log(`[ssl] restored listeners for ${domainCfg.domain}`);
+    }
+  } catch (err) {
+    console.warn('[ssl] startup restore failed:', err && err.message);
+  }
+
+  // Daily cert renewal check (auto-renews 30 days before expiry).
+  try {
+    const certRenewal = require('./jobs/cert-renewal');
+    certRenewal.start();
+  } catch (err) {
+    console.error('[cert-renewal] failed to start:', err && err.message);
+  }
+
   const server = app.listen(PORT, () => {
     console.log(`[battery-cms] running on http://localhost:${PORT}`);
   });
@@ -707,6 +737,14 @@ async function autoMigrate() {
     try {
       const healthAlert = require('./jobs/health-alert');
       healthAlert.stop();
+    } catch (_) {}
+    try {
+      const certRenewal = require('./jobs/cert-renewal');
+      certRenewal.stop();
+    } catch (_) {}
+    try {
+      const sslServer = require('./services/ssl-server');
+      sslServer.close();
     } catch (_) {}
     try {
       const cache = require('./services/cache');
