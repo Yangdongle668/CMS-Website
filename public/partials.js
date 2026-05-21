@@ -456,19 +456,24 @@ const EXIT_INTENT_HTML = `
     <button class="exit-modal__close" type="button" aria-label="Close">×</button>
     <div class="exit-modal__inner">
       <div class="exit-modal__eyebrow">Before you go</div>
-      <h2 class="exit-modal__title" id="exit-modal-title">Get our full product datasheet pack</h2>
-      <p class="exit-modal__sub">Specs, certs, application notes and case-study PDFs — sent to your inbox so you have them when you're ready to decide.</p>
+      <h2 class="exit-modal__title" id="exit-modal-title">Designing a custom-shape battery? Talk to our engineers.</h2>
+      <p class="exit-modal__sub">Send us your target dimensions, capacity and cycle life — we'll reply within one business day with a free feasibility review and indicative pricing.</p>
       <form class="exit-modal__form" novalidate>
         <input class="exit-modal__honeypot" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
-        <div class="exit-modal__row">
-          <input type="email" name="email" placeholder="your@company.com" required autocomplete="email">
-          <button type="submit" class="exit-modal__submit">Email me the pack</button>
-        </div>
+        <label class="exit-modal__field">
+          <span class="exit-modal__label">Business email *</span>
+          <input type="email" name="email" placeholder="you@company.com" required autocomplete="email">
+        </label>
+        <label class="exit-modal__field">
+          <span class="exit-modal__label">Your project (optional)</span>
+          <textarea name="message" rows="3" placeholder="e.g. 35×25×4 mm pouch, 280 mAh, 500 cycles, AR glasses"></textarea>
+        </label>
         <label class="exit-modal__consent">
           <input type="checkbox" name="consent" required>
-          <span>I agree to receive product information per the <a href="/privacy" target="_blank" rel="noopener">privacy policy</a>.</span>
+          <span>I agree to be contacted about my inquiry per the <a href="/privacy.html" target="_blank" rel="noopener">privacy policy</a>.</span>
         </label>
         <div class="exit-modal__turnstile" data-turnstile data-turnstile-theme="light"></div>
+        <button type="submit" class="exit-modal__submit">Request feasibility review</button>
         <p class="exit-modal__status" role="status" aria-live="polite"></p>
       </form>
     </div>
@@ -559,43 +564,48 @@ function injectExitIntent() {
       submit.textContent = 'Sending…';
       let utm = {};
       try { utm = JSON.parse(localStorage.getItem('cms_utm') || '{}'); } catch (_) {}
+      const userMessage = String(fd.get('message') || '').trim();
+      const message = userMessage
+        || `Custom-battery feasibility request from ${location.pathname}. ` +
+           'Visitor opened the exit-intent modal — follow up by email to collect target dimensions / capacity / cycle life.';
+
       try {
         const res = await fetch('/api/inquiries', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email: fd.get('email'),
+            message,
             consent_given: true,
             source_page: location.pathname,
             source_widget: 'exit_intent',
-            message: 'Visitor requested the product datasheet pack via the exit-intent modal. Send the PDF library + a short follow-up email.',
             utm,
             'cf-turnstile-response': fd.get('cf-turnstile-response') || 'dev-bypass',
           }),
         });
         const json = await res.json().catch(() => ({}));
         if (res.ok && json.ok) {
-          status.textContent = `✓ Sent. Check your inbox shortly. (Ref ${json.reference})`;
+          status.textContent = `✓ Got it (ref ${json.reference}). Our engineering team will reply within 1 business day.`;
           status.className = 'exit-modal__status is-ok';
           sessionStorage.setItem(MINI_RFQ_SUBMITTED_KEY, '1');
-          setTimeout(close, 3500);
+          setTimeout(close, 4000);
         } else {
           const errMap = {
             consent_required: 'Please agree to the privacy policy.',
             invalid_email: 'That email looks invalid.',
-            turnstile_failed: 'Anti-bot check failed. Try again.',
+            turnstile_failed: 'Anti-bot check failed. Please refresh the page and try again.',
             too_many_inquiries: 'Slow down — try again in a few minutes.',
           };
-          status.textContent = errMap[json.error] || 'Could not send. Please try the contact page.';
+          status.textContent = errMap[json.error] || 'Could not send. Please use the contact page.';
           status.className = 'exit-modal__status is-error';
           submit.disabled = false;
-          submit.textContent = 'Email me the pack';
+          submit.textContent = 'Request feasibility review';
         }
       } catch (_) {
         status.textContent = 'Network error. Please try again.';
         status.className = 'exit-modal__status is-error';
         submit.disabled = false;
-        submit.textContent = 'Email me the pack';
+        submit.textContent = 'Request feasibility review';
       }
     });
   }
@@ -801,7 +811,9 @@ function injectFloatingQuote() {
   document.body.insertAdjacentHTML('beforeend', COOKIE_BANNER_HTML);
   bindCookieBanner();
   injectFloatingQuote();
-  injectMiniRFQ();
+  // Mini-RFQ toggle ("快速咨询" Chinese button) removed — visitors who want
+  // a quick conversation can use the floating "Get a Quote" pill or the
+  // exit-intent modal. Keeping a single CTA per page reduces friction.
   injectExitIntent();
   // 3. Inject Organization + WebSite JSON-LD with FALLBACK values now so
   //    even a JS-rendering scraper that snapshots immediately sees them.

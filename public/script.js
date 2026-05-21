@@ -214,6 +214,19 @@ async function handleContactSubmit(e) {
 }
 window.handleContactSubmit = handleContactSubmit;
 
+// Bind the contact form via addEventListener — the previous `onsubmit="…"`
+// attribute is blocked by the page CSP (`script-src-attr 'none'`).
+function bindContactForm() {
+  document.querySelectorAll('form[data-contact-form], form.contact-form').forEach((form) => {
+    if (form.__contactBound) return;
+    form.__contactBound = true;
+    form.addEventListener('submit', handleContactSubmit);
+  });
+}
+if (document.readyState !== 'loading') bindContactForm();
+else document.addEventListener('DOMContentLoaded', bindContactForm);
+document.addEventListener('cms:ready', bindContactForm);
+
 // ===== UTM capture =====
 (function () {
   const sp = new URLSearchParams(location.search);
