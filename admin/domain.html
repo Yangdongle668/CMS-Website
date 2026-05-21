@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>域名 & SSL | 后台管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+</head>
+<body>
+<div data-admin-shell></div>
+<script src="/admin/assets/js/admin.js"></script>
+<script>
+(async function () {
+  'use strict';
+  const { api, escapeHtml, toast, bootShell } = window.AdminAPI;
+  const shell = await bootShell({ title: '域名 & SSL', crumbs: '设置 / 域名 & SSL' });
+  if (!shell) return;
+
+  // ---- state ----
+  let cfg = { domain: '', status: 'none', error: '', cert_expires_at: null };
+  let pollTimer = null;
+
+  // ---- helpers ----
+  function statusBadge(status) {
+    const map = {
+      none:         ['未绑定',     '#6b7280', '#f3f4f6'],
+      provisioning: ['申请中…',   '#d97706', '#fffbeb'],
+      renewing:     ['续期中…',   '#d97706', '#fffbeb'],
+      active:       ['SSL 已激活', '#16a34a', '#f0fdf4'],
+      error:        ['申请失败',   '#dc2626', '#fef2f2'],
+    };
+    const [label, color, bg] = map[status] || ['未知', '#6b7280', '#f3f4f6'];
+    return `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;
+            background:${bg};color:${color};font-size:12px;font-weight:600;">
+              <span style="width:7px;height:7px;border-radius:50%;background:${color};display:inline-block;"></span>
+              ${escapeHtml(label)}
+            </span>`;
+  }
+
+  function daysUntil(isoDate) {
+    if (!isoDate) return null;
+    return Math.ceil((new Date(isoDate) - Date.now()) / 86400000);
+  }
+
+  function formatDate(isoDate) {
+    if (!isoDate) return '—';
+    return new Date(isoDate).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  // ---- render ----
+  function render() {
+    const isActive       = cfg.status === 'active';
+    const isProvisioning = cfg.status === 'provisioning' || cfg.status === 'renewing';
+    const isError        = cfg.status === 'error';
+    const days           = daysUntil(cfg.cert_expires_at);
+
+    shell.setContent(`
+      <!-- DNS guide -->
+      <div class="panel" style="margin-bottom:20px;">
+        <div class="panel__head"><h2>第一步：配置 DNS 解析</h2></div>
+        <div style="padding:18px 20px;">
+          <p style="margin:0 0 14px; font-size:14px; color:var(--a-mute2);">
+            在你的域名注册商 / DNS 控制台添加以下两条 <strong>A 记录</strong>，将域名指向本服务器的公网 IP：
+          </p>
+          <table style="border-collapse:collapse;font-size:13px;width:100%;max-width:520px;">
+            <thead>
+              <tr style="background:var(--a-bg2);">
+                <th style="padding:7px 12px;text-align:left;border:1px solid var(--a-border);">类型</th>
+                <th style="padding:7px 12px;text-align:left;border:1px solid var(--a-border);">主机记录</th>
+                <th style="padding:7px 12px;text-align:left;border:1px solid var(--a-border);">记录值</th>
+                <th style="padding:7px 12px;text-align:left;border:1px solid var(--a-border);">TTL</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding:7px 12px;border:1px solid var(--a-border);">A</td>
+                <td style="padding:7px 12px;border:1px solid var(--a-border);">@</td>
+                <td style="padding:7px 12px;border:1px solid var(--a-border);">你的服务器 IP</td>
+                <td style="padding:7px 12px;border:1px solid var(--a-border);">600</td>
+              </tr>
+              <tr>
+                <td style="padding:7px 12px;border:1px solid var(--a-border);">A</td>
+                <td style="padding:7px 12px;border:1px solid var(--a-border);">www</td>
+                <td style="padding:7px 12px;border:1px solid var(--a-border);">你的服务器 IP</td>
+                <td style="padding:7px 12px;border:1px solid var(--a-border);">600</td>
+              </tr>
+            </tbody>
+          </table>
+          <p style="margin:12px 0 0; font-size:12px; color:var(--a-mute2);">
+            ⚠️ DNS 生效通常需要几分钟到几小时。请在 DNS 完全生效后再点击"申请 SSL 证书"，否则验证会失败。<br>
+            💡 服务器必须开放 <strong>80</strong> 和 <strong>443</strong> 端口（防火墙 / 安全组放行入站 TCP 80/443）。
+          </p>
+        </div>
+      </div>
+
+      <!-- Current status -->
+      ${cfg.domain ? `
+      <div class="panel" style="margin-bottom:20px;">
+        <div class="panel__head"><h2>当前绑定状态</h2></div>
+        <div style="padding:18px 20px; display:flex; flex-wrap:wrap; gap:20px; align-items:flex-start;">
+          <div>
+            <div style="font-size:12px;color:var(--a-mute2);margin-bottom:4px;">绑定域名</div>
+            <div style="font-size:15px;font-weight:600;">${escapeHtml(cfg.domain)}</div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--a-mute2);margin-bottom:4px;">状态</div>
+            <div>${statusBadge(cfg.status)}</div>
+          </div>
+          ${isActive && cfg.cert_expires_at ? `
+          <div>
+            <div style="font-size:12px;color:var(--a-mute2);margin-bottom:4px;">证书到期</div>
+            <div style="font-size:14px;">
+              ${escapeHtml(formatDate(cfg.cert_expires_at))}
+              ${days !== null ? `<span style="margin-left:6px;font-size:12px;color:${days < 14 ? '#dc2626' : '#6b7280'};">(${days} 天后)</span>` : ''}
+            </div>
+          </div>
+          ` : ''}
+          ${isActive ? `
+          <div>
+            <div style="font-size:12px;color:var(--a-mute2);margin-bottom:4px;">访问地址</div>
+            <div style="font-size:13px;">
+              <a href="https://${escapeHtml(cfg.domain)}" target="_blank"
+                 style="color:var(--a-primary);">https://${escapeHtml(cfg.domain)} ↗</a>
+            </div>
+          </div>
+          ` : ''}
+          ${isError ? `
+          <div style="width:100%;">
+            <div style="font-size:12px;color:var(--a-mute2);margin-bottom:4px;">错误信息</div>
+            <pre style="margin:0;padding:10px 12px;background:#fef2f2;border-radius:4px;
+                        font-size:12px;color:#dc2626;white-space:pre-wrap;word-break:break-all;
+                        max-height:120px;overflow:auto;">${escapeHtml(cfg.error || '未知错误')}</pre>
+            <p style="margin:8px 0 0;font-size:12px;color:var(--a-mute2);">
+              常见原因：DNS 尚未生效、80/443 端口未放行、Let's Encrypt 请求限额（1小时内只能申请5次）。
+              请排查后重新点击"申请 SSL 证书"。
+            </p>
+          </div>
+          ` : ''}
+          ${isProvisioning ? `
+          <div style="width:100%; font-size:13px; color:var(--a-mute2);">
+            <span style="animation:spin 1s linear infinite;display:inline-block;margin-right:6px;">⟳</span>
+            正在向 Let's Encrypt 申请证书，通常需要 30 秒至 2 分钟，请稍候…
+          </div>
+          ` : ''}
+        </div>
+      </div>
+      ` : ''}
+
+      <!-- Bind form -->
+      <div class="panel">
+        <div class="panel__head">
+          <h2>${cfg.domain ? '修改绑定 / 重新申请证书' : '第二步：绑定域名并申请 SSL'}</h2>
+        </div>
+        <div style="padding:18px 20px;">
+          <form id="domain-form">
+            <div class="field-row">
+              <div class="field" style="max-width:380px;">
+                <label>域名 <span class="hint">— 只填主域名，证书会同时包含 @ 和 www</span></label>
+                <input type="text" id="inp-domain" placeholder="example.com"
+                       value="${escapeHtml(cfg.domain || '')}"
+                       style="font-family:var(--a-mono);"
+                       autocomplete="off" spellcheck="false"/>
+              </div>
+              <div class="field" style="max-width:320px;">
+                <label>联系邮箱 <span class="hint">— Let's Encrypt 证书到期提醒</span></label>
+                <input type="email" id="inp-email" placeholder="admin@example.com"
+                       autocomplete="off"/>
+              </div>
+            </div>
+            <div style="margin-top:6px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <button type="submit" class="btn btn--primary" id="btn-provision"
+                      ${isProvisioning ? 'disabled' : ''}>
+                ${isActive ? '重新申请证书（续期 / 换域名）' : '申请 SSL 证书'}
+              </button>
+              ${cfg.domain ? `
+              <button type="button" class="btn btn--ghost" id="btn-remove"
+                      style="color:#dc2626;border-color:#dc2626;">
+                解绑域名
+              </button>
+              ` : ''}
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <style>
+        @keyframes spin { to { transform: rotate(360deg); } }
+      </style>
+    `);
+
+    // ---- event bindings ----
+    document.getElementById('domain-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const domain = document.getElementById('inp-domain').value.trim();
+      const email  = document.getElementById('inp-email').value.trim();
+      if (!domain) { toast('请填写域名', 'error'); return; }
+
+      const btn = document.getElementById('btn-provision');
+      btn.disabled = true;
+      btn.textContent = '提交中…';
+      try {
+        const result = await api('/api/domain/provision', {
+          method: 'POST',
+          body: JSON.stringify({ domain, email }),
+        });
+        cfg = { domain, status: result.status || 'provisioning', error: '', cert_expires_at: null };
+        toast('已提交证书申请，正在处理…', 'success');
+        render();
+        startPolling();
+      } catch (err) {
+        toast('提交失败：' + err.message, 'error');
+        btn.disabled = false;
+        btn.textContent = '申请 SSL 证书';
+      }
+    });
+
+    const removeBtn = document.getElementById('btn-remove');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', async () => {
+        if (!confirm('确认解绑域名？解绑后 SSL 服务将停止，但证书文件仍保留在服务器上。')) return;
+        try {
+          await api('/api/domain', { method: 'DELETE' });
+          cfg = { domain: '', status: 'none', error: '', cert_expires_at: null };
+          stopPolling();
+          toast('域名已解绑', 'success');
+          render();
+        } catch (err) {
+          toast('操作失败：' + err.message, 'error');
+        }
+      });
+    }
+  }
+
+  // ---- polling while provisioning ----
+  function startPolling() {
+    stopPolling();
+    pollTimer = setInterval(async () => {
+      try {
+        const { config } = await api('/api/domain');
+        const prev = cfg.status;
+        cfg = config;
+        if (cfg.status !== 'provisioning' && cfg.status !== 'renewing') {
+          stopPolling();
+          render();
+          if (cfg.status === 'active') toast('SSL 证书申请成功！HTTPS 已就绪', 'success');
+          if (cfg.status === 'error')  toast('SSL 申请失败，请查看错误信息', 'error');
+        } else if (prev !== cfg.status) {
+          render();
+        }
+      } catch (_) {}
+    }, 4000);
+  }
+
+  function stopPolling() {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  }
+
+  // ---- init ----
+  try {
+    const { config } = await api('/api/domain');
+    cfg = config;
+  } catch (_) {}
+
+  render();
+
+  if (cfg.status === 'provisioning' || cfg.status === 'renewing') {
+    startPolling();
+  }
+
+  // Pre-fill email from user profile
+  try {
+    const { user } = await api('/api/auth/me');
+    const emailInput = document.getElementById('inp-email');
+    if (emailInput && !emailInput.value && user && user.email) {
+      emailInput.value = user.email;
+    }
+  } catch (_) {}
+})();
+</script>
+</body>
+</html>

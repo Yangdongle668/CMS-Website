@@ -28,6 +28,7 @@
       { label: '审计日志', href: '/admin/audit.html', icon: '⊟' },
     ]},
     { group: '设置', items: [
+      { label: '域名 & SSL', href: '/admin/domain.html', icon: '⛓' },
       { label: '站点设置', href: '/admin/settings.html', icon: '⚙' },
       { label: 'SMTP / 邮件', href: '/admin/smtp.html', icon: '✉' },
       { label: '即时通知推送', href: '/admin/notifications.html', icon: '📡' },
