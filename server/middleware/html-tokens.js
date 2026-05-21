@@ -89,6 +89,7 @@ const settingsCache = {
   organization: {},
   media_overrides: {},
   text_overrides: {},
+  turnstile: {},
   loadedAt: 0,
 };
 
@@ -96,7 +97,7 @@ async function loadSettingsCache() {
   try {
     const { many } = require('../db/client');
     const rows = await many(
-      `SELECT key, value FROM settings WHERE key IN ('seo','site','organization','media_overrides','text_overrides')`
+      `SELECT key, value FROM settings WHERE key IN ('seo','site','organization','media_overrides','text_overrides','turnstile')`
     );
     for (const r of rows) settingsCache[r.key] = r.value || {};
     settingsCache.loadedAt = Date.now();
@@ -674,4 +675,5 @@ module.exports = {
   applySavedTextOverrides,
   invalidateSettingsCache,
   loadSettingsCache,
+  settingsCache,
 };
