@@ -2,13 +2,19 @@ const VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 
 async function verifyTurnstile(token, ip) {
   const secret = process.env.TURNSTILE_SECRET_KEY;
+  // Treat blank or placeholder (0x000...) secret as "Turnstile not
+  // configured" and SKIP verification in every environment. Blocking real
+  // visitor inquiries because the operator hasn't created Cloudflare
+  // Turnstile keys yet is a worse failure mode than letting bot traffic
+  // through — the honeypot field, rate-limits, dedupe and per-email
+  // throttle still apply. Once the operator pastes a real secret into
+  // .env, this branch is bypassed and full verification runs.
   if (!secret || secret.startsWith('0x000')) {
-    // Dev-friendly fallback: if secret not configured, don't block
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn('[turnstile] secret not configured, skipping verification');
-      return { success: true, skipped: true };
+    if (!global.__turnstileWarned) {
+      console.warn('[turnstile] TURNSTILE_SECRET_KEY not configured — anti-bot verification disabled');
+      global.__turnstileWarned = true;
     }
-    return { success: false, error: 'turnstile-not-configured' };
+    return { success: true, skipped: true };
   }
   if (!token) return { success: false, error: 'missing-token' };
 
