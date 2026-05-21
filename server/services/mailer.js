@@ -12,13 +12,14 @@
 // requiring a restart.
 // =====================================================================
 const nodemailer = require('nodemailer');
+const mailTemplates = require('./mail-templates');
 const {
   defaultFrom,
   inquiryRecipients,
   buildInquiryInternalMail,
   buildInquiryAutoReplyMail,
   buildGdprConfirmMail,
-} = require('./mail-templates');
+} = mailTemplates;
 
 let transporter = null;
 let configSnapshot = null;   // last-resolved config (for /test endpoint)
@@ -50,6 +51,12 @@ async function loadConfig() {
                     : String(process.env.AUTO_REPLY_ENABLED || 'true') === 'true',
   };
   configSnapshot = cfg;
+  // Push the resolved config to mail-templates so that defaultFrom() /
+  // inquiryRecipients() / currentAutoReplyEnabled() return the DB-saved
+  // values instead of just env vars. Without this push, the admin can
+  // save SMTP settings in /admin/smtp.html and the new recipients are
+  // silently ignored.
+  try { mailTemplates.setLiveConfig(cfg); } catch (_) {}
   return cfg;
 }
 
@@ -59,7 +66,16 @@ async function loadConfig() {
 async function buildTransporter() {
   const cfg = await loadConfig();
   if (!cfg.host || !cfg.user || !cfg.pass) {
-    console.warn('[mailer] SMTP not configured (host/user/pass missing). Mails will be logged only.');
+    // In production we must NOT pretend mails went through. The previous
+    // dev-mock returned a fake "success" messageId which made the outbox
+    // worker mark every row as `sent` even though nothing was delivered.
+    // Throwing here forces the worker to mark the row `failed` with a
+    // clear last_error, so the admin sees the problem in /admin/mail-queue
+    // and the row is retried automatically once SMTP is configured.
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('SMTP not configured — set host / user / pass in /admin/smtp.html');
+    }
+    console.warn('[mailer] SMTP not configured (host/user/pass missing). Mails will be logged only — set NODE_ENV=production to enforce real delivery.');
     return {
       _devOnly: true,
       sendMail: async (opts) => {

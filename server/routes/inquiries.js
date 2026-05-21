@@ -13,6 +13,7 @@ const { enqueue } = require('../services/mail-outbox');
 const {
   buildInquiryInternalMail,
   buildInquiryAutoReplyMail,
+  currentAutoReplyEnabled,
 } = require('../services/mail-templates');
 const { scoreInquiry } = require('../services/lead-scoring');
 const emergency = require('../services/emergency-store');
@@ -287,7 +288,7 @@ router.post('/', submitLimiter, async (req, res) => {
       relatedId: inquiryId,
       ...internal,
     });
-    if (String(process.env.AUTO_REPLY_ENABLED || 'true') === 'true') {
+    if (currentAutoReplyEnabled()) {
       const auto = buildInquiryAutoReplyMail(inquiry);
       await enqueue({
         kind: 'inquiry_autoreply',

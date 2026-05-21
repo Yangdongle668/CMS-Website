@@ -8,16 +8,39 @@
 // =====================================================================
 const { escapeHtml } = require('../utils/validate');
 
+// Live SMTP config pushed in by mailer.loadConfig(). We can't `require`
+// mailer.js here because mailer.js requires this module — instead the
+// mailer pushes its resolved config in after loading. Until that
+// happens (early boot or DB unreachable) we fall back to env vars.
+let liveCfg = null;
+
+function setLiveConfig(cfg) {
+  liveCfg = cfg && typeof cfg === 'object' ? cfg : null;
+}
+
 function defaultFrom() {
+  if (liveCfg && liveCfg.from) return liveCfg.from;
+  if (liveCfg && liveCfg.user) return liveCfg.user;
   return process.env.MAIL_FROM || process.env.SMTP_USER || 'no-reply@example.com';
 }
 
 function inquiryRecipients() {
+  // Prefer the admin-configured list saved in settings.smtp.recipients.
+  // Without this, every inquiry would go to MAIL_FROM (i.e. the sender
+  // talks to itself) no matter what the admin set in /admin/smtp.html.
+  if (liveCfg && Array.isArray(liveCfg.recipients) && liveCfg.recipients.length) {
+    return liveCfg.recipients.slice();
+  }
   const list = (process.env.INQUIRY_RECIPIENTS || process.env.SMTP_USER || '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
   return list.length ? list : [defaultFrom()];
+}
+
+function currentAutoReplyEnabled() {
+  if (liveCfg && liveCfg.auto_reply != null) return !!liveCfg.auto_reply;
+  return String(process.env.AUTO_REPLY_ENABLED || 'true') === 'true';
 }
 
 function inquiryRowsHtml(inq) {
@@ -160,6 +183,8 @@ function buildHealthAlertMail(reasons) {
 module.exports = {
   defaultFrom,
   inquiryRecipients,
+  currentAutoReplyEnabled,
+  setLiveConfig,
   buildInquiryInternalMail,
   buildInquiryAutoReplyMail,
   buildGdprConfirmMail,
