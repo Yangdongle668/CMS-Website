@@ -77,6 +77,12 @@ router.get('/', requireAuth, async (_req, res) => {
     if (r.key === 'ai_providers') {
       const merged = aiSettings.snapshot();
       out[r.key] = aiSettings.applyMask(merged);
+    } else if (r.key === 'turnstile') {
+      const v = r.value || {};
+      out[r.key] = {
+        site_key: v.site_key || '',
+        secret_key: v.secret_key ? aiSettings.maskKey(v.secret_key) : '',
+      };
     } else if (SECRET_KEYS.has(r.key)) {
       out[r.key] = aiSettings.applyMask(r.value || {});
     } else {
@@ -87,6 +93,16 @@ router.get('/', requireAuth, async (_req, res) => {
   // snapshot so the form renders.
   if (!out.ai_providers) {
     out.ai_providers = aiSettings.applyMask(aiSettings.snapshot());
+  }
+  // Same for turnstile — return env-fallback view so the form renders
+  // before the operator has saved anything.
+  if (!out.turnstile) {
+    out.turnstile = {
+      site_key: process.env.TURNSTILE_SITE_KEY && !process.env.TURNSTILE_SITE_KEY.startsWith('0x000')
+        ? process.env.TURNSTILE_SITE_KEY : '',
+      secret_key: process.env.TURNSTILE_SECRET_KEY && !process.env.TURNSTILE_SECRET_KEY.startsWith('0x000')
+        ? aiSettings.maskKey(process.env.TURNSTILE_SECRET_KEY) : '',
+    };
   }
   res.json({ settings: out });
 });
@@ -101,6 +117,12 @@ router.put('/:key', requireAuth, async (req, res) => {
   // field would wipe every other API key.
   if (key === 'ai_providers') {
     value = await aiSettings.preserveMaskedKeys(value);
+  }
+  // Turnstile: if the operator left secret_key showing the mask ("••••XXXX"),
+  // keep the existing DB value instead of overwriting it with the placeholder.
+  if (key === 'turnstile' && value && aiSettings.isMasked(value.secret_key)) {
+    const cur = await one(`SELECT value FROM settings WHERE key = 'turnstile'`);
+    value.secret_key = (cur && cur.value && cur.value.secret_key) || '';
   }
   await query(
     `INSERT INTO settings (key, value, updated_at) VALUES ($1, $2, now())

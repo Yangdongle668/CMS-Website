@@ -169,6 +169,7 @@
       <button class="tabs__btn" data-tab="social">社交</button>
       <button class="tabs__btn" data-tab="gdpr">GDPR</button>
       <button class="tabs__btn" data-tab="mail">邮件</button>
+      <button class="tabs__btn" data-tab="security">安全防护</button>
       <button class="tabs__btn" data-tab="ai">AI 接入</button>
     </div>
 
@@ -325,6 +326,36 @@ https://twitter.com/zufek">${escapeHtml((org.sameAs || []).join('\n'))}</textare
         <div class="field"><label>回复地址</label><input data-key="mail.reply_to" value="${escapeHtml(s('mail').reply_to || '')}"/></div>
         <div class="field"><label>邮件主题前缀</label><input data-key="mail.subject_prefix" value="${escapeHtml(s('mail').subject_prefix || '[Inquiry]')}"/></div>
         <div class="field field--check"><input type="checkbox" id="auto-reply" ${s('mail').auto_reply_enabled !== false ? 'checked' : ''}/><label for="auto-reply">给询盘提交者发送自动回复</label></div>
+      </div>
+    </div>
+
+    <div data-pane="security" style="display:none;">
+      <div class="panel">
+        <h2 style="margin-top:0;">Cloudflare Turnstile (防垃圾询盘)</h2>
+        <p style="font-size:13px; color:var(--a-mute2); margin-top:0;">
+          在所有询盘表单（联系页、退出弹窗）启用 Cloudflare Turnstile 反机器人验证。
+          留空或保留为 <code>0x000…</code> 占位符则<strong>关闭验证</strong>（蜜罐、IP 限频、去重仍生效），
+          配置真实密钥后自动恢复验证。
+        </p>
+        <div style="font-size:12.5px; color:var(--a-mute2); line-height:1.6; padding:10px 14px; background:#f0fdf4; border-left:3px solid #22c55e; border-radius:4px; margin-bottom:14px;">
+          <strong>怎么获取密钥（完全免费）：</strong><br>
+          1. 打开 <a href="https://dash.cloudflare.com/?to=/:account/turnstile" target="_blank" style="color:var(--a-accent);">Cloudflare Dashboard → Turnstile</a>（没有账号先免费注册）。<br>
+          2. 点 <strong>"Add site"</strong> → 站点名随意 → Domain 填你的域名 → Widget Mode 选 <strong>"Managed"</strong>（推荐）。<br>
+          3. 复制生成的 <strong>Site Key</strong>（公开，用于前端）和 <strong>Secret Key</strong>（保密，用于后端验证）。<br>
+          4. 粘贴到下面 → 保存即时生效，无需重启服务器。
+        </div>
+        <div class="field">
+          <label>Site Key <span class="hint">— 公开，会注入到访客的浏览器</span></label>
+          <input data-key="turnstile.site_key" value="${escapeHtml((s('turnstile').site_key) || '')}" placeholder="0x4AAAAAAA..." autocomplete="off"/>
+        </div>
+        <div class="field">
+          <label>Secret Key <span class="hint">— 服务器端验证用，已存的会显示为 ••••XXXX</span></label>
+          <input data-key="turnstile.secret_key" value="${escapeHtml((s('turnstile').secret_key) || '')}" placeholder="0x4AAAAAAA..." autocomplete="off"/>
+        </div>
+        <div style="font-size:12px; color:var(--a-mute2); margin-top:6px;">
+          ⚠️ Site Key 和 Secret Key 必须来自<strong>同一个</strong> Turnstile widget，否则验证一定失败。<br>
+          ⚠️ 创建 widget 时必须把你的域名加入"Hostname management"，否则 Cloudflare 会拒绝你的请求。
+        </div>
       </div>
     </div>
 

@@ -164,18 +164,23 @@ app.get('/readyz', async (_req, res) => {
 
 // ----- Public env (Turnstile site key + SEO defaults for the client) -----
 app.get('/api/public/config', async (_req, res) => {
-  // Read latest seo settings so the SPA can populate analytics/verification
-  // tags without a separate fetch and without staleness vs. /api/settings/public.
+  // Read latest seo + turnstile settings so the SPA can populate
+  // analytics/verification tags and the anti-bot widget without a
+  // separate fetch and without staleness vs. /api/settings/public.
   let seo = {};
+  let turnstile = {};
   try {
     const { many } = require('./db/client');
-    const rows = await many(`SELECT key, value FROM settings WHERE key = 'seo'`);
-    seo = (rows[0] && rows[0].value) || {};
+    const rows = await many(`SELECT key, value FROM settings WHERE key IN ('seo','turnstile')`);
+    for (const r of rows) {
+      if (r.key === 'seo') seo = r.value || {};
+      else if (r.key === 'turnstile') turnstile = r.value || {};
+    }
   } catch (_) { /* DB might not be ready during early boot */ }
   res.json({
     siteName: process.env.SITE_NAME || 'Zufek',
     publicUrl: process.env.PUBLIC_URL || seo.public_url || '',
-    turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || '',
+    turnstileSiteKey: turnstile.site_key || process.env.TURNSTILE_SITE_KEY || '',
     privacyPolicyVersion: process.env.PRIVACY_POLICY_VERSION || '1.0',
     ga4: seo.ga4_measurement_id || '',
     gscVerify: seo.gsc_verify || '',

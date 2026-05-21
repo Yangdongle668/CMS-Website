@@ -56,7 +56,7 @@
     const isError        = cfg.status === 'error';
     const days           = daysUntil(cfg.cert_expires_at);
 
-    shell.setContent(`
+    shell.content.innerHTML = `
       <!-- DNS guide -->
       <div class="panel" style="margin-bottom:20px;">
         <div class="panel__head"><h2>第一步：配置 DNS 解析</h2></div>
@@ -188,7 +188,7 @@
       <style>
         @keyframes spin { to { transform: rotate(360deg); } }
       </style>
-    `);
+    `;
 
     // ---- event bindings ----
     document.getElementById('domain-form').addEventListener('submit', async (e) => {
