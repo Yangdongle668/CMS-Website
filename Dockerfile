@@ -27,7 +27,19 @@ ENV NODE_ENV=production \
     PGHOST=db \
     PGPORT=5432
 
-# Drop privileges
+# System packages:
+#   • libcap2-bin — provides `setcap`, used below to let Node bind :80/:443
+#   • gosu        — entrypoint drops privileges from root → app cleanly
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends libcap2-bin gosu \
+ && rm -rf /var/lib/apt/lists/*
+
+# Grant the Node binary CAP_NET_BIND_SERVICE so it can listen on the
+# privileged ports 80 (ACME HTTP-01) and 443 (HTTPS) without running as
+# root. Without this, the auto-SSL HTTP/HTTPS servers fail with EACCES.
+RUN setcap 'cap_net_bind_service=+ep' "$(readlink -f "$(which node)")"
+
+# Create the unprivileged runtime user.
 RUN groupadd -r app && useradd -r -g app -d /app -s /usr/sbin/nologin app
 
 COPY --chown=app:app --from=deps /app/node_modules ./node_modules
@@ -36,12 +48,21 @@ COPY --chown=app:app server ./server
 COPY --chown=app:app --from=builder /app/public ./public
 COPY --chown=app:app admin ./admin
 
-RUN mkdir -p /app/uploads /app/data && chown -R app:app /app/uploads /app/data
+# Pre-create persistent directories with `app` ownership BEFORE the
+# named volumes are attached. When Docker provisions a fresh volume it
+# inherits the mount-target ownership, so the app user can write to it
+# from first boot. The docker-entrypoint.sh re-asserts the chown each
+# start to repair pre-existing volumes that were created as root by an
+# older image.
+RUN mkdir -p /app/uploads /app/data /app/certs && \
+    chown -R app:app /app/uploads /app/data /app/certs
 
-USER app
+COPY --chmod=755 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
-EXPOSE 3000
+EXPOSE 3000 80 443
 
 # init.js is idempotent (schema IF NOT EXISTS, seed ON CONFLICT DO NOTHING).
-# Re-running on every container start is safe and cheap.
+# Re-running on every container start is safe and cheap. The entrypoint
+# script runs as root to fix volume ownership, then drops to `app`.
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["sh", "-c", "node server/db/init.js --seed && node server/index.js"]
