@@ -21,8 +21,10 @@ const FALLBACK = {
     address: 'Room 432, Building 1, No. 34 Jinniu Road, Guancheng Subdistrict, Dongguan City, Guangdong Province, China',
   },
   social: {
-    linkedin: 'https://www.linkedin.com/company/zufek',
-    whatsapp: 'https://wa.me/8615377720020',
+    linkedin: '',
+    whatsapp: '',
+    youtube: '',
+    x: '',
   },
   navigation: {
     header: [
@@ -177,8 +179,8 @@ function footerHtml(settings) {
       <div class="footer-col footer-col--brand">
         <h5>${escapeHtml(site.name || 'Zufek')}</h5>
         ${site.email ? `<p class="footer-contact"><a href="mailto:${escapeHtml(site.email)}">${escapeHtml(site.email)}</a></p>` : ''}
-        ${site.phone ? `<p>Phone: ${escapeHtml(site.phone)}</p>` : ''}
-        ${site.address ? `<p>${escapeHtml(site.address)}</p>` : ''}
+        ${site.phone ? `<p>Phone: <a href="tel:${escapeHtml(String(site.phone).replace(/[^+\d]/g, ''))}">${escapeHtml(site.phone)}</a></p>` : ''}
+        ${site.address ? `<p>Address: ${escapeHtml(site.address)}</p>` : ''}
         ${(linkedin || whatsapp) ? `<div class="footer-social">${linkedin}${whatsapp}</div>` : ''}
       </div>
     </div>

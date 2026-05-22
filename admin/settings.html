@@ -195,6 +195,7 @@
           <div class="field"><label>工厂面积（m²）</label><input type="number" data-key="site.factory_size_sqm" value="${s('site').factory_size_sqm || ''}"/></div>
           <div class="field"><label>员工总数</label><input type="number" data-key="site.staff_count" value="${s('site').staff_count || ''}"/></div>
         </div>
+        <div class="field"><label>站点图标 (Favicon) <span class="hint">浏览器标签页 / 后台登录页使用。推荐 .ico / .png，正方形。可填 /uploads/... 或外链 URL。</span></label><input data-key="site.favicon" value="${escapeHtml(s('site').favicon || '')}" placeholder="/uploads/favicon.png"/></div>
       </div>
     </div>
 
