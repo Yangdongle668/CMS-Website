@@ -115,6 +115,9 @@ services:
       - uploads:/app/uploads
       - cms-data:/app/data
       - certs:/app/certs
+      # Bind-mount host-downloaded seed images so `npm run images:localize`
+      # results are visible inside the container without rebuilding the image.
+      - ./public/assets/img/seed:/app/public/assets/img/seed
     # Use `node` to probe since the bookworm-slim base image lacks
     # wget/curl. The probe hits /healthz which never touches PG, so it
     # stays reliable even when the database is briefly down.
