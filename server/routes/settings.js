@@ -6,6 +6,7 @@ const { trimStr, asJson } = require('../utils/validate');
 const { invalidateSettingsCache } = require('../middleware/html-tokens');
 const { invalidateExcludedIps } = require('../middleware/analytics');
 const aiSettings = require('../services/ai-settings');
+const seoIntegrations = require('../services/seo-integrations');
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ const PUBLIC_KEYS = new Set(['site', 'social', 'seo', 'gdpr', 'navigation', 'org
 // Settings entries that contain secrets. Their values are masked when
 // returned to the admin browser (last 4 chars only) and preserved in
 // place when the admin re-submits them with the mask still attached.
-const SECRET_KEYS = new Set(['ai_providers']);
+const SECRET_KEYS = new Set(['ai_providers', 'seo_integrations']);
 
 router.get('/public', async (_req, res) => {
   const rows = await many(`SELECT key, value FROM settings WHERE key = ANY($1::text[])`, [
@@ -84,6 +85,8 @@ router.get('/', requireAuth, async (_req, res) => {
         site_key: v.site_key || '',
         secret_key: v.secret_key ? aiSettings.maskKey(v.secret_key) : '',
       };
+    } else if (r.key === 'seo_integrations') {
+      out[r.key] = seoIntegrations.applyMask(r.value || {});
     } else if (SECRET_KEYS.has(r.key)) {
       out[r.key] = aiSettings.applyMask(r.value || {});
     } else {
@@ -118,6 +121,13 @@ router.put('/:key', requireAuth, async (req, res) => {
   // field would wipe every other API key.
   if (key === 'ai_providers') {
     value = await aiSettings.preserveMaskedKeys(value);
+  }
+  if (key === 'seo_integrations') {
+    try {
+      value = await seoIntegrations.preserveMaskedKeys(value);
+    } catch (err) {
+      return res.status(400).json({ error: err.message || 'invalid_payload' });
+    }
   }
   // Turnstile: if the operator left secret_key showing the mask ("••••XXXX"),
   // keep the existing DB value instead of overwriting it with the placeholder.

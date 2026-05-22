@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>SEO 概览 | 后台管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+<style>
+  .so-section { margin-top: 22px; }
+  .so-section__hdr { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .so-section__hdr h2 { margin:0; font-size:16px; font-weight:700; }
+  .so-section__hdr .so-tag { font-size:11px; font-weight:600; letter-spacing:0.5px; padding:3px 8px; border-radius:4px; }
+  .so-tag--ok    { background:#dcfce7; color:#166534; }
+  .so-tag--off   { background:#f3f4f6; color:#6b7280; }
+  .so-tag--err   { background:#fee2e2; color:#991b1b; }
+
+  .so-kpi-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px; }
+  .so-kpi { background:#fff; border:1px solid var(--a-line); border-radius:10px; padding:14px 16px; }
+  .so-kpi__label { font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--a-mute2); font-weight:600; }
+  .so-kpi__value { font-size:24px; font-weight:600; margin-top:4px; letter-spacing:-0.3px; }
+
+  .so-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-top:14px; }
+  @media (max-width: 1100px) { .so-row { grid-template-columns:1fr; } }
+  .so-card { background:#fff; border:1px solid var(--a-line); border-radius:10px; padding:14px 16px; }
+  .so-card h3 { margin:0 0 10px; font-size:13.5px; font-weight:600; }
+  .so-card table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  .so-card th, .so-card td { padding:6px 8px; text-align:left; border-bottom:1px solid var(--a-line); vertical-align:top; }
+  .so-card th { font-weight:600; color:var(--a-mute2); font-size:11.5px; }
+  .so-card td.num { text-align:right; font-variant-numeric:tabular-nums; font-family:'JetBrains Mono', monospace; }
+  .so-card .so-empty { padding:20px 8px; color:var(--a-mute2); font-size:12.5px; text-align:center; }
+  .so-card .so-error { padding:12px; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; color:#991b1b; font-size:12px; font-family:'JetBrains Mono', monospace; word-break:break-all; }
+
+  .so-setup-hint { padding:14px 16px; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; font-size:13px; color:#78350f; }
+  .so-setup-hint a { color:var(--a-accent); }
+</style>
+</head>
+<body>
+<div data-admin-shell></div>
+<script src="/admin/assets/js/admin.js"></script>
+<script>
+(async () => {
+  const { api, escapeHtml, bootShell } = window.AdminAPI;
+  const shell = await bootShell({ title: 'SEO 概览', crumbs: '统计 / SEO' });
+  if (!shell) return;
+
+  const COUNTRY_NAMES = {
+    US:'美国', CN:'中国', GB:'英国', DE:'德国', FR:'法国', JP:'日本', KR:'韩国', IN:'印度',
+    RU:'俄罗斯', BR:'巴西', CA:'加拿大', AU:'澳大利亚', NL:'荷兰', IT:'意大利', ES:'西班牙',
+    SE:'瑞典', NO:'挪威', FI:'芬兰', PL:'波兰', BE:'比利时', CH:'瑞士', AT:'奥地利',
+    PT:'葡萄牙', IE:'爱尔兰', DK:'丹麦', CZ:'捷克', GR:'希腊', RO:'罗马尼亚', HU:'匈牙利',
+    BG:'保加利亚', UA:'乌克兰', TR:'土耳其', IL:'以色列', AE:'阿联酋', SA:'沙特阿拉伯',
+    EG:'埃及', ZA:'南非', NG:'尼日利亚', KE:'肯尼亚', MA:'摩洛哥', MX:'墨西哥',
+    AR:'阿根廷', CL:'智利', CO:'哥伦比亚', PE:'秘鲁', SG:'新加坡', MY:'马来西亚',
+    TH:'泰国', VN:'越南', PH:'菲律宾', ID:'印度尼西亚', BD:'孟加拉国', PK:'巴基斯坦',
+    TW:'中国台湾', HK:'中国香港', NZ:'新西兰',
+  };
+  function ccName(cc) { return COUNTRY_NAMES[cc] || cc || '未知'; }
+
+  let currentDays = 28;
+
+  shell.actions.innerHTML = `
+    <div class="a-ranges" id="range-tabs">
+      <button data-days="7">7 天</button>
+      <button data-days="28" class="is-active">28 天</button>
+      <button data-days="90">90 天</button>
+    </div>
+    <button type="button" class="btn btn--ghost btn--sm" id="refresh-btn">↻ 刷新</button>
+  `;
+
+  shell.content.innerHTML = `
+    <div id="setup-hint" style="display:none;" class="so-setup-hint">
+      还没配置 API 凭证 — 去 <a href="/admin/settings.html">设置 → 站长工具</a> 粘贴 Service Account JSON / Bing API Key 后回来。
+    </div>
+    <div id="gsc-pane"  class="so-section"></div>
+    <div id="ga4-pane"  class="so-section"></div>
+    <div id="bing-pane" class="so-section"></div>
+  `;
+
+  document.querySelectorAll('#range-tabs button').forEach((b) => {
+    b.addEventListener('click', () => {
+      currentDays = parseInt(b.dataset.days, 10);
+      document.querySelectorAll('#range-tabs button').forEach((x) => x.classList.toggle('is-active', x === b));
+      loadData();
+    });
+  });
+  document.getElementById('refresh-btn').addEventListener('click', () => loadData(true));
+
+  function fmt(n) {
+    if (typeof n !== 'number' || !isFinite(n)) return '–';
+    if (Math.abs(n) >= 10000) return (n / 1000).toFixed(1) + 'k';
+    return (n % 1 === 0) ? String(n) : n.toFixed(2);
+  }
+  function pct(x) { return (typeof x === 'number') ? (x * 100).toFixed(2) + '%' : '–'; }
+  function dur(seconds) {
+    const s = Math.round(Number(seconds) || 0);
+    const m = Math.floor(s / 60);
+    return m ? `${m}m ${s % 60}s` : `${s}s`;
+  }
+  function statusTag(p) {
+    if (p && p.error) return '<span class="so-tag so-tag--err">错误</span>';
+    if (p && p.configured) return '<span class="so-tag so-tag--ok">已连接</span>';
+    return '<span class="so-tag so-tag--off">未配置</span>';
+  }
+  function errBlock(p) {
+    if (!p || !p.error) return '';
+    return `<div class="so-error">${escapeHtml(p.error)}</div>`;
+  }
+  function emptyTable(msg) { return `<div class="so-empty">${escapeHtml(msg)}</div>`; }
+
+  function renderGsc(p) {
+    const root = document.getElementById('gsc-pane');
+    if (!p || !p.configured) {
+      root.innerHTML = `
+        <div class="so-section__hdr">
+          <h2>Google Search Console</h2>
+          ${statusTag(p)}
+        </div>
+        ${p && p.error ? errBlock(p) : '<div class="so-card so-empty">未连接，请到 设置 → 站长工具 配置 Service Account JSON + GSC 属性。</div>'}
+      `;
+      return;
+    }
+    const t = p.totals || {};
+    root.innerHTML = `
+      <div class="so-section__hdr">
+        <h2>Google Search Console</h2>
+        <span class="so-tag so-tag--ok">已连接</span>
+        <span style="font-size:12px; color:var(--a-mute2);">${escapeHtml(p.property || '')} · ${escapeHtml(p.range && p.range.startDate || '')} → ${escapeHtml(p.range && p.range.endDate || '')}</span>
+      </div>
+      <div class="so-kpi-grid">
+        <div class="so-kpi"><div class="so-kpi__label">总点击</div><div class="so-kpi__value">${fmt(t.clicks)}</div></div>
+        <div class="so-kpi"><div class="so-kpi__label">总展示</div><div class="so-kpi__value">${fmt(t.impressions)}</div></div>
+        <div class="so-kpi"><div class="so-kpi__label">CTR</div><div class="so-kpi__value">${pct(t.ctr)}</div></div>
+        <div class="so-kpi"><div class="so-kpi__label">平均排名</div><div class="so-kpi__value">${t.position ? t.position.toFixed(1) : '–'}</div></div>
+      </div>
+      <div class="so-row">
+        <div class="so-card">
+          <h3>热门搜索词</h3>
+          ${renderGscRows(p.top_queries, '搜索词')}
+        </div>
+        <div class="so-card">
+          <h3>热门页面</h3>
+          ${renderGscRows(p.top_pages, '页面')}
+        </div>
+        <div class="so-card">
+          <h3>国家</h3>
+          ${renderGscRows(p.top_countries, '国家', true)}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderGscRows(rows, label, isCountry) {
+    if (!rows || !rows.length) return emptyTable('暂无数据');
+    return `<table>
+      <thead><tr><th>${escapeHtml(label)}</th><th class="num">点击</th><th class="num">展示</th><th class="num">CTR</th></tr></thead>
+      <tbody>${rows.slice(0, 15).map((r) => {
+        const key = (r.keys && r.keys[0]) || '';
+        const display = isCountry ? ccName(String(key).toUpperCase()) : key;
+        return `<tr>
+          <td style="word-break:break-all;">${escapeHtml(display)}</td>
+          <td class="num">${fmt(r.clicks || 0)}</td>
+          <td class="num">${fmt(r.impressions || 0)}</td>
+          <td class="num">${pct(r.ctr || 0)}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+  }
+
+  function renderGa4(p) {
+    const root = document.getElementById('ga4-pane');
+    if (!p || !p.configured) {
+      root.innerHTML = `
+        <div class="so-section__hdr">
+          <h2>Google Analytics 4</h2>
+          ${statusTag(p)}
+        </div>
+        ${p && p.error ? errBlock(p) : '<div class="so-card so-empty">未连接，请到 设置 → 站长工具 配置 Service Account JSON + GA4 属性 ID。</div>'}
+      `;
+      return;
+    }
+    const t = p.totals || {};
+    root.innerHTML = `
+      <div class="so-section__hdr">
+        <h2>Google Analytics 4</h2>
+        <span class="so-tag so-tag--ok">已连接</span>
+        <span style="font-size:12px; color:var(--a-mute2);">${escapeHtml(p.property || '')}</span>
+      </div>
+      <div class="so-kpi-grid">
+        <div class="so-kpi"><div class="so-kpi__label">实时在线</div><div class="so-kpi__value" style="color:#16a34a;">${fmt(p.realtime_users)}</div></div>
+        <div class="so-kpi"><div class="so-kpi__label">活跃用户</div><div class="so-kpi__value">${fmt(t.active_users)}</div></div>
+        <div class="so-kpi"><div class="so-kpi__label">新用户</div><div class="so-kpi__value">${fmt(t.new_users)}</div></div>
+        <div class="so-kpi"><div class="so-kpi__label">会话数</div><div class="so-kpi__value">${fmt(t.sessions)}</div></div>
+        <div class="so-kpi"><div class="so-kpi__label">页面浏览</div><div class="so-kpi__value">${fmt(t.page_views)}</div></div>
+        <div class="so-kpi"><div class="so-kpi__label">平均会话</div><div class="so-kpi__value">${dur(t.avg_session_seconds)}</div></div>
+        <div class="so-kpi"><div class="so-kpi__label">参与率</div><div class="so-kpi__value">${pct(t.engagement_rate)}</div></div>
+      </div>
+      <div class="so-row">
+        <div class="so-card"><h3>热门页面</h3>${renderGaRows(p.top_pages, '页面', ['页面浏览', '活跃'])}</div>
+        <div class="so-card"><h3>流量来源</h3>${renderGaRows(p.top_sources, '渠道', ['会话', '用户'])}</div>
+        <div class="so-card"><h3>国家</h3>${renderGaRows(p.top_countries, '国家', ['用户', '会话'], true)}</div>
+      </div>
+    `;
+  }
+
+  function renderGaRows(rows, label, metrics, isCountry) {
+    if (!rows || !rows.length) return emptyTable('暂无数据');
+    return `<table>
+      <thead><tr><th>${escapeHtml(label)}</th>${metrics.map((m) => `<th class="num">${escapeHtml(m)}</th>`).join('')}</tr></thead>
+      <tbody>${rows.slice(0, 15).map((r) => {
+        const key = (r.dim && r.dim[0]) || '';
+        const display = isCountry ? ccName(String(key).toUpperCase()) : key;
+        return `<tr>
+          <td style="word-break:break-all;">${escapeHtml(display)}</td>
+          ${(r.metrics || []).map((m) => `<td class="num">${fmt(m)}</td>`).join('')}
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+  }
+
+  function renderBing(p) {
+    const root = document.getElementById('bing-pane');
+    if (!p || !p.configured) {
+      root.innerHTML = `
+        <div class="so-section__hdr">
+          <h2>Bing Webmaster</h2>
+          ${statusTag(p)}
+        </div>
+        ${p && p.error ? errBlock(p) : '<div class="so-card so-empty">未连接，请到 设置 → 站长工具 配置 Bing API Key + 站点 URL。</div>'}
+      `;
+      return;
+    }
+    const t = p.totals || {};
+    root.innerHTML = `
+      <div class="so-section__hdr">
+        <h2>Bing Webmaster</h2>
+        <span class="so-tag so-tag--ok">已连接</span>
+        <span style="font-size:12px; color:var(--a-mute2);">${escapeHtml(p.property || '')}</span>
+      </div>
+      <div class="so-kpi-grid">
+        <div class="so-kpi"><div class="so-kpi__label">总点击</div><div class="so-kpi__value">${fmt(t.clicks)}</div></div>
+        <div class="so-kpi"><div class="so-kpi__label">总展示</div><div class="so-kpi__value">${fmt(t.impressions)}</div></div>
+      </div>
+      <div class="so-row" style="grid-template-columns:1fr 1fr;">
+        <div class="so-card"><h3>热门搜索词</h3>${renderBingRows(p.top_queries, 'Query', ['点击', '展示'], ['Clicks', 'Impressions'])}</div>
+        <div class="so-card"><h3>热门页面</h3>${renderBingRows(p.top_pages, 'Page', ['点击', '展示'], ['Clicks', 'Impressions'])}</div>
+      </div>
+    `;
+  }
+
+  function renderBingRows(rows, dimKey, headers, metricKeys) {
+    if (!rows || !rows.length) return emptyTable('暂无数据');
+    return `<table>
+      <thead><tr><th>${escapeHtml(dimKey)}</th>${headers.map((h) => `<th class="num">${escapeHtml(h)}</th>`).join('')}</tr></thead>
+      <tbody>${rows.slice(0, 15).map((r) => `<tr>
+        <td style="word-break:break-all;">${escapeHtml(r[dimKey] || r.Query || r.Page || '')}</td>
+        ${metricKeys.map((k) => `<td class="num">${fmt(Number(r[k] || 0))}</td>`).join('')}
+      </tr>`).join('')}</tbody>
+    </table>`;
+  }
+
+  async function loadData(forceRefresh) {
+    const url = '/api/seo-overview?days=' + currentDays + (forceRefresh ? '&t=' + Date.now() : '');
+    document.getElementById('gsc-pane').innerHTML  = '<div class="so-card so-empty">加载中…</div>';
+    document.getElementById('ga4-pane').innerHTML  = '';
+    document.getElementById('bing-pane').innerHTML = '';
+    try {
+      const r = await api(url);
+      const noneConfigured = !(r.gsc && r.gsc.configured) && !(r.ga4 && r.ga4.configured) && !(r.bing && r.bing.configured);
+      document.getElementById('setup-hint').style.display = noneConfigured ? '' : 'none';
+      renderGsc(r.gsc);
+      renderGa4(r.ga4);
+      renderBing(r.bing);
+    } catch (err) {
+      document.getElementById('gsc-pane').innerHTML = `<div class="so-card so-error">${escapeHtml(err.message || '加载失败')}</div>`;
+    }
+  }
+
+  loadData();
+})();
+</script>
+</body>
+</html>

@@ -171,6 +171,7 @@
       <button class="tabs__btn" data-tab="mail">邮件</button>
       <button class="tabs__btn" data-tab="security">安全防护</button>
       <button class="tabs__btn" data-tab="analytics">访问统计</button>
+      <button class="tabs__btn" data-tab="webmaster">站长工具</button>
       <button class="tabs__btn" data-tab="ai">AI 接入</button>
     </div>
 
@@ -386,6 +387,64 @@ https://twitter.com/zufek">${escapeHtml((org.sameAs || []).join('\n'))}</textare
       </div>
     </div>
 
+    <div data-pane="webmaster" style="display:none;">
+      <div class="panel">
+        <h2 style="margin-top:0;">站长工具 API 接入</h2>
+        <p style="font-size:13px; color:var(--a-mute2); margin-top:0;">
+          配置 Google Search Console、Google Analytics 4、Bing Webmaster 的 API 凭证后，
+          "SEO 概览" 页面会自动拉取搜索关键词、点击量、实时在线用户等数据。
+          所有凭证保存后<strong>仅显示遮罩</strong>，无法被前端 / 截屏窃取。
+        </p>
+
+        <h3 style="margin:18px 0 8px; font-size:14px;">Google 共享凭证（GSC + GA4）</h3>
+        <div style="font-size:12.5px; color:var(--a-mute2); line-height:1.6; padding:10px 14px; background:#f0fdf4; border-left:3px solid #22c55e; border-radius:4px; margin-bottom:12px;">
+          <strong>怎么拿这个 JSON：</strong><br>
+          1. 打开 <a href="https://console.cloud.google.com" target="_blank" style="color:var(--a-accent);">Google Cloud Console</a> → 新建项目（或复用现有）<br>
+          2. <strong>API &amp; Services → Library</strong>，启用：<code>Google Search Console API</code> 与 <code>Google Analytics Data API</code><br>
+          3. <strong>IAM &amp; Admin → Service Accounts</strong>，创建一个服务账号（角色可空）<br>
+          4. 点开它 → Keys → Add Key → JSON → 下载 JSON 文件，粘贴到下面文本框<br>
+          5. 复制服务账号邮箱（<code>xxx@yyy.iam.gserviceaccount.com</code>），分别授权：<br>
+          &nbsp;&nbsp;• <strong>Search Console</strong>：打开属性 → Settings → Users and permissions → Add user → 粘贴邮箱 → Restricted<br>
+          &nbsp;&nbsp;• <strong>GA4</strong>：Admin → Property access management → Add → 粘贴邮箱 → Viewer
+        </div>
+        <div class="field">
+          <label>Service Account JSON <span class="hint">已保存后会显示为 ••••service-account-email</span></label>
+          <textarea class="mono" data-key="seo_integrations.service_account_json" rows="6" placeholder='{"type":"service_account","project_id":"...","private_key":"-----BEGIN PRIVATE KEY-----..."}' autocomplete="off">${escapeHtml(typeof s('seo_integrations').service_account_json === 'string' ? s('seo_integrations').service_account_json : '')}</textarea>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>GSC 属性 <span class="hint">域属性填 <code>sc-domain:zufek.com</code>；URL 前缀填 <code>https://zufek.com/</code>（含尾斜杠）</span></label>
+            <input data-key="seo_integrations.gsc_property" value="${escapeHtml(s('seo_integrations').gsc_property || '')}" placeholder="sc-domain:zufek.com"/>
+          </div>
+          <div class="field">
+            <label>GA4 属性 ID <span class="hint">在 GA4 → Admin → Property settings 看 "Property ID"，纯数字</span></label>
+            <input data-key="seo_integrations.ga4_property_id" value="${escapeHtml(s('seo_integrations').ga4_property_id || '')}" placeholder="123456789"/>
+          </div>
+        </div>
+
+        <h3 style="margin:24px 0 8px; font-size:14px; padding-top:16px; border-top:1px solid var(--a-line);">Bing Webmaster</h3>
+        <div style="font-size:12.5px; color:var(--a-mute2); line-height:1.6; padding:10px 14px; background:#eff6ff; border-left:3px solid #3b82f6; border-radius:4px; margin-bottom:12px;">
+          <strong>怎么拿 API Key：</strong><br>
+          打开 <a href="https://www.bing.com/webmasters" target="_blank" style="color:var(--a-accent);">Bing Webmaster Tools</a> → 右上角设置 → API 访问 → 复制 API Key（首次需点击 "Generate"）。
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Bing API Key <span class="hint">已保存后显示为 ••••XXXX</span></label>
+            <input data-key="seo_integrations.bing_api_key" value="${escapeHtml(s('seo_integrations').bing_api_key || '')}" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off"/>
+          </div>
+          <div class="field">
+            <label>Bing 站点 URL <span class="hint">与在 Bing Webmaster 添加时填的一致，含 https://</span></label>
+            <input data-key="seo_integrations.bing_site_url" value="${escapeHtml(s('seo_integrations').bing_site_url || '')}" placeholder="https://zufek.com/"/>
+          </div>
+        </div>
+
+        <p style="font-size:12px; color:var(--a-mute2); margin-top:14px;">
+          保存后访问 <a href="/admin/seo-overview.html" style="color:var(--a-accent);">SEO 概览</a> 页面查看实时数据。
+          数据由 Google / Bing 服务器返回，本站缓存 10 分钟以避免触发配额限制。
+        </p>
+      </div>
+    </div>
+
     ${renderAiPane()}
 
     <div class="form-actions" style="position:sticky; bottom:0; background:#fff; border-top:1px solid var(--a-line);">
@@ -424,6 +483,10 @@ https://twitter.com/zufek">${escapeHtml((org.sameAs || []).join('\n'))}</textare
       } else if (el.dataset.key === 'analytics.exclude_ips') {
         // Line-separated list of IPs; normalize and dedupe before saving.
         val = Array.from(new Set(String(val).split('\n').map((x) => x.trim()).filter(Boolean)));
+      } else if (el.dataset.key === 'seo_integrations.service_account_json') {
+        // Pass through as a raw string — the masked placeholder must reach
+        // the server intact, and the JSON validation happens server-side.
+        val = String(val);
       } else if (el.tagName === 'TEXTAREA' && el.classList.contains('mono')) {
         try { val = JSON.parse(val); }
         catch (_) { jsonError = el.dataset.key; return; }
