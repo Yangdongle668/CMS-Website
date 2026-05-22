@@ -11,6 +11,7 @@
       { label: '漏斗分析', href: '/admin/inquiry-funnel.html', icon: '⇢' },
       { label: '邮件队列', href: '/admin/mail-queue.html', icon: '⇲' },
       { label: '访问统计', href: '/admin/analytics.html', icon: '◔' },
+      { label: 'SEO 概览', href: '/admin/seo-overview.html', icon: '🔍' },
     ]},
     { group: '内容', items: [
       { label: '页面', href: '/admin/pages.html', icon: '☰' },
