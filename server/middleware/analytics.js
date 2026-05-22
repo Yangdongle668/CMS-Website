@@ -17,6 +17,11 @@
 
 const crypto = require('crypto');
 
+// Optional offline GeoIP — falls back to "" when not installed so the
+// tracker still works in dev environments without the MaxMind data file.
+let geoip = null;
+try { geoip = require('geoip-lite'); } catch (_e) { /* optional dep */ }
+
 let salt = newSalt();
 let saltDay = todayUtc();
 function newSalt() { return crypto.randomBytes(16).toString('hex'); }
@@ -24,6 +29,31 @@ function todayUtc() { return new Date().toISOString().slice(0, 10); }
 function rotateSaltIfNewDay() {
   const t = todayUtc();
   if (t !== saltDay) { salt = newSalt(); saltDay = t; }
+}
+
+// Operator-managed list of IPs that should not be counted (e.g. the
+// admin's own office IP). Refreshed from settings.analytics.exclude_ips.
+let excludedIps = new Set();
+async function loadExcludedIps() {
+  try {
+    const { one } = require('../db/client');
+    const r = await one(`SELECT value FROM settings WHERE key = 'analytics'`);
+    const list = (r && r.value && Array.isArray(r.value.exclude_ips)) ? r.value.exclude_ips : [];
+    excludedIps = new Set(list.map((s) => normalizeIp(String(s))).filter(Boolean));
+  } catch (_e) { /* table may not exist yet during early boot */ }
+}
+setInterval(loadExcludedIps, 30 * 1000).unref?.();
+loadExcludedIps();
+function invalidateExcludedIps() { return loadExcludedIps(); }
+
+// IPv6-mapped IPv4 ("::ffff:1.2.3.4") and IPv6 loopback ("::1") confuse
+// GeoIP lookups and exact-match exclusion. Normalize before both.
+function normalizeIp(ip) {
+  if (!ip) return '';
+  let s = String(ip).trim();
+  if (s.startsWith('::ffff:')) s = s.slice(7);
+  if (s === '::1') s = '127.0.0.1';
+  return s;
 }
 
 const BOT_RE = /(bot|crawl|spider|slurp|duckduckbot|bingpreview|yandex|baiduspider|facebookexternalhit|twitterbot|telegrambot|gptbot|google-extended|perplexitybot|facebot|ia_archiver|applebot|petalbot|semrush|ahrefs|mj12bot|dotbot|coccoc|pingdom|monitor|loader\.io|httpunit|wget|curl)/i;
@@ -50,11 +80,28 @@ function clientIp(req) {
   return xff || req.ip || req.connection?.remoteAddress || '0.0.0.0';
 }
 
-function clientCountry(req) {
+function clientCountry(req, ip) {
   const h = req.headers;
   const v = h['cf-ipcountry'] || h['x-vercel-ip-country'] || h['x-country'] || h['x-ip-country'] || '';
   const code = String(v).trim().toUpperCase().slice(0, 2);
-  return /^[A-Z]{2}$/.test(code) && code !== 'XX' && code !== 'T1' ? code : '';
+  if (/^[A-Z]{2}$/.test(code) && code !== 'XX' && code !== 'T1') return code;
+  // No CDN header — try offline MaxMind lookup so we still get a country
+  // when traffic hits the origin directly.
+  if (geoip && ip) {
+    try {
+      const r = geoip.lookup(ip);
+      if (r && r.country && /^[A-Z]{2}$/.test(r.country)) return r.country;
+    } catch (_e) { /* ignore lookup failures */ }
+  }
+  return '';
+}
+
+function countryForIp(ip) {
+  if (!geoip || !ip) return '';
+  try {
+    const r = geoip.lookup(ip);
+    return (r && r.country && /^[A-Z]{2}$/.test(r.country)) ? r.country : '';
+  } catch (_e) { return ''; }
 }
 
 function refererHost(req) {
@@ -94,14 +141,17 @@ function trackerMiddleware(req, res, next) {
     if (isBot) return; // skip bots from the dashboard entirely
 
     rotateSaltIfNewDay();
-    const ip = clientIp(req);
+    const ip = normalizeIp(clientIp(req));
+    // Operator-excluded IP: skip the insert entirely so the dashboard
+    // reflects only third-party visitors.
+    if (excludedIps.has(ip)) return;
     const visitorHash = crypto
       .createHash('sha256')
       .update(salt + '|' + ip + '|' + ua)
       .digest('hex')
       .slice(0, 32);
     const { browser, os } = parseUA(ua);
-    const country = clientCountry(req);
+    const country = clientCountry(req, ip);
     const ref = refererHost(req);
     const path = req.path.length > 500 ? req.path.slice(0, 500) : req.path;
 
@@ -122,4 +172,4 @@ function trackerMiddleware(req, res, next) {
   next();
 }
 
-module.exports = { trackerMiddleware };
+module.exports = { trackerMiddleware, invalidateExcludedIps, countryForIp, normalizeIp };
