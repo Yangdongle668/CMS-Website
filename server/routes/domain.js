@@ -72,6 +72,84 @@ router.post('/provision', requireAuth, async (req, res) => {
   });
 });
 
+// GET /api/domain/diagnostics — surface enough info that an operator
+// can self-diagnose a "404 from Let's Encrypt" without command-line tools.
+// Returns:
+//   * the server's own public IPv4 / IPv6 (so the operator can compare
+//     to the DNS records they set);
+//   * the A / AAAA records currently resolving for the bound domain
+//     (queried via Google's DNS-over-HTTPS so we see the same view a
+//     public validator would, not the container's internal resolver);
+//   * a list of human-readable mismatch warnings.
+router.get('/diagnostics', requireAuth, async (req, res) => {
+  const domain = String(req.query.domain || '').trim().toLowerCase() ||
+                 (await getDomainConfig()).domain;
+
+  async function fetchTimeout(url, opts) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 4000);
+    try { return await fetch(url, { ...(opts || {}), signal: ctrl.signal }); }
+    finally { clearTimeout(t); }
+  }
+
+  async function publicIp(host) {
+    try {
+      const r = await fetchTimeout('https://' + host);
+      const txt = (await r.text()).trim();
+      return /^[\da-f:.]+$/i.test(txt) ? txt : '';
+    } catch (_) { return ''; }
+  }
+
+  async function dohLookup(name, type) {
+    // type 1=A, 28=AAAA. Google DoH returns { Answer: [{ type, data }] }.
+    if (!name) return [];
+    try {
+      const r = await fetchTimeout(`https://dns.google/resolve?name=${encodeURIComponent(name)}&type=${type}`);
+      const j = await r.json();
+      return (j.Answer || []).filter((a) => a.type === type).map((a) => a.data);
+    } catch (_) { return []; }
+  }
+
+  const [ipv4, ipv6, aRoot, aaaaRoot, aWww, aaaaWww] = await Promise.all([
+    publicIp('api.ipify.org'),
+    publicIp('api6.ipify.org'),
+    dohLookup(domain, 1),
+    dohLookup(domain, 28),
+    dohLookup(domain ? 'www.' + domain : '', 1),
+    dohLookup(domain ? 'www.' + domain : '', 28),
+  ]);
+
+  const warnings = [];
+  if (domain) {
+    if (!aRoot.length && !aaaaRoot.length) {
+      warnings.push(`${domain} 还没有任何 A / AAAA 记录 — DNS 还没生效或者填错了。`);
+    }
+    if (ipv4 && aRoot.length && !aRoot.includes(ipv4)) {
+      warnings.push(`${domain} 的 A 记录 (${aRoot.join(', ')}) 不指向本服务器的 IPv4 (${ipv4})。`);
+    }
+    if (aaaaRoot.length && (!ipv6 || !aaaaRoot.includes(ipv6))) {
+      warnings.push(
+        `${domain} 配了 AAAA 记录 (${aaaaRoot.join(', ')})，但${ipv6 ? '不指向本服务器的 IPv6 ' + ipv6 : '本服务器没有公网 IPv6'}。` +
+        ` Let's Encrypt 会优先用 IPv6 且不回退到 IPv4，所以验证会被路由到错误的服务器并返回 404。` +
+        ` 解决：在 DNS 控制台 删除 ${domain} 和 www.${domain} 的所有 AAAA 记录（如果你的服务器没有 IPv6），或者把 AAAA 改成正确的 IPv6。`
+      );
+    }
+    if (!aWww.length && !aaaaWww.length) {
+      warnings.push(`www.${domain} 没有 A / AAAA 记录 — 证书申请要求 www 子域名也能解析。`);
+    }
+  }
+
+  res.json({
+    domain,
+    server: { ipv4, ipv6 },
+    dns: {
+      root: { A: aRoot, AAAA: aaaaRoot },
+      www:  { A: aWww, AAAA: aaaaWww },
+    },
+    warnings,
+  });
+});
+
 // DELETE /api/domain
 router.delete('/', requireAuth, async (req, res) => {
   await saveDomainConfig({ domain: '', status: 'none', error: '', cert_expires_at: null });

@@ -90,8 +90,21 @@
           </table>
           <p style="margin:12px 0 0; font-size:12px; color:var(--a-mute2);">
             ⚠️ DNS 生效通常需要几分钟到几小时。请在 DNS 完全生效后再点击"申请 SSL 证书"，否则验证会失败。<br>
-            💡 服务器必须开放 <strong>80</strong> 和 <strong>443</strong> 端口（防火墙 / 安全组放行入站 TCP 80/443）。
+            💡 服务器必须开放 <strong>80</strong> 和 <strong>443</strong> 端口（防火墙 / 安全组放行入站 TCP 80/443）。<br>
+            🚫 <strong>如果你的服务器没有公网 IPv6，请删除所有 AAAA 记录</strong>。很多注册商（Hostinger / GoDaddy 等）会自动加 AAAA 指向他们的服务器，Let's Encrypt 验证时优先用 IPv6 且不回退，会因此拿到 404。<br>
+            🚫 如果用了 Cloudflare 代理，必须把 DNS 设为 <strong>"仅 DNS"（灰色云）</strong>，不能是橙色云代理，否则 HTTP-01 验证会被 Cloudflare 拦截。
           </p>
+        </div>
+      </div>
+
+      <!-- DNS Diagnostics -->
+      <div class="panel" style="margin-bottom:20px;">
+        <div class="panel__head" style="display:flex; justify-content:space-between; align-items:center;">
+          <h2>DNS 自检 <span style="font-size:12px; font-weight:400; color:var(--a-mute2);">— 对比本服务器公网 IP 与当前 DNS 记录</span></h2>
+          <button type="button" class="btn btn--ghost btn--sm" id="btn-diagnose">重新检测</button>
+        </div>
+        <div id="diag-result" style="padding:18px 20px;">
+          <div style="font-size:13px;color:var(--a-mute2);">点"重新检测"加载诊断信息…</div>
         </div>
       </div>
 
@@ -231,6 +244,89 @@
         }
       });
     }
+
+    const diagBtn = document.getElementById('btn-diagnose');
+    if (diagBtn) diagBtn.addEventListener('click', runDiagnostics);
+  }
+
+  // ---- DNS diagnostics ----
+  async function runDiagnostics() {
+    const out = document.getElementById('diag-result');
+    if (!out) return;
+    out.innerHTML = '<div style="font-size:13px;color:var(--a-mute2);">检测中…（查询 ipify + Google DNS）</div>';
+    let data;
+    try {
+      const domain = (document.getElementById('inp-domain') && document.getElementById('inp-domain').value.trim()) || cfg.domain || '';
+      const qs = domain ? '?domain=' + encodeURIComponent(domain) : '';
+      data = await api('/api/domain/diagnostics' + qs);
+    } catch (err) {
+      out.innerHTML = `<div style="color:#dc2626;font-size:13px;">检测失败：${escapeHtml(err.message)}</div>`;
+      return;
+    }
+    const list = (arr) => arr && arr.length ? arr.map(escapeHtml).join(', ') : '<span style="color:var(--a-mute2);">无</span>';
+    const warningsHtml = (data.warnings || []).length
+      ? `<div style="margin-bottom:14px;">
+           ${data.warnings.map((w) => `
+             <div style="background:#fef2f2;border-left:3px solid #dc2626;padding:10px 14px;border-radius:4px;font-size:13px;color:#7f1d1d;margin-bottom:8px;">
+               ❌ ${escapeHtml(w)}
+             </div>`).join('')}
+         </div>`
+      : (data.domain
+          ? `<div style="background:#f0fdf4;border-left:3px solid #16a34a;padding:10px 14px;border-radius:4px;font-size:13px;color:#14532d;margin-bottom:14px;">
+               ✓ DNS 看起来配置正确，可以申请证书了。
+             </div>`
+          : '');
+    out.innerHTML = `
+      ${warningsHtml}
+      <table style="border-collapse:collapse;font-size:13px;width:100%;max-width:680px;">
+        <tbody>
+          <tr style="background:var(--a-bg2);">
+            <td colspan="2" style="padding:8px 12px;border:1px solid var(--a-border);font-weight:600;">本服务器公网 IP</td>
+          </tr>
+          <tr>
+            <td style="padding:7px 12px;border:1px solid var(--a-border);width:160px;">IPv4</td>
+            <td style="padding:7px 12px;border:1px solid var(--a-border);font-family:var(--a-mono);">${escapeHtml(data.server.ipv4 || '(查询失败)')}</td>
+          </tr>
+          <tr>
+            <td style="padding:7px 12px;border:1px solid var(--a-border);">IPv6</td>
+            <td style="padding:7px 12px;border:1px solid var(--a-border);font-family:var(--a-mono);">${data.server.ipv6 ? escapeHtml(data.server.ipv6) : '<span style="color:var(--a-mute2);">无（服务器没有公网 IPv6 — 不要在 DNS 设置 AAAA 记录）</span>'}</td>
+          </tr>
+          ${data.domain ? `
+          <tr style="background:var(--a-bg2);">
+            <td colspan="2" style="padding:8px 12px;border:1px solid var(--a-border);font-weight:600;">${escapeHtml(data.domain)} 的当前 DNS 记录</td>
+          </tr>
+          <tr>
+            <td style="padding:7px 12px;border:1px solid var(--a-border);">A (IPv4)</td>
+            <td style="padding:7px 12px;border:1px solid var(--a-border);font-family:var(--a-mono);">${list(data.dns.root.A)}</td>
+          </tr>
+          <tr>
+            <td style="padding:7px 12px;border:1px solid var(--a-border);">AAAA (IPv6)</td>
+            <td style="padding:7px 12px;border:1px solid var(--a-border);font-family:var(--a-mono);">${list(data.dns.root.AAAA)}</td>
+          </tr>
+          <tr style="background:var(--a-bg2);">
+            <td colspan="2" style="padding:8px 12px;border:1px solid var(--a-border);font-weight:600;">www.${escapeHtml(data.domain)}</td>
+          </tr>
+          <tr>
+            <td style="padding:7px 12px;border:1px solid var(--a-border);">A (IPv4)</td>
+            <td style="padding:7px 12px;border:1px solid var(--a-border);font-family:var(--a-mono);">${list(data.dns.www.A)}</td>
+          </tr>
+          <tr>
+            <td style="padding:7px 12px;border:1px solid var(--a-border);">AAAA (IPv6)</td>
+            <td style="padding:7px 12px;border:1px solid var(--a-border);font-family:var(--a-mono);">${list(data.dns.www.AAAA)}</td>
+          </tr>
+          ` : `
+          <tr>
+            <td colspan="2" style="padding:8px 12px;border:1px solid var(--a-border);color:var(--a-mute2);">
+              在下面填入域名后再次点"重新检测"，可以对比 DNS 记录与服务器 IP。
+            </td>
+          </tr>
+          `}
+        </tbody>
+      </table>
+      <p style="margin:12px 0 0;font-size:12px;color:var(--a-mute2);">
+        数据来源：本服务器 → api.ipify.org / api6.ipify.org（公网出口 IP）。DNS → dns.google（公网视角）。
+      </p>
+    `;
   }
 
   // ---- polling while provisioning ----
@@ -268,6 +364,11 @@
   if (cfg.status === 'provisioning' || cfg.status === 'renewing') {
     startPolling();
   }
+
+  // Auto-run DNS diagnostics on page load — especially helpful when the
+  // last provisioning attempt errored, so the operator sees the likely
+  // cause (AAAA mismatch, missing A record, etc.) without an extra click.
+  if (cfg.domain) runDiagnostics();
 
   // Pre-fill email from user profile
   try {

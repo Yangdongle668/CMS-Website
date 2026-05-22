@@ -327,12 +327,14 @@ INSERT INTO products (pillar_id, slug, name, model_no, tagline, specs, features,
 ON CONFLICT (slug) DO NOTHING;
 
 -- ----- Sample Articles (cluster content) -----
-INSERT INTO articles (pillar_id, category_id, slug, title, excerpt, content, author, reading_minutes, published_at, status) VALUES
+INSERT INTO articles (pillar_id, category_id, slug, title, excerpt, cover_url, hero_image, content, author, reading_minutes, published_at, status) VALUES
 ((SELECT id FROM pillar_pages WHERE slug='polymer-lithium-battery'),
  (SELECT id FROM categories WHERE slug='technology'),
  'how-to-choose-li-po-capacity-iot',
  'How to Choose Li-Po Battery Capacity for IoT Devices',
  'A practical guide for hardware engineers selecting polymer lithium cells for low-power IoT applications.',
+ 'https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=1200&q=80',
+ 'https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=1920&q=80',
  '<p>Choosing the right polymer lithium (Li-Po) battery for an IoT device is a balance between runtime, form factor and cycle life. In this guide we walk through the four key parameters every hardware engineer should specify before issuing an RFQ.</p><h2>1. Estimate average current draw</h2><p>Compute the average current as the weighted sum of active and sleep currents. For a typical LoRaWAN sensor reporting once per hour, average current is often 50-150 µA.</p><h2>2. Add 25% headroom for ageing</h2><p>Li-Po cells lose ~20% capacity by cycle 500. Spec the nominal capacity 25% above the runtime requirement so the device still meets its target at end-of-life.</p><h2>3. Match the temperature range</h2><p>Standard Li-Po operates -20°C to +60°C in discharge, but charging below 0°C is not allowed. If your device must charge in cold environments, ask for a low-temperature variant.</p>',
  'Zufek Engineering', 6, now() - interval '5 days', 'published'),
 ((SELECT id FROM pillar_pages WHERE slug='custom-shaped-polymer-lithium-battery'),
@@ -340,6 +342,8 @@ INSERT INTO articles (pillar_id, category_id, slug, title, excerpt, content, aut
  'designing-curved-batteries-for-wearables',
  'Designing Curved Polymer Batteries for Wearable Devices',
  'How curvature radius, electrode coating and stack geometry affect cycle life in curved Li-Po cells.',
+ 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1200&q=80',
+ 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1920&q=80',
  '<p>Curved batteries unlock 10-30% extra volume in wearable enclosures, but they also introduce manufacturing trade-offs that affect cycle life. This article explains what to ask your battery vendor before committing to a curved design.</p><h2>Minimum curvature radius</h2><p>For single-curvature cells we recommend R ≥ 25 mm to maintain coating integrity over 500 cycles. Tighter radii are achievable but require thinner electrodes and reduce capacity.</p>',
  'Zufek Engineering', 7, now() - interval '12 days', 'published'),
 ((SELECT id FROM pillar_pages WHERE slug='coin-steel-shell-lithium-battery'),
@@ -347,6 +351,8 @@ INSERT INTO articles (pillar_id, category_id, slug, title, excerpt, content, aut
  'lir-vs-ml-coin-cell-which-to-choose',
  'LIR vs. ML Coin Cells: Which Rechargeable Chemistry to Choose',
  'A practical decision guide for picking between LIR (Li-ion 3.6 V) and ML (Li-MnO2 3.0 V) rechargeable coin cells.',
+ 'https://images.unsplash.com/photo-1580407195669-d0c11ee3c1c2?w=1200&q=80',
+ 'https://images.unsplash.com/photo-1580407195669-d0c11ee3c1c2?w=1920&q=80',
  '<p>Most engineers default to LIR2032 because it''s the obvious CR2032 replacement. That''s usually correct — but for an industrial PCB that has to be reflow-mounted or run hot, ML is the only sensible choice. Here is how we steer customers.</p><h2>Voltage and the regulator question</h2><p>LIR (Li-ion) sits at 3.6-4.2 V, ML (Li-MnO2) at 2.8-3.0 V. If your circuit was designed for a CR2032 (3.0 V) and you can''t add a regulator, ML drops in. LIR needs an LDO or boost depending on the load.</p><h2>Reflow compatibility</h2><p>Only ML survives standard lead-free reflow profiles (260 °C peak). LIR cells must be hand-soldered or socket-mounted.</p><h2>Cycle count</h2><p>ML offers 1,000+ cycles vs. LIR''s 500+. For a daily-charge wearable that''s 1.4 vs. 2.7 years of design life — usually a deciding factor for product warranty.</p>',
  'Zufek Engineering', 7, now() - interval '20 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
