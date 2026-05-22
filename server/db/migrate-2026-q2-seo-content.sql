@@ -129,22 +129,22 @@ DELETE FROM applications WHERE slug IN (
 -- audit batch. This UPDATE only fires on rows where cover_url is
 -- blank, so operator-uploaded covers stay intact.
 -- ---------------------------------------------------------------
-UPDATE applications SET cover_url = 'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=1200&q=80'
+UPDATE applications SET cover_url = '/assets/img/seed/photo-1530026405186-ed1f139313f8.jpg'
  WHERE slug = 'medical' AND COALESCE(cover_url, '') = '';
 
-UPDATE applications SET cover_url = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1200&q=80'
+UPDATE applications SET cover_url = '/assets/img/seed/photo-1523275335684-37898b6baf30.jpg'
  WHERE slug = 'wearables' AND COALESCE(cover_url, '') = '';
 
-UPDATE applications SET cover_url = 'https://images.unsplash.com/photo-1558346490-a72e53ae2d4f?w=1200&q=80'
+UPDATE applications SET cover_url = '/assets/img/seed/photo-1558346490-a72e53ae2d4f.jpg'
  WHERE slug = 'iot' AND COALESCE(cover_url, '') = '';
 
-UPDATE applications SET cover_url = 'https://images.unsplash.com/photo-1592478411213-6153e4ebc07d?w=1200&q=80'
+UPDATE applications SET cover_url = '/assets/img/seed/photo-1592478411213-6153e4ebc07d.jpg'
  WHERE slug = 'ar-vr' AND COALESCE(cover_url, '') = '';
 
-UPDATE applications SET cover_url = 'https://images.unsplash.com/photo-1558002038-1055907df827?w=1200&q=80'
+UPDATE applications SET cover_url = '/assets/img/seed/photo-1558002038-1055907df827.jpg'
  WHERE slug = 'smart-home' AND COALESCE(cover_url, '') = '';
 
-UPDATE applications SET cover_url = 'https://images.unsplash.com/photo-1559131397-f94da358f7ca?w=1200&q=80'
+UPDATE applications SET cover_url = '/assets/img/seed/photo-1559131397-f94da358f7ca.jpg'
  WHERE slug = 'defence-aerospace' AND COALESCE(cover_url, '') = '';
 
 -- Same defensive pattern for summary — without it the slider sub-text
