@@ -27,6 +27,13 @@ async function run() {
     console.log('[db:init] seed applied.');
   }
 
+  const coverBackfillPath = path.join(__dirname, 'migrate-cover-url-backfill.sql');
+  if (fs.existsSync(coverBackfillPath)) {
+    console.log('[db:init] applying cover-url backfill migration (idempotent)...');
+    await query(fs.readFileSync(coverBackfillPath, 'utf8'));
+    console.log('[db:init] cover-url backfill applied.');
+  }
+
   // Optional: pre-create an admin from env. If ADMIN_DEFAULT_EMAIL is not
   // set, we leave the user table empty and let the first POST to /api/auth/login
   // bootstrap an admin with whatever credentials the operator submits.

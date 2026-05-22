@@ -288,6 +288,12 @@ app.use('/uploads', express.static(path.join(ROOT, 'uploads'), {
 }));
 
 // ----- Static admin -----
+// Block search engine indexing of all admin pages at the HTTP layer (belt-and-
+// suspenders alongside the <meta name="robots" noindex> already in each admin HTML).
+app.use('/admin', (req, res, next) => {
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  next();
+});
 app.use('/admin', express.static(path.join(ROOT, 'admin'), {
   extensions: ['html'],
   setHeaders: staticHeaders,
