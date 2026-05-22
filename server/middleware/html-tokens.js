@@ -684,5 +684,6 @@ module.exports = {
   applySavedTextOverrides,
   invalidateSettingsCache,
   loadSettingsCache,
+  resolveCanonicalBase,
   settingsCache,
 };

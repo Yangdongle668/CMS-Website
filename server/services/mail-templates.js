@@ -116,7 +116,11 @@ function buildInquiryInternalMail(inq, opts) {
 // Auto-reply confirmation to the visitor.
 function buildInquiryAutoReplyMail(inq) {
   const siteName = process.env.SITE_NAME || 'Zufek';
-  const publicUrl = process.env.PUBLIC_URL || '';
+  // env PUBLIC_URL → settings.seo.public_url → '' so the privacy / GDPR
+  // footer never contains "http://localhost" when the operator has
+  // configured the public URL in admin settings.
+  const { resolveCanonicalBase } = require('../middleware/html-tokens');
+  const publicUrl = resolveCanonicalBase(null) || '';
   const autoHtml = `
     <div style="font-family:Inter,Arial,sans-serif;max-width:640px;margin:0 auto;color:#0f172a;">
       <h2 style="color:#0b3a82;margin:0 0 16px;">Thank you for your inquiry</h2>
@@ -126,7 +130,7 @@ function buildInquiryAutoReplyMail(inq) {
       )}</strong>. A member of our sales engineering team will respond within 1 business day with technical questions or a preliminary quotation.</p>
       <p>For your reference, the details we received:</p>
       <table style="width:100%;border-collapse:collapse;font-size:13px;">${inquiryRowsHtml(inq)}</table>
-      <p style="margin-top:24px;font-size:13px;color:#475569;">Your data is processed under our <a href="${publicUrl}/privacy">Privacy Policy</a>. To exercise your GDPR rights at any time, visit our <a href="${publicUrl}/gdpr">data request page</a>.</p>
+      <p style="margin-top:24px;font-size:13px;color:#475569;">Your data is processed under our <a href="${publicUrl}/privacy.html">Privacy Policy</a>. To exercise your GDPR rights at any time, visit our <a href="${publicUrl}/gdpr.html">data request page</a>.</p>
       <p style="margin-top:16px;">Best regards,<br/>${escapeHtml(siteName)} Sales Team</p>
     </div>`;
   return {

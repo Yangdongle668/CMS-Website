@@ -18,27 +18,13 @@ const { many } = require('../db/client');
 
 const router = express.Router();
 
-function resolvePublicUrl(req) {
-  const fromEnv = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
-  if (fromEnv) return fromEnv;
-  // Try DB settings synchronously is awkward in Express; we read the
-  // settings cache exposed by the html-tokens middleware. Falls back to
-  // request host so robots.txt is never invalid.
-  try {
-    // Lazy require to avoid a circular load at boot.
-    const tokens = require('../middleware/html-tokens');
-    if (tokens && tokens.loadSettingsCache) {
-      // The cache may already be populated. The function is fire-and-forget;
-      // we only read settingsCache via the export shape if available.
-      // We can't easily reach the in-module cache, so re-derive from req.
-    }
-  } catch (_) { /* ignore */ }
-  if (req && req.headers && req.headers.host) {
-    const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
-    return `${proto}://${req.headers.host}`;
-  }
-  return '';
-}
+// Reuse the html-tokens resolver so we have one source of truth across
+// canonical tags, sitemap, robots.txt and email templates:
+//   1) env PUBLIC_URL
+//   2) settings.seo.public_url (cached in memory, refreshed on save + 30s)
+//   3) request host (last resort; can produce localhost in dev)
+const { resolveCanonicalBase } = require('../middleware/html-tokens');
+function resolvePublicUrl(req) { return resolveCanonicalBase(req); }
 
 router.get('/robots.txt', (req, res) => {
   const base = resolvePublicUrl(req);
