@@ -103,15 +103,18 @@ router.put('/', requireAuth, async (req, res) => {
   if (typeof incoming !== 'object' || Array.isArray(incoming)) {
     return res.status(400).json({ error: 'invalid_body' });
   }
-  // Clean: drop empty values, trim keys/values, allow only http(s):// or
-  // /uploads/... or /assets/... values.
+  // Clean: drop empty values, trim keys/values. Source can be either an
+  // external http(s):// URL (Unsplash etc.) or an internal absolute path
+  // (e.g. /assets/img/seed/photo-xxx.jpg or /uploads/...). Target must
+  // also be a URL or absolute path.
   const clean = {};
   for (const [src, dst] of Object.entries(incoming)) {
     const s = String(src).trim();
     const d = String(dst || '').trim();
     if (!s || !d) continue;
-    if (!/^https?:\/\//i.test(s)) continue;
-    if (!/^(https?:\/\/|\/uploads\/|\/assets\/|\/)/i.test(d)) continue;
+    if (!/^(https?:\/\/|\/)/i.test(s)) continue;
+    if (!/^(https?:\/\/|\/)/i.test(d)) continue;
+    if (s === d) continue;
     clean[s] = d;
   }
   await query(

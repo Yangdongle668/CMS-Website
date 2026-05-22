@@ -307,17 +307,16 @@
       grid.innerHTML = '<p style="color:#6b7280; font-size:12px;">本页没有可替换的图片。</p>';
       return;
     }
+    // Every image is replaceable now — external URLs map via the
+    // override table just like internal ones (e.g. /assets/img/seed/*
+    // becomes a key in settings.media_overrides pointing to /uploads/*).
     grid.innerHTML = items.map((it) => {
-      const replaceable = it.isExternal || it.isMapped;
       return '<div class="preview-img-card' + (it.isMapped ? ' is-mapped' : '') + '"' +
         ' data-rendered="' + escapeHtml(it.renderedUrl) + '"' +
         ' data-source="' + escapeHtml(it.sourceUrl || it.renderedUrl) + '"' +
-        ' data-replaceable="' + (replaceable ? '1' : '0') + '"' +
         ' title="' + escapeHtml(it.renderedUrl) + '">' +
         '<img src="' + escapeHtml(it.renderedUrl) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'"/>' +
-        (replaceable
-          ? '<div class="preview-img-card__overlay">📤 点击替换</div>'
-          : '<div class="preview-img-card__overlay" style="background:rgba(80,80,80,0.85)">本地图片</div>') +
+        '<div class="preview-img-card__overlay">📤 点击替换</div>' +
         (it.isMapped ? '<span class="preview-img-card__badge">已替换</span>' : '') +
         '</div>';
     }).join('');
@@ -326,35 +325,106 @@
     });
   }
 
-  async function onPickImage(card) {
-    if (card.dataset.replaceable !== '1') {
-      toast('该图已经是 /uploads 下的本地图，可在媒体库直接管理', 'info');
-      return;
-    }
-    const sourceUrl = card.dataset.source;
-    const inp = document.createElement('input');
-    inp.type = 'file'; inp.accept = 'image/*'; inp.style.display = 'none';
-    document.body.appendChild(inp);
-    inp.addEventListener('change', async () => {
-      const file = inp.files && inp.files[0];
-      inp.remove();
-      if (!file) return;
-      try {
-        const fd = new FormData();
-        fd.append('file', file);
-        fd.append('alt_text', file.name.replace(/\.[a-z0-9]+$/i, '').replace(/[-_]+/g, ' '));
-        const up = await fetch('/api/media', { method: 'POST', credentials: 'include', body: fd });
-        const upJson = await up.json();
-        if (!up.ok || !upJson.url) throw new Error(upJson.error || ('HTTP ' + up.status));
-        const cur = await api('/api/media/overrides');
-        const map = Object.assign({}, cur.overrides || {});
-        map[sourceUrl] = upJson.url;
-        await api('/api/media/overrides', { method: 'PUT', body: JSON.stringify({ overrides: map }) });
-        toast('已替换该图片，刷新预览…', 'success');
-        try { frame.contentWindow.location.reload(); } catch (_) {}
-      } catch (err) { toast('替换失败：' + err.message, 'error'); }
+  // Chooser modal: lets the operator either upload a new image OR pick
+  // an existing one from the media library (uploads + seed images).
+  function openReplaceChooser(sourceUrl) {
+    return new Promise((resolve) => {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed; inset:0; background:rgba(15,23,42,0.55); display:flex; align-items:center; justify-content:center; z-index:99999;';
+      overlay.innerHTML = `
+        <div style="background:#fff; border-radius:12px; max-width:920px; width:92%; max-height:88vh; display:flex; flex-direction:column; box-shadow:0 24px 60px rgba(0,0,0,0.25);">
+          <div style="padding:18px 22px; border-bottom:1px solid #e5e7eb; display:flex; align-items:center; justify-content:space-between;">
+            <h3 style="margin:0; font-size:16px;">替换图片</h3>
+            <button type="button" data-close style="background:none; border:none; font-size:24px; cursor:pointer; color:#64748b;">&times;</button>
+          </div>
+          <div style="padding:14px 22px; border-bottom:1px solid #e5e7eb; display:flex; gap:8px;">
+            <button type="button" class="btn btn--primary btn--sm" data-action="upload">📤 上传新图</button>
+            <span style="color:#64748b; font-size:12px; align-self:center;">或从下方媒体库中选择已有图片</span>
+          </div>
+          <div data-library style="flex:1; overflow:auto; padding:14px 22px;">
+            <div style="text-align:center; color:#64748b; font-size:13px; padding:24px;">加载中…</div>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      const close = (val) => { overlay.remove(); resolve(val); };
+      overlay.querySelector('[data-close]').addEventListener('click', () => close(null));
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) close(null); });
+      overlay.querySelector('[data-action="upload"]').addEventListener('click', () => {
+        const inp = document.createElement('input');
+        inp.type = 'file'; inp.accept = 'image/*'; inp.style.display = 'none';
+        document.body.appendChild(inp);
+        inp.addEventListener('change', async () => {
+          const file = inp.files && inp.files[0];
+          inp.remove();
+          if (!file) return;
+          try {
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('alt_text', file.name.replace(/\.[a-z0-9]+$/i, '').replace(/[-_]+/g, ' '));
+            const up = await fetch('/api/media', { method: 'POST', credentials: 'include', body: fd });
+            const upJson = await up.json();
+            if (!up.ok || !upJson.url) throw new Error(upJson.error || ('HTTP ' + up.status));
+            close(upJson.url);
+          } catch (err) {
+            toast('上传失败：' + err.message, 'error');
+          }
+        });
+        inp.click();
+      });
+      // Populate library asynchronously.
+      (async () => {
+        const lib = overlay.querySelector('[data-library]');
+        try {
+          const res = await fetch('/api/media?limit=500&include_seed=1', { credentials: 'include' });
+          const json = await res.json();
+          const items = (json.items || []).filter((m) => /^image\//i.test(m.mime || '')).filter((m) => m.url !== sourceUrl);
+          if (!items.length) {
+            lib.innerHTML = '<div style="text-align:center; color:#64748b; font-size:13px; padding:24px;">媒体库还没有图片，请上传。</div>';
+            return;
+          }
+          const seedItems = items.filter((m) => m.source === 'seed');
+          const uploadItems = items.filter((m) => m.source !== 'seed');
+          function cardHtml(m) {
+            return '<button type="button" data-pick="' + escapeHtml(m.url) + '" title="' + escapeHtml(m.original || m.filename) + '" ' +
+              'style="border:1px solid #e5e7eb; background:#fff; border-radius:8px; padding:0; overflow:hidden; cursor:pointer; display:flex; flex-direction:column;">' +
+              '<img src="' + escapeHtml(m.url) + '" alt="" loading="lazy" style="width:100%; aspect-ratio:1; object-fit:cover; background:#f8fafc;"/>' +
+              '<span style="padding:6px 8px; font-size:11px; color:#475569; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + escapeHtml((m.original || m.filename).slice(0, 28)) + '</span>' +
+              '</button>';
+          }
+          function section(title, arr) {
+            if (!arr.length) return '';
+            return '<div style="margin-bottom:18px;">' +
+              '<div style="font-size:12px; color:#64748b; margin-bottom:8px; font-weight:600;">' + escapeHtml(title) + ' · ' + arr.length + ' 张</div>' +
+              '<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(120px, 1fr)); gap:8px;">' +
+              arr.map(cardHtml).join('') + '</div></div>';
+          }
+          lib.innerHTML = section('我的上传', uploadItems) + section('内置图库（seed）', seedItems);
+          lib.querySelectorAll('[data-pick]').forEach((b) => {
+            b.addEventListener('click', () => close(b.dataset.pick));
+          });
+        } catch (err) {
+          lib.innerHTML = '<div style="color:#dc2626; font-size:13px; padding:16px;">加载媒体库失败：' + escapeHtml(err.message) + '</div>';
+        }
+      })();
     });
-    inp.click();
+  }
+
+  async function onPickImage(card) {
+    const sourceUrl = card.dataset.source;
+    const newUrl = await openReplaceChooser(sourceUrl);
+    if (!newUrl) return;
+    try {
+      const cur = await api('/api/media/overrides');
+      const map = Object.assign({}, cur.overrides || {});
+      if (newUrl === sourceUrl) {
+        delete map[sourceUrl];
+      } else {
+        map[sourceUrl] = newUrl;
+      }
+      await api('/api/media/overrides', { method: 'PUT', body: JSON.stringify({ overrides: map }) });
+      toast('已替换该图片，刷新预览…', 'success');
+      try { frame.contentWindow.location.reload(); } catch (_) {}
+    } catch (err) { toast('替换失败：' + err.message, 'error'); }
   }
 })();
 </script>
