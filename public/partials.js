@@ -176,12 +176,8 @@ function footerHtml(settings) {
       </div>
       <div class="footer-col footer-col--brand">
         <h5>${escapeHtml(site.name || 'Zufek')}</h5>
-        <p>${escapeHtml(site.tagline || '')}</p>
-        ${(site.email || site.engineering_email) ? `<p class="footer-contact">
-          ${site.email ? `<a href="mailto:${escapeHtml(site.email)}">${escapeHtml(site.email)}</a><br>` : ''}
-          ${site.engineering_email ? `<a href="mailto:${escapeHtml(site.engineering_email)}">${escapeHtml(site.engineering_email)}</a>` : ''}
-        </p>` : ''}
-        ${site.phone ? `<p>${escapeHtml(site.phone)}</p>` : ''}
+        ${site.email ? `<p class="footer-contact"><a href="mailto:${escapeHtml(site.email)}">${escapeHtml(site.email)}</a></p>` : ''}
+        ${site.phone ? `<p>Phone: ${escapeHtml(site.phone)}</p>` : ''}
         ${site.address ? `<p>${escapeHtml(site.address)}</p>` : ''}
         ${(linkedin || whatsapp) ? `<div class="footer-social">${linkedin}${whatsapp}</div>` : ''}
       </div>
