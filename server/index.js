@@ -123,6 +123,17 @@ app.get('/healthz', (_req, res) => {
   res.json({ ok: true, ts: Date.now(), uptime: Math.round(process.uptime()) });
 });
 
+// /favicon.ico — browsers (and the admin login page) auto-fetch this.
+// We 302 to the operator-configured icon (settings.site.favicon) so a single
+// admin field controls the browser tab on both public AND admin pages
+// without re-rendering each static admin HTML.
+app.get('/favicon.ico', (_req, res) => {
+  const { settingsCache } = require('./middleware/html-tokens');
+  const url = (settingsCache && settingsCache.site && settingsCache.site.favicon) || '';
+  if (url) return res.redirect(302, url);
+  return res.status(404).end();
+});
+
 // /readyz is the deeper check — touches PG, looks at outbox lag and
 // emergency-store backlog. Operators can poll this from monitoring or
 // rely on the same endpoint for k8s readiness probes (delay traffic

@@ -213,6 +213,15 @@ function replaceTokens(html, ctx) {
   if (block && out.indexOf('</head>') !== -1 && !/google-site-verification/.test(out)) {
     out = out.replace('</head>', block + '\n</head>');
   }
+  // Inject site favicon (settings.site.favicon) into <head>. Applied to
+  // every HTML response — public pages and admin pages — so the browser
+  // tab + admin login page show the operator-chosen icon. We only inject
+  // when no <link rel="icon"> is already present so source files that
+  // ship their own remain authoritative.
+  const favicon = (settingsCache.site && settingsCache.site.favicon) || '';
+  if (favicon && out.indexOf('</head>') !== -1 && !/<link[^>]+rel=["'](?:shortcut )?icon["']/i.test(out)) {
+    out = out.replace('</head>', `<link rel="icon" href="${escapeAttr(favicon)}">\n</head>`);
+  }
   // Apply media overrides last so the operator can map an external URL
   // (Unsplash hot-link, etc.) to a self-hosted /uploads/* asset without
   // editing source files. The replacement is exact-match on the full

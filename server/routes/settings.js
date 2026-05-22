@@ -4,6 +4,7 @@ const { requireAuth } = require('../middleware/auth');
 const { recordAudit } = require('../middleware/audit');
 const { trimStr, asJson } = require('../utils/validate');
 const { invalidateSettingsCache } = require('../middleware/html-tokens');
+const { invalidateExcludedIps } = require('../middleware/analytics');
 const aiSettings = require('../services/ai-settings');
 
 const router = express.Router();
@@ -139,6 +140,12 @@ router.put('/:key', requireAuth, async (req, res) => {
   if (key === 'ai_providers') {
     try { await aiSettings.reload(); }
     catch (err) { console.error('[ai-settings] reload failed:', err.message); }
+  }
+  // Refresh the analytics IP-exclusion list immediately so the admin
+  // doesn't have to wait for the 30s poll.
+  if (key === 'analytics') {
+    try { await invalidateExcludedIps(); }
+    catch (err) { console.error('[analytics] reload excluded IPs failed:', err.message); }
   }
   res.json({ ok: true });
 });

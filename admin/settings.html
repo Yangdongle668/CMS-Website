@@ -170,6 +170,7 @@
       <button class="tabs__btn" data-tab="gdpr">GDPR</button>
       <button class="tabs__btn" data-tab="mail">邮件</button>
       <button class="tabs__btn" data-tab="security">安全防护</button>
+      <button class="tabs__btn" data-tab="analytics">访问统计</button>
       <button class="tabs__btn" data-tab="ai">AI 接入</button>
     </div>
 
@@ -195,6 +196,7 @@
           <div class="field"><label>工厂面积（m²）</label><input type="number" data-key="site.factory_size_sqm" value="${s('site').factory_size_sqm || ''}"/></div>
           <div class="field"><label>员工总数</label><input type="number" data-key="site.staff_count" value="${s('site').staff_count || ''}"/></div>
         </div>
+        <div class="field"><label>站点图标 (Favicon) <span class="hint">浏览器标签页 / 后台登录页使用。推荐 .ico / .png，正方形。可填 /uploads/... 或外链 URL。</span></label><input data-key="site.favicon" value="${escapeHtml(s('site').favicon || '')}" placeholder="/uploads/favicon.png"/></div>
       </div>
     </div>
 
@@ -359,6 +361,31 @@ https://twitter.com/zufek">${escapeHtml((org.sameAs || []).join('\n'))}</textare
       </div>
     </div>
 
+    <div data-pane="analytics" style="display:none;">
+      <div class="panel">
+        <h2 style="margin-top:0;">访问统计 — 排除 IP</h2>
+        <p style="font-size:13px; color:var(--a-mute2); margin-top:0;">
+          这里列出的 IP <strong>不会</strong>被计入 "最近访客" 与统计面板（你自己 / 同事 / 监控脚本的访问就不会污染数据）。
+          每行一个 IP，支持 IPv4 / IPv6；保存后立即生效，无需重启。
+        </p>
+        <div style="font-size:12.5px; color:var(--a-mute2); line-height:1.6; padding:10px 14px; background:#fff7ed; border-left:3px solid #f59e0b; border-radius:4px; margin-bottom:14px;">
+          <strong>怎么查自己的公网 IP：</strong>
+          打开 <a href="https://ipv4.icanhazip.com" target="_blank" style="color:var(--a-accent);">ipv4.icanhazip.com</a>
+          （IPv4）或 <a href="https://ipv6.icanhazip.com" target="_blank" style="color:var(--a-accent);">ipv6.icanhazip.com</a>
+          （IPv6）。也可以在 "最近访客" 表里找到自己刚才那条记录，复制 IP 列。<br>
+          说明：表内若看到 <code>::ffff:1.2.3.4</code> 格式，填 <code>1.2.3.4</code> 即可，系统会自动识别。
+        </div>
+        <div class="field">
+          <label>排除 IP 列表 <span class="hint">每行一个</span></label>
+          <textarea class="mono" data-key="analytics.exclude_ips" rows="8" placeholder="85.137.57.233&#10;2001:db8::1">${escapeHtml((Array.isArray(s('analytics').exclude_ips) ? s('analytics').exclude_ips : []).join('\n'))}</textarea>
+        </div>
+        <p style="font-size:12px; color:var(--a-mute2);">
+          国家识别：优先使用 Cloudflare/Vercel CDN 头；若没有 CDN 头则使用内置 GeoIP 数据库（geoip-lite）离线解析，
+          老数据中显示为 "未知" 的行也会在表中实时补全国家。
+        </p>
+      </div>
+    </div>
+
     ${renderAiPane()}
 
     <div class="form-actions" style="position:sticky; bottom:0; background:#fff; border-top:1px solid var(--a-line);">
@@ -394,6 +421,9 @@ https://twitter.com/zufek">${escapeHtml((org.sameAs || []).join('\n'))}</textare
       // Special: organization.sameAs textarea is line-separated, not JSON.
       if (el.dataset.key === 'organization.sameAs') {
         val = String(val).split('\n').map((x) => x.trim()).filter(Boolean);
+      } else if (el.dataset.key === 'analytics.exclude_ips') {
+        // Line-separated list of IPs; normalize and dedupe before saving.
+        val = Array.from(new Set(String(val).split('\n').map((x) => x.trim()).filter(Boolean)));
       } else if (el.tagName === 'TEXTAREA' && el.classList.contains('mono')) {
         try { val = JSON.parse(val); }
         catch (_) { jsonError = el.dataset.key; return; }

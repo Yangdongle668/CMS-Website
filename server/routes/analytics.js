@@ -12,6 +12,7 @@
 const express = require('express');
 const { many, one } = require('../db/client');
 const { requireAuth } = require('../middleware/auth');
+const { countryForIp, normalizeIp } = require('../middleware/analytics');
 
 const router = express.Router();
 
@@ -153,6 +154,16 @@ router.get('/visitors', async (req, res) => {
       LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params
   );
+  // Backfill country / strip IPv6-mapped prefix on the fly so historical
+  // rows recorded before GeoIP was wired up still show a country in the UI.
+  for (const it of items) {
+    const clean = normalizeIp(it.ip_text || '');
+    if (clean && clean !== it.ip_text) it.ip_text = clean;
+    if (!it.country) {
+      const cc = countryForIp(clean);
+      if (cc) it.country = cc;
+    }
+  }
   const total = await one(
     `SELECT count(*)::int AS n FROM analytics_hits WHERE ${where.join(' AND ')}`,
     params.slice(0, params.length - 2)
