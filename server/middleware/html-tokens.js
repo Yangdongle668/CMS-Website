@@ -115,15 +115,22 @@ function invalidateSettingsCache() {
   loadSettingsCache();
 }
 
+function isLocalhostUrl(u) {
+  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/.test(u);
+}
+
 function resolveCanonicalBase(req) {
   const fromEnv = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
-  if (fromEnv) return fromEnv;
+  if (fromEnv && !isLocalhostUrl(fromEnv)) return fromEnv;
   const fromDb = (settingsCache.seo && settingsCache.seo.public_url) || '';
-  if (fromDb) return String(fromDb).replace(/\/$/, '');
+  if (fromDb && !isLocalhostUrl(fromDb)) return String(fromDb).replace(/\/$/, '');
   if (req && req.headers && req.headers.host) {
     const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
     return `${proto}://${req.headers.host}`;
   }
+  // Last resort: fall back to env/db even if localhost (dev environments).
+  if (fromDb) return String(fromDb).replace(/\/$/, '');
+  if (fromEnv) return fromEnv;
   return '';
 }
 
