@@ -41,6 +41,13 @@ async function run() {
     console.log('[db:init] applications/power-tools + industrial-handhelds applied.');
   }
 
+  const localizeImagesPath = path.join(__dirname, 'migrate-localize-images.sql');
+  if (fs.existsSync(localizeImagesPath)) {
+    console.log('[db:init] applying localize-images migration (rewrites Unsplash CDN URLs to /assets/img/seed/)...');
+    await query(fs.readFileSync(localizeImagesPath, 'utf8'));
+    console.log('[db:init] localize-images migration applied.');
+  }
+
   // Optional: pre-create an admin from env. If ADMIN_DEFAULT_EMAIL is not
   // set, we leave the user table empty and let the first POST to /api/auth/login
   // bootstrap an admin with whatever credentials the operator submits.
