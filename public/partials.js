@@ -41,6 +41,8 @@ const FALLBACK = {
         { label: 'IoT Devices', url: '/applications/iot.html' },
         { label: 'Smart Home', url: '/applications/smart-home.html' },
         { label: 'Defence & Aerospace', url: '/applications/defence-aerospace.html' },
+        { label: 'Power Tools', url: '/applications/power-tools.html' },
+        { label: 'Industrial Handhelds', url: '/applications/industrial-handhelds.html' },
       ]},
       { label: 'CUSTOM SOLUTIONS', url: '/solutions/', nav: 'solutions', children: [
         { label: 'Design Support', url: '/solutions/design.html' },

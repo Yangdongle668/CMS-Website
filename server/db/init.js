@@ -34,6 +34,13 @@ async function run() {
     console.log('[db:init] cover-url backfill applied.');
   }
 
+  const appsPowerHandheldsPath = path.join(__dirname, 'migrate-applications-power-handhelds.sql');
+  if (fs.existsSync(appsPowerHandheldsPath)) {
+    console.log('[db:init] applying applications/power-tools + industrial-handhelds migration (idempotent)...');
+    await query(fs.readFileSync(appsPowerHandheldsPath, 'utf8'));
+    console.log('[db:init] applications/power-tools + industrial-handhelds applied.');
+  }
+
   // Optional: pre-create an admin from env. If ADMIN_DEFAULT_EMAIL is not
   // set, we leave the user table empty and let the first POST to /api/auth/login
   // bootstrap an admin with whatever credentials the operator submits.
