@@ -119,18 +119,24 @@ function isLocalhostUrl(u) {
   return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/.test(u);
 }
 
+// Reject URLs that have no hostname (e.g. "https://" with empty domain —
+// a common mis-configuration where the protocol was set but the domain left blank).
+function hasValidHost(u) {
+  try { return !!(new URL(u).hostname); } catch (_) { return false; }
+}
+
 function resolveCanonicalBase(req) {
   const fromEnv = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
-  if (fromEnv && !isLocalhostUrl(fromEnv)) return fromEnv;
-  const fromDb = (settingsCache.seo && settingsCache.seo.public_url) || '';
-  if (fromDb && !isLocalhostUrl(fromDb)) return String(fromDb).replace(/\/$/, '');
+  if (fromEnv && !isLocalhostUrl(fromEnv) && hasValidHost(fromEnv)) return fromEnv;
+  const fromDb = String((settingsCache.seo && settingsCache.seo.public_url) || '').replace(/\/$/, '');
+  if (fromDb && !isLocalhostUrl(fromDb) && hasValidHost(fromDb)) return fromDb;
   if (req && req.headers && req.headers.host) {
     const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
     return `${proto}://${req.headers.host}`;
   }
   // Last resort: fall back to env/db even if localhost (dev environments).
-  if (fromDb) return String(fromDb).replace(/\/$/, '');
-  if (fromEnv) return fromEnv;
+  if (fromDb && hasValidHost(fromDb)) return fromDb;
+  if (fromEnv && hasValidHost(fromEnv)) return fromEnv;
   return '';
 }
 

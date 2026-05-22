@@ -114,13 +114,14 @@ function buildInquiryInternalMail(inq, opts) {
 }
 
 // Auto-reply confirmation to the visitor.
-function buildInquiryAutoReplyMail(inq) {
+// opts.publicUrl — canonical base URL (e.g. "https://zufek.com"). Callers
+// with access to req should pass resolveCanonicalBase(req); callers without
+// a request fall back to resolveCanonicalBase(null) which reads env/DB.
+function buildInquiryAutoReplyMail(inq, opts) {
+  opts = opts || {};
   const siteName = process.env.SITE_NAME || 'Zufek';
-  // env PUBLIC_URL → settings.seo.public_url → '' so the privacy / GDPR
-  // footer never contains "http://localhost" when the operator has
-  // configured the public URL in admin settings.
   const { resolveCanonicalBase } = require('../middleware/html-tokens');
-  const publicUrl = resolveCanonicalBase(null) || '';
+  const publicUrl = opts.publicUrl || resolveCanonicalBase(null) || '';
   const autoHtml = `
     <div style="font-family:Inter,Arial,sans-serif;max-width:640px;margin:0 auto;color:#0f172a;">
       <h2 style="color:#0b3a82;margin:0 0 16px;">Thank you for your inquiry</h2>

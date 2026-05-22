@@ -187,7 +187,8 @@ async function sendInquiryEmails(inq, attachments) {
 
   let autoRes = null;
   if (cfg.auto_reply) {
-    const auto = buildInquiryAutoReplyMail(inq);
+    const { resolveCanonicalBase } = require('../middleware/html-tokens');
+    const auto = buildInquiryAutoReplyMail(inq, { publicUrl: resolveCanonicalBase(null) });
     autoRes = await t.sendMail({ from: cfg.from || defaultFrom(), ...auto });
   }
   return { internal: internalRes, auto: autoRes };

@@ -151,6 +151,22 @@ router.post('/', requireAuth, upload.single('file'), async (req, res) => {
   });
 });
 
+// PATCH /api/media/:id — update editable metadata (alt_text, original name).
+router.patch('/:id', requireAuth, async (req, res) => {
+  const id = clamp(req.params.id, 1, 1e9, 0);
+  if (!id) return res.status(400).json({ error: 'invalid_id' });
+  const b = req.body || {};
+  const fields = [];
+  const vals = [];
+  if (b.alt_text !== undefined) { fields.push(`alt_text = $${fields.length + 1}`); vals.push(trimStr(b.alt_text, 255)); }
+  if (b.original !== undefined) { fields.push(`original = $${fields.length + 1}`); vals.push(trimStr(b.original, 255) || null); }
+  if (!fields.length) return res.status(400).json({ error: 'nothing_to_update' });
+  vals.push(id);
+  await query(`UPDATE media SET ${fields.join(', ')} WHERE id = $${vals.length}`, vals);
+  await recordAudit({ req, action: 'update', entity: 'media', entityId: id, detail: b });
+  res.json({ ok: true });
+});
+
 // Reprocess endpoint — regenerate variants for an existing media row.
 // Useful after upgrading sharp / changing the size matrix, or for
 // images uploaded before image processing was wired up.
