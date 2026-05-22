@@ -17,11 +17,68 @@
 
 const crypto = require('crypto');
 
-// Optional offline GeoIP — falls back to "" when not installed so the
-// tracker still works in dev environments without the MaxMind data file.
+// Optional offline GeoIP — used as a fallback when the online lookup
+// times out or fails (e.g. no internet access in the container).
 let geoip = null;
 try { geoip = require('geoip-lite'); } catch (_e) { /* optional dep */ }
 
+// In-memory IP→country cache so we never call ip-api.com twice for the
+// same address. Entries expire after 7 days; the Map is bounded by the
+// number of distinct IPs seen (typically small for a B2B site).
+const _ipCache = new Map();
+const IP_CACHE_TTL = 7 * 24 * 3600 * 1000;
+
+async function lookupCountry(ip) {
+  if (!ip || ip === '127.0.0.1') return '';
+  const cached = _ipCache.get(ip);
+  if (cached && Date.now() - cached.ts < IP_CACHE_TTL) return cached.cc;
+
+  // ip-api.com free tier: up to 45 req/min, no key needed, very fresh data.
+  // HTTP only on the free plan (fine for a server-side lookup).
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 2000);
+    const resp = await fetch(
+      `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,countryCode`,
+      { signal: ctrl.signal }
+    );
+    clearTimeout(timer);
+    if (resp.ok) {
+      const d = await resp.json();
+      if (d.status === 'success' && d.countryCode && /^[A-Z]{2}$/.test(d.countryCode)) {
+        _ipCache.set(ip, { cc: d.countryCode, ts: Date.now() });
+        return d.countryCode;
+      }
+    }
+  } catch (_e) { /* timeout or network error → fall through to offline */ }
+
+  // Offline fallback via bundled MaxMind data.
+  if (geoip) {
+    try {
+      const r = geoip.lookup(ip);
+      const cc = (r && r.country && /^[A-Z]{2}$/.test(r.country)) ? r.country : '';
+      if (cc) { _ipCache.set(ip, { cc, ts: Date.now() }); return cc; }
+    } catch (_e) { /* ignore */ }
+  }
+  return '';
+}
+
+// Sync cache-only lookup for query-time enrichment in the visitors route.
+function countryForIp(ip) {
+  const n = normalizeIp(ip || '');
+  if (!n) return '';
+  const cached = _ipCache.get(n);
+  if (cached && Date.now() - cached.ts < IP_CACHE_TTL) return cached.cc;
+  // Offline fallback only (sync path).
+  if (geoip) {
+    try {
+      const r = geoip.lookup(n);
+      const cc = (r && r.country && /^[A-Z]{2}$/.test(r.country)) ? r.country : '';
+      if (cc) { _ipCache.set(n, { cc, ts: Date.now() }); return cc; }
+    } catch (_e) { /* ignore */ }
+  }
+  return '';
+}
 let salt = newSalt();
 let saltDay = todayUtc();
 function newSalt() { return crypto.randomBytes(16).toString('hex'); }
@@ -80,28 +137,14 @@ function clientIp(req) {
   return xff || req.ip || req.connection?.remoteAddress || '0.0.0.0';
 }
 
-function clientCountry(req, ip) {
+// Returns the 2-letter country code from CDN header first, then online+offline
+// lookups. ASYNC — awaited inside trackerMiddleware's finish callback.
+async function resolveCountry(req, ip) {
   const h = req.headers;
   const v = h['cf-ipcountry'] || h['x-vercel-ip-country'] || h['x-country'] || h['x-ip-country'] || '';
   const code = String(v).trim().toUpperCase().slice(0, 2);
   if (/^[A-Z]{2}$/.test(code) && code !== 'XX' && code !== 'T1') return code;
-  // No CDN header — try offline MaxMind lookup so we still get a country
-  // when traffic hits the origin directly.
-  if (geoip && ip) {
-    try {
-      const r = geoip.lookup(ip);
-      if (r && r.country && /^[A-Z]{2}$/.test(r.country)) return r.country;
-    } catch (_e) { /* ignore lookup failures */ }
-  }
-  return '';
-}
-
-function countryForIp(ip) {
-  if (!geoip || !ip) return '';
-  try {
-    const r = geoip.lookup(ip);
-    return (r && r.country && /^[A-Z]{2}$/.test(r.country)) ? r.country : '';
-  } catch (_e) { return ''; }
+  return lookupCountry(ip);
 }
 
 function refererHost(req) {
@@ -128,46 +171,45 @@ function shouldTrack(req) {
 
 function trackerMiddleware(req, res, next) {
   if (!shouldTrack(req)) return next();
-  res.on('finish', () => {
-    // Only count successful HTML page views. 3xx already redirected;
-    // 4xx/5xx aren't real reads.
-    const status = res.statusCode;
-    if (status < 200 || status >= 400) return;
-    const ct = String(res.getHeader('Content-Type') || '');
-    if (ct && !ct.includes('text/html')) return;
+  // The 'finish' listener runs after the response is fully sent, so async
+  // work here (online GeoIP lookup, DB insert) never delays the visitor.
+  res.on('finish', async () => {
+    try {
+      const status = res.statusCode;
+      if (status < 200 || status >= 400) return;
+      const ct = String(res.getHeader('Content-Type') || '');
+      if (ct && !ct.includes('text/html')) return;
 
-    const ua = String(req.headers['user-agent'] || '');
-    const isBot = BOT_RE.test(ua);
-    if (isBot) return; // skip bots from the dashboard entirely
+      const ua = String(req.headers['user-agent'] || '');
+      if (BOT_RE.test(ua)) return;
 
-    rotateSaltIfNewDay();
-    const ip = normalizeIp(clientIp(req));
-    // Operator-excluded IP: skip the insert entirely so the dashboard
-    // reflects only third-party visitors.
-    if (excludedIps.has(ip)) return;
-    const visitorHash = crypto
-      .createHash('sha256')
-      .update(salt + '|' + ip + '|' + ua)
-      .digest('hex')
-      .slice(0, 32);
-    const { browser, os } = parseUA(ua);
-    const country = clientCountry(req, ip);
-    const ref = refererHost(req);
-    const path = req.path.length > 500 ? req.path.slice(0, 500) : req.path;
+      rotateSaltIfNewDay();
+      const ip = normalizeIp(clientIp(req));
+      if (excludedIps.has(ip)) return;
 
-    // Async insert. Errors are logged but never block the response.
-    const { query } = require('../db/client');
-    query(
-      `INSERT INTO analytics_hits (path, country, browser, os, referer_host, visitor_hash, ip_text, is_bot)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-      [path, country, browser, os, ref, visitorHash, ip.slice(0, 45), false]
-    ).catch((err) => {
-      // Common case during early boot: table doesn't exist yet. The auto-
-      // migration in server/index.js will create it. Don't spam the log.
+      const visitorHash = crypto
+        .createHash('sha256')
+        .update(salt + '|' + ip + '|' + ua)
+        .digest('hex')
+        .slice(0, 32);
+      const { browser, os } = parseUA(ua);
+      // ip-api.com lookup (online, accurate) → geoip-lite (offline fallback).
+      // Awaiting here is fine — the visitor's browser already received its response.
+      const country = await resolveCountry(req, ip);
+      const ref = refererHost(req);
+      const path = req.path.length > 500 ? req.path.slice(0, 500) : req.path;
+
+      const { query } = require('../db/client');
+      await query(
+        `INSERT INTO analytics_hits (path, country, browser, os, referer_host, visitor_hash, ip_text, is_bot)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [path, country, browser, os, ref, visitorHash, ip.slice(0, 45), false]
+      );
+    } catch (err) {
       if (!/relation .*analytics_hits.* does not exist/.test(err.message)) {
         console.warn('[analytics] insert failed:', err.message);
       }
-    });
+    }
   });
   next();
 }
