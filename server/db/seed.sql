@@ -241,7 +241,17 @@ INSERT INTO applications (slug, name, icon, cover_url, summary, body, sort_order
  'https://images.unsplash.com/photo-1559131397-f94da358f7ca?w=1200&q=80',
  'Selectively-engaged Li-Po and coin-cell programs for dismounted electronics. ITAR-free BOM where required, MIL-PRF-32383 abuse, AS9100D-aligned QA.',
  'We engage selectively on dual-use defence Li-Po pouch and coin-cell programs: man-portable sensors, dismounted soldier wearables, ISR sensor patches, and ruggedised handheld electronics. We do not engage on weapon-system primary batteries or USML / EU CML-listed programs.',
- 6)
+ 6),
+('power-tools', 'Power Tools', 'power-tools',
+ 'https://images.unsplash.com/photo-1581147036324-c1c89c2c8b5c?w=1200&q=80',
+ 'Custom Li-Po packs for cordless screwdrivers, light-duty drills, garden tools, hot-glue guns and consumer DIY platforms — wherever pouch-format wins on packaging or weight.',
+ 'We serve the slice of the power-tool market where polymer Li-Po pouches are competitive: 6-12 V cordless screwdrivers, light drills, gimbal-mounted tools, garden trimmers, glue guns, soldering irons, kids DIY platforms and second-tier consumer brands chasing thinner / lighter form factors.',
+ 7),
+('industrial-handhelds', 'Industrial Handhelds', 'industrial-handhelds',
+ 'https://images.unsplash.com/photo-1556157382-97eda2d62296?w=1200&q=80',
+ 'Slim, sealed Li-Po packs for barcode scanners, mobile data terminals, RFID readers, POS handhelds, inspection cameras and ruggedised industrial tablets.',
+ 'Industrial handheld OEMs use our custom Li-Po pouches (1,500-8,000 mAh) and 2S smart packs (with SMBus gauge + thermistor) for barcode scanners, mobile data terminals, RFID readers, line-of-business POS terminals, borescopes, thermal cameras and field tablets.',
+ 8)
 ON CONFLICT (slug) DO NOTHING;
 
 -- ----- Backfill rich body, meta_title, meta_description, focus_keyword -----
@@ -286,6 +296,18 @@ UPDATE applications SET
   meta_description = 'Long shelf-life lithium cells for IoT trackers, gateways, smart meters and LoRaWAN sensors. -20°C to +60°C operating, 5-year shelf life, low self-discharge.',
   focus_keyword = 'IoT battery long shelf life'
 WHERE slug = 'iot';
+
+UPDATE applications SET
+  meta_title = 'Power Tool Battery Manufacturer — Custom Li-Po Packs for Cordless Tools | Zufek',
+  meta_description = 'Custom Li-Po pouches and smart packs for 6-12 V cordless screwdrivers, light drills, garden tools, glue guns and consumer DIY platforms. UN 38.3 + IEC 62133-2.',
+  focus_keyword = 'power tool Li-Po battery'
+WHERE slug = 'power-tools';
+
+UPDATE applications SET
+  meta_title = 'Industrial Handheld Battery — Slim Li-Po Packs for Scanners & MDTs | Zufek',
+  meta_description = 'Slim, sealed Li-Po packs and 2S smart packs for barcode scanners, mobile data terminals, RFID readers, POS handhelds and inspection cameras. IP65-housing-friendly.',
+  focus_keyword = 'industrial handheld battery manufacturer'
+WHERE slug = 'industrial-handhelds';
 
 -- ----- Sample Products under each pillar -----
 INSERT INTO products (pillar_id, slug, name, model_no, tagline, specs, features, description, is_custom, sort_order, status) VALUES
@@ -530,7 +552,7 @@ INSERT INTO settings (key, value) VALUES
 ('organization',
  '{"legal_name":"Dongguan Zufek Technology Co.,Ltd","brand_name":"Zufek","founding_date":"2018","vat_id":"","duns":"","logo":"/logo.png","sameAs":["https://www.linkedin.com/company/zufek"],"address":{"streetAddress":"Room 432, Building 1, No. 34 Jinniu Road, Guancheng Subdistrict","addressLocality":"Dongguan","addressRegion":"Guangdong","postalCode":"523000","addressCountry":"CN"},"contactPoints":[{"type":"sales","email":"info@zufek.com","telephone":"+86 153 7772 0020","areaServed":"Worldwide","availableLanguage":["en","zh"]},{"type":"technical support","email":"engineering@zufek.com","areaServed":"Worldwide","availableLanguage":["en"]}]}'),
 ('gdpr',
- '{"retention_days":365,"soft_delete_days":30,"policy_version":"1.0","controller":"Dongguan Zufek Technology Co.,Ltd","controller_email":"info@zufek.com","cookie_categories":{"necessary":{"required":true,"label":"Strictly necessary","description":"Required for the site to function (session, security, language preference)."},"analytics":{"required":false,"label":"Analytics","description":"Aggregated traffic statistics to help us improve the site."},"marketing":{"required":false,"label":"Marketing","description":"Used to measure the performance of advertising campaigns."}}}'),
+ '{"retention_days":365,"soft_delete_days":30,"policy_version":"1.0","controller":"Dongguan Zufek Technology Co.,Ltd","controller_email":"privacy@zufek.com","cookie_categories":{"necessary":{"required":true,"label":"Strictly necessary","description":"Required for the site to function (session, security, language preference)."},"analytics":{"required":false,"label":"Analytics","description":"Aggregated traffic statistics to help us improve the site."},"marketing":{"required":false,"label":"Marketing","description":"Used to measure the performance of advertising campaigns."}}}'),
 ('mail',
  '{"reply_to":"info@zufek.com","subject_prefix":"[Inquiry]","auto_reply_enabled":true}'),
 ('navigation',

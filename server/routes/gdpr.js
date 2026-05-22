@@ -44,7 +44,9 @@ router.post('/request', dsarLimiter, async (req, res) => {
     [reference, type, email, details, verifyToken, sha256(ip)]
   );
 
-  const link = `${process.env.PUBLIC_URL || ''}/api/gdpr/verify?token=${verifyToken}`;
+  const { resolveCanonicalBase } = require('../middleware/html-tokens');
+  const base = resolveCanonicalBase(req) || '';
+  const link = `${base}/api/gdpr/verify?token=${verifyToken}`;
   try {
     await sendGdprConfirmation({ reference, email, request_type: type }, link);
   } catch (err) {
