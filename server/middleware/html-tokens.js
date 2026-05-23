@@ -434,49 +434,6 @@ function optimizeAssetLoading(html) {
     ''
   );
 
-  // 5. Async-load the main site stylesheet to remove it from the critical
-  // rendering path. Inline a minimal critical CSS covering the reset, fixed
-  // nav and hero section so above-fold content paints without FOUC. The full
-  // stylesheet loads via the media="print" swap (same technique as step 2).
-  // Side-effect: deferred scripts no longer wait on CSSOM, so API calls in
-  // script.js/partials.js start before the stylesheet finishes loading.
-  const mainCssRe = /<link([^>]*)href="(\/(?:dist\/)?styles[^"]*)"([^>]*)>/i;
-  const mainCssMatch = html.match(mainCssRe);
-  if (mainCssMatch && /rel="stylesheet"/.test(mainCssMatch[0]) && !/data-deferred-css/.test(html)) {
-    const href = mainCssMatch[2];
-    // Critical CSS: reset + fixed header/nav + hero layout.
-    // Mirrors the opening rules of public/styles.css. Update here if those
-    // rules change materially (colors, header height, hero min-height).
-    const critical =
-      `*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}` +
-      `html{scroll-behavior:smooth;scroll-padding-top:60px}` +
-      `body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;` +
-        `color:#171a20;background:#fff;line-height:1.5;overflow-x:hidden}` +
-      `a{color:inherit;text-decoration:none}ul{list-style:none}` +
-      `#site-header{position:fixed;top:0;left:0;right:0;z-index:1000;` +
-        `transition:background .3s ease,backdrop-filter .3s ease}` +
-      `#site-header.scrolled{background:rgba(255,255,255,.92);backdrop-filter:blur(12px);` +
-        `-webkit-backdrop-filter:blur(12px);box-shadow:0 1px 0 rgba(0,0,0,.05)}` +
-      `.nav{display:flex;align-items:center;justify-content:space-between;` +
-        `padding:14px 32px;color:#fff;transition:color .3s ease}` +
-      `#site-header.scrolled .nav{color:#171a20}` +
-      `.brand{font-weight:700;font-size:26px;letter-spacing:-.5px;flex-shrink:0;line-height:1;padding:4px 0}` +
-      `.nav-main{display:flex;align-items:center;gap:2px}` +
-      `.nav-main>li>a{display:inline-block;padding:8px 14px;font-size:12px;font-weight:600;` +
-        `letter-spacing:.8px;border-radius:6px;transition:background .2s ease}` +
-      `@media(max-width:1200px){.nav-main{display:none}}` +
-      `.hero{position:relative;width:100%;min-height:100vh;background-size:cover;` +
-        `background-position:center;display:flex;flex-direction:column;justify-content:space-between}`;
-    const replacement =
-      `<style data-critical>${critical}</style>\n` +
-      `<link rel="stylesheet" href="${href}" media="print" data-deferred-css>\n` +
-      `<script>(function(){var l=document.querySelector('link[data-deferred-css]');` +
-        `if(!l)return;function s(){l.media='all';}l.sheet?s():l.addEventListener('load',s);` +
-      `})();</script>\n` +
-      `<noscript><link rel="stylesheet" href="${href}"></noscript>`;
-    html = html.replace(mainCssMatch[0], replacement);
-  }
-
   return html;
 }
 
