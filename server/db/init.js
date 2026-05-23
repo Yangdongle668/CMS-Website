@@ -48,6 +48,13 @@ async function run() {
     console.log('[db:init] localize-images migration applied.');
   }
 
+  const seoDefaultsPath = path.join(__dirname, 'migrate-2026-seed-seo-defaults.sql');
+  if (fs.existsSync(seoDefaultsPath)) {
+    console.log('[db:init] applying SEO/GEO defaults seed (idempotent — never overwrites)...');
+    await query(fs.readFileSync(seoDefaultsPath, 'utf8'));
+    console.log('[db:init] SEO/GEO defaults seed applied.');
+  }
+
   // Optional: pre-create an admin from env. If ADMIN_DEFAULT_EMAIL is not
   // set, we leave the user table empty and let the first POST to /api/auth/login
   // bootstrap an admin with whatever credentials the operator submits.

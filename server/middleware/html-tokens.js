@@ -210,6 +210,104 @@ function buildVerificationBlock() {
   return out.join('\n');
 }
 
+// Build the site-wide Organization + WebSite JSON-LD block. Emitted on
+// every public HTML response so Google Knowledge Panel, AI Overviews,
+// ChatGPT, Claude, Perplexity, etc. all see a consistent entity
+// definition without us needing to embed it in every static file.
+// Skipped on pages that already declare their own Organization schema
+// (lets SSR detail pages override if ever needed).
+function buildGlobalSchemaBlock(canonicalBase) {
+  if (!canonicalBase) return '';
+  const org   = settingsCache.organization || {};
+  const site  = settingsCache.site || {};
+  const social = settingsCache.social || {};
+  const seo   = settingsCache.seo || {};
+
+  const brandName = org.brand_name || site.name || resolveSiteName() || 'Zufek';
+  const legalName = org.legal_name || site.legal_name || '';
+
+  const logoRaw = org.logo || (seo.default_meta_image && /\.(png|jpg|jpeg|webp|svg)$/i.test(seo.default_meta_image) ? seo.default_meta_image : '/logo.png');
+  const logoUrl = /^https?:\/\//.test(logoRaw) ? logoRaw : canonicalBase + logoRaw;
+
+  // sameAs: merge organization.sameAs (array) + social.* URLs
+  const sameAs = [];
+  if (Array.isArray(org.sameAs)) {
+    for (const u of org.sameAs) {
+      if (u && /^https?:\/\//.test(u) && !sameAs.includes(u)) sameAs.push(u);
+    }
+  }
+  for (const k of ['linkedin', 'youtube', 'x', 'twitter', 'facebook', 'instagram', 'github', 'tiktok', 'wechat']) {
+    const v = social[k];
+    if (v && /^https?:\/\//.test(v) && !sameAs.includes(v)) sameAs.push(v);
+  }
+
+  // Organization
+  const orgSchema = {
+    '@type': 'Organization',
+    '@id': canonicalBase + '/#organization',
+    name: brandName,
+    url: canonicalBase + '/',
+    logo: { '@type': 'ImageObject', url: logoUrl, width: 1024, height: 1024, caption: brandName + ' logo' },
+  };
+  if (legalName) orgSchema.legalName = legalName;
+  if (org.founding_date) orgSchema.foundingDate = String(org.founding_date);
+  else if (site.founded_year) orgSchema.foundingDate = String(site.founded_year);
+  if (site.description) orgSchema.description = site.description;
+  if (site.tagline && !orgSchema.description) orgSchema.description = site.tagline;
+  if (org.vat_id) orgSchema.vatID = org.vat_id;
+  if (org.duns) orgSchema.duns = org.duns;
+  if (org.naics) orgSchema.naics = org.naics;
+  if (org.iso6523Code) orgSchema.iso6523Code = org.iso6523Code;
+
+  const addr = org.address || {};
+  if (addr.streetAddress || addr.addressLocality || addr.addressCountry) {
+    const pa = { '@type': 'PostalAddress' };
+    if (addr.streetAddress)   pa.streetAddress   = addr.streetAddress;
+    if (addr.addressLocality) pa.addressLocality = addr.addressLocality;
+    if (addr.addressRegion)   pa.addressRegion   = addr.addressRegion;
+    if (addr.postalCode)      pa.postalCode      = addr.postalCode;
+    if (addr.addressCountry)  pa.addressCountry  = addr.addressCountry;
+    orgSchema.address = pa;
+  }
+
+  if (Array.isArray(org.contactPoints) && org.contactPoints.length) {
+    orgSchema.contactPoint = org.contactPoints.map((cp) => {
+      const c = { '@type': 'ContactPoint', contactType: cp.type || cp.contactType || 'customer service' };
+      if (cp.email)              c.email = cp.email;
+      if (cp.telephone)          c.telephone = cp.telephone;
+      if (cp.areaServed)         c.areaServed = cp.areaServed;
+      if (cp.availableLanguage)  c.availableLanguage = cp.availableLanguage;
+      return c;
+    });
+  }
+
+  if (sameAs.length) orgSchema.sameAs = sameAs;
+
+  // WebSite + SearchAction (Sitelinks search box)
+  const websiteSchema = {
+    '@type': 'WebSite',
+    '@id': canonicalBase + '/#website',
+    url: canonicalBase + '/',
+    name: brandName,
+    publisher: { '@id': canonicalBase + '/#organization' },
+    inLanguage: 'en',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: canonicalBase + '/?q={search_term_string}',
+      },
+      'query-input': 'required name=search_term_string',
+    },
+  };
+
+  const graph = {
+    '@context': 'https://schema.org',
+    '@graph': [orgSchema, websiteSchema],
+  };
+  return `<script type="application/ld+json" data-jsonld="site">${JSON.stringify(graph)}</script>`;
+}
+
 function replaceTokens(html, ctx) {
   let out = html
     .replace(/\{\{CANONICAL_BASE\}\}/g, ctx.canonicalBase)
@@ -225,6 +323,16 @@ function replaceTokens(html, ctx) {
   const block = buildVerificationBlock();
   if (block && out.indexOf('</head>') !== -1 && !/google-site-verification/.test(out)) {
     out = out.replace('</head>', block + '\n</head>');
+  }
+  // Inject global Organization + WebSite JSON-LD on every public page.
+  // Knowledge Panel, AI Overviews and LLM citations all use these. We
+  // skip if the page already declared its own Organization to avoid
+  // duplicates (e.g. a future SSR detail page that wants to override).
+  if (out.indexOf('</head>') !== -1 && !/"@type"\s*:\s*"Organization"/i.test(out)) {
+    const schema = buildGlobalSchemaBlock(ctx.canonicalBase);
+    if (schema) {
+      out = out.replace('</head>', schema + '\n</head>');
+    }
   }
   // Inject site favicon (settings.site.favicon) into <head>. Applied to
   // every HTML response — public pages and admin pages — so the browser
