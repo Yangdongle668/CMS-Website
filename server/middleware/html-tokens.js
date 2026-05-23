@@ -407,16 +407,23 @@ function optimizeAssetLoading(html) {
     }
   );
 
-  // 2 + 3. Async-load Google Fonts CSS and add fonts.gstatic.com preconnect
+  // 2 + 3. Async-load Google Fonts CSS using the media="print" swap technique.
+  // The browser fetches the stylesheet without blocking render (because it
+  // applies only to "print"), then a small inline script flips media="all"
+  // once it loads. We avoid the older onload="..." attribute pattern because
+  // Helmet's default CSP sets script-src-attr to 'none' (inline event
+  // handlers blocked); a separate <script> tag is fine under script-src
+  // 'unsafe-inline'.
   const fontsRe = /<link\s+href=("https:\/\/fonts\.googleapis\.com\/css2\?[^"]+")\s+rel="stylesheet"[^>]*>/i;
   const fontsMatch = html.match(fontsRe);
-  if (fontsMatch && !/rel=["']preload["'][^>]*fonts\.googleapis/i.test(html)) {
+  if (fontsMatch && !/data-async-font/i.test(html)) {
     const href = fontsMatch[1];
     let replacement = '';
     if (!/preconnect[^>]+fonts\.gstatic/i.test(html)) {
       replacement += '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n';
     }
-    replacement += `<link rel="preload" as="style" href=${href} onload="this.onload=null;this.rel='stylesheet'">\n`;
+    replacement += `<link rel="stylesheet" href=${href} media="print" data-async-font>\n`;
+    replacement += `<script>(function(){var l=document.querySelector('link[data-async-font]');if(!l)return;function s(){l.media='all';}if(l.sheet)s();else l.addEventListener('load',s);})();</script>\n`;
     replacement += `<noscript><link rel="stylesheet" href=${href}></noscript>`;
     html = html.replace(fontsRe, replacement);
   }

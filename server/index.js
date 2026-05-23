@@ -131,7 +131,10 @@ app.get('/favicon.ico', (_req, res) => {
   const { settingsCache } = require('./middleware/html-tokens');
   const url = (settingsCache && settingsCache.site && settingsCache.site.favicon) || '';
   if (url) return res.redirect(302, url);
-  return res.status(404).end();
+  // Fall back to /logo.png — exists in /public on every deploy, prevents
+  // the 404 spam in browser devtools and gives social cards a sensible
+  // icon until the operator uploads a proper favicon in /admin/settings.
+  return res.redirect(302, '/logo.png');
 });
 
 // /readyz is the deeper check — touches PG, looks at outbox lag and
