@@ -64,6 +64,14 @@
     ]},
   ];
 
+  // Shared SVGs used in topbar controls
+  const ICO_BELL     = ico('<path d="M8 2a5 5 0 0 1 5 5v2.5l1.5 2h-13L3 9.5V7a5 5 0 0 1 5-5z"/><line x1="6.5" y1="13.5" x2="9.5" y2="13.5"/>');
+  const ICO_LOGOUT   = ico('<path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/><polyline points="10,5 14,8 10,11"/><line x1="14" y1="8" x2="5" y2="8"/>');
+  const ICO_EXTERNAL = ico('<path d="M7 3H3.5A1.5 1.5 0 0 0 2 4.5v7A1.5 1.5 0 0 0 3.5 13h7A1.5 1.5 0 0 0 12 11.5V8"/><polyline points="9,2 14,2 14,7"/><line x1="14" y1="2" x2="7" y2="9"/>');
+  const ICO_CHEV     = ico('<polyline points="4,6 8,10 12,6"/>');
+  const ICO_SEARCH   = ico('<circle cx="6.5" cy="6.5" r="4.5"/><line x1="10" y1="10" x2="14" y2="14"/>');
+
+  // ── API helper ──────────────────────────────────────────
   async function api(path, opts) {
     const res = await fetch(path, Object.assign({
       credentials: 'include',
@@ -83,6 +91,7 @@
     return json;
   }
 
+  // ── DOM helper ──────────────────────────────────────────
   function el(tag, attrs, children) {
     const e = document.createElement(tag);
     if (attrs) {
@@ -119,37 +128,171 @@
     });
   }
 
+  function formatRelative(d) {
+    if (!d) return '';
+    const diff = Date.now() - new Date(d).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1)  return '刚刚';
+    if (m < 60) return m + ' 分钟前';
+    const h = Math.floor(m / 60);
+    if (h < 24) return h + ' 小时前';
+    const day = Math.floor(h / 24);
+    if (day < 30) return day + ' 天前';
+    return formatDate(d);
+  }
+
+  // ── Toast ────────────────────────────────────────────────
   function toast(message, type) {
     let tray = document.querySelector('.toast-tray');
     if (!tray) { tray = document.createElement('div'); tray.className = 'toast-tray'; document.body.appendChild(tray); }
     const t = el('div', { class: 'toast' + (type ? ' is-' + type : '') }, message);
     tray.appendChild(t);
     setTimeout(() => {
-      t.style.transition = 'opacity 0.18s ease';
       t.style.opacity = '0';
-      setTimeout(() => t.remove(), 200);
-    }, 3000);
+      setTimeout(() => t.remove(), 220);
+    }, 3200);
   }
 
-  const ICON_LOGOUT = ico('<path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/><polyline points="10,5 14,8 10,11"/><line x1="14" y1="8" x2="5" y2="8"/>');
-  const ICON_EXTERNAL = ico('<path d="M7 3H3.5A1.5 1.5 0 0 0 2 4.5v7A1.5 1.5 0 0 0 3.5 13h7A1.5 1.5 0 0 0 12 11.5V8"/><polyline points="9,2 14,2 14,7"/><line x1="14" y1="2" x2="7" y2="9"/>');
+  // ── Dropdown manager ─────────────────────────────────────
+  // Only one dropdown open at a time; clicking outside closes all.
+  const _dropdowns = new Set();
+  function closeAllDropdowns(except) {
+    _dropdowns.forEach((close) => { if (close !== except) close(); });
+  }
+  document.addEventListener('click', () => closeAllDropdowns(null), true);
 
+  function makeDropdown(triggerEl, buildPanel) {
+    let panel = null;
+    function close() {
+      if (panel) { panel.remove(); panel = null; }
+      triggerEl.classList.remove('is-active');
+    }
+    function open() {
+      closeAllDropdowns(close);
+      panel = buildPanel(close);
+      triggerEl.closest('.topbar__actions').appendChild(panel);
+      triggerEl.classList.add('is-active');
+    }
+    _dropdowns.add(close);
+    triggerEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      panel ? close() : open();
+    });
+    return { close };
+  }
+
+  // ── Notification bell panel ──────────────────────────────
+  function buildNotifPanel(close) {
+    const wrap = document.createElement('div');
+    wrap.className = 'popmenu popmenu--wide';
+    wrap.style.right = '42px'; // align below bell, not user menu
+    wrap.innerHTML = `
+      <div class="popmenu__head">
+        <div class="popmenu__head-row">
+          <span class="popmenu__head-title">未读询盘</span>
+          <a href="/admin/inquiries.html" style="font-size:12px;font-weight:600;color:var(--brand);" onclick="${''}">全部查看</a>
+        </div>
+      </div>
+      <div class="popmenu__scroll" id="_np_list">
+        <div class="popmenu__empty">加载中…</div>
+      </div>
+      <div class="popmenu__foot"><a href="/admin/inquiries.html">查看所有询盘 →</a></div>`;
+    wrap.addEventListener('click', (e) => e.stopPropagation());
+
+    api('/api/inquiries?status=new&limit=7').then((data) => {
+      const list = wrap.querySelector('#_np_list');
+      const items = (data && data.inquiries) || [];
+      if (!items.length) {
+        list.innerHTML = '<div class="popmenu__empty">暂无未读询盘 ✓</div>';
+        return;
+      }
+      list.innerHTML = items.map((inq) => `
+        <a class="notif-item" href="/admin/inquiries.html#${escapeHtml(String(inq.id))}">
+          <div class="notif-item__top">
+            <span class="notif-item__name">${escapeHtml(inq.name || '（无名称）')}</span>
+            <span class="notif-item__time">${formatRelative(inq.created_at)}</span>
+          </div>
+          <div class="notif-item__msg">${escapeHtml(inq.message || inq.subject || '（无内容）')}</div>
+        </a>`).join('');
+    }).catch(() => {
+      const list = wrap.querySelector('#_np_list');
+      list.innerHTML = '<div class="popmenu__empty">加载失败，请重试</div>';
+    });
+
+    return wrap;
+  }
+
+  // ── User menu panel ──────────────────────────────────────
+  function buildUserPanel(user, close) {
+    const wrap = document.createElement('div');
+    wrap.className = 'popmenu';
+    wrap.innerHTML = `
+      <div class="popmenu__head">
+        <div class="popmenu__head-title">${escapeHtml(user && user.name || user && user.email || '')}</div>
+        <div class="popmenu__head-sub">${escapeHtml(user && user.role || '')} · ${escapeHtml(user && user.email || '')}</div>
+      </div>
+      <div class="popmenu__list">
+        <a class="popmenu__item" href="/" target="_blank">
+          <span class="nav-icon">${ICO_EXTERNAL}</span>查看前台
+        </a>
+        <div class="popmenu__divider"></div>
+        <div class="popmenu__item popmenu__item--danger" data-logout>
+          <span class="nav-icon">${ICO_LOGOUT}</span>退出登录
+        </div>
+      </div>`;
+    wrap.addEventListener('click', (e) => e.stopPropagation());
+    wrap.querySelector('[data-logout]').addEventListener('click', async () => {
+      try { await api('/api/auth/logout', { method: 'POST' }); } catch (_) {}
+      location.href = '/admin/login.html';
+    });
+    return wrap;
+  }
+
+  // ── Shell renderer ───────────────────────────────────────
   function renderShell(user, opts) {
     opts = opts || {};
     const here = opts.here || location.pathname.split('/').pop() || 'index.html';
     const shell = document.querySelector('[data-admin-shell]');
     if (!shell) return;
     shell.classList.add('admin-shell');
+
+    const userInitial = escapeHtml(
+      (user && user.name || user && user.email || '?').charAt(0).toUpperCase()
+    );
     const userName = escapeHtml(user && user.name || user && user.email || '');
-    const userRole = escapeHtml(user && user.role || '');
-    const userInitial = escapeHtml((user && user.name || user && user.email || '?').charAt(0).toUpperCase());
+
     shell.innerHTML = `
-      <aside class="sidebar">
-        <div class="sidebar__brand">
-          <div class="sidebar__brand-mark">Z</div>
-          <div>Zufek CMS</div>
+      <!-- ── Topbar ── -->
+      <header class="topbar">
+        <div class="topbar__brand">
+          <div class="topbar__brand-mark">Z</div>
+          <span>Zufek CMS</span>
         </div>
-        <nav class="sidebar__nav">
+
+        <div class="topbar__search">
+          <span class="topbar__search-icon">${ICO_SEARCH}</span>
+          <input type="search" placeholder="搜索询盘、产品、文章…" autocomplete="off" data-global-search/>
+          <span class="topbar__search-kbd">⌘K</span>
+        </div>
+
+        <div class="topbar__actions">
+          <!-- Bell -->
+          <button class="topbar__icon-btn" data-bell-btn title="未读询盘">
+            ${ICO_BELL}
+            <span class="badge-dot" data-notif-dot></span>
+          </button>
+          <!-- User menu -->
+          <div class="topbar__user" data-user-btn>
+            <div class="topbar__user-avatar">${userInitial}</div>
+            <span class="topbar__user-name">${userName}</span>
+            <span class="topbar__user-chev">${ICO_CHEV}</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- ── Sidebar ── -->
+      <aside class="sidebar">
+        <nav>
           ${NAV.map((g) => `
             <div class="sidebar__group">
               <div class="sidebar__heading">${g.group}</div>
@@ -157,59 +300,107 @@
                 <a class="sidebar__link${('/admin/' + here) === i.href ? ' is-active' : ''}" href="${i.href}">
                   <span class="nav-icon">${i.icon}</span>
                   <span class="nav-label">${i.label}</span>
-                  ${i.label === '收件箱' ? '<span class="badge" data-unread-badge style="display:none;">0</span>' : ''}
+                  ${i.label === '收件箱' ? '<span class="badge" data-unread-badge style="display:none;"></span>' : ''}
                 </a>
               `).join('')}
             </div>
           `).join('')}
         </nav>
         <div class="sidebar__footer">
-          <div class="sidebar__user">
-            <div class="sidebar__user-avatar">${userInitial}</div>
-            <div>
-              <div class="sidebar__user-name">${userName}</div>
-              <div class="sidebar__user-role">${userRole}</div>
-            </div>
-          </div>
-          <div class="sidebar__footer-links">
-            <a href="#" data-logout>${ICON_LOGOUT} 退出</a>
-            <a href="/" target="_blank">${ICON_EXTERNAL} 前台</a>
-          </div>
+          <a href="/" target="_blank">
+            <span class="nav-icon">${ICO_EXTERNAL}</span>前台
+          </a>
+          <a href="#" data-logout-link>
+            <span class="nav-icon">${ICO_LOGOUT}</span>退出
+          </a>
         </div>
       </aside>
+
+      <!-- ── Main ── -->
       <main class="main">
-        <div class="topbar">
-          <div class="topbar__left">
-            <div class="topbar__crumbs">${escapeHtml(opts.crumbs || '')}</div>
-            <h1>${escapeHtml(opts.title || '')}</h1>
+        <div class="page">
+          <div class="page-head">
+            <div>
+              <div class="page-head__crumbs">${escapeHtml(opts.crumbs || '')}</div>
+              <h1 class="page-head__title">${escapeHtml(opts.title || '')}</h1>
+            </div>
+            <div class="page-head__actions" data-topbar-actions></div>
           </div>
-          <div data-topbar-actions></div>
+          <div data-page-content></div>
         </div>
-        <div class="page" data-page-content></div>
       </main>`;
-    shell.querySelector('[data-logout]').addEventListener('click', async (ev) => {
+
+    // Logout link in sidebar
+    shell.querySelector('[data-logout-link]').addEventListener('click', async (ev) => {
       ev.preventDefault();
       try { await api('/api/auth/logout', { method: 'POST' }); } catch (_) {}
       location.href = '/admin/login.html';
     });
+
+    // Global search: ⌘K focus + Enter to navigate
+    const searchInput = shell.querySelector('[data-global-search]');
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput && searchInput.focus();
+      }
+    });
+    if (searchInput) {
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const q = searchInput.value.trim();
+          if (q) location.href = '/admin/inquiries.html?q=' + encodeURIComponent(q);
+        }
+        if (e.key === 'Escape') { searchInput.blur(); searchInput.value = ''; }
+      });
+    }
+
+    // Notification bell dropdown
+    const bellBtn = shell.querySelector('[data-bell-btn]');
+    if (bellBtn) {
+      makeDropdown(bellBtn, (close) => buildNotifPanel(close));
+    }
+
+    // User menu dropdown
+    const userBtn = shell.querySelector('[data-user-btn]');
+    if (userBtn) {
+      makeDropdown(userBtn, (close) => buildUserPanel(user, close));
+    }
+
     return {
       content: shell.querySelector('[data-page-content]'),
       actions: shell.querySelector('[data-topbar-actions]'),
     };
   }
 
+  // ── Unread badge + notification dot ─────────────────────
   async function refreshUnreadBadge() {
-    const badge = document.querySelector('[data-unread-badge]');
-    if (!badge) return;
     try {
-      const { stats } = await api('/api/inquiries?limit=1');
-      if (stats && stats.unread > 0) {
-        badge.style.display = '';
-        badge.textContent = stats.unread;
+      const data = await api('/api/inquiries?status=new&limit=1');
+      const count = (data && data.stats && data.stats.unread) || 0;
+
+      // Sidebar badge
+      const badge = document.querySelector('[data-unread-badge]');
+      if (badge) {
+        if (count > 0) { badge.style.display = ''; badge.textContent = count; }
+        else { badge.style.display = 'none'; }
+      }
+
+      // Topbar bell dot
+      const dot = document.querySelector('[data-notif-dot]');
+      if (dot) {
+        if (count > 0) {
+          dot.style.display = '';
+          dot.className = 'badge-dot' + (count > 9 ? ' has-count' : '');
+          if (count > 9) dot.textContent = count > 99 ? '99+' : count;
+        } else {
+          dot.style.display = 'none';
+        }
       }
     } catch (_) {}
   }
 
+  // ── Boot ─────────────────────────────────────────────────
   async function bootShell(opts) {
     let user;
     try {
