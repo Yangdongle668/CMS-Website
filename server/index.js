@@ -225,6 +225,7 @@ app.use('/api/mail-queue', require('./routes/mail-queue'));
 app.use('/api/smtp', require('./routes/smtp'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/domain', require('./routes/domain'));
+app.use('/api/robots', require('./routes/robots'));
 
 // ----- SEO endpoints -----
 app.use('/', require('./routes/seo'));

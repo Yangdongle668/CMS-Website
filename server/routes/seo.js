@@ -14,7 +14,7 @@
 //     admin-only assets like signed datasheets).
 
 const express = require('express');
-const { many } = require('../db/client');
+const { many, one } = require('../db/client');
 
 const router = express.Router();
 
@@ -26,32 +26,163 @@ const router = express.Router();
 const { resolveCanonicalBase } = require('../middleware/html-tokens');
 function resolvePublicUrl(req) { return resolveCanonicalBase(req); }
 
-router.get('/robots.txt', (req, res) => {
+// Build the comprehensive SEO + GEO default robots.txt.
+// Exported so the admin page can show it as the "reset to default" preview.
+function buildDefaultRobots(base) {
+  const sitemap = base ? `${base}/sitemap.xml` : '';
+  return [
+    '# =============================================================',
+    '# robots.txt — SEO + GEO optimised',
+    '# GEO = Generative Engine Optimisation:',
+    '#   all known AI crawlers are explicitly allowed so your content',
+    '#   can be cited in ChatGPT, Gemini, Claude, Perplexity, etc.',
+    '# =============================================================',
+    '',
+    '# ── Default rule ─────────────────────────────────────────────',
+    'User-agent: *',
+    'Disallow: /admin/',
+    'Disallow: /api/',
+    'Disallow: /uploads/private/',
+    'Allow: /',
+    '',
+    '# ── Google ───────────────────────────────────────────────────',
+    'User-agent: Googlebot',
+    'Allow: /',
+    '',
+    'User-agent: Googlebot-Image',
+    'Allow: /',
+    '',
+    '# ── Google AI — Gemini · AI Overviews · SGE ──────────────────',
+    'User-agent: Google-Extended',
+    'Allow: /',
+    '',
+    '# ── Bing / Microsoft ─────────────────────────────────────────',
+    'User-agent: bingbot',
+    'Allow: /',
+    '',
+    'User-agent: BingPreview',
+    'Allow: /',
+    '',
+    '# ── OpenAI — ChatGPT · Operator agents ──────────────────────',
+    'User-agent: GPTBot',
+    'Allow: /',
+    '',
+    'User-agent: ChatGPT-User',
+    'Allow: /',
+    '',
+    'User-agent: OAI-SearchBot',
+    'Allow: /',
+    '',
+    '# ── Anthropic — Claude ───────────────────────────────────────',
+    'User-agent: ClaudeBot',
+    'Allow: /',
+    '',
+    'User-agent: anthropic-ai',
+    'Allow: /',
+    '',
+    '# ── Perplexity AI ────────────────────────────────────────────',
+    'User-agent: PerplexityBot',
+    'Allow: /',
+    '',
+    '# ── Apple — Siri · Apple Intelligence ───────────────────────',
+    'User-agent: Applebot',
+    'Allow: /',
+    '',
+    'User-agent: Applebot-Extended',
+    'Allow: /',
+    '',
+    '# ── Amazon — Alexa · Rufus shopping AI ──────────────────────',
+    'User-agent: Amazonbot',
+    'Allow: /',
+    '',
+    '# ── Meta AI — Llama · Meta AI Assistant ─────────────────────',
+    'User-agent: FacebookBot',
+    'Allow: /',
+    '',
+    '# ── Common Crawl — trains most open-source LLMs ─────────────',
+    'User-agent: CCBot',
+    'Allow: /',
+    '',
+    '# ── ByteDance — Doubao · Coze ────────────────────────────────',
+    'User-agent: Bytespider',
+    'Allow: /',
+    '',
+    '# ── Cohere — Command models ──────────────────────────────────',
+    'User-agent: cohere-ai',
+    'Allow: /',
+    '',
+    '# ── You.com AI ───────────────────────────────────────────────',
+    'User-agent: YouBot',
+    'Allow: /',
+    '',
+    '# ── Brave Search ────────────────────────────────────────────',
+    'User-agent: Brave',
+    'Allow: /',
+    '',
+    '# ── DuckDuckGo ───────────────────────────────────────────────',
+    'User-agent: DuckDuckBot',
+    'Allow: /',
+    '',
+    '# ── Other search engines ─────────────────────────────────────',
+    'User-agent: Slurp',
+    'Allow: /',
+    '',
+    'User-agent: Baiduspider',
+    'Allow: /',
+    '',
+    'User-agent: YandexBot',
+    'Allow: /',
+    '',
+    '# ── SEO research tools — rate-limited ───────────────────────',
+    '# Keeping these lets your site appear in backlink & audit tools.',
+    'User-agent: AhrefsBot',
+    'Crawl-delay: 10',
+    '',
+    'User-agent: SemrushBot',
+    'Crawl-delay: 10',
+    '',
+    'User-agent: MajesticSEO',
+    'Crawl-delay: 10',
+    '',
+    '# ── Block aggressive scrapers ────────────────────────────────',
+    'User-agent: MJ12bot',
+    'Disallow: /',
+    '',
+    'User-agent: DotBot',
+    'Disallow: /',
+    '',
+    'User-agent: BLEXBot',
+    'Disallow: /',
+    '',
+    'User-agent: DataForSeoBot',
+    'Disallow: /',
+    '',
+    'User-agent: PetalBot',
+    'Disallow: /',
+    '',
+    'User-agent: SeznamBot',
+    'Disallow: /',
+    '',
+    '# ── Sitemap ──────────────────────────────────────────────────',
+    sitemap ? `Sitemap: ${sitemap}` : '# Sitemap: https://yourdomain.com/sitemap.xml',
+    '',
+  ].join('\n');
+}
+exports.buildDefaultRobots = buildDefaultRobots;
+
+router.get('/robots.txt', async (req, res) => {
   const base = resolvePublicUrl(req);
-  res.type('text/plain').send(
-    [
-      'User-agent: *',
-      'Allow: /',
-      'Disallow: /admin/',
-      'Disallow: /admin',
-      'Disallow: /api/',
-      'Disallow: /uploads/private/',
-      '',
-      // Encourage AI crawlers explicitly. Site owners can change this in
-      // future via a settings.seo flag.
-      'User-agent: GPTBot',
-      'Allow: /',
-      '',
-      'User-agent: Google-Extended',
-      'Allow: /',
-      '',
-      'User-agent: PerplexityBot',
-      'Allow: /',
-      '',
-      `Sitemap: ${base}/sitemap.xml`,
-      '',
-    ].join('\n')
-  );
+  res.type('text/plain');
+
+  // Admin-saved custom content takes precedence
+  try {
+    const row = await one(`SELECT value FROM settings WHERE key = 'robots_txt'`);
+    if (row && row.value && typeof row.value.content === 'string') {
+      return res.send(row.value.content);
+    }
+  } catch (_) { /* fall through to default */ }
+
+  res.send(buildDefaultRobots(base));
 });
 
 // Static routes that always exist regardless of DB state. Generated from

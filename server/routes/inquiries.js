@@ -15,6 +15,7 @@ const {
   buildInquiryAutoReplyMail,
   currentAutoReplyEnabled,
 } = require('../services/mail-templates');
+const { resolveCanonicalBase } = require('../middleware/html-tokens');
 const { scoreInquiry } = require('../services/lead-scoring');
 const emergency = require('../services/emergency-store');
 const notificationService = require('../services/notifications');
@@ -289,7 +290,7 @@ router.post('/', submitLimiter, async (req, res) => {
       ...internal,
     });
     if (currentAutoReplyEnabled()) {
-      const auto = buildInquiryAutoReplyMail(inquiry);
+      const auto = buildInquiryAutoReplyMail(inquiry, { publicUrl: resolveCanonicalBase(req) });
       await enqueue({
         kind: 'inquiry_autoreply',
         relatedType: 'inquiry',

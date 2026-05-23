@@ -19,17 +19,31 @@ const ALLOWED = new Set([
   'application/pdf',
 ]);
 
+// Filename strategy: keep the operator's original name so URLs stay
+// readable. If a file with that name already exists, append "-1", "-2"…
+// until we find a free slot. Falls back to a short timestamp suffix if
+// somehow 999 names are taken (safety against infinite loops).
 const storage = multer.diskStorage({
   destination: UPLOAD_DIR,
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase().slice(0, 8);
-    const base = path.basename(file.originalname, ext)
+    let base = path.basename(file.originalname, ext)
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '')
       .slice(0, 60);
-    const stamp = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-    cb(null, `${stamp}-${base}${ext}`);
+    if (!base) base = 'image';
+    let candidate = base + ext;
+    let i = 1;
+    while (fs.existsSync(path.join(UPLOAD_DIR, candidate))) {
+      candidate = `${base}-${i}${ext}`;
+      i++;
+      if (i > 999) {
+        candidate = `${base}-${Date.now().toString(36)}${ext}`;
+        break;
+      }
+    }
+    cb(null, candidate);
   },
 });
 
@@ -42,15 +56,54 @@ const upload = multer({
   },
 });
 
+// Scan /public/assets/img/seed/ — these are the localized "system" images
+// downloaded from Unsplash by scripts/download-unsplash-images.js. They're
+// not in the media DB table but should still be browseable / pickable from
+// the same media library UI so operators can reuse them when replacing
+// images on pages.
+const SEED_DIR = path.join(ROOT, 'public', 'assets', 'img', 'seed');
+function listSeedImages() {
+  if (!fs.existsSync(SEED_DIR)) return [];
+  const out = [];
+  for (const name of fs.readdirSync(SEED_DIR)) {
+    if (!/\.(png|jpe?g|gif|webp|avif|svg)$/i.test(name)) continue;
+    const full = path.join(SEED_DIR, name);
+    let stat;
+    try { stat = fs.statSync(full); } catch (_) { continue; }
+    const ext = path.extname(name).slice(1).toLowerCase();
+    const mime = ext === 'jpg' ? 'image/jpeg' : 'image/' + ext;
+    out.push({
+      id: 'seed:' + name,
+      filename: name,
+      original: name,
+      url: '/assets/img/seed/' + name,
+      mime,
+      size: stat.size,
+      alt_text: '',
+      variants: [],
+      srcset: {},
+      width: 0,
+      height: 0,
+      created_at: stat.mtime,
+      source: 'seed',
+      readonly: true,
+    });
+  }
+  return out.sort((a, b) => a.filename.localeCompare(b.filename));
+}
+
 router.get('/', requireAuth, async (req, res) => {
-  const limit = clamp(req.query.limit, 1, 100, 30);
+  const limit = clamp(req.query.limit, 1, 500, 120);
+  const includeSeed = String(req.query.include_seed || '1') !== '0';
   const rows = await many(
     `SELECT id, filename, original, url, mime, size, alt_text,
             variants, srcset, width, height, created_at
      FROM media ORDER BY created_at DESC LIMIT $1`,
     [limit]
   );
-  res.json({ items: rows });
+  const uploads = rows.map((r) => Object.assign({}, r, { source: 'upload', readonly: false }));
+  const items = includeSeed ? uploads.concat(listSeedImages()) : uploads;
+  res.json({ items });
 });
 
 router.post('/', requireAuth, upload.single('file'), async (req, res) => {
@@ -96,6 +149,22 @@ router.post('/', requireAuth, upload.single('file'), async (req, res) => {
     width: result.original_width || 0,
     height: result.original_height || 0,
   });
+});
+
+// PATCH /api/media/:id — update editable metadata (alt_text, original name).
+router.patch('/:id', requireAuth, async (req, res) => {
+  const id = clamp(req.params.id, 1, 1e9, 0);
+  if (!id) return res.status(400).json({ error: 'invalid_id' });
+  const b = req.body || {};
+  const fields = [];
+  const vals = [];
+  if (b.alt_text !== undefined) { fields.push(`alt_text = $${fields.length + 1}`); vals.push(trimStr(b.alt_text, 255)); }
+  if (b.original !== undefined) { fields.push(`original = $${fields.length + 1}`); vals.push(trimStr(b.original, 255) || null); }
+  if (!fields.length) return res.status(400).json({ error: 'nothing_to_update' });
+  vals.push(id);
+  await query(`UPDATE media SET ${fields.join(', ')} WHERE id = $${vals.length}`, vals);
+  await recordAudit({ req, action: 'update', entity: 'media', entityId: id, detail: b });
+  res.json({ ok: true });
 });
 
 // Reprocess endpoint — regenerate variants for an existing media row.
