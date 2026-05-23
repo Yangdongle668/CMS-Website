@@ -242,16 +242,13 @@
         'overflow-y:auto;padding:16px;display:grid;align-content:start;' +
         'grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;';
       const itemStyle =
-        'display:block;width:100%;padding:0;margin:0;border:2px solid transparent;' +
-        'border-radius:10px;background:#f1f5f9;overflow:hidden;cursor:pointer;' +
-        'text-align:left;-webkit-appearance:none;appearance:none;font:inherit;';
-      // Use background-image divs instead of <img> to avoid replaced-element
-      // rendering quirks where explicit height may be ignored by some browsers.
-      const thumbStyle =
-        'width:100%;height:120px;background-color:#e2e8f0;' +
-        'background-size:cover;background-position:center;background-repeat:no-repeat;';
+        'border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;cursor:pointer;' +
+        'transition:box-shadow 0.12s ease,border-color 0.12s ease;';
+      // Exact same pattern as /admin/media.html's renderCard():
+      // plain <div> containing <img style="aspect-ratio:1;object-fit:cover"> —
+      // no button wrapper, no fixed height, no flex column.
       const capStyle =
-        'display:block;padding:6px 8px;font-size:11px;color:#64748b;background:#fff;' +
+        'padding:7px 9px;font-size:11px;color:#64748b;background:#fff;' +
         'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
 
       overlay.innerHTML = `
@@ -263,11 +260,16 @@
           </div>
           <div style="${bodyStyle}">
             ${items.length ? items.map((m) => {
-              const safeUrl = escapeHtml(m.url).replace(/'/g, '%27');
-              return `<button type="button" class="image-picker-modal__item" data-url="${escapeHtml(m.url)}" title="${escapeHtml(m.original)}" style="${itemStyle}">
-                <div style="${thumbStyle}background-image:url('${safeUrl}');"></div>
-                <span style="${capStyle}">${escapeHtml((m.original || '').slice(0, 24))}</span>
-              </button>`;
+              const safeUrl = escapeHtml(m.url);
+              const safeName = escapeHtml((m.original || m.url.split('/').pop() || '').slice(0, 28));
+              return `<div class="image-picker-modal__item" data-url="${safeUrl}"
+                          title="${escapeHtml(m.original)}" role="button" tabindex="0"
+                          style="${itemStyle}">
+                <img src="${safeUrl}" alt="${safeName}"
+                     style="width:100%;aspect-ratio:1;object-fit:cover;background:#f1f5f9;display:block;"
+                     onerror="this.style.opacity=0.15"/>
+                <div style="${capStyle}">${safeName}</div>
+              </div>`;
             }).join('') : '<div style="grid-column:1/-1;padding:48px;text-align:center;color:#64748b;">媒体库还没有图片，请先上传。</div>'}
           </div>
         </div>
@@ -279,13 +281,21 @@
       document.addEventListener('keydown', onKey);
       overlay.querySelector('.image-picker-modal__close').addEventListener('click', close);
       overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
-      overlay.querySelectorAll('.image-picker-modal__item').forEach((b) => {
-        b.addEventListener('mouseenter', () => { b.style.borderColor = '#2563eb'; });
-        b.addEventListener('mouseleave', () => { b.style.borderColor = 'transparent'; });
-        b.addEventListener('click', () => {
-          setValue(encodeImageUrl(b.dataset.url, position, fit));
-          close();
+      overlay.querySelectorAll('.image-picker-modal__item').forEach((item) => {
+        item.addEventListener('mouseenter', () => {
+          item.style.borderColor = '#2563eb';
+          item.style.boxShadow = '0 0 0 3px #dbeafe';
         });
+        item.addEventListener('mouseleave', () => {
+          item.style.borderColor = '#e5e7eb';
+          item.style.boxShadow = 'none';
+        });
+        const select = () => {
+          setValue(encodeImageUrl(item.dataset.url, position, fit));
+          close();
+        };
+        item.addEventListener('click', select);
+        item.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') select(); });
       });
     }
 
