@@ -163,7 +163,7 @@ function footerHtml(settings) {
   // Render helper for a list column.
   const listColumn = (heading, items) => `
       <div class="footer-col">
-        <h5>${escapeHtml(heading)}</h5>
+        <p class="footer-col-heading">${escapeHtml(heading)}</p>
         ${items.map((c) => `<a href="${escapeHtml(c.url)}">${escapeHtml(c.label)}</a>`).join('')}
       </div>`;
 
@@ -173,13 +173,13 @@ function footerHtml(settings) {
       ${listColumn('Applications', applications)}
       ${listColumn('Solutions', solutions)}
       <div class="footer-col">
-        <h5>Company</h5>
+        <p class="footer-col-heading">Company</p>
         ${aboutChildren.map((c) => `<a href="${escapeHtml(c.url)}">${escapeHtml(c.label)}</a>`).join('')}
         ${flatExtras.map((c) => `<a href="${escapeHtml(c.url)}">${escapeHtml(c.label)}</a>`).join('')}
         <a href="/contact.html">Contact</a>
       </div>
       <div class="footer-col footer-col--brand">
-        <h5>${escapeHtml(site.name || 'Zufek')}</h5>
+        <p class="footer-col-heading">${escapeHtml(site.name || 'Zufek')}</p>
         ${site.email ? `<p class="footer-contact"><a href="mailto:${escapeHtml(site.email)}">${escapeHtml(site.email)}</a></p>` : ''}
         ${site.phone ? `<p>Phone: <a href="tel:${escapeHtml(String(site.phone).replace(/[^+\d]/g, ''))}">${escapeHtml(site.phone)}</a></p>` : ''}
         ${site.address ? `<p>Address: ${escapeHtml(site.address)}</p>` : ''}

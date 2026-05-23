@@ -1288,7 +1288,7 @@ footer {
   .footer-col--brand { grid-column: auto; }
 }
 
-.footer-col h5 {
+.footer-col-heading {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 1.5px;
