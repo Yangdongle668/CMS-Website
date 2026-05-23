@@ -87,21 +87,26 @@
       const has = !!url;
       const cssPosition = position.replace(/-/g, ' ');  // top-left → "top left"
       host.classList.add('image-picker');
+      const previewBg = has
+        ? `background-image:url('${escapeHtml(url).replace(/'/g, "\\'")}');background-position:${cssPosition};background-size:${fit};background-repeat:no-repeat;`
+        : 'background:#eef1f5;';
+      // Inline styles everywhere so the picker renders correctly regardless of
+      // whether admin.css is loaded / cached / supports a given selector.
+      host.setAttribute('style', 'display:block;');
       host.innerHTML = `
-        <div class="image-picker__row">
-          <div class="image-picker__preview${has ? '' : ' is-empty'}"
-               style="${has ? `background-image:url('${escapeHtml(url).replace(/'/g, "\\'")}'); background-position:${cssPosition}; background-size:${fit};` : ''}">
-            ${has ? '' : '<span class="image-picker__placeholder">暂无图片</span>'}
+        <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;">
+          <div style="width:200px;height:120px;flex:0 0 auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;${previewBg}">
+            ${has ? '' : '<span style="font-size:12px;color:#94a3b8;">暂无图片</span>'}
           </div>
-          <div class="image-picker__actions">
+          <div style="display:flex;flex-direction:column;gap:8px;">
             <button type="button" class="btn btn--primary btn--sm" data-action="upload">📤 上传新图</button>
             <button type="button" class="btn btn--ghost btn--sm" data-action="library">📁 从媒体库选</button>
             ${has ? '<button type="button" class="btn btn--ghost btn--sm" data-action="clear">清除</button>' : ''}
           </div>
         </div>
         ${has ? renderPositionPicker() : ''}
-        <div class="image-picker__url">
-          <input type="text" data-url placeholder="或直接粘贴 URL（http://, /uploads/, /assets/…）" value="${escapeHtml(getCombined())}"/>
+        <div style="margin-top:10px;">
+          <input type="text" data-url placeholder="或直接粘贴 URL（http://, /uploads/, /assets/…）" value="${escapeHtml(getCombined())}" style="width:100%;font-size:12px;padding:7px 10px;border:1px solid #d1d5db;border-radius:8px;box-sizing:border-box;"/>
         </div>
       `;
       host.querySelector('[data-action="upload"]').addEventListener('click', upload);
@@ -131,24 +136,28 @@
     }
 
     function renderPositionPicker() {
-      const grid = POSITION_GRID.map((row) =>
-        row.map((p) => {
-          const isActive = p === position;
-          return `<button type="button" class="img-pos__cell${isActive ? ' is-active' : ''}"
-                          data-pos="${p}" title="${POSITION_LABEL[p]}"></button>`;
-        }).join('')
-      ).join('');
+      const cell = (p) => {
+        const a = p === position;
+        return `<button type="button" data-pos="${p}" title="${POSITION_LABEL[p]}"
+                  style="width:26px;height:26px;border:1px solid ${a ? '#2563eb' : '#cbd5e1'};border-radius:4px;cursor:pointer;background:${a ? '#2563eb' : '#fff'};padding:0;"></button>`;
+      };
+      const grid = POSITION_GRID.map((row) => row.map(cell).join('')).join('');
+      const fitBtn = (val, label, title) => {
+        const a = fit === val;
+        return `<button type="button" data-fit="${val}" title="${title}"
+                  style="border:1px solid ${a ? '#2563eb' : '#cbd5e1'};background:${a ? '#2563eb' : '#fff'};color:${a ? '#fff' : '#64748b'};border-radius:5px;padding:3px 10px;font-size:11px;cursor:pointer;">${label}</button>`;
+      };
       return `
-        <div class="img-pos">
-          <div class="img-pos__head">
-            <span class="img-pos__title">图像位置 <code>${POSITION_LABEL[position] || position}</code></span>
-            <div class="img-pos__fit">
-              <button type="button" class="img-pos__fit-btn${fit === 'cover' ? ' is-active' : ''}"   data-fit="cover"   title="填满（可能裁剪）">填满</button>
-              <button type="button" class="img-pos__fit-btn${fit === 'contain' ? ' is-active' : ''}" data-fit="contain" title="适应（可能留白）">适应</button>
+        <div style="margin-top:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
+            <span style="font-size:12px;color:#64748b;">图像位置 <code>${POSITION_LABEL[position] || position}</code></span>
+            <div style="display:flex;gap:4px;">
+              ${fitBtn('cover', '填满', '填满（可能裁剪）')}
+              ${fitBtn('contain', '适应', '适应（可能留白）')}
             </div>
           </div>
-          <div class="img-pos__grid">${grid}</div>
-          <p class="img-pos__hint">点 9 宫格选择图片在固定尺寸格子里的对齐方向。设置会跟着图片 URL 一起保存（<code>#pos=top-left</code>）。</p>
+          <div style="display:grid;grid-template-columns:repeat(3,26px);gap:3px;">${grid}</div>
+          <p style="font-size:11px;color:#94a3b8;margin:8px 0 0;line-height:1.5;">点 9 宫格选择图片在固定尺寸格子里的对齐方向。设置会跟着图片 URL 一起保存（<code>#pos=top-left</code>）。</p>
         </div>
       `;
     }
@@ -203,29 +212,63 @@
         return;
       }
       items = items.filter((m) => /^image\//i.test(m.mime || ''));
+
+      // Fully inline-styled modal — does not depend on admin.css at all, so it
+      // can't be broken by stylesheet caching, missing rules, or unsupported
+      // CSS functions. Avoids min()/aspect-ratio for old-renderer safety.
       const overlay = document.createElement('div');
       overlay.className = 'image-picker-modal';
+      overlay.style.cssText =
+        'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;' +
+        'background:rgba(15,23,42,0.55);display:flex;align-items:center;' +
+        'justify-content:center;padding:24px;box-sizing:border-box;';
+
+      const panelStyle =
+        'background:#fff;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,0.3);' +
+        'width:100%;max-width:920px;max-height:85vh;display:flex;flex-direction:column;' +
+        'overflow:hidden;box-sizing:border-box;';
+      const headStyle =
+        'display:flex;align-items:center;justify-content:space-between;' +
+        'padding:16px 20px;border-bottom:1px solid #e5e7eb;flex:0 0 auto;';
+      const bodyStyle =
+        'padding:16px;overflow-y:auto;display:grid;align-content:start;' +
+        'grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;';
+      const itemStyle =
+        'display:block;width:100%;padding:0;margin:0;border:2px solid transparent;' +
+        'border-radius:10px;background:#f1f5f9;overflow:hidden;cursor:pointer;' +
+        'text-align:left;-webkit-appearance:none;appearance:none;font:inherit;';
+      const imgStyle = 'display:block;width:100%;height:120px;object-fit:cover;';
+      const capStyle =
+        'display:block;padding:6px 8px;font-size:11px;color:#64748b;background:#fff;' +
+        'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+
       overlay.innerHTML = `
-        <div class="image-picker-modal__panel">
-          <div class="image-picker-modal__head">
-            <h3>选择媒体库中的图片</h3>
-            <button type="button" class="image-picker-modal__close" aria-label="关闭">&times;</button>
+        <div style="${panelStyle}">
+          <div style="${headStyle}">
+            <h3 style="margin:0;font-size:16px;font-weight:700;color:#0f172a;">选择媒体库中的图片</h3>
+            <button type="button" class="image-picker-modal__close" aria-label="关闭"
+                    style="background:none;border:0;font-size:24px;line-height:1;cursor:pointer;color:#64748b;padding:2px 8px;">&times;</button>
           </div>
-          <div class="image-picker-modal__body">
+          <div style="${bodyStyle}">
             ${items.length ? items.map((m) => `
-              <button type="button" class="image-picker-modal__item" data-url="${escapeHtml(m.url)}" title="${escapeHtml(m.original)}">
-                <img src="${escapeHtml(m.url)}" alt="" loading="lazy"/>
-                <span>${escapeHtml((m.original || '').slice(0, 24))}</span>
+              <button type="button" class="image-picker-modal__item" data-url="${escapeHtml(m.url)}" title="${escapeHtml(m.original)}" style="${itemStyle}">
+                <img src="${escapeHtml(m.url)}" alt="" loading="lazy" style="${imgStyle}"/>
+                <span style="${capStyle}">${escapeHtml((m.original || '').slice(0, 24))}</span>
               </button>
-            `).join('') : '<div style="padding:40px; text-align:center; color:#5c5e62;">媒体库还没有图片，请先上传。</div>'}
+            `).join('') : '<div style="grid-column:1/-1;padding:48px;text-align:center;color:#64748b;">媒体库还没有图片，请先上传。</div>'}
           </div>
         </div>
       `;
       document.body.appendChild(overlay);
-      const close = () => overlay.remove();
+
+      const close = () => { overlay.remove(); document.removeEventListener('keydown', onKey); };
+      const onKey = (e) => { if (e.key === 'Escape') close(); };
+      document.addEventListener('keydown', onKey);
       overlay.querySelector('.image-picker-modal__close').addEventListener('click', close);
       overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
       overlay.querySelectorAll('.image-picker-modal__item').forEach((b) => {
+        b.addEventListener('mouseenter', () => { b.style.borderColor = '#2563eb'; });
+        b.addEventListener('mouseleave', () => { b.style.borderColor = 'transparent'; });
         b.addEventListener('click', () => {
           setValue(encodeImageUrl(b.dataset.url, position, fit));
           close();
