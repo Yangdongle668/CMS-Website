@@ -12,7 +12,8 @@
     "db:init": "node server/db/init.js",
     "db:seed": "node server/db/init.js --seed",
     "retention": "node server/jobs/retention.js",
-    "images:localize": "node scripts/download-unsplash-images.js"
+    "images:localize": "node scripts/download-unsplash-images.js",
+    "images:optimize": "node scripts/optimize-seed-images.js"
   },
   "engines": {
     "node": ">=18.0.0"

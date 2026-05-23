@@ -292,6 +292,42 @@ const staticHeaders = (res, filePath) => {
   res.setHeader('Cache-Control', 'public, max-age=86400');       // 1 day
 };
 
+// ----- WebP content negotiation -----
+// Transparently serve .webp variants to browsers that support them.
+// This works for CSS background-image, <img>, and all other requests —
+// no HTML changes needed. The browser sends Accept: image/webp when it
+// can decode WebP (Chrome/Edge/Firefox/Safari 14+).
+//
+// Seed images:  /assets/img/seed/foo.jpg  → foo.webp (same dir, no suffix)
+// Uploads:      /uploads/foo.jpg          → foo-1280.webp (image-processor variant)
+//
+// Vary: Accept tells CDNs to cache WebP and JPEG separately.
+const SEED_IMG_DIR = path.join(ROOT, 'public', 'assets', 'img', 'seed');
+const UPLOADS_DIR  = path.join(ROOT, 'uploads');
+
+app.use('/assets/img/seed', (req, res, next) => {
+  if (!req.path.endsWith('.jpg')) return next();
+  if (!(req.headers.accept || '').includes('image/webp')) return next();
+  const webpFile = path.join(SEED_IMG_DIR, req.path.slice(0, -4) + '.webp');
+  if (!fs.existsSync(webpFile)) return next();
+  res.setHeader('Content-Type', 'image/webp');
+  res.setHeader('Vary', 'Accept');
+  res.setHeader('Cache-Control', 'public, max-age=2592000');
+  res.sendFile(webpFile);
+});
+
+app.use('/uploads', (req, res, next) => {
+  if (!req.path.endsWith('.jpg')) return next();
+  if (!(req.headers.accept || '').includes('image/webp')) return next();
+  const base = path.basename(req.path, '.jpg');
+  const webpFile = path.join(UPLOADS_DIR, `${base}-1280.webp`);
+  if (!fs.existsSync(webpFile)) return next();
+  res.setHeader('Content-Type', 'image/webp');
+  res.setHeader('Vary', 'Accept');
+  res.setHeader('Cache-Control', 'public, max-age=2592000');
+  res.sendFile(webpFile);
+});
+
 // ----- Static uploads -----
 // Uploads use UUID-style filenames so the URL itself is the cache key.
 app.use('/uploads', express.static(path.join(ROOT, 'uploads'), {
