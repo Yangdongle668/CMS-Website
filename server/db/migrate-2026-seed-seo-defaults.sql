@@ -60,25 +60,31 @@ INSERT INTO settings (key, value) VALUES (
 )
 ON CONFLICT (key) DO NOTHING;
 
--- SEO — only set DEFAULT fields that are missing. Never overwrite the
--- operator's public_url, verification codes or GA4 ID.
+-- SEO — only seed the default OG image (brand asset that exists at
+-- /public/logo.png). Social-media handles (twitter_handle, etc.) are
+-- INTENTIONALLY left unset — the operator must opt in by entering their
+-- real handle in /admin/settings.html. We never invent handles that
+-- might not exist, because <meta name="twitter:site" content="@x"> on
+-- a non-existent account hurts trust scoring.
 INSERT INTO settings (key, value) VALUES (
   'seo',
   $JSON${
-    "twitter_handle": "zufek",
     "default_meta_image": "/logo.png"
   }$JSON$::jsonb
 )
 ON CONFLICT (key) DO NOTHING;
 
--- For existing seo rows that lack twitter_handle / default_meta_image,
--- backfill ONLY those keys without touching anything else.
-UPDATE settings
-SET value = jsonb_set(value, '{twitter_handle}', '"zufek"', true)
-WHERE key = 'seo'
-  AND (value->>'twitter_handle' IS NULL OR value->>'twitter_handle' = '');
-
+-- Backfill default_meta_image on existing seo rows that lack it.
 UPDATE settings
 SET value = jsonb_set(value, '{default_meta_image}', '"/logo.png"', true)
 WHERE key = 'seo'
   AND (value->>'default_meta_image' IS NULL OR value->>'default_meta_image' = '');
+
+-- Cleanup: previous version of this migration mistakenly seeded
+-- twitter_handle="zufek". Remove that exact value here so the
+-- twitter:site meta tag and X/Twitter card stop pointing to a
+-- non-existent account. Real handles entered via the admin are kept.
+UPDATE settings
+SET value = value - 'twitter_handle'
+WHERE key = 'seo'
+  AND value->>'twitter_handle' = 'zufek';
