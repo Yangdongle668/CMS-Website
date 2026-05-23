@@ -19,11 +19,13 @@
 <meta name="twitter:image" content="{{DEFAULT_OG_IMAGE}}">
 <meta name="theme-color" content="#0b3a82">
 <meta name="format-detection" content="telephone=no">
+<!-- LCP hero image: preload BEFORE the stylesheet so the browser starts
+     the download immediately rather than queueing behind CSS. Server-side
+     content negotiation serves the .webp variant to capable browsers. -->
+<link rel="preload" as="image" href="/assets/img/seed/photo-1593642634443-44adaa06623a.jpg" fetchpriority="high">
 <link rel="stylesheet" href="/styles.css?v=19">
-<link rel="preconnect" href="https://images.unsplash.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="preload" as="image" href="/assets/img/seed/photo-1593642634443-44adaa06623a.jpg" fetchpriority="high">
 </head>
 <body class="home" data-nav="home" data-page="home">
 
@@ -401,8 +403,20 @@ const escape = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&
   counters.forEach((c) => io.observe(c));
 })();
 
+// Defer non-critical network fetches until the browser is idle so they
+// don't compete with the hero image (LCP) for bandwidth/CPU. Without this
+// wrapper the /api/articles + /api/applications requests show up in
+// Lighthouse's LCP critical path even though their content is below fold.
+const whenIdle = (fn) => {
+  const run = () => ('requestIdleCallback' in window)
+    ? requestIdleCallback(fn, { timeout: 2000 })
+    : setTimeout(fn, 100);
+  if (document.readyState === 'complete') run();
+  else window.addEventListener('load', run, { once: true });
+};
+
 // 2) Latest Insights — pull 3 articles from /api/articles
-(async function () {
+whenIdle(async function () {
   const grid = document.querySelector('[data-insights-grid]');
   if (!grid) return;
   try {
@@ -425,13 +439,13 @@ const escape = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&
       </a>`;
     }).join('');
   } catch (_) { /* keep empty */ }
-})();
+});
 
 // 3a) Hydrate the Tesla applications slider from /api/applications.
 //     Adding a new application in the admin auto-appears here; the
 //     static slides above act as a fallback for the brief moment
 //     before the fetch resolves and for users with JS disabled.
-(function () {
+whenIdle(function () {
   const track = document.querySelector('[data-slider-track]');
   if (!track) return;
   fetch('/api/applications').then((r) => (r.ok ? r.json() : null)).then((d) => {
@@ -464,7 +478,7 @@ const escape = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&
     track.scrollLeft = 0;
     track.dispatchEvent(new Event('scroll'));
   }).catch(() => { /* keep static fallback */ });
-})();
+});
 
 // 3) Apply CMS sections JSON to homepage product cards / stats / CTA
 document.addEventListener('page:sections', (ev) => {
