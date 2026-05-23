@@ -213,90 +213,107 @@
       }
       items = items.filter((m) => /^image\//i.test(m.mime || ''));
 
-      // Fully inline-styled modal — does not depend on admin.css at all, so it
-      // can't be broken by stylesheet caching, missing rules, or unsupported
-      // CSS functions. Avoids min()/aspect-ratio for old-renderer safety.
+      // Build entirely via DOM API — no innerHTML, no class names — so admin.css
+      // cannot interfere with any element in this modal. Explicit pixel sizes on
+      // every img so layout never depends on aspect-ratio or CSS-class height rules.
       const overlay = document.createElement('div');
-      overlay.className = 'image-picker-modal';
-      // Use position:absolute on the panel (centered via top/left + transform) so
-      // the body can use top/bottom anchoring for a guaranteed, non-flex height.
-      // Flex column layouts can silently compress grid children in some browsers.
       overlay.style.cssText =
-        'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;' +
-        'background:rgba(15,23,42,0.55);';
+        'position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999;' +
+        'background:rgba(15,23,42,0.55);display:flex;align-items:center;justify-content:center;';
 
-      const panelStyle =
-        'position:absolute;top:50%;left:50%;' +
-        'transform:translate(-50%,-50%);-webkit-transform:translate(-50%,-50%);' +
-        'width:90%;max-width:920px;height:85%;max-height:640px;' +
+      const panel = document.createElement('div');
+      panel.style.cssText =
         'background:#fff;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,0.3);' +
-        'overflow:hidden;';
-      // Head: absolutely positioned, fixed 56px height at top of panel
-      const headStyle =
-        'position:absolute;top:0;left:0;right:0;height:56px;' +
-        'display:flex;align-items:center;justify-content:space-between;' +
-        'padding:0 20px;border-bottom:1px solid #e5e7eb;background:#fff;z-index:1;';
-      // Body: fills all space BELOW the head — guaranteed height, no flex math
-      const bodyStyle =
-        'position:absolute;top:56px;left:0;right:0;bottom:0;' +
-        'overflow-y:auto;padding:16px;display:grid;align-content:start;' +
-        'grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;';
-      const itemStyle =
-        'border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;cursor:pointer;' +
-        'transition:box-shadow 0.12s ease,border-color 0.12s ease;';
-      // Exact same pattern as /admin/media.html's renderCard():
-      // plain <div> containing <img style="aspect-ratio:1;object-fit:cover"> —
-      // no button wrapper, no fixed height, no flex column.
-      const capStyle =
-        'padding:7px 9px;font-size:11px;color:#64748b;background:#fff;' +
-        'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+        'width:90%;max-width:920px;height:80vh;max-height:620px;' +
+        'display:flex;flex-direction:column;overflow:hidden;';
 
-      overlay.innerHTML = `
-        <div style="${panelStyle}">
-          <div style="${headStyle}">
-            <h3 style="margin:0;font-size:16px;font-weight:700;color:#0f172a;">选择媒体库中的图片</h3>
-            <button type="button" class="image-picker-modal__close" aria-label="关闭"
-                    style="background:none;border:0;font-size:24px;line-height:1;cursor:pointer;color:#64748b;padding:2px 8px;">&times;</button>
-          </div>
-          <div style="${bodyStyle}">
-            ${items.length ? items.map((m) => {
-              const safeUrl = escapeHtml(m.url);
-              const safeName = escapeHtml((m.original || m.url.split('/').pop() || '').slice(0, 28));
-              return `<div class="image-picker-modal__item" data-url="${safeUrl}"
-                          title="${escapeHtml(m.original)}" role="button" tabindex="0"
-                          style="${itemStyle}">
-                <img src="${safeUrl}" alt="${safeName}"
-                     style="width:100%;aspect-ratio:1;object-fit:cover;background:#f1f5f9;display:block;"
-                     onerror="this.style.opacity=0.15"/>
-                <div style="${capStyle}">${safeName}</div>
-              </div>`;
-            }).join('') : '<div style="grid-column:1/-1;padding:48px;text-align:center;color:#64748b;">媒体库还没有图片，请先上传。</div>'}
-          </div>
-        </div>
-      `;
+      const head = document.createElement('div');
+      head.style.cssText =
+        'display:flex;align-items:center;justify-content:space-between;' +
+        'padding:0 20px;height:56px;flex-shrink:0;border-bottom:1px solid #e5e7eb;background:#fff;';
+      const headTitle = document.createElement('h3');
+      headTitle.textContent = '选择媒体库中的图片';
+      headTitle.style.cssText = 'margin:0;font-size:16px;font-weight:700;color:#0f172a;';
+      const closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.textContent = '×';
+      closeBtn.setAttribute('aria-label', '关闭');
+      closeBtn.style.cssText =
+        'background:none;border:0;font-size:24px;line-height:1;cursor:pointer;color:#64748b;padding:2px 8px;';
+      head.appendChild(headTitle);
+      head.appendChild(closeBtn);
+
+      // Scroll wrapper — flex:1 + min-height:0 is the correct pattern for a
+      // flex child that must scroll; without min-height:0 the browser uses
+      // min-height:auto which prevents shrinking and breaks overflow:auto.
+      const body = document.createElement('div');
+      body.style.cssText = 'flex:1;min-height:0;overflow-y:auto;padding:16px;';
+
+      // Separate grid container from the scroll wrapper so grid track sizing
+      // is never confused by the overflow context.
+      const grid = document.createElement('div');
+      grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:12px;align-content:start;';
+
+      if (items.length === 0) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'width:100%;padding:48px;text-align:center;color:#64748b;';
+        empty.textContent = '媒体库还没有图片，请先上传。';
+        grid.appendChild(empty);
+      } else {
+        items.forEach((m) => {
+          const card = document.createElement('div');
+          // Fixed pixel width so flex sizing is fully explicit.
+          card.style.cssText =
+            'flex:0 0 150px;width:150px;border:2px solid #e5e7eb;border-radius:8px;' +
+            'overflow:hidden;cursor:pointer;';
+          card.setAttribute('role', 'button');
+          card.setAttribute('tabindex', '0');
+          card.title = m.original || '';
+
+          const img = document.createElement('img');
+          img.src = m.url;
+          img.alt = m.original || '';
+          // Explicit pixel height — no aspect-ratio, no CSS-class override possible.
+          img.style.cssText =
+            'display:block;width:150px;height:150px;object-fit:cover;background:#f1f5f9;';
+          img.addEventListener('error', () => { img.style.opacity = '0.15'; });
+
+          const cap = document.createElement('div');
+          cap.style.cssText =
+            'padding:6px 8px;font-size:11px;color:#64748b;background:#fff;' +
+            'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+          cap.textContent = (m.original || m.url.split('/').pop() || '').slice(0, 28);
+
+          card.appendChild(img);
+          card.appendChild(cap);
+
+          card.addEventListener('mouseenter', () => {
+            card.style.borderColor = '#2563eb';
+            card.style.boxShadow = '0 0 0 3px #dbeafe';
+          });
+          card.addEventListener('mouseleave', () => {
+            card.style.borderColor = '#e5e7eb';
+            card.style.boxShadow = 'none';
+          });
+          const select = () => { setValue(encodeImageUrl(m.url, position, fit)); close(); };
+          card.addEventListener('click', select);
+          card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') select(); });
+
+          grid.appendChild(card);
+        });
+      }
+
+      body.appendChild(grid);
+      panel.appendChild(head);
+      panel.appendChild(body);
+      overlay.appendChild(panel);
       document.body.appendChild(overlay);
 
       const close = () => { overlay.remove(); document.removeEventListener('keydown', onKey); };
       const onKey = (e) => { if (e.key === 'Escape') close(); };
       document.addEventListener('keydown', onKey);
-      overlay.querySelector('.image-picker-modal__close').addEventListener('click', close);
+      closeBtn.addEventListener('click', close);
       overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
-      overlay.querySelectorAll('.image-picker-modal__item').forEach((item) => {
-        item.addEventListener('mouseenter', () => {
-          item.style.borderColor = '#2563eb';
-          item.style.boxShadow = '0 0 0 3px #dbeafe';
-        });
-        item.addEventListener('mouseleave', () => {
-          item.style.borderColor = '#e5e7eb';
-          item.style.boxShadow = 'none';
-        });
-        const select = () => {
-          setValue(encodeImageUrl(item.dataset.url, position, fit));
-          close();
-        };
-        item.addEventListener('click', select);
-        item.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') select(); });
-      });
     }
 
     render();
