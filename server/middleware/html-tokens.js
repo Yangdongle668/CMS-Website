@@ -376,7 +376,58 @@ function replaceTokens(html, ctx) {
   // Safe to run last because all earlier passes operate on text content
   // and don't touch <script src="..."> / <link href="..."> attributes.
   out = rewriteAssetUrls(out);
+  // Performance polish: defer local scripts + async-load Google Fonts.
+  // Runs after asset URL rewriting so it sees the hashed paths and can
+  // defer them too. Skipped on admin pages by the outer middleware.
+  out = optimizeAssetLoading(out);
   return out;
+}
+
+// Reduces render-blocking by:
+//   1. Adding `defer` to local <script src="/..."> tags (they currently
+//      sit at end-of-body without defer, so the browser blocks DCL on
+//      them; defer lets HTML parse fully first and the JS run in order
+//      after parsing completes).
+//   2. Converting <link rel="stylesheet" href="...googleapis.com..."> to
+//      the rel=preload + onload + <noscript> fallback pattern, so the
+//      font CSS no longer blocks first paint.
+//   3. Preconnecting to fonts.gstatic.com (where the .woff2 files live)
+//      to save ~100-200ms of TLS / DNS on the font fetch.
+//   4. Stripping the obsolete preconnect to images.unsplash.com (every
+//      image was localised to /assets/img/seed/).
+function optimizeAssetLoading(html) {
+  // 1. Add `defer` to local script tags missing async/defer/type=module
+  html = html.replace(
+    /<script\s+([^>]*?)src=("\/[^"]+\.js[^"]*"|"\/dist\/[^"]+")([^>]*?)><\/script>/gi,
+    (match, before, src, after) => {
+      const all = (before || '') + (after || '');
+      if (/\b(async|defer)\b/.test(all)) return match;
+      if (/\btype=["']module/.test(all)) return match;
+      return `<script ${before}src=${src}${after} defer></script>`;
+    }
+  );
+
+  // 2 + 3. Async-load Google Fonts CSS and add fonts.gstatic.com preconnect
+  const fontsRe = /<link\s+href=("https:\/\/fonts\.googleapis\.com\/css2\?[^"]+")\s+rel="stylesheet"[^>]*>/i;
+  const fontsMatch = html.match(fontsRe);
+  if (fontsMatch && !/rel=["']preload["'][^>]*fonts\.googleapis/i.test(html)) {
+    const href = fontsMatch[1];
+    let replacement = '';
+    if (!/preconnect[^>]+fonts\.gstatic/i.test(html)) {
+      replacement += '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n';
+    }
+    replacement += `<link rel="preload" as="style" href=${href} onload="this.onload=null;this.rel='stylesheet'">\n`;
+    replacement += `<noscript><link rel="stylesheet" href=${href}></noscript>`;
+    html = html.replace(fontsRe, replacement);
+  }
+
+  // 4. Remove obsolete unsplash preconnect (images are local now)
+  html = html.replace(
+    /[ \t]*<link\s+rel="preconnect"\s+href="https:\/\/images\.unsplash\.com"[^>]*>\s*\n?/gi,
+    ''
+  );
+
+  return html;
 }
 
 function applyTextOverrides(html, map) {

@@ -4496,3 +4496,160 @@ html.has-exit-modal { overflow: hidden; }
 .mini-rfq .rfq-attach__hint strong { color: #0b3a82; }
 .mini-rfq .rfq-attach__row { background: #fff; color: #0f172a; border-color: #e2e8f0; }
 .mini-rfq .rfq-attach__size { color: #94a3b8; }
+
+/* ===========================================================
+   Mobile UX polish — runs LAST so it overrides earlier blocks.
+   Designed from a real-user perspective on a 360px-wide phone.
+   =========================================================== */
+
+/* All-screens: enable iOS safe-area + smoother tap behaviour */
+html {
+  -webkit-tap-highlight-color: rgba(11, 58, 130, 0.15);
+  -webkit-text-size-adjust: 100%;
+}
+body { padding-bottom: env(safe-area-inset-bottom); }
+
+/* ── ≤ 760 px (most phones in portrait) ─────────────────── */
+@media (max-width: 760px) {
+  /* Hero — shorter, tighter, readable */
+  .hero {
+    min-height: auto;
+    padding: 96px 20px 56px;
+  }
+  .hero h1 {
+    font-size: 32px;
+    line-height: 1.18;
+    letter-spacing: -0.4px;
+    margin-bottom: 14px;
+  }
+  .hero .subtitle {
+    font-size: 15.5px;
+    line-height: 1.55;
+    max-width: 36em;
+  }
+  .hero-bottom { margin-top: 36px; }
+
+  /* Page heroes (about / contact / blog / faq …) */
+  .page-hero { min-height: 38vh; padding: 104px 20px 48px; }
+  .page-hero h1 { font-size: 28px; line-height: 1.2; letter-spacing: -0.3px; }
+  .page-hero p { font-size: 14.5px; line-height: 1.55; }
+
+  /* Section blocks — pull vertical padding way down */
+  .section { padding: 60px 20px; }
+  .section h2 {
+    font-size: 26px;
+    line-height: 1.22;
+    letter-spacing: -0.4px;
+    margin-bottom: 14px;
+  }
+  .section .lead {
+    font-size: 15px;
+    line-height: 1.65;
+    margin-bottom: 32px;
+  }
+  .eyebrow {
+    font-size: 10.5px;
+    letter-spacing: 1.8px;
+    margin-bottom: 10px;
+  }
+
+  /* CTA buttons — full-width stack, big touch targets */
+  .cta-group { flex-direction: column; gap: 10px; width: 100%; }
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-accent {
+    min-height: 48px;
+    padding: 13px 22px;
+    font-size: 14.5px;
+    min-width: 100%;
+    box-sizing: border-box;
+  }
+  .btn-accent { min-width: 100%; }
+
+  /* Trust strip — wrap cleanly without horizontal scroll */
+  .trust-strip { padding: 16px 20px; }
+  .trust-strip__inner { flex-direction: column; gap: 10px; align-items: center; }
+  .trust-strip__items { gap: 12px 20px; flex-wrap: wrap; justify-content: center; }
+  .trust-strip__items span { font-size: 11.5px; letter-spacing: 0.6px; }
+  .trust-strip__label { font-size: 11px; }
+
+  /* Pillar / product / blog cards — denser, taller tap area */
+  .pillar-card__body { padding: 20px 22px 22px; }
+  .pillar-card h3 { font-size: 19px; margin-bottom: 8px; }
+  .pillar-card__media { aspect-ratio: 16 / 10; }
+
+  /* Form inputs — 16 px font on iOS prevents the focus-zoom jump */
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="search"],
+  input[type="url"],
+  textarea,
+  select {
+    font-size: 16px;
+    min-height: 44px;
+  }
+  textarea { min-height: 96px; }
+
+  /* Mobile menu button — make the tap target a real 44 × 44 */
+  .menu-btn { min-height: 44px; min-width: 44px; padding: 10px 14px; }
+
+  /* Side menu links — generous spacing */
+  .side-menu a,
+  .side-menu .side-title {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+  }
+
+  /* Nav header — reduce horizontal padding so brand has room */
+  .nav { padding: 12px 20px; }
+  .brand { font-size: 22px; }
+
+  /* Mini-RFQ floating button — safe-area aware so it clears iOS home bar */
+  .mini-rfq__toggle {
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    right: 20px;
+  }
+
+  /* Headings inside the body — keep them mobile-readable */
+  h3 { font-size: 18px; }
+  p, li { font-size: 15px; line-height: 1.65; }
+
+  /* Tables (if any) — allow horizontal scroll instead of overflow */
+  .panel table,
+  .responsive-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ── ≤ 480 px (small phones, e.g. iPhone SE) ─────────────── */
+@media (max-width: 480px) {
+  .hero { padding: 88px 18px 48px; }
+  .hero h1 { font-size: 28px; }
+  .hero .subtitle { font-size: 14.5px; }
+
+  .page-hero { padding: 96px 18px 40px; }
+  .page-hero h1 { font-size: 25px; }
+
+  .section { padding: 50px 18px; }
+  .section h2 { font-size: 23px; }
+
+  body { font-size: 15.5px; }
+  h3 { font-size: 17px; }
+
+  /* Trust strip — show all logos on two clean rows */
+  .trust-strip__items span { font-size: 11px; }
+}
+
+/* ── Long-press / drag selection on mobile ───────────────── */
+@media (hover: none) and (pointer: coarse) {
+  /* Disable hover-only effects that linger on touch */
+  .pillar-card:hover .pillar-card__media,
+  .feat-card:hover { transform: none; }
+}
