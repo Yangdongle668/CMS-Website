@@ -799,7 +799,10 @@ function injectFloatingQuote() {
   window.addEventListener('resize', sync, { passive: true });
   // Re-check after images / partials finish loading and shift layout
   setTimeout(sync, 600);
-  sync();
+  // Use rAF for the initial sync so the scrollHeight read happens AFTER the
+  // browser has committed the preceding DOM mutations (appendChild), avoiding
+  // a forced synchronous layout on page load.
+  requestAnimationFrame(sync);
 }
 
 // Boot: render fallback synchronously so other scripts (script.js) find
