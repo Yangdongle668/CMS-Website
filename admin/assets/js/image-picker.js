@@ -218,20 +218,28 @@
       // CSS functions. Avoids min()/aspect-ratio for old-renderer safety.
       const overlay = document.createElement('div');
       overlay.className = 'image-picker-modal';
+      // Use position:absolute on the panel (centered via top/left + transform) so
+      // the body can use top/bottom anchoring for a guaranteed, non-flex height.
+      // Flex column layouts can silently compress grid children in some browsers.
       overlay.style.cssText =
         'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;' +
-        'background:rgba(15,23,42,0.55);display:flex;align-items:center;' +
-        'justify-content:center;padding:24px;box-sizing:border-box;';
+        'background:rgba(15,23,42,0.55);';
 
       const panelStyle =
+        'position:absolute;top:50%;left:50%;' +
+        'transform:translate(-50%,-50%);-webkit-transform:translate(-50%,-50%);' +
+        'width:90%;max-width:920px;height:85%;max-height:640px;' +
         'background:#fff;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,0.3);' +
-        'width:100%;max-width:920px;max-height:85vh;display:flex;flex-direction:column;' +
-        'overflow:hidden;box-sizing:border-box;';
+        'overflow:hidden;';
+      // Head: absolutely positioned, fixed 56px height at top of panel
       const headStyle =
+        'position:absolute;top:0;left:0;right:0;height:56px;' +
         'display:flex;align-items:center;justify-content:space-between;' +
-        'padding:16px 20px;border-bottom:1px solid #e5e7eb;flex:0 0 auto;';
+        'padding:0 20px;border-bottom:1px solid #e5e7eb;background:#fff;z-index:1;';
+      // Body: fills all space BELOW the head — guaranteed height, no flex math
       const bodyStyle =
-        'padding:16px;overflow-y:auto;display:grid;align-content:start;' +
+        'position:absolute;top:56px;left:0;right:0;bottom:0;' +
+        'overflow-y:auto;padding:16px;display:grid;align-content:start;' +
         'grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;';
       const itemStyle =
         'display:block;width:100%;padding:0;margin:0;border:2px solid transparent;' +
