@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>Robots.txt | 后台管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/admin/assets/css/admin.css"/>
+<style>
+.robots-layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start; }
+@media (max-width: 1100px) { .robots-layout { grid-template-columns: 1fr; } }
+#robots-editor {
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.65;
+  min-height: 540px;
+  resize: vertical;
+  background: #f8fafc;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  width: 100%;
+  color: var(--text);
+  transition: border-color var(--t), box-shadow var(--t);
+}
+#robots-editor:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: var(--ring);
+  background: #fff;
+}
+.hint-card {
+  background: var(--brand-soft);
+  border: 1px solid var(--brand-soft-2);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  font-size: 12.5px;
+  color: var(--brand-text);
+  line-height: 1.55;
+}
+.hint-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 8px; color: var(--brand-text); }
+.hint-card ul { padding-left: 16px; }
+.hint-card li { margin-bottom: 4px; }
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--r-sm);
+  font-size: 12.5px;
+  font-weight: 500;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-mute2);
+}
+.status-bar.is-custom { background: var(--success-soft); border-color: rgba(5,150,105,0.2); color: var(--success-text); }
+.status-bar.is-default { background: var(--surface-2); }
+</style>
+</head>
+<body>
+<div data-admin-shell></div>
+<script src="/admin/assets/js/admin.js"></script>
+<script>
+(async function () {
+  const { api, escapeHtml, toast, bootShell } = window.AdminAPI;
+  const shell = await bootShell({ title: 'Robots.txt', crumbs: '设置 / Robots.txt' });
+  if (!shell) return;
+
+  shell.actions.innerHTML = `
+    <button class="btn btn--ghost btn--sm" id="btn-preview">预览当前</button>
+    <button class="btn btn--ghost btn--sm" id="btn-reset">恢复默认</button>
+    <button class="btn btn--sm" id="btn-save">保存</button>`;
+
+  // Load current content
+  let isCustom = false;
+  let defaultContent = '';
+
+  // Get default content from server (the /robots.txt endpoint will show the default)
+  async function loadDefault() {
+    const r = await fetch('/robots.txt');
+    return r.text();
+  }
+
+  async function load() {
+    const [data, def] = await Promise.all([
+      api('/api/robots'),
+      loadDefault(),
+    ]);
+    defaultContent = def;
+    isCustom = data.is_custom;
+    editor.value = data.content || def;
+    updateStatusBar();
+  }
+
+  function updateStatusBar() {
+    const bar = document.getElementById('status-bar');
+    if (!bar) return;
+    bar.className = 'status-bar ' + (isCustom ? 'is-custom' : 'is-default');
+    bar.textContent = isCustom
+      ? '✓ 当前使用自定义 robots.txt（已保存）'
+      : '当前使用系统默认（SEO + GEO 最佳实践，编辑后点「保存」即自定义）';
+  }
+
+  shell.content.innerHTML = `
+    <div class="robots-layout">
+      <div>
+        <div class="panel">
+          <div class="panel__head">
+            <div>
+              <h2 style="font-size:14px;">编辑 robots.txt</h2>
+              <p>控制搜索引擎和 AI 爬虫对本站的访问权限。修改后 <strong>实时生效</strong>，无需重启。</p>
+            </div>
+          </div>
+          <div id="status-bar" class="status-bar" style="margin-bottom:14px;"></div>
+          <textarea id="robots-editor" spellcheck="false" autocomplete="off"></textarea>
+        </div>
+      </div>
+      <div>
+        <div class="panel" style="margin-bottom:16px;">
+          <h3 style="font-size:13px;font-weight:700;margin-bottom:12px;">SEO + GEO 说明</h3>
+          <div style="font-size:12.5px;color:var(--text-muted);line-height:1.65;">
+            <p style="margin-bottom:10px;"><strong>SEO（搜索引擎优化）</strong><br/>
+            允许 Google、Bing、百度等主流搜索引擎爬取所有公开页面，屏蔽 /admin/ 和 /api/ 路径防止泄露后台结构。</p>
+            <p style="margin-bottom:10px;"><strong>GEO（生成式引擎优化）</strong><br/>
+            显式允许 ChatGPT、Claude、Gemini、Perplexity 等 AI 爬虫访问，使你的内容有机会出现在 AI 回答和引用中。这是 2025 年以来最重要的新兴流量渠道。</p>
+            <p><strong>默认预设</strong>已包含：</p>
+            <ul style="padding-left:16px;margin-top:6px;color:var(--text-mute2);">
+              <li style="margin-bottom:3px;">Google · Bing · 百度 · Yandex</li>
+              <li style="margin-bottom:3px;">GPTBot · ChatGPT-User · OAI-SearchBot</li>
+              <li style="margin-bottom:3px;">Google-Extended（Gemini）</li>
+              <li style="margin-bottom:3px;">ClaudeBot · anthropic-ai</li>
+              <li style="margin-bottom:3px;">PerplexityBot · YouBot</li>
+              <li style="margin-bottom:3px;">Applebot-Extended（Apple Intelligence）</li>
+              <li style="margin-bottom:3px;">FacebookBot（Meta AI）</li>
+              <li style="margin-bottom:3px;">CCBot（训练 Mistral 等开源模型）</li>
+              <li style="margin-bottom:3px;">Bytespider · cohere-ai</li>
+              <li style="margin-bottom:3px;">AhrefsBot / SemrushBot（限速）</li>
+              <li>MJ12bot / DotBot 等（屏蔽）</li>
+            </ul>
+          </div>
+        </div>
+        <div class="panel" style="font-size:12px;color:var(--text-mute2);">
+          <h3 style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text);">常用语法</h3>
+          <table style="width:100%;border-collapse:collapse;line-height:1.7;">
+            <tr><td style="padding:3px 8px 3px 0;color:var(--text)"><code>User-agent: *</code></td><td>所有爬虫</td></tr>
+            <tr><td style="padding:3px 8px 3px 0;color:var(--text)"><code>Disallow: /path/</code></td><td>禁止爬取</td></tr>
+            <tr><td style="padding:3px 8px 3px 0;color:var(--text)"><code>Allow: /</code></td><td>允许爬取</td></tr>
+            <tr><td style="padding:3px 8px 3px 0;color:var(--text)"><code>Crawl-delay: 10</code></td><td>爬取间隔（秒）</td></tr>
+            <tr><td style="padding:3px 8px 3px 0;color:var(--text)"><code>Sitemap: url</code></td><td>sitemap 地址</td></tr>
+            <tr><td style="padding:3px 8px 3px 0;color:var(--text)"><code># 注释</code></td><td>井号开头为注释</td></tr>
+          </table>
+          <p style="margin-top:12px;">
+            <a href="/robots.txt" target="_blank" style="font-weight:600;">↗ 查看当前 robots.txt</a>
+          </p>
+        </div>
+      </div>
+    </div>`;
+
+  const editor = document.getElementById('robots-editor');
+  await load();
+
+  // Save
+  document.getElementById('btn-save').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-save');
+    btn.disabled = true;
+    btn.textContent = '保存中…';
+    try {
+      await api('/api/robots', { method: 'PUT', body: JSON.stringify({ content: editor.value }) });
+      isCustom = true;
+      updateStatusBar();
+      toast('robots.txt 已保存，立即生效', 'success');
+    } catch (err) {
+      toast('保存失败：' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '保存';
+    }
+  });
+
+  // Reset to default
+  document.getElementById('btn-reset').addEventListener('click', async () => {
+    if (!confirm('确定恢复默认 robots.txt？自定义内容将被删除。')) return;
+    try {
+      await api('/api/robots', { method: 'DELETE' });
+      isCustom = false;
+      const fresh = await loadDefault();
+      defaultContent = fresh;
+      editor.value = fresh;
+      updateStatusBar();
+      toast('已恢复系统默认', 'success');
+    } catch (err) {
+      toast('操作失败：' + err.message, 'error');
+    }
+  });
+
+  // Preview current live file
+  document.getElementById('btn-preview').addEventListener('click', () => {
+    window.open('/robots.txt', '_blank');
+  });
+})();
+</script>
+</body>
+</html>

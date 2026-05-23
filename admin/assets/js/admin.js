@@ -51,6 +51,8 @@
         icon: ico('<line x1="6" y1="4" x2="13" y2="4"/><line x1="6" y1="8" x2="13" y2="8"/><line x1="6" y1="12" x2="13" y2="12"/><polyline points="3,3.5 3.75,4.5 5,2.5"/><polyline points="3,7.5 3.75,8.5 5,6.5"/><polyline points="3,11.5 3.75,12.5 5,10.5"/>') },
     ]},
     { group: '设置', items: [
+      { label: 'Robots.txt',    href: '/admin/robots.html',
+        icon: ico('<rect x="3" y="5.5" width="10" height="8" rx="2"/><circle cx="6" cy="9" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="9" r="1" fill="currentColor" stroke="none"/><path d="M5.5 12.5h5"/><path d="M8 2v3.5"/><path d="M5.5 2h5"/>') },
       { label: '域名 & SSL',   href: '/admin/domain.html',
         icon: ico('<circle cx="8" cy="8" r="6.5"/><ellipse cx="8" cy="8" rx="3" ry="6.5"/><line x1="1.5" y1="8" x2="14.5" y2="8"/>') },
       { label: '站点设置',     href: '/admin/settings.html',
