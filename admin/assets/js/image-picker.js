@@ -237,7 +237,11 @@
         'display:block;width:100%;padding:0;margin:0;border:2px solid transparent;' +
         'border-radius:10px;background:#f1f5f9;overflow:hidden;cursor:pointer;' +
         'text-align:left;-webkit-appearance:none;appearance:none;font:inherit;';
-      const imgStyle = 'display:block;width:100%;height:120px;object-fit:cover;';
+      // Use background-image divs instead of <img> to avoid replaced-element
+      // rendering quirks where explicit height may be ignored by some browsers.
+      const thumbStyle =
+        'width:100%;height:120px;background-color:#e2e8f0;' +
+        'background-size:cover;background-position:center;background-repeat:no-repeat;';
       const capStyle =
         'display:block;padding:6px 8px;font-size:11px;color:#64748b;background:#fff;' +
         'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
@@ -250,12 +254,13 @@
                     style="background:none;border:0;font-size:24px;line-height:1;cursor:pointer;color:#64748b;padding:2px 8px;">&times;</button>
           </div>
           <div style="${bodyStyle}">
-            ${items.length ? items.map((m) => `
-              <button type="button" class="image-picker-modal__item" data-url="${escapeHtml(m.url)}" title="${escapeHtml(m.original)}" style="${itemStyle}">
-                <img src="${escapeHtml(m.url)}" alt="" loading="lazy" style="${imgStyle}"/>
+            ${items.length ? items.map((m) => {
+              const safeUrl = escapeHtml(m.url).replace(/'/g, '%27');
+              return `<button type="button" class="image-picker-modal__item" data-url="${escapeHtml(m.url)}" title="${escapeHtml(m.original)}" style="${itemStyle}">
+                <div style="${thumbStyle}background-image:url('${safeUrl}');"></div>
                 <span style="${capStyle}">${escapeHtml((m.original || '').slice(0, 24))}</span>
-              </button>
-            `).join('') : '<div style="grid-column:1/-1;padding:48px;text-align:center;color:#64748b;">媒体库还没有图片，请先上传。</div>'}
+              </button>`;
+            }).join('') : '<div style="grid-column:1/-1;padding:48px;text-align:center;color:#64748b;">媒体库还没有图片，请先上传。</div>'}
           </div>
         </div>
       `;
