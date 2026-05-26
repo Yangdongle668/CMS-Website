@@ -88,6 +88,7 @@
       }
       const err = new Error((json && json.error) || ('HTTP ' + res.status));
       err.status = res.status;
+      err.responseJson = json;   // preserve full response so callers can read detail/code/command
       throw err;
     }
     return json;

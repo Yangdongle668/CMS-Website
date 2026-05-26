@@ -216,11 +216,10 @@
         <p style="font-size:12px; color:var(--a-mute2); margin-top:8px;">检查收件人邮箱（可能在垃圾邮件里）。如果几分钟内没收到，看上面的 messageId 跟 SMTP 服务商对帐。</p>
       `;
     } catch (err) {
-      let detail = err.message;
-      try {
-        const j = JSON.parse(err.message.split(' ').pop() || '{}');
-        if (j.detail) detail = j.detail;
-      } catch (_) {}
+      const rj = err.responseJson || {};
+      let detail = rj.detail || err.message || 'unknown error';
+      if (rj.code) detail += `\ncode: ${rj.code}`;
+      if (rj.command) detail += `\ncommand: ${rj.command}`;
       result.innerHTML = `
         <div class="status-line is-warn">✗ 发送失败</div>
         <pre style="margin-top:10px; padding:10px; background:var(--a-danger-soft); color:var(--a-danger); border-radius:5px; font-size:11.5px; line-height:1.5;">${escapeHtml(detail)}</pre>
