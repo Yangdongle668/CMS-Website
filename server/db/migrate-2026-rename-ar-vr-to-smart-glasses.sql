@@ -2,9 +2,20 @@
 -- Rename `ar-vr` application + page slug to `smart-glasses` and update
 -- copy to focus on AI smart glasses (Meta Ray-Ban, Rokid, Even Realities
 -- class) rather than VR headsets. Idempotent: re-running has no effect.
+--
+-- Edge case handled: seed.sql was later updated to INSERT smart-glasses
+-- directly, so on re-seed both ar-vr (old DB row) and smart-glasses
+-- (new seed row) can coexist.  We delete the stale ar-vr row first to
+-- avoid a unique-constraint violation on the slug column.
 -- =====================================================================
 
 -- ----- applications table -----
+-- If smart-glasses already exists (from updated seed), the ar-vr row is
+-- a stale duplicate — delete it so the UPDATE below becomes a no-op.
+DELETE FROM applications
+ WHERE slug = 'ar-vr'
+   AND EXISTS (SELECT 1 FROM applications WHERE slug = 'smart-glasses');
+
 UPDATE applications SET
   slug             = 'smart-glasses',
   name             = 'Smart Glasses',
@@ -16,6 +27,10 @@ UPDATE applications SET
 WHERE slug = 'ar-vr';
 
 -- ----- pages table (CMS page for /applications/ar-vr.html) -----
+DELETE FROM pages
+ WHERE slug = 'applications/ar-vr'
+   AND EXISTS (SELECT 1 FROM pages WHERE slug = 'applications/smart-glasses');
+
 UPDATE pages SET
   slug             = 'applications/smart-glasses',
   title            = 'Smart Glasses',
