@@ -92,10 +92,6 @@ async function buildTransporter() {
     connectionTimeout: 15000,
     greetingTimeout: 15000,
     socketTimeout: 20000,
-    // Self-hosted mail servers (e.g. mail.<domain>) often present a
-    // self-signed or non-CA-chained cert. Skip cert chain validation so
-    // delivery still works; auth still happens over the encrypted channel.
-    tls: { rejectUnauthorized: false },
   });
 }
 
@@ -152,7 +148,6 @@ async function sendTestEmail(toAddr, fromOverride) {
     connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 15000,
-    tls: { rejectUnauthorized: false },
   });
   // Verify connection (catches bad credentials / TLS issues early)
   await t.verify();
