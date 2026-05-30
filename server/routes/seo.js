@@ -195,7 +195,7 @@ const STATIC_ROUTES = [
   '/about/factory.html',
   '/about/team.html',
   '/applications/',
-  '/applications/ar-vr.html',
+  '/applications/smart-glasses.html',
   '/applications/medical.html',
   '/applications/wearables.html',
   '/applications/iot.html',

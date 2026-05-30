@@ -14,7 +14,7 @@ const FALLBACK = {
   site: {
     name: 'Zufek',
     legal_name: 'Dongguan Zufek Technology Co.,Ltd',
-    tagline: 'R&D-led lithium-cell maker for AR/VR, medical, wearables and IoT. A 100-person Dongguan team that has shipped 300+ custom programs worldwide since 2018.',
+    tagline: 'R&D-led lithium-cell maker for AI smart glasses, medical, wearables and IoT. A 100-person Dongguan team that has shipped 300+ custom programs worldwide since 2018.',
     email: 'info@zufek.com',
     engineering_email: 'engineering@zufek.com',
     phone: '+86 153 7772 0020',
@@ -35,7 +35,7 @@ const FALLBACK = {
         { label: 'Coin Steel-Shell Lithium', url: '/products/coin-steel-shell-lithium-battery' },
       ]},
       { label: 'APPLICATIONS', url: '/applications/', nav: 'applications', children: [
-        { label: 'AR / VR Glasses', url: '/applications/ar-vr.html' },
+        { label: 'Smart Glasses', url: '/applications/smart-glasses.html' },
         { label: 'Medical Devices', url: '/applications/medical.html' },
         { label: 'Wearables', url: '/applications/wearables.html' },
         { label: 'IoT Devices', url: '/applications/iot.html' },

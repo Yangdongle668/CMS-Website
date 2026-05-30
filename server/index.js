@@ -230,6 +230,14 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/domain', require('./routes/domain'));
 app.use('/api/robots', require('./routes/robots'));
 
+// ----- Legacy URL 301 redirects -----
+// /applications/ar-vr.html was renamed to /applications/smart-glasses.html
+// in 2026 when the page pivoted from AR/VR headsets to AI smart glasses.
+// Preserve external backlinks and Google's crawl history.
+app.get(['/applications/ar-vr', '/applications/ar-vr.html'], (_req, res) => {
+  res.redirect(301, '/applications/smart-glasses.html');
+});
+
 // ----- SEO endpoints -----
 app.use('/', require('./routes/seo'));
 

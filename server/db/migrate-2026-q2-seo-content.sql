@@ -29,7 +29,7 @@ UPDATE pillar_pages SET
   meta_title        = 'Polymer Lithium Battery Manufacturer | Custom Li-Po Cells | Zufek',
   meta_description  = 'Custom polymer lithium (Li-Po) batteries from 30 mAh to 20 Ah. Ultra-thin pouch cells from 0.4 mm. ISO 9001 + UN 38.3 certified. Get a quote in 1 business day.',
   og_title          = 'Polymer Lithium Battery Manufacturer — Zufek',
-  og_description    = 'Custom Li-Po cells from 30 mAh to 20 Ah for AR/VR, medical, wearable and IoT devices. ISO 9001 + UN 38.3.',
+  og_description    = 'Custom Li-Po cells from 30 mAh to 20 Ah for AI smart glasses, medical, wearable and IoT devices. ISO 9001 + UN 38.3.',
   twitter_title     = 'Polymer Lithium Battery Manufacturer — Zufek',
   twitter_description = 'Custom Li-Po cells from 30 mAh to 20 Ah. Ultra-thin pouch cells from 0.4 mm. ISO 9001 + UN 38.3.'
 WHERE slug = 'polymer-lithium-battery'
@@ -63,13 +63,13 @@ WHERE slug = 'coin-steel-shell-lithium-battery'
 -- APPLICATIONS — 8 industry pages
 -- ---------------------------------------------------------------
 UPDATE applications SET
-  focus_keyword     = 'AR VR battery',
-  secondary_keywords = '["AR glasses battery","VR headset battery","ultra-thin lithium battery"]'::jsonb,
-  meta_title        = 'AR / VR Glasses Battery: Ultra-Thin Pouch Cells | Zufek',
-  meta_description  = 'Ultra-thin lithium pouch cells from 0.4 mm for AR/VR glasses, smart glasses and headsets. Curved geometries, low-temperature performance, shipped to TW, US and EU OEMs.',
-  og_title          = 'AR / VR Glasses Battery — Ultra-Thin Pouch Cells',
-  og_description    = 'Pouch cells from 0.4 mm thick for AR / VR glasses. Curved geometries, low-temperature performance.'
-WHERE slug = 'ar-vr' AND (focus_keyword = '' OR focus_keyword IS NULL);
+  focus_keyword     = 'smart glasses battery',
+  secondary_keywords = '["AI smart glasses battery","Meta Ray-Ban battery","ultra-thin lithium battery"]'::jsonb,
+  meta_title        = 'Smart Glasses Battery: Ultra-Thin Pouch Cells | Zufek',
+  meta_description  = 'Ultra-thin lithium pouch cells from 0.45 mm for AI smart glasses — Meta Ray-Ban, Rokid and Even Realities class frames. Curved geometries, low-temperature performance, shipped to TW, US and EU OEMs.',
+  og_title          = 'Smart Glasses Battery — Ultra-Thin Pouch Cells',
+  og_description    = 'Pouch cells from 0.45 mm thick for AI smart-glasses temples. Curved geometries, low-temperature performance.'
+WHERE slug = 'smart-glasses' AND (focus_keyword = '' OR focus_keyword IS NULL);
 
 UPDATE applications SET
   focus_keyword     = 'medical device battery',
@@ -139,7 +139,7 @@ UPDATE applications SET cover_url = '/assets/img/seed/photo-1558346490-a72e53ae2
  WHERE slug = 'iot' AND COALESCE(cover_url, '') = '';
 
 UPDATE applications SET cover_url = '/assets/img/seed/photo-1592478411213-6153e4ebc07d.jpg'
- WHERE slug = 'ar-vr' AND COALESCE(cover_url, '') = '';
+ WHERE slug = 'smart-glasses' AND COALESCE(cover_url, '') = '';
 
 UPDATE applications SET cover_url = '/assets/img/seed/photo-1558002038-1055907df827.jpg'
  WHERE slug = 'smart-home' AND COALESCE(cover_url, '') = '';
@@ -159,8 +159,8 @@ UPDATE applications SET summary = 'Ultra-small round and curved Li-Po cells for 
 UPDATE applications SET summary = 'Custom Li-Po pouches for high-event IoT devices, plus rechargeable coin cells for RTC backup and sensor maintenance.'
  WHERE slug = 'iot' AND COALESCE(summary, '') = '';
 
-UPDATE applications SET summary = 'Ultra-thin and curved Li-Po pouches for slim AR temples and VR headsets.'
- WHERE slug = 'ar-vr' AND COALESCE(summary, '') = '';
+UPDATE applications SET summary = 'Ultra-thin Li-Po pouches for AI smart-glasses temples — Meta Ray-Ban, Rokid and Even Realities class frames.'
+ WHERE slug = 'smart-glasses' AND COALESCE(summary, '') = '';
 
 UPDATE applications SET summary = 'Long-life Li-Po pouches and rechargeable coin cells for smart locks, doorbells, sensors and connected home devices.'
  WHERE slug = 'smart-home' AND COALESCE(summary, '') = '';
@@ -177,7 +177,7 @@ UPDATE pages SET
   meta_title        = 'Lithium Battery Manufacturer | Custom Li-Po, Coin & Pack | Zufek',
   meta_description  = 'Zufek is a Dongguan-based custom lithium battery manufacturer (since 2018). 100-person R&D-led team, 300+ shipped programs, ISO 9001 + ISO 13485-aligned production.',
   og_title          = 'Zufek — Custom Lithium Battery Manufacturer Since 2018',
-  og_description    = 'Custom Li-Po, coin and pack lithium batteries for AR/VR, medical, wearable and IoT devices. R&D-led team in Dongguan.'
+  og_description    = 'Custom Li-Po, coin and pack lithium batteries for AI smart glasses, medical, wearable and IoT devices. R&D-led team in Dongguan.'
 WHERE slug = 'home' AND (focus_keyword = '' OR focus_keyword IS NULL);
 
 UPDATE pages SET
@@ -190,10 +190,10 @@ WHERE slug = 'products/index' AND (focus_keyword = '' OR focus_keyword IS NULL);
 
 UPDATE pages SET
   focus_keyword     = 'lithium battery applications',
-  meta_title        = 'Lithium Battery Applications: AR/VR, Medical, Wearables, IoT | Zufek',
-  meta_description  = 'See where Zufek lithium cells ship today: AR/VR glasses, medical wearables, smartwatches, IoT trackers, drones, power tools, e-mobility and BESS. 8 industries, 300+ programs.',
+  meta_title        = 'Lithium Battery Applications: Smart Glasses, Medical, Wearables, IoT | Zufek',
+  meta_description  = 'See where Zufek lithium cells ship today: AI smart glasses, medical wearables, smartwatches, IoT trackers, drones, power tools, e-mobility and BESS. 8 industries, 300+ programs.',
   og_title          = 'Lithium Battery Applications — Where Our Cells Ship',
-  og_description    = '8 industries: AR/VR, medical, wearables, IoT, drones, power tools, e-mobility, energy storage.'
+  og_description    = '8 industries: AI smart glasses, medical, wearables, IoT, drones, power tools, e-mobility, energy storage.'
 WHERE slug = 'applications/index' AND (focus_keyword = '' OR focus_keyword IS NULL);
 
 UPDATE pages SET
@@ -256,10 +256,10 @@ WHERE slug = 'contact' AND (focus_keyword = '' OR focus_keyword IS NULL);
 -- the static pages table also has slugs for them — fill in case they're
 -- used).
 UPDATE pages SET
-  focus_keyword = 'AR VR battery',
-  meta_title = 'AR / VR Glasses Battery: Ultra-Thin Pouch Cells | Zufek',
-  meta_description = 'Ultra-thin lithium pouch cells from 0.4 mm for AR/VR glasses, smart glasses and headsets. Curved geometries, low-temperature performance, shipped to TW, US and EU OEMs.'
-WHERE slug = 'applications/ar-vr' AND (focus_keyword = '' OR focus_keyword IS NULL);
+  focus_keyword = 'smart glasses battery',
+  meta_title = 'Smart Glasses Battery: Ultra-Thin Pouch Cells | Zufek',
+  meta_description = 'Ultra-thin lithium pouch cells from 0.45 mm for AI smart glasses — Meta Ray-Ban, Rokid and Even Realities class frames. Curved geometries, low-temperature performance, shipped to TW, US and EU OEMs.'
+WHERE slug = 'applications/smart-glasses' AND (focus_keyword = '' OR focus_keyword IS NULL);
 
 UPDATE pages SET
   focus_keyword = 'medical device battery',
@@ -580,7 +580,7 @@ UPDATE articles SET focus_keyword = 'BLE beacon ML2032 design',
 -- still reference one of the deleted cylindrical-only categories.
 -- ---------------------------------------------------------------
 UPDATE settings
-   SET value = '{"header":[{"label":"HOME","url":"/","nav":"home"},{"label":"PRODUCTS","url":"/products/","nav":"products","children":[{"label":"Polymer Lithium Battery","url":"/products/polymer-lithium-battery"},{"label":"Custom-Shaped Polymer (Li-Po)","url":"/products/custom-shaped-polymer-lithium-battery"},{"label":"Coin Steel-Shell Lithium","url":"/products/coin-steel-shell-lithium-battery"}]},{"label":"APPLICATIONS","url":"/applications/","nav":"applications","children":[{"label":"AR / VR Glasses","url":"/applications/ar-vr.html"},{"label":"Medical Devices","url":"/applications/medical.html"},{"label":"Wearables","url":"/applications/wearables.html"},{"label":"IoT Devices","url":"/applications/iot.html"},{"label":"Smart Home","url":"/applications/smart-home.html"},{"label":"Defence & Aerospace","url":"/applications/defence-aerospace.html"}]},{"label":"CUSTOM SOLUTIONS","url":"/solutions/","nav":"solutions","children":[{"label":"Design Support","url":"/solutions/design.html"},{"label":"Prototyping","url":"/solutions/prototyping.html"},{"label":"Mass Production","url":"/solutions/mass-production.html"}]},{"label":"ABOUT US","url":"/about/","nav":"about","children":[{"label":"Company Profile","url":"/about/profile.html"},{"label":"Factory Tour","url":"/about/factory.html"},{"label":"Team","url":"/about/team.html"}]},{"label":"BLOG","url":"/blog/","nav":"blog"},{"label":"FAQ","url":"/faq.html","nav":"faq"},{"label":"CONTACT","url":"/contact.html","nav":"contact"}]}'::jsonb
+   SET value = '{"header":[{"label":"HOME","url":"/","nav":"home"},{"label":"PRODUCTS","url":"/products/","nav":"products","children":[{"label":"Polymer Lithium Battery","url":"/products/polymer-lithium-battery"},{"label":"Custom-Shaped Polymer (Li-Po)","url":"/products/custom-shaped-polymer-lithium-battery"},{"label":"Coin Steel-Shell Lithium","url":"/products/coin-steel-shell-lithium-battery"}]},{"label":"APPLICATIONS","url":"/applications/","nav":"applications","children":[{"label":"Smart Glasses","url":"/applications/smart-glasses.html"},{"label":"Medical Devices","url":"/applications/medical.html"},{"label":"Wearables","url":"/applications/wearables.html"},{"label":"IoT Devices","url":"/applications/iot.html"},{"label":"Smart Home","url":"/applications/smart-home.html"},{"label":"Defence & Aerospace","url":"/applications/defence-aerospace.html"}]},{"label":"CUSTOM SOLUTIONS","url":"/solutions/","nav":"solutions","children":[{"label":"Design Support","url":"/solutions/design.html"},{"label":"Prototyping","url":"/solutions/prototyping.html"},{"label":"Mass Production","url":"/solutions/mass-production.html"}]},{"label":"ABOUT US","url":"/about/","nav":"about","children":[{"label":"Company Profile","url":"/about/profile.html"},{"label":"Factory Tour","url":"/about/factory.html"},{"label":"Team","url":"/about/team.html"}]},{"label":"BLOG","url":"/blog/","nav":"blog"},{"label":"FAQ","url":"/faq.html","nav":"faq"},{"label":"CONTACT","url":"/contact.html","nav":"contact"}]}'::jsonb
  WHERE key = 'navigation'
    AND (value::text LIKE '%applications/drones.html%'
      OR value::text LIKE '%applications/power-tools.html%'

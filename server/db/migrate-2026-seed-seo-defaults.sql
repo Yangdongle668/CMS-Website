@@ -54,7 +54,7 @@ INSERT INTO settings (key, value) VALUES (
     "legal_name": "Dongguan Zufek Technology Co., Ltd.",
     "address": "Dongguan, Guangdong, China",
     "founded_year": 2018,
-    "description": "OEM/ODM custom lithium battery manufacturer specialising in polymer Li-Po, custom-shape Li-Po and coin steel-shell lithium cells for AR/VR, medical, wearables and IoT applications. ISO 9001 certified, UN 38.3 / IEC 62133 / CE compliant.",
+    "description": "OEM/ODM custom lithium battery manufacturer specialising in polymer Li-Po, custom-shape Li-Po and coin steel-shell lithium cells for AI smart glasses, medical, wearables and IoT applications. ISO 9001 certified, UN 38.3 / IEC 62133 / CE compliant.",
     "tagline": "Custom lithium batteries engineered to your specs."
   }$JSON$::jsonb
 )

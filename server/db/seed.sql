@@ -80,7 +80,7 @@ INSERT INTO pillar_pages (
   'Custom-Shaped Polymer Lithium Battery',
   'Custom-Shape Li-Po',
   'Custom-Shaped Lithium Polymer Batteries | Bespoke Li-Po Cells',
-  'Bespoke Li-Po cells in any geometry: round, curved, ultra-thin, stepped. Ideal for medical wearables, AR/VR, and tight-volume IoT devices.',
+  'Bespoke Li-Po cells in any geometry: round, curved, ultra-thin, stepped. Ideal for medical wearables, AI smart glasses, and tight-volume IoT devices.',
   'Pillar Series 02',
   'Custom-Shaped Polymer Lithium Battery',
   'When a rectangular cell will not fit, our engineering team designs the battery around your enclosure. Round, curved, stepped or notched – we manufacture polymer lithium cells in any non-standard geometry.',
@@ -106,7 +106,7 @@ INSERT INTO pillar_pages (
       ["Operating Temp","-20 to +60","°C"]
     ]
   }',
-  '["medical","wearables","iot","ar-vr"]',
+  '["medical","wearables","iot","smart-glasses"]',
   '{
     "enabled": true,
     "items":[
@@ -221,10 +221,10 @@ INSERT INTO applications (slug, name, icon, cover_url, summary, body, sort_order
  'Custom Li-Po pouches for high-event IoT devices, plus rechargeable coin cells for RTC backup and sensor maintenance modes.',
  'Zufek-grade IoT cells: ultra-thin Li-Po (50-2,000 mAh) for cellular trackers, smart locks and connected sensors that need to recharge from solar or USB; ML/LIR coin cells (40-120 mAh) for SMD-mounted RTC backup, BLE beacons and SoC sleep retention.',
  3),
-('ar-vr', 'AR / VR Glasses', 'ar-vr',
+('smart-glasses', 'Smart Glasses', 'smart-glasses',
  '/assets/img/seed/photo-1592478411213-6153e4ebc07d.jpg',
- 'Ultra-thin and curved Li-Po pouches for slim AR temples and VR headsets.',
- 'Headset OEMs use our custom stepped Li-Po cells (0.45-5 mm thickness) to free up optical and PCB volume while maintaining 2-4 hour runtime targets.',
+ 'Ultra-thin Li-Po pouches for AI smart-glasses temples — Meta Ray-Ban, Rokid and Even Realities class frames.',
+ 'Smart-glasses OEMs use our 0.45-1.8 mm Li-Po cells (150-380 mAh per temple) for audio-only, camera-enabled and waveguide-display AI eyewear that has to clear a full day of use.',
  4),
 -- ----- Two extra application landing pages — sitemap registration only.
 -- ----- The actual rich landing pages live as static .html files at:
@@ -274,10 +274,10 @@ WHERE slug = 'defence-aerospace';
 -- Also backfill SEO meta for the original 4 industries so every entity
 -- has a populated meta_title / meta_description / focus_keyword.
 UPDATE applications SET
-  meta_title = 'AR / VR Glasses Battery Manufacturer — Ultra-Thin Li-Po Cells | Zufek',
-  meta_description = 'Ultra-thin Li-Po cells for AR / VR glasses and headsets. 0.5-5 mm thickness, 30-5,000 mAh, 500-800 cycle life. ISO 9001 + UN 38.3 certified.',
-  focus_keyword = 'AR VR glasses battery manufacturer'
-WHERE slug = 'ar-vr';
+  meta_title = 'Smart Glasses Battery Manufacturer — Ultra-Thin Li-Po Cells | Zufek',
+  meta_description = 'Ultra-thin Li-Po cells for AI smart glasses (Meta Ray-Ban, Rokid, Even Realities class). 0.45-1.8 mm thickness, 150-380 mAh per temple, 800+ cycle life. ISO 9001 + UN 38.3 certified.',
+  focus_keyword = 'smart glasses battery manufacturer'
+WHERE slug = 'smart-glasses';
 
 UPDATE applications SET
   meta_title = 'Medical Device Battery Manufacturer — ISO 13485-Aligned Cells | Zufek',
@@ -383,10 +383,10 @@ ON CONFLICT (slug) DO NOTHING;
 INSERT INTO pages (slug, nav, title, meta_title, meta_description, hero_eyebrow, hero_title, hero_subtitle, hero_image, hero_breadcrumbs, sections) VALUES
 ('home', 'home',
  'Home',
- 'Custom Lithium Batteries for AR/VR, Medical, Wearables & IoT',
- 'Custom lithium batteries for AR/VR, medical, wearable and IoT devices. OEM/ODM polymer, custom-shaped and cylindrical Li-Ion cells.',
+ 'Custom Lithium Batteries for Smart Glasses, Medical, Wearables & IoT',
+ 'Custom lithium batteries for AI smart glasses, medical, wearable and IoT devices. OEM/ODM polymer, custom-shaped and cylindrical Li-Ion cells.',
  '', 'Custom Batteries, Engineered Precisely.',
- 'Lithium-polymer and lithium-ion solutions for AR/VR, medical, wearable and IoT devices.',
+ 'Lithium-polymer and lithium-ion solutions for AI smart glasses, medical, wearable and IoT devices.',
  '/assets/img/seed/photo-1593642634443-44adaa06623a.jpg',
  '[]'::jsonb,
  '{
@@ -426,17 +426,17 @@ INSERT INTO pages (slug, nav, title, meta_title, meta_description, hero_eyebrow,
 
 -- Applications
 ('applications/index', 'applications', 'Applications',
- 'Lithium Battery Applications — AR/VR, Medical, Wearables, IoT',
+ 'Lithium Battery Applications — Smart Glasses, Medical, Wearables, IoT',
  'Battery solutions across regulated B2B industries.',
  '', 'Powering the next generation of devices.', 'Each industry brings its own certifications, abuse profiles and lifecycle expectations.',
  '/assets/img/seed/photo-1518770660439-4636190af475.jpg',
  '[{"label":"Home","url":"/"},{"label":"Applications"}]'::jsonb, '{}'::jsonb),
-('applications/ar-vr', 'applications', 'AR / VR Glasses',
- 'Batteries for AR / VR Glasses — Ultra-Thin Cells',
- 'Ultra-thin and curved Li-Po cells for slim AR temples and VR headsets.',
- '', 'Batteries for AR / VR.', 'Ultra-thin and curved cells engineered around the optical engine.',
+('applications/smart-glasses', 'applications', 'Smart Glasses',
+ 'Batteries for AI Smart Glasses — Ultra-Thin Cells',
+ 'Ultra-thin Li-Po cells for AI smart-glasses temples — Meta Ray-Ban, Rokid and Even Realities class frames.',
+ '', 'Batteries for Smart Glasses.', 'Ultra-thin curved cells engineered for the AI smart-glasses temple — audio, camera and waveguide display frames.',
  '/assets/img/seed/photo-1592478411213-6153e4ebc07d.jpg',
- '[{"label":"Home","url":"/"},{"label":"Applications","url":"/applications/"},{"label":"AR / VR"}]'::jsonb, '{}'::jsonb),
+ '[{"label":"Home","url":"/"},{"label":"Applications","url":"/applications/"},{"label":"Smart Glasses"}]'::jsonb, '{}'::jsonb),
 ('applications/medical', 'applications', 'Medical Devices',
  'Batteries for Medical Devices — IEC 60601, ISO 13485',
  'IEC 60601-compliant cells for patient monitors, infusion pumps, hearing aids and surgical tools.',
@@ -544,7 +544,7 @@ ON CONFLICT (slug) DO NOTHING;
 -- ----- Settings -----
 INSERT INTO settings (key, value) VALUES
 ('site',
- '{"name":"Zufek","legal_name":"Dongguan Zufek Technology Co.,Ltd","tagline":"R&D-led lithium-cell maker for AR/VR, medical, wearables and IoT. A 100-person Dongguan team that has shipped 300+ custom programs worldwide since 2018.","email":"info@zufek.com","engineering_email":"engineering@zufek.com","phone":"+86 153 7772 0020","address":"Room 432, Building 1, No. 34 Jinniu Road, Guancheng Subdistrict, Dongguan City, Guangdong Province, China","founded_year":2018,"factory_size_sqm":5000,"staff_count":100}'),
+ '{"name":"Zufek","legal_name":"Dongguan Zufek Technology Co.,Ltd","tagline":"R&D-led lithium-cell maker for AI smart glasses, medical, wearables and IoT. A 100-person Dongguan team that has shipped 300+ custom programs worldwide since 2018.","email":"info@zufek.com","engineering_email":"engineering@zufek.com","phone":"+86 153 7772 0020","address":"Room 432, Building 1, No. 34 Jinniu Road, Guancheng Subdistrict, Dongguan City, Guangdong Province, China","founded_year":2018,"factory_size_sqm":5000,"staff_count":100}'),
 ('social',
  '{"linkedin":"https://www.linkedin.com/company/zufek","whatsapp":"https://wa.me/8615377720020"}'),
 ('seo',
@@ -556,7 +556,7 @@ INSERT INTO settings (key, value) VALUES
 ('mail',
  '{"reply_to":"info@zufek.com","subject_prefix":"[Inquiry]","auto_reply_enabled":true}'),
 ('navigation',
- '{"header":[{"label":"HOME","url":"/","nav":"home"},{"label":"PRODUCTS","url":"/products/","nav":"products","children":[{"label":"Polymer Lithium Battery","url":"/products/polymer-lithium-battery"},{"label":"Custom-Shaped Polymer (Li-Po)","url":"/products/custom-shaped-polymer-lithium-battery"},{"label":"Coin Steel-Shell Lithium","url":"/products/coin-steel-shell-lithium-battery"}]},{"label":"APPLICATIONS","url":"/applications/","nav":"applications","children":[{"label":"AR / VR Glasses","url":"/applications/ar-vr.html"},{"label":"Medical Devices","url":"/applications/medical.html"},{"label":"Wearables","url":"/applications/wearables.html"},{"label":"IoT Devices","url":"/applications/iot.html"},{"label":"Smart Home","url":"/applications/smart-home.html"},{"label":"Defence & Aerospace","url":"/applications/defence-aerospace.html"}]},{"label":"CUSTOM SOLUTIONS","url":"/solutions/","nav":"solutions","children":[{"label":"Design Support","url":"/solutions/design.html"},{"label":"Prototyping","url":"/solutions/prototyping.html"},{"label":"Mass Production","url":"/solutions/mass-production.html"}]},{"label":"ABOUT US","url":"/about/","nav":"about","children":[{"label":"Company Profile","url":"/about/profile.html"},{"label":"Factory Tour","url":"/about/factory.html"},{"label":"Team","url":"/about/team.html"}]},{"label":"BLOG","url":"/blog/","nav":"blog"},{"label":"FAQ","url":"/faq.html","nav":"faq"},{"label":"CONTACT","url":"/contact.html","nav":"contact"}]}')
+ '{"header":[{"label":"HOME","url":"/","nav":"home"},{"label":"PRODUCTS","url":"/products/","nav":"products","children":[{"label":"Polymer Lithium Battery","url":"/products/polymer-lithium-battery"},{"label":"Custom-Shaped Polymer (Li-Po)","url":"/products/custom-shaped-polymer-lithium-battery"},{"label":"Coin Steel-Shell Lithium","url":"/products/coin-steel-shell-lithium-battery"}]},{"label":"APPLICATIONS","url":"/applications/","nav":"applications","children":[{"label":"Smart Glasses","url":"/applications/smart-glasses.html"},{"label":"Medical Devices","url":"/applications/medical.html"},{"label":"Wearables","url":"/applications/wearables.html"},{"label":"IoT Devices","url":"/applications/iot.html"},{"label":"Smart Home","url":"/applications/smart-home.html"},{"label":"Defence & Aerospace","url":"/applications/defence-aerospace.html"}]},{"label":"CUSTOM SOLUTIONS","url":"/solutions/","nav":"solutions","children":[{"label":"Design Support","url":"/solutions/design.html"},{"label":"Prototyping","url":"/solutions/prototyping.html"},{"label":"Mass Production","url":"/solutions/mass-production.html"}]},{"label":"ABOUT US","url":"/about/","nav":"about","children":[{"label":"Company Profile","url":"/about/profile.html"},{"label":"Factory Tour","url":"/about/factory.html"},{"label":"Team","url":"/about/team.html"}]},{"label":"BLOG","url":"/blog/","nav":"blog"},{"label":"FAQ","url":"/faq.html","nav":"faq"},{"label":"CONTACT","url":"/contact.html","nav":"contact"}]}')
 ON CONFLICT (key) DO NOTHING;
 
 
@@ -1545,7 +1545,7 @@ INSERT INTO authors (slug, name, job_title, bio, avatar_url, email, knows_about,
 ('wei-zhang',
  'Wei Zhang',
  'Mechanical & Custom-Shape Lead',
- 'Wei Zhang heads the custom-geometry program at Zufek. 12 years tooling and stack design for non-rectangular Li-Po, including 200+ shipped custom geometries for medical wearables, AR/VR and TWS earbuds. Owns the relationship with the in-house tooling shop and sets the minimum-radius and stepped-pouch design rules used in customer feasibility notes.',
+ 'Wei Zhang heads the custom-geometry program at Zufek. 12 years tooling and stack design for non-rectangular Li-Po, including 200+ shipped custom geometries for medical wearables, AI smart glasses and TWS earbuds. Owns the relationship with the in-house tooling shop and sets the minimum-radius and stepped-pouch design rules used in customer feasibility notes.',
  '',
  'wei.zhang@zufek.com',
  '["Custom Li-Po geometry","Stack and winding design","Tooling for pouch cells","Curved cell mechanics","Stepped pouch yield"]'::jsonb,

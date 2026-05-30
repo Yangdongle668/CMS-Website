@@ -55,6 +55,13 @@ async function run() {
     console.log('[db:init] SEO/GEO defaults seed applied.');
   }
 
+  const arVrRenamePath = path.join(__dirname, 'migrate-2026-rename-ar-vr-to-smart-glasses.sql');
+  if (fs.existsSync(arVrRenamePath)) {
+    console.log('[db:init] applying ar-vr -> smart-glasses rename migration (idempotent)...');
+    await query(fs.readFileSync(arVrRenamePath, 'utf8'));
+    console.log('[db:init] ar-vr -> smart-glasses rename applied.');
+  }
+
   // Optional: pre-create an admin from env. If ADMIN_DEFAULT_EMAIL is not
   // set, we leave the user table empty and let the first POST to /api/auth/login
   // bootstrap an admin with whatever credentials the operator submits.
