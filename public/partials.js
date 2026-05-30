@@ -482,7 +482,7 @@ const EXIT_INTENT_HTML = `
 
 function shouldShowExitIntent() {
   if (location.pathname.startsWith('/admin/')) return false;
-  if (location.pathname === '/contact.html' || location.pathname === '/quote.html') return false;
+  if (location.pathname === '/contact.html') return false;
   // Same surfaces as mini RFQ but additionally also on /products list etc.
   if (!(
     /^\/products(\/|$)/.test(location.pathname) ||
@@ -621,7 +621,7 @@ function injectExitIntent() {
 // blog articles) so it doesn't clutter the home page or legal pages.
 function shouldShowMiniRFQ() {
   if (location.pathname.startsWith('/admin/')) return false;
-  if (location.pathname === '/contact.html' || location.pathname === '/quote.html') return false;
+  if (location.pathname === '/contact.html') return false;
   // High-intent surfaces only
   return (
     /^\/products(\/|$)/.test(location.pathname) ||

@@ -43,6 +43,7 @@ function buildDefaultRobots(base) {
     'Disallow: /admin/',
     'Disallow: /api/',
     'Disallow: /uploads/private/',
+    'Disallow: /*/_template.html',
     'Allow: /',
     '',
     '# ── Google ───────────────────────────────────────────────────',
