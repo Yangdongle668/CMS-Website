@@ -14,7 +14,12 @@
     "retention": "node server/jobs/retention.js",
     "smtp:doctor": "node scripts/smtp-doctor.js",
     "images:localize": "node scripts/download-unsplash-images.js",
-    "images:optimize": "node scripts/optimize-images.js"
+    "images:optimize": "node scripts/optimize-images.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "node --test \"test/**/*.test.js\""
   },
   "engines": {
     "node": ">=18.0.0"
@@ -44,6 +49,11 @@
     "sharp": "^0.35.4"
   },
   "devDependencies": {
-    "esbuild": "^0.24.0"
+    "@eslint/js": "^10.0.1",
+    "esbuild": "^0.24.0",
+    "eslint": "^10.10.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.12.0",
+    "prettier": "^3.9.7"
   }
 }

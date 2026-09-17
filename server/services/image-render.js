@@ -51,11 +51,11 @@ function listDir(absDir) {
   const hit = dirCache.get(absDir);
   const now = Date.now();
   if (hit && now - hit.at < DIR_TTL_MS) return hit.entries;
-  let entries = [];
+  let entries;
   try {
     entries = fs.readdirSync(absDir);
   } catch (_) {
-    entries = [];
+    entries = []; // directory may not exist yet — treated as "no variants"
   }
   dirCache.set(absDir, { at: now, entries });
   return entries;

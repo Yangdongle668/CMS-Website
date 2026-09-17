@@ -136,7 +136,8 @@ function resolveAll() {
       throw new Error(
         `FATAL: generated ${generated.join(' and ')} but could not persist to ${file} ` +
           `(${err.message}). Set ${generated.join(' and ')} explicitly in the environment, ` +
-          `or make that directory writable (override the location with SECRETS_DIR).`
+          `or make that directory writable (override the location with SECRETS_DIR).`,
+        { cause: err }
       );
     }
     console.log(

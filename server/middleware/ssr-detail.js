@@ -74,11 +74,10 @@ function backgroundStyle(rawUrl) {
   const image = imageRender.backgroundImageSet(url);
   return `${image} background-position:${cssPosition(position)}; background-size:${bgSize}; background-repeat:no-repeat;`;
 }
-function imgStyle(rawUrl) {
-  const { url, position, fit } = parseImageUrl(rawUrl);
-  if (!url) return '';
-  return `object-position:${cssPosition(position)}; object-fit:${fit === 'contain' ? 'contain' : 'cover'};`;
-}
+// The <img> counterpart to backgroundStyle once lived here. Nothing ever
+// called it — this middleware renders every image as a background — so it was
+// removed. When the block renderer needs object-fit for a real <img>, build it
+// there alongside imageRender.renderPicture rather than reviving this.
 function urlOnly(rawUrl) {
   if (!rawUrl) return '';
   const i = rawUrl.indexOf('#');
@@ -651,7 +650,7 @@ async function renderArticle(req, res, slug) {
   // sidebar TOC on first paint.
   const tpl = article.template || 'standard';
   let layoutHtml = '';
-  let tocItems = [];
+  const tocItems = [];
   if (tpl === 'guide') {
     const content = article.content || '';
     layoutHtml = `<article class="article-body">${content.replace(

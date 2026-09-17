@@ -250,7 +250,6 @@
 
     const initial = opts.initial || {};
     const siteHost = opts.siteHost || (typeof location !== 'undefined' ? location.host : 'example.com');
-    const entity = opts.entity || 'page';
 
     // Render shell
     host.innerHTML = `
