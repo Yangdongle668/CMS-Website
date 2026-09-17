@@ -495,13 +495,37 @@ public/assets/img/logo.png   1.1MB   单个 logo
 背景图无法使用 `srcset`、无法进入 `<picture>`、无法 `loading="lazy"`、无法被 `<link rel=preload>` 预取——
 手机与 4K 桌面下载同一张大图。
 
-**怎么改**
+**⚠️ 本条原先的前提是错的，已更正**
 
-1. `logo.png` 转 SVG，或压缩至 20KB 以内。
-2. 项目已依赖 `sharp`，写脚本批量生成 `.webp` + 三档尺寸（480 / 960 / 1440），`<picture>` 内 fallback 到 jpg。
-3. 首屏 hero 背景图改为真实 `<img>` / `<picture>`，配 `fetchpriority="high"`；折叠线以下改 `loading="lazy"`。
+原文写「项目已依赖 sharp，写脚本批量生成 WebP」——这低估了现有代码。
+`server/services/image-processor.js` **已经是一套完整的图片处理管线**：
+AVIF + WebP + JPEG × 4 档尺寸（480 / 768 / 1280 / 1920），
+已在 sharp 0.35 下实测可用（做 #3 时跑通，产出 9 个 variants）。
 
-预计首屏体积可减少 60–70%。
+**真实状况**（核实结果）：
+
+| | 实际 |
+|---|---|
+| 生成能力 | **已存在且可用** |
+| 谁在调用 | **只有媒体上传**（`server/routes/media.js:159`、`:225` 重处理） |
+| `media` 表的 `variants` / `srcset` 列 | 有数据写入 |
+| 谁在读取 | **无人**。`grep srcset` 在 `ssr-detail.js` / `html-tokens.js` 均为 **0**，前台 `<img>` 只有 `src` |
+| 16MB seed 图片 | 49 张 jpg，**0 个变体文件**，从未进过管线 |
+
+**所以问题不是「没有压缩功能」，而是「有一套完整管线，产出物 100% 没人消费」。**
+
+**怎么改**（已拆成 `PLAN.md` 的步骤 1 与步骤 2）
+
+1. **回填**：写薄脚本调用**现有的** `imageProcessor.process()` 覆盖
+   `public/assets/img/`，不新建管线。`logo.png` 单独转 SVG 或压到 20KB 内。
+2. **消费**：新建 `server/services/image-render.js` 作为**共享渲染器**，
+   输出带 `srcset` 的 `<picture>`，由 SSR 层调用。
+   **做成 helper 而非逐页改标签**——`ARCHITECTURE_BLOCKS.md` 的 Phase 3
+   会把 30 个静态页转成区块并重写其 HTML，逐页补的标签会被全部丢弃；
+   共享 helper 则同时服务今天的 SSR 与将来区块的 `render()`。
+3. **`background-image` 不在本条范围内**：`ssr-detail.js:67` 输出的这种形态
+   结构上用不了 srcset，改它属于会被 Phase 3 重写的工作，留到区块化时
+   用 `<picture>` 区块彻底解决。
 
 ### 10. 响应式断点碎片化
 
