@@ -87,7 +87,47 @@ for (const k of REQUIRED) {
 
 ---
 
-### 2. SVG 上传 + 静态服务 = 存储型 XSS
+### 2. 上传 + 静态服务 = 存储型 XSS — ✅ 已完成
+
+**审查时漏掉的更严重入口**：修复过程中发现 `server/routes/inquiries.js:87` 的
+`POST /api/inquiries/upload` **没有 `requireAuth`**——这是访客提交 RFQ 附件用的
+公开接口，同样从客户端文件名取扩展名。也就是说**匿名访问者**即可把
+`x.html` 以 `Content-Type: text/plain` 上传到 `/uploads/inquiries/`，
+从本站同源提供。这比原记录的「需要管理员权限才能利用的 SVG」严重一个量级。
+
+**实际实现**（新增 `server/services/upload-guard.js`，三层防御）：
+
+1. **响应头是真正的边界**（`server/index.js`）。按文件类型分级：
+   `.svg`/`.html`/`.xml` 等可执行类型加 `default-src 'none'; sandbox`
+   （落入不透明源、禁用脚本）；图片与 PDF 仅加 `default-src 'none'`，
+   以免 PDF 无法内联预览——PDF 自身的脚本触及不到我们的 DOM 与 Cookie。
+   扩展名匹配范围**故意宽于**当前允许上传的类型，以覆盖修复前已存在于卷中的文件。
+2. **扩展名由声明类型决定，绝不取自客户端文件名**（两个上传入口均已改）。
+3. **写盘后用魔术字节校验内容与声明类型是否一致**，不符则删除并返回 400。
+   `text/plain` / `text/csv` 无可靠签名，跳过字节校验——但扩展名已被强制，
+   加上第 1 层，仍然是惰性的。
+
+SVG 另做保守清洗（剥离 `<script>`、`on*`、`javascript:`、`foreignObject`、
+外部 `<use>`、SMIL 事件赋值）。**清洗是纵深防御而非边界**：SVG 是 XML 方言，
+正则不可能穷尽。文本匹配挡不住 `j&#97;vascript:`，因此实现上是
+**先解码实体、去除可忽略空白，再判断 scheme**，命中则删除整个属性。
+
+**变更文件**：`server/services/upload-guard.js`（新增）· `server/routes/media.js`
+· `server/routes/inquiries.js` · `server/index.js`
+
+**顺带完成**：原 #6（`fs.existsSync` 同步阻塞循环）——正好在重写的同一段代码里，
+已改为 `fsp.access` 异步探测，不再单列。
+
+**验证**：30 项单元断言（扩展名映射、7 种魔术字节、伪造类型拦截、
+8 类 SVG 逃逸向量、正常 logo SVG 不被破坏）；真实 HTTP 端到端：
+伪装 PNG 的 HTML → 400；声明 text/plain 的 HTML → 落盘为 `.txt`；
+真实 PNG → 正常；并逐一确认四类文件的响应头分级正确。
+
+**遗留运维项**：修复前已上传到卷中的文件仍保留原扩展名。第 1 层已覆盖，
+但建议部署后执行一次 `ls uploads/ | grep -iE '\.(html?|svg|xml)$'` 人工复核。
+
+<details>
+<summary>原始问题记录</summary>
 
 **位置**
 
@@ -133,6 +173,8 @@ app.use('/uploads', express.static(path.join(ROOT, 'uploads'), {
 
 **附带修正**：`server/index.js:296` 的注释写 "Uploads use UUID-style filenames"，
 但 `media.js:26-30` 的实际策略是保留操作员原文件名。注释已过期，且正是这个不一致造成了上述风险。
+
+</details>
 
 ---
 
@@ -187,13 +229,13 @@ detail: isApi && showDetail ? err.message + detail : undefined,
 
 **怎么改**：加 `LIMIT/OFFSET`（复用 `clamp()`），响应中返回 `total`。
 
-### 6. 上传时同步阻塞 I/O
+### 6. 上传时同步阻塞 I/O — ✅ 已完成（随 #2 一并修复）
 
-**位置**：`server/routes/media.js:38`
+原位置 `server/routes/media.js:38`：multer 的 `filename` 回调中用
+`fs.existsSync` 同步循环最多探测 999 次，阻塞事件循环。
 
-multer 的 `filename` 回调中用 `fs.existsSync` 同步循环最多探测 999 次，阻塞事件循环。
-
-**怎么改**：改用 `fs.promises.access`，或直接以内容哈希作为文件名（同时天然去重）。
+该段代码在 #2 中被整体重写，已改为 `fsp.access` 异步探测（`findFreeName`），
+行为不变但不再阻塞。
 
 ### 7. 询盘搜索无法走索引
 

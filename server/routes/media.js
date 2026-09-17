@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const fsp = require('fs/promises');
 const express = require('express');
 const multer = require('multer');
 const { many, one, query } = require('../db/client');
@@ -7,6 +8,7 @@ const { requireAuth } = require('../middleware/auth');
 const { recordAudit } = require('../middleware/audit');
 const { clamp, trimStr } = require('../utils/validate');
 const imageProcessor = require('../services/image-processor');
+const uploadGuard = require('../services/upload-guard');
 
 const router = express.Router();
 
@@ -14,36 +16,37 @@ const ROOT = path.join(__dirname, '..', '..');
 const UPLOAD_DIR = path.join(ROOT, 'uploads');
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
-const ALLOWED = new Set([
-  'image/png', 'image/jpeg', 'image/webp', 'image/svg+xml', 'image/gif',
-  'application/pdf',
-]);
+// Probe for a free filename without blocking. The operator's original name
+// is kept so URLs stay readable; on a collision we append "-1", "-2"… and
+// fall back to a timestamp suffix if somehow 999 names are taken.
+async function findFreeName(base, ext) {
+  for (let i = 0; i <= 999; i++) {
+    const candidate = i === 0 ? base + ext : `${base}-${i}${ext}`;
+    try {
+      await fsp.access(path.join(UPLOAD_DIR, candidate));
+    } catch {
+      return candidate; // access rejected → the name is free
+    }
+  }
+  return `${base}-${Date.now().toString(36)}${ext}`;
+}
 
-// Filename strategy: keep the operator's original name so URLs stay
-// readable. If a file with that name already exists, append "-1", "-2"…
-// until we find a free slot. Falls back to a short timestamp suffix if
-// somehow 999 names are taken (safety against infinite loops).
 const storage = multer.diskStorage({
   destination: UPLOAD_DIR,
   filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase().slice(0, 8);
-    let base = path.basename(file.originalname, ext)
+    // The extension comes from the declared type, never from the client's
+    // filename. `payload.html` announced as image/png must not land on disk
+    // as .html and then be served as HTML from our own origin.
+    const ext = uploadGuard.extensionFor(file.mimetype);
+    if (!ext) return cb(new Error('file_type_not_allowed'));
+    let base = path
+      .basename(file.originalname, path.extname(file.originalname))
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '')
       .slice(0, 60);
     if (!base) base = 'image';
-    let candidate = base + ext;
-    let i = 1;
-    while (fs.existsSync(path.join(UPLOAD_DIR, candidate))) {
-      candidate = `${base}-${i}${ext}`;
-      i++;
-      if (i > 999) {
-        candidate = `${base}-${Date.now().toString(36)}${ext}`;
-        break;
-      }
-    }
-    cb(null, candidate);
+    findFreeName(base, ext).then((name) => cb(null, name), cb);
   },
 });
 
@@ -51,10 +54,41 @@ const upload = multer({
   storage,
   limits: { fileSize: 8 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (ALLOWED.has(file.mimetype)) cb(null, true);
+    // Note this only screens the *declared* type — it is attacker-controlled.
+    // The bytes are checked against it after the write, in the POST handler.
+    if (uploadGuard.ALLOWED_MIMES.has(file.mimetype)) cb(null, true);
     else cb(new Error('file_type_not_allowed'));
   },
 });
+
+// Verify a written upload against the type it claimed to be, and scrub SVG.
+// Returns null when the file is acceptable, or an error code after having
+// removed it from disk.
+async function screenWrittenUpload(filePath, declaredMime) {
+  const detected = uploadGuard.sniffFile(filePath);
+  if (!uploadGuard.matchesDeclared(detected, declaredMime)) {
+    await fsp.unlink(filePath).catch(() => {});
+    console.warn(
+      '[media] rejected upload: declared %s but bytes look like %s',
+      declaredMime,
+      detected || 'nothing recognised'
+    );
+    return 'content_type_mismatch';
+  }
+
+  if (detected === 'image/svg+xml') {
+    // Defence in depth — the CSP on /uploads is what actually contains SVG
+    // script. See server/services/upload-guard.js.
+    const raw = await fsp.readFile(filePath, 'utf8');
+    const clean = uploadGuard.sanitizeSvg(raw);
+    if (clean !== raw) {
+      await fsp.writeFile(filePath, clean, 'utf8');
+      console.warn('[media] stripped active content from uploaded SVG %s', path.basename(filePath));
+    }
+  }
+
+  return null;
+}
 
 // Scan /public/assets/img/seed/ — these are the localized "system" images
 // downloaded from Unsplash by scripts/download-unsplash-images.js. They're
@@ -108,6 +142,13 @@ router.get('/', requireAuth, async (req, res) => {
 
 router.post('/', requireAuth, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'no_file' });
+
+  const rejection = await screenWrittenUpload(
+    path.join(UPLOAD_DIR, req.file.filename),
+    req.file.mimetype
+  );
+  if (rejection) return res.status(400).json({ error: rejection });
+
   const url = '/uploads/' + req.file.filename;
 
   // Auto-process images: emit AVIF + WebP + JPEG at 4 sizes for

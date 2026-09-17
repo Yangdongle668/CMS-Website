@@ -300,11 +300,38 @@ const staticHeaders = (res, filePath) => {
 };
 
 // ----- Static uploads -----
-// Uploads use UUID-style filenames so the URL itself is the cache key.
+// Filenames keep the uploader's original basename (slugified) plus an
+// extension derived from the file's type, so the URL stays readable and
+// works as a cache key. See server/routes/media.js.
+//
+// These headers are the boundary that keeps user-supplied files from running
+// as code on our own origin. `sandbox` with no allow-* tokens drops the
+// response into an opaque origin with scripting disabled, which is what stops
+// an uploaded SVG (or any HTML that reaches this directory) from calling the
+// admin API with the operator's cookies. `default-src 'none'` blocks
+// subresource loads, and nosniff keeps a mislabelled file from being
+// reinterpreted. Uploads are validated on the way in as well
+// (server/services/upload-guard.js); this is the layer that has to hold if
+// that validation is ever bypassed.
 app.use('/uploads', express.static(path.join(ROOT, 'uploads'), {
   maxAge: '30d',
   immutable: false,
   index: false,
+  setHeaders: (res, filePath) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    // Only the types that can run script against our origin when navigated to
+    // directly get `sandbox`, which drops them into an opaque origin with
+    // scripting off. Applying it to everything would also stop the browser
+    // previewing an uploaded PDF inline, and a PDF's own scripting cannot
+    // reach our DOM or cookies anyway. The extension list stays broader than
+    // what upload validation now admits, so files written before that
+    // validation existed are covered too.
+    const executable = /\.(svgz?|x?html?|xht|xml)$/i.test(filePath);
+    res.setHeader(
+      'Content-Security-Policy',
+      executable ? "default-src 'none'; sandbox" : "default-src 'none'"
+    );
+  },
 }));
 
 // ----- Static admin -----

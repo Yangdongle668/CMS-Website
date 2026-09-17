@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const fsp = require('fs/promises');
 const express = require('express');
 const multer = require('multer');
 const rateLimit = require('express-rate-limit');
@@ -19,6 +20,7 @@ const { resolveCanonicalBase } = require('../middleware/html-tokens');
 const { scoreInquiry } = require('../services/lead-scoring');
 const emergency = require('../services/emergency-store');
 const notificationService = require('../services/notifications');
+const uploadGuard = require('../services/upload-guard');
 
 const router = express.Router();
 
@@ -67,8 +69,14 @@ const ALLOWED_ATTACHMENT_MIME = new Set([
 const attachmentStorage = multer.diskStorage({
   destination: INQUIRY_UPLOADS,
   filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase().slice(0, 8) || '.bin';
-    const base = path.basename(file.originalname, ext)
+    // The extension is decided by the declared type, never by the uploader's
+    // filename. This endpoint takes no authentication, and /uploads is served
+    // from the site's own origin — letting a visitor pick ".html" here would
+    // hand any anonymous caller a stored XSS. See server/services/upload-guard.js.
+    const ext = uploadGuard.attachmentExtensionFor(file.mimetype);
+    if (!ext) return cb(new Error('file_type_not_allowed: ' + file.mimetype));
+    const base = path
+      .basename(file.originalname, path.extname(file.originalname))
       .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60);
     const stamp = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
     cb(null, `${stamp}-${base || 'file'}${ext}`);
@@ -79,13 +87,28 @@ const attachmentUpload = multer({
   storage: attachmentStorage,
   limits: { fileSize: 8 * 1024 * 1024, files: 5 },
   fileFilter: (_req, file, cb) => {
+    // Screens the declared type only — it is caller-controlled. The bytes are
+    // checked against it after the write, below.
     if (ALLOWED_ATTACHMENT_MIME.has(file.mimetype)) return cb(null, true);
     cb(new Error('file_type_not_allowed: ' + file.mimetype));
   },
 });
 
-router.post('/upload', uploadLimiter, attachmentUpload.single('file'), (req, res) => {
+router.post('/upload', uploadLimiter, attachmentUpload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'no_file' });
+
+  const filePath = path.join(INQUIRY_UPLOADS, req.file.filename);
+  const detected = uploadGuard.sniffFile(filePath);
+  if (!uploadGuard.attachmentMatchesDeclared(detected, req.file.mimetype)) {
+    await fsp.unlink(filePath).catch(() => {});
+    console.warn(
+      '[inquiries] rejected attachment: declared %s but bytes look like %s',
+      req.file.mimetype,
+      detected || 'nothing recognised'
+    );
+    return res.status(400).json({ error: 'content_type_mismatch' });
+  }
+
   const url = '/uploads/inquiries/' + req.file.filename;
   res.json({
     url,
