@@ -26,7 +26,8 @@ catch (err) { console.warn('[image] sharp not installed; image processing disabl
 // hero images the largest variant matches typical desktop hero (1920),
 // for content images the medium ones are most used.
 const SIZES = [480, 768, 1280, 1920];
-const FORMATS = ['avif', 'webp', 'jpeg'];   // jpeg = universal fallback
+const FORMATS = ['avif', 'webp', 'jpeg'];       // jpeg = universal fallback
+const FORMATS_ALPHA = ['avif', 'webp', 'png'];  // png = fallback that keeps transparency
 
 const SKIP_MIME = new Set(['image/svg+xml', 'image/gif']);
 
@@ -38,11 +39,17 @@ function variantName(base, ext, width, format) {
 // Returns { variants: [...], srcset: { avif, webp, jpeg }, original_width, original_height }
 // On any error: returns { variants: [], error: '...' } — never throws,
 // so a corrupt upload doesn't break the upload route.
+// opts.urlBase — the public path the variants will be served from, with a
+// trailing slash. Variants are always written next to the source file, so
+// this has to match wherever that directory is exposed. Defaults to
+// '/uploads/' because that was the only caller when this was written;
+// scripts/optimize-images.js processes files under public/assets/img/ and
+// passes their own path instead.
 async function process(filePath, opts) {
   if (!sharp) return { variants: [], error: 'sharp_unavailable' };
   opts = opts || {};
   const sizes = opts.sizes || SIZES;
-  const formats = opts.formats || FORMATS;
+  const urlBase = opts.urlBase || '/uploads/';
 
   try {
     const dir = path.dirname(filePath);
@@ -51,6 +58,12 @@ async function process(filePath, opts) {
 
     const meta = await sharp(filePath).metadata();
     if (!meta || !meta.width) return { variants: [], error: 'no_metadata' };
+
+    // Pick the raster fallback from the source. AVIF and WebP both carry an
+    // alpha channel; JPEG does not, so flattening a transparent PNG to JPEG
+    // puts a black box behind it. A logo uploaded through the media library
+    // used to get exactly that.
+    const formats = opts.formats || (meta.hasAlpha ? FORMATS_ALPHA : FORMATS);
 
     // Don't upscale: if the source is 800px wide, only emit ≤800
     const targetSizes = sizes.filter((w) => w <= meta.width);
@@ -65,6 +78,7 @@ async function process(filePath, opts) {
           let pipeline = sharp(filePath, { failOn: 'none' }).resize({ width: w, withoutEnlargement: true });
           if (fmt === 'avif') pipeline = pipeline.avif({ quality: 55, effort: 4 });
           else if (fmt === 'webp') pipeline = pipeline.webp({ quality: 78 });
+          else if (fmt === 'png') pipeline = pipeline.png({ compressionLevel: 9, palette: true });
           else pipeline = pipeline.jpeg({ quality: 82, progressive: true, mozjpeg: true });
 
           await pipeline.toFile(outPath);
@@ -72,7 +86,7 @@ async function process(filePath, opts) {
           variants.push({
             width: w,
             format: fmt,
-            url: `/uploads/${outName}`,
+            url: `${urlBase}${outName}`,
             size: stat.size,
           });
         } catch (err) {
@@ -112,7 +126,7 @@ async function cleanup(filePath) {
     const dir = path.dirname(filePath);
     const ext = path.extname(filePath);
     const base = path.basename(filePath, ext);
-    const re = new RegExp(`^${base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}-\\d+\\.(avif|webp|jpg)$`);
+    const re = new RegExp(`^${base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}-\\d+\\.(avif|webp|jpg|png)$`);
     const files = await fs.readdir(dir);
     for (const f of files) {
       if (re.test(f)) {
@@ -130,4 +144,4 @@ function shouldProcess(mimeType) {
   return true;
 }
 
-module.exports = { process, cleanup, shouldProcess, SIZES, FORMATS };
+module.exports = { process, cleanup, shouldProcess, SIZES, FORMATS, FORMATS_ALPHA };

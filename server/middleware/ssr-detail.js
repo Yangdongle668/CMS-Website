@@ -17,6 +17,7 @@ const fs = require('fs');
 const path = require('path');
 const { one, many } = require('../db/client');
 const { replaceTokens, buildContext, applyPageOverrides, applySavedTextOverrides } = require('./html-tokens');
+const imageRender = require('../services/image-render');
 
 const PUBLIC_DIR = path.resolve(__dirname, '..', '..', 'public');
 
@@ -59,12 +60,19 @@ function parseImageUrl(rawUrl) {
   };
 }
 function cssPosition(p) { return (p || 'center').replace(/-/g, ' '); }
+// Every image this middleware renders is a background — there are no <img>
+// tags in the SSR output — so this is the single place where format
+// negotiation can happen. imageRender emits a plain url() declaration
+// followed by an image-set() one, so browsers that support image-set() take
+// the AVIF or WebP variant and the rest keep the original. When an image has
+// never been processed, it returns just the original declaration and this
+// behaves exactly as it did before.
 function backgroundStyle(rawUrl) {
   const { url, position, fit } = parseImageUrl(rawUrl);
   if (!url) return '';
   const bgSize = fit === 'contain' ? 'contain' : 'cover';
-  const safe = String(url).replace(/'/g, "\\'");
-  return `background-image:url('${safe}'); background-position:${cssPosition(position)}; background-size:${bgSize}; background-repeat:no-repeat;`;
+  const image = imageRender.backgroundImageSet(url);
+  return `${image} background-position:${cssPosition(position)}; background-size:${bgSize}; background-repeat:no-repeat;`;
 }
 function imgStyle(rawUrl) {
   const { url, position, fit } = parseImageUrl(rawUrl);

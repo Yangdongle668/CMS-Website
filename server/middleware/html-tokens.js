@@ -22,6 +22,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const imageRender = require('../services/image-render');
 
 const PUBLIC_DIR = path.resolve(__dirname, '..', '..', 'public');
 
@@ -594,11 +595,16 @@ async function applyPageOverrides(html) {
       let heroBlock = html.slice(heroStart, closeIdx + '</section>'.length);
 
       // Background image (replace existing inline style="background-image:...").
+      // Goes through imageRender for the same reason backgroundStyle in
+      // ssr-detail.js does — this is the second place the server writes a
+      // background URL, and an image only gets AVIF/WebP negotiation on the
+      // paths that ask for it. Falls back to a plain url() declaration when
+      // the image has no variants.
       if (page.hero_image) {
-        const safeBg = String(page.hero_image).replace(/'/g, "\\'");
+        const bgDecl = imageRender.backgroundImageSet(String(page.hero_image));
         heroBlock = heroBlock.replace(
           /(<section\s+class="(?:page-)?hero"[^>]*?)\sstyle="[^"]*"/i,
-          `$1 style="background-image:url('${safeBg}');"`
+          `$1 style="${bgDecl}"`
         );
       }
 

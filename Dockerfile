@@ -16,7 +16,14 @@ COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY scripts ./scripts
 COPY public ./public
+COPY server ./server
 RUN npm run build || echo "[build] skipped or failed — runtime will serve source files"
+# Responsive variants for the shipped images. They are gitignored build
+# output, so they have to be produced here — the runtime stage copies this
+# whole public/ directory. Non-fatal for the same reason as the build above:
+# server/services/image-render.js falls back to the original file whenever an
+# image has no variants, so a failure here costs bytes, not correctness.
+RUN npm run images:optimize || echo "[images] optimization skipped — originals will be served"
 
 # ---------- runtime ----------
 FROM node:20-bookworm-slim AS runtime

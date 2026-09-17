@@ -38,7 +38,7 @@
 
 ---
 
-## 步骤 1 — 图片回填（半天）
+## 步骤 1 — 图片回填 — ✅ 已完成
 
 **前提纠正**：`IMPROVEMENTS.md` 原先写「写脚本批量生成 WebP」是错的。
 `server/services/image-processor.js` **已经是一套完整管线**——
@@ -56,11 +56,33 @@ public/assets/img/logo.png 1.1MB，未处理
 
 **为什么先做**：零风险、零依赖、立即见效，且图片资产本身不会被区块化冲掉。
 
-**验收**：seed 目录产出变体文件；总体积下降可量化；原图保留为兜底。
+**结果**：`scripts/optimize-images.js`（薄驱动，不含编码逻辑）+ `npm run images:optimize`
+
+| | |
+|---|---|
+| 处理源图 | 50 张 |
+| 原图总计 | 16.9 MB |
+| 最宽 AVIF 总计 | **4.4 MB（-74%）** |
+| `logo.png` | 1054 KB → **9 KB**（AVIF @480） |
+
+**过程中补掉的两个管线缺陷**：
+
+1. `image-processor.js:75` 的变体 URL **硬编码为 `/uploads/`**。变体文件写在源文件同目录，
+   所以对 `public/assets/img/` 下的图片返回的 URL 是错的。加了 `opts.urlBase`，默认值不变。
+2. 兜底格式**写死 JPEG，而 JPEG 不支持透明**。今天从媒体库上传一个透明 PNG logo，
+   生成的兜底变体会带黑底。改为按源图的 alpha 通道自动选择
+   （`FORMATS_ALPHA = ['avif','webp','png']`），`cleanup()` 的正则也补上了 `png`。
+   实测 logo 正确拿到 `.png` 兜底而非 `.jpg`。
+
+**磁盘代价与决策**：变体全量存盘使 `public/assets/img/` 从 17MB 涨到 58MB。
+这 41MB 是**构建产物**，已加入 `.gitignore` 并在 `Dockerfile` 的 builder 阶段生成
+（runtime 阶段本就整个 `COPY --from=builder /app/public`）。
+gitignore 模式按 `SIZES` 的实际宽度枚举，而非数字通配——
+seed 文件名是 `photo-<unsplash-id>.jpg`，`*-[0-9]*.jpg` 会把源图一起忽略掉。
 
 ---
 
-## 步骤 2 — 共享图片渲染器（1 天）⭐ 关键一步
+## 步骤 2 — 共享图片渲染器 — ✅ 已完成
 
 **这是本计划里投入产出比最高的一步。**
 
@@ -89,8 +111,49 @@ pictureSources(media)                                              // → { avif
 本步骤只处理 `<img>` 路径；`background-image` 留到区块化时用
 `<picture>` 区块彻底解决——现在改它属于会被重写的那一类。
 
-**验收**：首屏图片体积下降可量化；SSR 输出含 `<source type="image/avif">`；
-无变体时优雅回退到原 `src`。
+**结果**：`server/services/image-render.js`
+
+输出形态（兜底声明在前，`image-set()` 在后——不支持 `image-set()` 的浏览器
+会把整条声明判为无效，没有前一条就会**完全没有背景图**）：
+
+```css
+background-image:url('/assets/img/seed/photo-x.jpg');
+background-image:image-set(
+  url('/assets/img/seed/photo-x-1920.avif') type('image/avif'),
+  url('/assets/img/seed/photo-x-1920.webp') type('image/webp'),
+  url('/assets/img/seed/photo-x.jpg')       type('image/jpeg'));
+```
+
+**接入了两条服务端路径**（第二条是端到端测试时才发现的）：
+
+| 路径 | 位置 |
+|---|---|
+| SSR 详情页背景 | `ssr-detail.js:70` `backgroundStyle()` |
+| 页面 hero 覆盖 | `html-tokens.js:597` |
+
+**实测收益**（服务端渲染的图片，浏览器实际下载量）：
+
+| 页面 | 改动前 | 改动后 |
+|---|---|---|
+| `/blog/ar-thin-battery` | 278 KB | **68 KB（-76%）** |
+| `/applications/medical` | 508 KB | **126 KB（-76%）** |
+| `/about/factory` | 124 KB | **31 KB（-75%）** |
+
+**仍未升级的部分（按计划推迟，非遗漏）**：手写静态 HTML 里的内联
+`background-image`（`public/index.html` 12 处、`applications/smart-home.html:67` 等）。
+服务端不重写这些标记，它们随 Phase 3 的区块化一并解决。
+判据是 DB 里有没有对应的 `hero_image`：`medical` 有 → 已升级；`smart-home` 没有 → 未升级。
+
+**顺带修掉的注入隐患**：两条路径都把结果放进 `style="..."`，
+而原先的转义只处理单引号，双引号可以直接闭合属性。
+改为对 URL 百分号编码 `"'()\<>` 与控制字符——CSS 与 HTML 属性两层都安全，
+且对 URL 而言本就是语义正确的编码。
+
+**验证**：33 项断言（变体发现、路径穿越防护、`image-set` 顺序、
+无变体时优雅退化、4 类注入向量、`renderPicture` 输出）+ 真实 HTTP 页面抓取。
+
+`renderPicture()` 也一并实现了，但**今天没有消费者**——SSR 层不输出 `<img>`。
+它是给步骤 6 的区块 `render()` 用的。
 
 ---
 
@@ -176,8 +239,8 @@ pictureSources(media)                                              // → { avif
 ## 进度
 
 - [x] P0 + P1（7 个提交，已推送）
-- [ ] 步骤 1 — 图片回填
-- [ ] 步骤 2 — 共享图片渲染器
+- [x] 步骤 1 — 图片回填（16.9 MB → 4.4 MB，-74%）
+- [x] 步骤 2 — 共享图片渲染器（服务端渲染的图片 -76%）
 - [ ] 步骤 3 — 设计 token 层
 - [ ] 步骤 4 — 冻结 overrides（待拍板）
 - [ ] 步骤 5 — 工程安全网

@@ -9,6 +9,7 @@ const { recordAudit } = require('../middleware/audit');
 const { clamp, trimStr } = require('../utils/validate');
 const imageProcessor = require('../services/image-processor');
 const uploadGuard = require('../services/upload-guard');
+const imageRender = require('../services/image-render');
 
 const router = express.Router();
 
@@ -158,6 +159,7 @@ router.post('/', requireAuth, upload.single('file'),
   let result = { variants: [], srcset: {}, original_width: 0, original_height: 0 };
   if (imageProcessor.shouldProcess(req.file.mimetype)) {
     result = await imageProcessor.process(path.join(UPLOAD_DIR, req.file.filename));
+    imageRender.invalidate();
     if (result.error) {
       console.warn('[media] image processing failed:', result.error);
     }
@@ -223,6 +225,7 @@ router.post('/:id/reprocess', requireAuth, async (req, res) => {
   const filePath = path.join(UPLOAD_DIR, row.filename);
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'file_missing' });
   const result = await imageProcessor.process(filePath);
+  imageRender.invalidate();
   await query(
     `UPDATE media SET variants=$1, srcset=$2, width=$3, height=$4 WHERE id=$5`,
     [
@@ -245,6 +248,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
   const filePath = path.join(UPLOAD_DIR, row.filename);
   // Drop variant files first so we don't orphan them on disk
   await imageProcessor.cleanup(filePath);
+  imageRender.invalidate();
   if (fs.existsSync(filePath)) {
     try { fs.unlinkSync(filePath); } catch (_) { /* ignore */ }
   }
