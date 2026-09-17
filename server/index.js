@@ -17,6 +17,13 @@ const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
+const secrets = require('./config/secrets');
+
+// Surface secrets this process cannot fix itself (weak PGPASSWORD, a
+// well-known ADMIN_DEFAULT_PASSWORD) before anything starts listening.
+// JWT_SECRET / COOKIE_SECRET need no check here — they are generated and
+// persisted on first boot if not supplied. See server/config/secrets.js.
+secrets.assertDeploymentSanity();
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
@@ -102,7 +109,7 @@ app.use(
   })
 );
 
-app.use(cookieParser(process.env.COOKIE_SECRET || 'dev-cookie-secret'));
+app.use(cookieParser(secrets.cookieSecret));
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 

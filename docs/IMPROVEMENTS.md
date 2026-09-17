@@ -9,7 +9,34 @@
 
 ## P0 — 安全，上线前必须修
 
-### 1. 默认弱密钥导致管理员身份可被伪造
+### 1. 默认弱密钥导致管理员身份可被伪造 — ✅ 已完成
+
+**实际实现与原计划的差异**（两处，均为验证后的调整）：
+
+1. **未采用「缺失即拒绝启动」，改为「首次启动自动生成并持久化」。**
+   新增 `server/config/secrets.js`：`JWT_SECRET` / `COOKIE_SECRET` 按
+   「显式 env → 数据卷中已持久化的值 → 新生成并落盘」顺序解析。
+   已知占位符（含本仓库历史上出现过的全部默认值）一律视为未提供。
+   这样既消除了共享密钥，又完整保留了 README 的「一行部署」承诺。
+   持久化失败时**抛错拒绝启动**——否则每次重启换密钥会静默登出所有管理员。
+
+2. **`PGPASSWORD` 改为警告而非硬失败。** 原因：`docker-compose.yml` 的 db 服务
+   未发布端口，Postgres 仅在 compose 内网可达；且数据卷已用旧密码初始化，
+   应用自身无法轮换。硬失败会让所有既有部署在更新后无法启动，代价大于收益。
+
+3. **`ADMIN_DEFAULT_PASSWORD` 默认值直接移除**，交还给
+   `server/routes/auth.js:20-41` 已有的「首次登录自举管理员」逻辑——
+   该逻辑的注释本就写明是为消除默认密码陷阱，此前被 compose 的默认值抵消了。
+
+**变更文件**：`server/config/secrets.js`（新增）· `server/middleware/auth.js`
+· `server/index.js` · `docker-compose.yml` · `.env.example` · `README.md`
+
+**验证**：12 项单元断言全通过（生成/复用/拒绝占位符/拒绝短值/采用合法值/
+权限 0600/持久化失败抛错）；真实启动确认走通；JWT 闭环确认
+`dev-secret` 与 compose 旧占位符伪造的 token 均被拒绝，且重启后会话不丢失。
+
+<details>
+<summary>原始问题记录</summary>
 
 **位置**
 
@@ -55,6 +82,8 @@ for (const k of REQUIRED) {
    持久化到命名卷，首次启动打印到日志。
 
 **验收**：不带 `.env` 执行 `docker compose up`，容器应拒绝启动并打印明确原因。
+
+</details>
 
 ---
 
