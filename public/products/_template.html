@@ -48,7 +48,12 @@
   </section>
 
   <!-- 3. Overview -->
-  <section class="section section-light">
+  <!-- Block mount. When this pillar has blocks (phase 2 of
+         docs/ARCHITECTURE_BLOCKS.md) the server fills this and removes every
+         [data-legacy-section] below; with no blocks the sections render as
+         before, so a pillar can be switched over one at a time. -->
+  <div data-blocks></div>
+  <section data-legacy-section class="section section-light">
     <div class="section-inner">
       <span class="eyebrow">Overview</span>
       <h2 data-overview-title>What is this product line</h2>
@@ -57,7 +62,7 @@
   </section>
 
   <!-- 4. Variants — Standard / Custom split -->
-  <section class="section section-grey">
+  <section data-legacy-section class="section section-grey">
     <div class="section-inner">
       <span class="eyebrow">Variants</span>
       <h2>Standard catalogue and full-custom design.</h2>
@@ -67,7 +72,7 @@
   </section>
 
   <!-- 5. Specifications table -->
-  <section class="section section-light" id="specs">
+  <section data-legacy-section class="section section-light" id="specs">
     <div class="section-inner">
       <span class="eyebrow">Specifications</span>
       <h2>Technical envelope &amp; performance.</h2>
@@ -77,7 +82,7 @@
   </section>
 
   <!-- 6. Customisation capabilities (only when enabled) -->
-  <section class="section section-grey" id="capabilities" data-customization-section style="display:none;">
+  <section data-legacy-section class="section section-grey" id="capabilities" data-customization-section style="display:none;">
     <div class="section-inner">
       <span class="eyebrow">Customisation</span>
       <h2>Bespoke design service.</h2>
@@ -87,7 +92,7 @@
   </section>
 
   <!-- 7. Manufacturing & QC -->
-  <section class="section section-light">
+  <section data-legacy-section class="section section-light">
     <div class="section-inner">
       <span class="eyebrow">Manufacturing &amp; QC</span>
       <h2 data-mfg-title>From prototype to mass production.</h2>
@@ -96,7 +101,7 @@
   </section>
 
   <!-- 8. Applications -->
-  <section class="section section-grey">
+  <section data-legacy-section class="section section-grey">
     <div class="section-inner">
       <span class="eyebrow">Applications</span>
       <h2>Common deployments.</h2>
@@ -120,7 +125,7 @@
   </section>
 
   <!-- 10. Certifications -->
-  <section class="section section-light" style="padding-top: 60px;">
+  <section data-legacy-section class="section section-light" style="padding-top: 60px;">
     <div class="section-inner">
       <span class="eyebrow">Compliance</span>
       <h2>Independently certified.</h2>
@@ -130,7 +135,7 @@
   </section>
 
   <!-- 11. FAQ -->
-  <section class="section section-grey" id="faq">
+  <section data-legacy-section class="section section-grey" id="faq">
     <div class="section-inner">
       <span class="eyebrow">FAQ</span>
       <h2>Common questions.</h2>

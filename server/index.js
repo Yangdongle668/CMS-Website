@@ -532,6 +532,17 @@ async function autoMigrate() {
        updated_at TIMESTAMPTZ  NOT NULL DEFAULT now()
      )`,
     `CREATE INDEX IF NOT EXISTS idx_page_blocks_page ON page_blocks(page_id, sort_order)`,
+    // Polymorphic ownership, added in phase 2 so pillar pages can carry blocks
+    // without being mirrored into `pages`. Each branch keeps its own foreign
+    // key, so a delete still cascades and orphans cannot accumulate.
+    `ALTER TABLE page_blocks ADD COLUMN IF NOT EXISTS pillar_id INT REFERENCES pillar_pages(id) ON DELETE CASCADE`,
+    `ALTER TABLE page_blocks ALTER COLUMN page_id DROP NOT NULL`,
+    `DO $$ BEGIN
+       ALTER TABLE page_blocks ADD CONSTRAINT page_blocks_one_owner
+         CHECK (num_nonnulls(page_id, pillar_id) = 1);
+     EXCEPTION WHEN duplicate_object THEN NULL;
+     END $$`,
+    `CREATE INDEX IF NOT EXISTS idx_page_blocks_pillar ON page_blocks(pillar_id, sort_order)`,
     `CREATE EXTENSION IF NOT EXISTS pg_trgm`,
     `CREATE INDEX IF NOT EXISTS idx_inquiries_search_trgm ON inquiries
        USING GIN ((email || ' ' || company || ' ' || full_name || ' ' || reference) gin_trgm_ops)`,

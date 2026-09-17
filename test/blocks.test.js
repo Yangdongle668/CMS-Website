@@ -26,8 +26,14 @@ test('blocks', async (t) => {
   await t.test('the registry exposes its types and their schemas', async () => {
     const res = await srv.request('/api/blocks/types');
     assert.equal(res.status, 200);
-    const types = res.json.types.map((x) => x.type).sort();
-    assert.deepEqual(types, ['cta_band', 'faq', 'hero', 'rich_text']);
+    const types = res.json.types.map((x) => x.type);
+    // Membership, not equality: adding a block type is meant to be a one-file
+    // change, and an exact-list assertion would make every such addition fail
+    // here — which is the opposite of what the registry promises.
+    for (const expected of ['hero', 'rich_text', 'faq', 'cta_band']) {
+      assert.ok(types.includes(expected), `${expected} should be registered`);
+    }
+    assert.equal(new Set(types).size, types.length, 'no duplicate types');
     const faq = res.json.types.find((x) => x.type === 'faq');
     assert.equal(faq.schema.items.type, 'repeater', 'the schema drives the admin form');
     assert.ok(faq.schema.items.fields.q, 'repeater sub-fields are exposed');

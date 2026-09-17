@@ -751,9 +751,10 @@ async function applyBlocks(html, page) {
     (whole, open, _tag, _inner, close) => open + '\n' + out.html + '\n' + close
   );
 
-  if (out.jsonLd.length) {
-    const tags = require('../services/block-render').jsonLdTags(out.jsonLd);
-    html = html.replace('</head>', tags + '\n</head>');
+  const blockRender2 = require('../services/block-render');
+  const fresh = blockRender2.dropDuplicateTypes(out.jsonLd, html);
+  if (fresh.length) {
+    html = html.replace('</head>', blockRender2.jsonLdTags(fresh) + '\n</head>');
   }
   return html;
 }

@@ -94,7 +94,14 @@ async function startServer(opts = {}) {
 
   // Schema first, in-process, so a migration failure fails the test loudly
   // instead of showing up as a confusing 500 later.
-  await execFileAsync('node', [path.join(ROOT, 'server', 'db', 'init.js')], { env });
+  //
+  // opts.seed loads seed.sql as well. Most suites want an empty database so
+  // their assertions are about their own rows; the pillar-block tests need the
+  // real seeded pillars, because what they check is that existing content
+  // survives the migration unchanged.
+  const initArgs = [path.join(ROOT, 'server', 'db', 'init.js')];
+  if (opts.seed) initArgs.push('--seed');
+  await execFileAsync('node', initArgs, { env });
 
   const child = spawn('node', [path.join(ROOT, 'server', 'index.js')], {
     env,

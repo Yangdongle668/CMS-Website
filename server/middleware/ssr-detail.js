@@ -451,8 +451,52 @@ async function renderPillar(req, res, slug) {
   }
   html = injectIntoBody(html, bodyEntries);
 
+  // ----- Blocks (phase 2) -----
+  // A pillar that has blocks renders them in place of the eight
+  // [data-legacy-section] elements above; one that has none renders exactly as
+  // it did before. That makes the switch per-pillar and reversible — rolling
+  // back is deleting that pillar's block rows.
+  //
+  // The hero is deliberately not part of this. The template's hero carries
+  // breadcrumbs and sibling links the hero block does not emit, so rendering
+  // both would produce two heroes; it moves in phase 3, when this template is
+  // replaced outright.
+  html = await applyPillarBlocks(html, pillar);
+
   res.type('html').send(applySavedTextOverrides(html));
   return true;
+}
+
+async function applyPillarBlocks(html, pillar) {
+  if (!pillar || !pillar.id) return html;
+  if (!/<[a-z]+[^>]*\sdata-blocks\b/i.test(html)) return html;
+
+  let out;
+  try {
+    const blockRender = require('../services/block-render');
+    out = await blockRender.renderPage(pillar.id, { owner: 'pillar' });
+  } catch (err) {
+    console.error('[blocks] pillar %s failed: %s', pillar.slug, err && err.message);
+    return html;
+  }
+  if (!out || !out.rendered) return html;
+
+  // Drop the legacy sections only once there is something to replace them
+  // with, so a render failure above leaves the page intact rather than blank.
+  html = html.replace(
+    /<section[^>]*\sdata-legacy-section\b[\s\S]*?<\/section>/gi,
+    ''
+  );
+  html = html.replace(
+    /(<([a-z]+)[^>]*\sdata-blocks\b[^>]*>)([\s\S]*?)(<\/\2>)/i,
+    (whole, open, _tag, _inner, close) => open + '\n' + out.html + '\n' + close
+  );
+  const blockRender2 = require('../services/block-render');
+  const fresh = blockRender2.dropDuplicateTypes(out.jsonLd, html);
+  if (fresh.length) {
+    html = html.replace('</head>', blockRender2.jsonLdTags(fresh) + '\n</head>');
+  }
+  return html;
 }
 
 // Individual product (SKU) — uses the same /products/_template.html shell

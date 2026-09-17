@@ -19,7 +19,8 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "node --test \"test/**/*.test.js\""
+    "test": "node --test \"test/**/*.test.js\"",
+    "blocks:migrate-pillars": "node scripts/migrate-pillars-to-blocks.js"
   },
   "engines": {
     "node": ">=18.0.0"

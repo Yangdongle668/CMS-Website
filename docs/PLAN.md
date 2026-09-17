@@ -364,7 +364,92 @@ psql 对裸布尔渲染成 `t`、经 `||` 拼接则是 `true`（断言要显式 
 这段文本正是 Google 在 FAQ 富媒体结果里展示的内容，标点前的空格会直接可见。
 已修正（标点前后的空白归一化）。
 
-后续阶段 2 / 3 / 4 见架构文档。
+---
+
+## 阶段 2 — 支柱页迁移 — ✅ 已完成
+
+### 归属模型：多态，但保住外键
+
+支柱页**不在 `pages` 表里**，它是独立的 `pillar_pages`。三种接法里：
+
+| 方案 | 取舍 |
+|---|---|
+| 给每个支柱页在 `pages` 里造镜像行 | ❌ 同一个页面两个真相源——正是这条分支一路在修的那类 bug |
+| 改成 `owner_type` + `owner_id` 无外键 | ❌ 失去级联删除，孤儿区块会静默堆积 |
+| **每种归属一个可空外键 + CHECK** | ✅ 采用 |
+
+```sql
+page_id    INT REFERENCES pages(id) ON DELETE CASCADE,
+pillar_id  INT REFERENCES pillar_pages(id) ON DELETE CASCADE,
+CHECK (num_nonnulls(page_id, pillar_id) = 1)
+```
+
+删除页面/支柱页仍会带走它的区块，且数据库层面拒绝"两个归属"或"没有归属"的行。
+再加一种归属就是多一列 + CHECK 里多一个名字。
+
+### 7 种新区块
+
+`overview` · `variant_grid` · `spec_table` · `application_grid` ·
+`customization` · `manufacturing` · `certification_wall`
+
+标记与模板既有的 `.feat-item` / `.spec-table` / `.cust-item` / `.cert-chip` /
+`.app-card` 保持一致，所以迁移后的页面是**看起来一样**，不只是"等价"。
+
+`application_grid` 存的是应用 slug 而不是名称和图片的副本——applications 表仍是
+唯一真相源，改一个行业名，所有引用它的支柱页同步更新。为此给区块系统加了
+`resolve()` 钩子：需要读其它表的区块在渲染前异步取数，`render()` 保持同步纯函数
+（这是预览接口和测试能很轻的原因）。
+
+### 迁移是复制，不是重塑
+
+```
+3 个支柱页 → 各 8 个区块，零校验警告
+overview, variant_grid, spec_table, application_grid,
+customization, manufacturing, certification_wall, faq
+```
+
+架构文档说"现有结构已经对得上"——成立。`pillar_pages.faq` 是 `[{q,a}]`，
+faq 区块的 schema 也是 `[{q,a}]`，其余七个同理。
+
+**hero 不在这批里**（8 个而不是 9 个）。`products/_template.html` 的 hero 带
+面包屑和兄弟页链接，hero 区块不输出这些，两边都渲染会出现两个 hero。
+`hero_*` 列原地不动，留到阶段 3 模板被整体替换时迁移。
+
+### 逐页可切换，可回滚
+
+模板里 8 个 section 标了 `data-legacy-section`，并加了 `<div data-blocks>` 挂载点：
+支柱页有区块 → 区块渲染、legacy section 移除；没有 → 和以前一模一样。
+**`pillar_pages` 的列一个字节没动**，回滚就是删掉那些区块行。
+
+### 迁移前后实测（同一页面）
+
+| | 规格单元格 | 型号卡 | 定制项 | 应用卡 | 认证 | FAQ | 区块 |
+|---|---|---|---|---|---|---|---|
+| 迁移前 | 25 | 3 | 7 | 4 | 6 | 5 | 0 |
+| 迁移后 | **25** | **3** | **7** | **4** | **6** | **5** | **8** |
+
+### 过程中发现并修掉的一个真问题
+
+支柱页自己的 SSR 图谱**本来就从 `pillar_pages.faq` 生成 FAQPage**，区块又生成了
+一个——**重复的 FAQPage 是 Search Console 警告**，出现在一个以结构化数据为核心
+卖点的站点上。加了通用去重：页面已有某个 `@type` 时，区块不再注入。
+
+### 顺带发现（未修，已记录）
+
+`/products/<slug>.html` 这个带 `.html` 后缀的 URL **不走 `renderPillar`**，
+直接吐未填充的模板（hero 显示模板默认值 "Pillar"）。无后缀的 `/products/<slug>`
+才是正确路径。需要确认站内是否有链接指向 `.html` 形式——如果有，那些链接指向的
+是空页面。这是既有行为，不在本次范围内。
+
+### 验证（10 条新断言，全套 67 条全绿）
+
+迁移前基准 → 迁移 → 内容逐项相同 → legacy section 已移除 →
+结构化数据不重复 → 重跑迁移是 no-op → 删除区块行后 legacy 渲染原样回来 →
+API 可按 pillar 归属增删 → 数据库拒绝双归属/无归属的行。
+
+---
+
+后续阶段 3 / 4 见架构文档。
 
 ---
 
@@ -391,3 +476,4 @@ psql 对裸布尔渲染成 `t`、经 `||` 拼接则是 `true`（断言要显式 
 - [ ] 步骤 4 — 冻结 overrides（**待你拍板**：会让后台可视化文字编辑降级为只读）
 - [x] 步骤 5 — 工程安全网（41 条测试 + lint + CI，全绿）
 - [x] 步骤 6 — 区块系统阶段 1（4 种区块，57 条测试全绿）
+- [x] 阶段 2 — 支柱页迁移（11 种区块，67 条测试全绿）

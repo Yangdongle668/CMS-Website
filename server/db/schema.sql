@@ -457,7 +457,17 @@ CREATE INDEX IF NOT EXISTS idx_analytics_country_ts
 -- registered is skipped at render time rather than breaking the page.
 CREATE TABLE IF NOT EXISTS page_blocks (
   id         SERIAL PRIMARY KEY,
-  page_id    INT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+  -- Ownership is polymorphic but still a real foreign key on each branch, so
+  -- deleting a page or a pillar takes its blocks with it and an orphan cannot
+  -- accumulate silently. Exactly one owner is set; the CHECK below enforces it.
+  -- Adding another owner (products, articles) is one more nullable column and
+  -- one more name in that CHECK.
+  --
+  -- The alternative — giving every pillar a mirror row in `pages` — would have
+  -- meant two sources of truth for one page's identity, which is the shape of
+  -- most of the bugs this branch has been fixing.
+  page_id    INT REFERENCES pages(id) ON DELETE CASCADE,
+  pillar_id  INT REFERENCES pillar_pages(id) ON DELETE CASCADE,
   type       VARCHAR(60)  NOT NULL,
   sort_order INT          NOT NULL DEFAULT 0,
   data       JSONB        NOT NULL DEFAULT '{}'::jsonb,
@@ -466,5 +476,15 @@ CREATE TABLE IF NOT EXISTS page_blocks (
   updated_at TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
 
--- The render path always reads one page's blocks in order.
+ALTER TABLE page_blocks ADD COLUMN IF NOT EXISTS pillar_id INT REFERENCES pillar_pages(id) ON DELETE CASCADE;
+ALTER TABLE page_blocks ALTER COLUMN page_id DROP NOT NULL;
+
+DO $$ BEGIN
+  ALTER TABLE page_blocks ADD CONSTRAINT page_blocks_one_owner
+    CHECK (num_nonnulls(page_id, pillar_id) = 1);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- The render path always reads one owner's blocks in order.
 CREATE INDEX IF NOT EXISTS idx_page_blocks_page ON page_blocks(page_id, sort_order);
+CREATE INDEX IF NOT EXISTS idx_page_blocks_pillar ON page_blocks(pillar_id, sort_order);
