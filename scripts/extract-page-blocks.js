@@ -117,7 +117,12 @@ function dropFirst(html, tag, className) {
 }
 
 // The page's visible text, normalised. This is what the safety check compares.
-const visibleText = (html) => toPlainText(html.replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, ' '));
+// Comments are not visible text. Leaving them in made blog/index.html look
+// like it was losing 17 words that no visitor has ever seen.
+const visibleText = (html) =>
+  toPlainText(
+    html.replace(/<!--[\s\S]*?-->/g, ' ').replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, ' ')
+  );
 
 // ----- Conversion -----------------------------------------------------------
 
@@ -189,6 +194,26 @@ function convertedRegion(fileHtml) {
   return dropFirst(hero, 'div', 'breadcrumbs') + ' ' + body;
 }
 
+// The words check cannot see an element disappear: a <form> stripped by the
+// sanitiser leaves its labels behind as plain text, so every word survives and
+// the page is still broken. That is not hypothetical — it is what happened to
+// contact.html and gdpr.html on the first run of this script, taking the RFQ
+// and DSAR forms with it.
+//
+// So compare structure as well: every element kind present in the source region
+// must still be present after conversion. Losing a <div> to a rewrite is fine,
+// losing a <form> is not.
+const IGNORED_TAGS = new Set(['section', 'br', 'hr']); // restructured by design
+
+function tagsIn(html) {
+  const out = new Set();
+  for (const m of String(html).matchAll(/<([a-zA-Z][a-zA-Z0-9]*)\b/g)) {
+    const t = m[1].toLowerCase();
+    if (!IGNORED_TAGS.has(t)) out.add(t);
+  }
+  return out;
+}
+
 // The check that decides whether a conversion is allowed to be written.
 function verify(fileHtml, planned) {
   const before = visibleText(convertedRegion(fileHtml));
@@ -210,13 +235,20 @@ function verify(fileHtml, planned) {
     .join(' ');
 
   const afterText = visibleText(rendered);
+  const lostTags = [...tagsIn(convertedRegion(fileHtml))].filter((t) => !tagsIn(rendered).has(t));
   const beforeWords = before.split(' ').filter(Boolean);
   const afterWords = new Set(afterText.split(' ').filter(Boolean));
   // Every word inside the converted region has to survive. Extra words on the
   // far side are fine — a block may add a heading the markup carried as an
   // attribute — but a word that was visible and now is not is content loss.
   const missing = beforeWords.filter((w) => !afterWords.has(w));
-  return { before, afterText, missingSample: missing.slice(0, 12), missingCount: missing.length };
+  return {
+    before,
+    afterText,
+    missingSample: missing.slice(0, 12),
+    missingCount: missing.length,
+    lostTags,
+  };
 }
 
 // ----- Driver ---------------------------------------------------------------
@@ -265,6 +297,15 @@ async function convert(file) {
   if (!ok) return { rel, slug, status: notes.join('; ') || 'nothing extractable', notes };
 
   const check = verify(html, planned);
+  if (check.lostTags.length) {
+    return {
+      rel,
+      slug,
+      status: `REFUSED — these elements would be stripped: <${check.lostTags.join('> <')}>`,
+      planned,
+      notes,
+    };
+  }
   if (check.missingCount > 0) {
     return {
       rel,

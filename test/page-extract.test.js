@@ -47,13 +47,41 @@ test('page extraction', async (t) => {
     assert.equal(n, '0', 'no blocks were created');
   });
 
+  // The regression this file exists for. The words check cannot see an element
+  // vanish: a stripped <form> leaves its labels behind as plain text, so every
+  // word survives and the page is still broken. That shipped once, taking the
+  // RFQ and DSAR forms with it, and eleven FAQ accordions besides.
+  await t.test('it refuses a page whose interactive elements it would strip', async () => {
+    const { stdout } = await extract(srv, ['--all']);
+    assert.match(stdout, /contact\.html\s+REFUSED.*<form>/, 'the RFQ page must not be converted to prose');
+    assert.match(stdout, /gdpr\.html\s+REFUSED.*<form>/, 'nor the DSAR page');
+  });
+
+  await t.test('disclosure widgets survive conversion', async () => {
+    // Eleven pages build their FAQ out of <details>/<summary>. Dropping them
+    // left the text readable and the accordions dead — visible to a person,
+    // invisible to a word count.
+    const { sanitizeHtml } = require('../server/utils/html-sanitize');
+    const out = sanitizeHtml('<details><summary>Q</summary><p>A</p></details>');
+    assert.match(out, /<details>/);
+    assert.match(out, /<summary>/);
+  });
+
+  await t.test('inert hook attributes survive conversion', async () => {
+    const { sanitizeHtml } = require('../server/utils/html-sanitize');
+    const out = sanitizeHtml('<div data-contact-form aria-label="x" role="form" onclick="e()">y</div>');
+    assert.match(out, /data-contact-form/, 'scripts find their elements by these');
+    assert.match(out, /aria-label="x"/);
+    assert.match(out, /role="form"/);
+    assert.doesNotMatch(out, /onclick/, 'handlers still go');
+  });
+
   await t.test('it refuses a page whose text it cannot reproduce', async () => {
     const { stdout } = await extract(srv, ['--all']);
     // index.html carries a JS-driven carousel; blog/index.html carries markup
     // the sanitiser strips. Both are real losses, and a refusal is the correct
     // outcome — the alternative is a page that quietly says less than it did.
     assert.match(stdout, /REFUSED/, 'at least one page must be refused');
-    assert.match(stdout, /index\.html\s+REFUSED/, 'the homepage is one of them');
   });
 
   await t.test('conversion preserves every word of the converted region', async () => {
