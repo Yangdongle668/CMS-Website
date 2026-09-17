@@ -94,6 +94,13 @@ async function processOne(job) {
     const nextAttempts = job.attempts + 1;
     const isDead = nextAttempts >= (job.max_attempts || 8);
     const backoff = BACKOFF_SECONDS[Math.min(job.attempts, BACKOFF_SECONDS.length - 1)];
+    // A bare "certificate has expired" in the queue tells the operator
+    // nothing about which cert or why. Point them at the diagnostic
+    // page rather than re-probing the server on every single retry.
+    let errText = String((err && err.message) || err);
+    if (/certificate|self[- ]signed|CERT_|unable to verify|altname/i.test(errText)) {
+      errText += ' — TLS 证书校验失败，请在 后台 → SMTP 设置 → 证书诊断 中查看证书有效期与本机时钟';
+    }
     await query(
       `UPDATE mail_outbox
        SET status = $1,
@@ -105,7 +112,7 @@ async function processOne(job) {
       [
         isDead ? 'dead' : 'failed',
         nextAttempts,
-        String((err && err.message) || err).slice(0, 1000),
+        errText.slice(0, 1000),
         String(backoff),
         job.id,
       ]

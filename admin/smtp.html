@@ -19,6 +19,16 @@
   .status-line.is-ok { background: var(--a-success-soft); color: var(--a-success); }
   .status-line.is-warn { background: var(--a-warning-soft); color: var(--a-warning); }
   .field-pair { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+  .tls-advanced { border: 1px solid var(--a-line); border-radius: 6px; padding: 10px 14px; margin: 4px 0 16px; }
+  .tls-advanced > summary { cursor: pointer; font-size: 13px; font-weight: 600; }
+  .tls-advanced[open] > summary { margin-bottom: 4px; }
+  .tls-advanced textarea { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
+  .cert-table { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-top: 8px; }
+  .cert-table th, .cert-table td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--a-line-soft); vertical-align: top; }
+  .cert-table th { color: var(--a-mute2); font-weight: 600; white-space: nowrap; }
+  .cert-bad { color: var(--a-danger); font-weight: 600; }
+  .cert-ok { color: var(--a-success); }
+  .hint-list { margin: 10px 0 0; padding-left: 18px; font-size: 12px; line-height: 1.7; }
 </style>
 </head>
 <body>
@@ -123,6 +133,48 @@
           <label for="f-auto">自动回复访客（确认收到询盘）</label>
         </div>
 
+        <details class="tls-advanced" ${cfg.tls_reject_unauthorized === false || cfg.tls_ca || cfg.tls_servername || cfg.tls_min_version ? 'open' : ''}>
+          <summary>TLS / 证书高级设置</summary>
+          <p style="font-size:12.5px; color:var(--a-mute2); line-height:1.6; margin:10px 0 14px;">
+            发信报 <code>certificate has expired</code> / <code>self signed certificate</code>
+            这类错误时用这里。先点右侧的「证书诊断」看清楚是哪张证书、什么时候过期的，再决定怎么处理。
+          </p>
+
+          <div class="field">
+            <label>自定义 CA 证书（PEM）</label>
+            <textarea id="f-tls-ca" rows="5" spellcheck="false"
+              placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----">${escapeHtml(cfg.tls_ca || '')}</textarea>
+            <span class="hint">自建邮件服务器 / 企业私有 CA 签发的证书，把 CA 根证书贴进来即可正常校验，<strong>不用</strong>关闭证书校验。</span>
+          </div>
+
+          <div class="field-pair">
+            <div class="field">
+              <label>TLS SNI 服务器名</label>
+              <input id="f-tls-servername" value="${escapeHtml(cfg.tls_servername || '')}" placeholder="留空 = 使用上面的服务器地址">
+              <span class="hint">用 IP 连接、或证书域名与连接地址不一致时填证书上的域名。</span>
+            </div>
+            <div class="field">
+              <label>最低 TLS 版本</label>
+              <select id="f-tls-min">
+                <option value="" ${!cfg.tls_min_version ? 'selected' : ''}>默认 (TLSv1.2)</option>
+                <option value="TLSv1" ${cfg.tls_min_version === 'TLSv1' ? 'selected' : ''}>TLSv1（老服务器）</option>
+                <option value="TLSv1.1" ${cfg.tls_min_version === 'TLSv1.1' ? 'selected' : ''}>TLSv1.1</option>
+                <option value="TLSv1.2" ${cfg.tls_min_version === 'TLSv1.2' ? 'selected' : ''}>TLSv1.2</option>
+                <option value="TLSv1.3" ${cfg.tls_min_version === 'TLSv1.3' ? 'selected' : ''}>TLSv1.3</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field field--check">
+            <input id="f-tls-verify" type="checkbox" ${cfg.tls_reject_unauthorized === false ? '' : 'checked'}>
+            <label for="f-tls-verify">校验服务器证书（推荐保持勾选）</label>
+          </div>
+          <div id="tls-verify-warn" class="status-line is-warn" style="display:${cfg.tls_reject_unauthorized === false ? 'block' : 'none'}; margin-top:-4px;">
+            ⚠ 已关闭证书校验：连接仍然是加密的，但<strong>无法确认对方就是你的邮件服务器</strong>（可被中间人劫持并读取邮箱密码）。
+            仅在确认是对方证书/证书链过期、且你无法立即修复时临时使用。
+          </div>
+        </details>
+
         <div class="form-actions">
           <button class="btn" id="save-btn">保存配置</button>
           <span class="form-status" id="save-status"></span>
@@ -141,8 +193,10 @@
         </div>
         <div class="form-actions" style="border:none; padding-top:0; margin-top:6px;">
           <button class="btn btn--ghost" id="test-btn">✉ 发送测试邮件</button>
+          <button class="btn btn--ghost" id="diag-btn" title="不发信，只检查 TLS 证书链和时钟">🔒 证书诊断</button>
         </div>
         <div id="test-result" style="margin-top:14px;"></div>
+        <div id="diag-result" style="margin-top:14px;"></div>
 
         <hr class="divider" style="border:0; height:1px; background:var(--a-line-soft); margin:20px 0;">
         <h3 style="font-size:13px; margin:0 0 8px;">当前生效的配置（来源）</h3>
@@ -153,6 +207,12 @@
           <div>密码：${cfg.pass_set ? '<span style="color:var(--a-success);">✓ 已设置</span>' : '<span style="color:var(--a-warning);">⚠ 未设置</span>'}</div>
           <div>From：<code>${escapeHtml(cfg.from || '(沿用用户名)')}</code></div>
           <div>接收人：${(cfg.recipients || []).length ? (cfg.recipients || []).map(escapeHtml).join(', ') : '(未设置)'}</div>
+          <div>证书校验：${cfg.tls_reject_unauthorized === false
+            ? '<span style="color:var(--a-warning);">⚠ 已关闭</span>'
+            : '<span style="color:var(--a-success);">✓ 开启</span>'}${cfg.tls_ca ? ' · 已加载自定义 CA' : ''}</div>
+          <div>服务器时间：<code>${escapeHtml(cfg.server_time || '')}</code> ${escapeHtml(cfg.server_timezone || '')}
+            <span class="hint" style="display:block;">和你本机时间对不上（差几分钟以上）就说明容器时钟漂移，会导致证书被误判为过期。</span>
+          </div>
           <div style="margin-top:6px;">配置来源：${cfg.source && cfg.source.host === 'env+db' ? '环境变量 + 后台覆盖' : (cfg.source && cfg.source.host === 'db' ? '后台' : '未配置')}</div>
         </div>
       </div>
@@ -167,6 +227,12 @@
       document.getElementById('f-port').value = p.port;
       document.getElementById('f-secure').checked = !!p.secure;
     });
+  });
+
+  // Make the consequence of unchecking verification impossible to miss
+  const verifyBox = document.getElementById('f-tls-verify');
+  verifyBox.addEventListener('change', () => {
+    document.getElementById('tls-verify-warn').style.display = verifyBox.checked ? 'none' : 'block';
   });
 
   // Save handler
@@ -186,6 +252,10 @@
         from:       document.getElementById('f-from').value.trim(),
         recipients: document.getElementById('f-recipients').value,
         auto_reply: document.getElementById('f-auto').checked,
+        tls_reject_unauthorized: document.getElementById('f-tls-verify').checked,
+        tls_ca:          document.getElementById('f-tls-ca').value.trim(),
+        tls_servername:  document.getElementById('f-tls-servername').value.trim(),
+        tls_min_version: document.getElementById('f-tls-min').value,
       };
       const r = await api('/api/smtp', { method: 'PUT', body: JSON.stringify(payload) });
       cfg = r.config;
@@ -216,22 +286,86 @@
         <p style="font-size:12px; color:var(--a-mute2); margin-top:8px;">检查收件人邮箱（可能在垃圾邮件里）。如果几分钟内没收到，看上面的 messageId 跟 SMTP 服务商对帐。</p>
       `;
     } catch (err) {
-      let detail = err.message;
-      try {
-        const j = JSON.parse(err.message.split(' ').pop() || '{}');
-        if (j.detail) detail = j.detail;
-      } catch (_) {}
+      const body = err.body || {};
+      const detail = body.detail || err.message;
+      const codeLine = [body.code, body.command].filter(Boolean).join(' / ');
       result.innerHTML = `
         <div class="status-line is-warn">✗ 发送失败</div>
-        <pre style="margin-top:10px; padding:10px; background:var(--a-danger-soft); color:var(--a-danger); border-radius:5px; font-size:11.5px; line-height:1.5;">${escapeHtml(detail)}</pre>
+        <pre style="margin-top:10px; padding:10px; background:var(--a-danger-soft); color:var(--a-danger); border-radius:5px; font-size:11.5px; line-height:1.5; white-space:pre-wrap;">${escapeHtml(detail)}${codeLine ? '\n(' + escapeHtml(codeLine) + ')' : ''}</pre>
+        ${body.diagnostics ? renderDiag(body.diagnostics) : ''}
         <p style="font-size:12px; color:var(--a-mute2); margin-top:8px;">
           常见原因：① 密码用错（QQ/163 要用<strong>授权码</strong>不是登录密码；Gmail 要用<strong>应用密码</strong>）<br>
           ② 端口/加密不匹配（465 必须勾 SSL，587 取消勾选）<br>
-          ③ From 地址被 SMTP 服务器拒绝（很多家要求 From 必须用用户名同域邮箱）
+          ③ From 地址被 SMTP 服务器拒绝（很多家要求 From 必须用用户名同域邮箱）<br>
+          ④ TLS 证书问题（<code>certificate has expired</code> / <code>self signed</code>）——点「证书诊断」看具体是哪张证书
         </p>
       `;
     } finally {
       btn.disabled = false; btn.textContent = '✉ 发送测试邮件';
+    }
+  });
+
+  // Render a TLS probe report: chain with validity dates + plain-language hints.
+  function renderDiag(d) {
+    if (!d) return '';
+    if (!d.ok) {
+      return `
+        <div class="status-line is-warn" style="margin-top:10px;">✗ 无法连接 ${escapeHtml(d.target || '')}（${escapeHtml(d.mode || '')}）</div>
+        <pre style="margin-top:8px; padding:10px; background:var(--a-danger-soft); color:var(--a-danger); border-radius:5px; font-size:11.5px; white-space:pre-wrap;">${escapeHtml(d.error || '未知错误')}</pre>`;
+    }
+    const rows = (d.chain || []).map((c, i) => {
+      const state = c.expired
+        ? `<span class="cert-bad">已过期 ${Math.abs(c.days_left)} 天</span>`
+        : (c.not_yet_valid
+            ? '<span class="cert-bad">尚未生效</span>'
+            : `<span class="cert-ok">剩余 ${c.days_left} 天</span>`);
+      return `<tr>
+        <th>${i === 0 ? '服务器证书' : (c.self_signed ? '根证书' : '中间证书 ' + i)}</th>
+        <td>
+          <div><strong>${escapeHtml(c.subject || '')}</strong></div>
+          <div style="color:var(--a-mute2);">签发者：${escapeHtml(c.issuer || '')}</div>
+          ${i === 0 && c.alt_names ? `<div style="color:var(--a-mute2);">${escapeHtml(c.alt_names)}</div>` : ''}
+          <div>${escapeHtml(c.valid_from || '')} → ${escapeHtml(c.valid_to || '')} · ${state}</div>
+        </td>
+      </tr>`;
+    }).join('');
+
+    const skew = d.clock_skew_seconds;
+    const skewLine = (skew == null)
+      ? '（服务器问候语里没有时间，无法比对时钟）'
+      : (Math.abs(skew) > 300
+          ? `<span class="cert-bad">相差 ${Math.round(Math.abs(skew) / 60)} 分钟 —— 本机时钟不准</span>`
+          : `<span class="cert-ok">一致（相差 ${Math.abs(skew)} 秒）</span>`);
+
+    return `
+      <div class="status-line ${d.authorized ? 'is-ok' : 'is-warn'}" style="margin-top:10px;">
+        ${d.authorized ? '✓ 证书链校验通过' : '✗ 证书链校验不通过：' + escapeHtml(d.authorization_error || '未知原因')}
+      </div>
+      <div style="font-size:11.5px; color:var(--a-mute2); margin-top:6px;">
+        ${escapeHtml(d.target || '')} · ${escapeHtml(d.mode || '')} · ${escapeHtml(d.protocol || '')} ${escapeHtml(d.cipher || '')}
+      </div>
+      <table class="cert-table">${rows}</table>
+      <div style="font-size:11.5px; margin-top:8px; line-height:1.7;">
+        <div>本机时间：<code>${escapeHtml(d.local_time || '')}</code></div>
+        <div>服务器时间：<code>${escapeHtml(d.server_time || '未知')}</code> · 时钟比对：${skewLine}</div>
+      </div>
+      ${(d.hints || []).length ? '<ul class="hint-list">' + d.hints.map((h) => '<li>' + escapeHtml(h) + '</li>').join('') + '</ul>' : ''}
+    `;
+  }
+
+  // Diagnose handler — probes TLS without sending mail.
+  document.getElementById('diag-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('diag-btn');
+    const box = document.getElementById('diag-result');
+    btn.disabled = true; btn.textContent = '诊断中…';
+    box.innerHTML = '<div class="status-line">正在连接 SMTP 服务器读取证书…</div>';
+    try {
+      const r = await api('/api/smtp/diagnose');
+      box.innerHTML = renderDiag(r.report);
+    } catch (err) {
+      box.innerHTML = '<div class="status-line is-warn">诊断失败：' + escapeHtml((err.body && err.body.detail) || err.message) + '</div>';
+    } finally {
+      btn.disabled = false; btn.textContent = '🔒 证书诊断';
     }
   });
 })();

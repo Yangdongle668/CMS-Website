@@ -88,6 +88,11 @@
       }
       const err = new Error((json && json.error) || ('HTTP ' + res.status));
       err.status = res.status;
+      // Keep the whole error body reachable — routes send useful extras
+      // alongside `error` (e.g. SMTP's `detail` / `diagnostics`) and
+      // callers were previously left with just the short error code.
+      err.body = json || null;
+      err.detail = (json && json.detail) || '';
       throw err;
     }
     return json;
