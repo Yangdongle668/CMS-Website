@@ -110,8 +110,40 @@ docker compose down                 # stop (data preserved)
 docker compose down -v              # stop + WIPE database & uploads
 docker compose exec app npm run retention   # GDPR purge job
 docker compose exec app npm run smtp:doctor  # diagnose SMTP TLS / certificate errors
+./update.sh                         # pull, back up, rebuild, restart (see below)
 docker compose exec db psql -U postgres battery_cms   # open a psql shell
 ```
+
+### Updating a running deployment
+
+`./update.sh` performs the whole update in one command: pull the latest code,
+dump the database, rebuild the image, restart, and wait for the container to
+report healthy.
+
+```bash
+cd /opt/cms-website
+./update.sh
+```
+
+The image is built **before** anything is stopped, so the old container keeps
+serving traffic until the final `up -d` — downtime is the few seconds of the
+restart. The database dump lands in `./backups/` (gitignored, last 10 kept),
+and schema changes need no manual migration: the container runs the idempotent
+`db:init` on every boot.
+
+If the new container fails its healthcheck, the script prints the last 50 log
+lines and **rolls the image back automatically**, so a bad deploy does not
+leave the site down.
+
+```bash
+./update.sh --no-pull        # rebuild + restart current code (e.g. after editing .env)
+./update.sh --pull-base      # also refresh the node / postgres base images
+./update.sh --prune          # clean up dangling images afterwards
+./update.sh --help           # all options
+```
+
+Exit codes are cron-friendly: `0` success, `1` update failed (rolled back),
+`2` bad arguments or environment.
 
 ### Behind a reverse proxy
 
@@ -233,6 +265,7 @@ Visit:
 | Process a GDPR request | `/admin/gdpr.html` |
 | Configure SMTP behaviour, retention, cookie categories | `/admin/settings.html` |
 | Inspect admin actions | `/admin/audit.html` |
+| Update the deployment to the latest code | `./update.sh` on the server |
 
 ### Run the GDPR retention job
 
@@ -342,6 +375,8 @@ admin/                  Minimalist white admin panel
   assets/js/admin.js
 
 uploads/                User-uploaded media (gitignored)
+backups/                Database dumps written by ./update.sh (gitignored)
+update.sh               One-command update for a Docker deployment
 .env.example
 package.json
 ```
