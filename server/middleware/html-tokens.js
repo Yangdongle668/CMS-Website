@@ -732,9 +732,41 @@ async function applyPageOverrides(html) {
 // Replaces <div data-blocks>…</div> with the page's rendered blocks, and
 // appends their JSON-LD. Any failure leaves the page exactly as it was:
 // blocks are an enhancement to a page that already renders without them.
+// Two attributes are accepted as the mount. `data-blocks` is the explicit one;
+// `data-page-body` is the mount these pages already had for pages.body_html,
+// and reusing it means phase 3 converts a page without editing its markup at
+// all. Blocks win over body_html when both exist — the operator's blocks are
+// the newer intent.
+const MOUNT_RE = /<[a-z]+[^>]*\s(?:data-blocks|data-page-body)\b/i;
+
+
+// Replaces the mount element's contents. Counts nesting rather than matching
+// the first close tag: a data-page-body wraps whole sections, so a non-greedy
+// match would splice the blocks in after the first inner </div> and leave the
+// rest of the old markup behind.
+function replaceMountContents(html, replacement) {
+  const open = /<([a-z]+)[^>]*\s(?:data-blocks|data-page-body)\b[^>]*>/i;
+  const m = html.match(open);
+  if (!m) return html;
+  const tag = m[1];
+  const contentStart = m.index + m[0].length;
+
+  const scan = new RegExp(`<${tag}\\b[^>]*>|</${tag}\\s*>`, 'gi');
+  scan.lastIndex = contentStart;
+  let depth = 1;
+  let s;
+  while ((s = scan.exec(html))) {
+    depth += s[0][1] === '/' ? -1 : 1;
+    if (depth === 0) {
+      return html.slice(0, contentStart) + '\n' + replacement + '\n' + html.slice(s.index);
+    }
+  }
+  return html; // unbalanced markup — leave the page alone rather than corrupt it
+}
+
 async function applyBlocks(html, page) {
   if (!page || !page.id) return html;
-  if (!/<[a-z]+[^>]*\sdata-blocks\b/i.test(html)) return html;
+  if (!MOUNT_RE.test(html)) return html;
 
   let out;
   try {
@@ -746,10 +778,7 @@ async function applyBlocks(html, page) {
   }
   if (!out || !out.rendered) return html;
 
-  html = html.replace(
-    /(<([a-z]+)[^>]*\sdata-blocks\b[^>]*>)([\s\S]*?)(<\/\2>)/i,
-    (whole, open, _tag, _inner, close) => open + '\n' + out.html + '\n' + close
-  );
+  html = replaceMountContents(html, out.html);
 
   const blockRender2 = require('../services/block-render');
   const fresh = blockRender2.dropDuplicateTypes(out.jsonLd, html);
