@@ -178,7 +178,38 @@ app.use('/uploads', express.static(path.join(ROOT, 'uploads'), {
 
 ---
 
-### 3. 依赖漏洞（`npm audit` 实测：1 critical / 8 high / 3 moderate）
+### 3. 依赖漏洞 — ✅ 已完成（12 → **0**）
+
+**最终结果**：`npm audit --omit=dev` 报告 `found 0 vulnerabilities`。
+
+| 包 | 原版本 | 现版本 | 说明 |
+|---|---|---|---|
+| `bcrypt` | 5.1.1 | **6.0.0** | 连带移除 `@mapbox/node-pre-gyp` 与 `tar`，critical 链整条消失 |
+| `multer` | 1.4.5-lts.2 | **2.4.0** | 1.x 线 EOL |
+| `sharp` | 0.33.5 | **0.35.4** | libvips CVE |
+| `nodemailer` | 6.10.1 | **10.0.10** | SMTP 命令注入（经查我们未使用 `envelope` 参数，路径不可达，仍升级） |
+| `geoip-lite` | 1.4.10 | **2.0.3** | `ip-address` SSRF/XSS |
+| `axios` / `form-data` / `brace-expansion` / `body-parser` | — | — | `npm audit fix` 无痛升级 |
+| `qs` | 6.14.2 | **6.16.0** | 经 express 4 传递依赖，`audit fix` 拿不下来，改用 `package.json` 的 `overrides` 钉住 |
+
+**顺带收益**：`npm install` 净移除 **71 个包**（bcrypt 6 改用预编译二进制，
+不再需要 node-gyp 编译链）——Docker 镜像体积和构建时间都会明显下降。
+
+**验证**（21 项断言）：
+
+- **bcrypt 向后兼容是本次最大风险点**，用真实的 bcrypt 5.1.1 生成哈希再用
+  6.0.0 验证，ASCII / 含符号 / 非拉丁字符三种密码全部通过，错误密码全部被拒。
+  **现有管理员密码不受影响。**
+- `sharp` 0.35 的 `metadata`/`resize`/`webp`/`avif`/`jpeg` 全部可用；
+  跑通 `image-processor.process()` 真实管线，产出 9 个 variants、
+  avif/webp/jpeg 三种 srcset。
+- `multer` 2 下重跑 #2 的上传端到端测试，三种情形行为完全一致。
+- `nodemailer` 10 的 `createTransport`、`geoip-lite` 2 的 `lookup` 均正常。
+
+<details>
+<summary>原始问题记录</summary>
+
+### 原始审计结果（1 critical / 8 high / 3 moderate）
 
 | 包 | 锁定版本 | 严重度 | 说明 |
 |---|---|---|---|
@@ -199,6 +230,8 @@ app.use('/uploads', express.static(path.join(ROOT, 'uploads'), {
    - `bcrypt@6` 或换 `bcryptjs` — 顺带去掉 node-gyp 编译依赖，Docker 镜像可显著减小
    - `sharp@0.35` — 需回归测试 `server/services/image-processor.js`
 
+</details>
+
 ---
 
 ## P1 — 性能与信息泄露
@@ -214,12 +247,39 @@ detail: isApi && err && err.message ? err.message + detail : undefined,
 无环境判断。Postgres 报错信息（含列名、约束名，有时含 SQL 片段）会原样返回给**任何**
 API 调用方，包括公开的 `/api/inquiries` 提交接口。
 
+**实测样本**（做 #3 时在公开接口上抓到的真实响应，调用者无需任何认证）：
+
+```
+POST /api/inquiries/upload
+→ {"error":"internal_error",
+   "detail":"ENOENT: no such file or directory, open
+             '/home/user/CMS-Website/uploads/inquiries/mu5b61m097an2c-big.pdf' (ENOENT)"}
+```
+
+服务器的**绝对文件系统路径**直接回给了匿名调用者。
+
 **怎么改**：代码注释说明此设计是为了后台 toast 提示友好，因此按登录态区分而非直接关闭：
 
 ```js
 const showDetail = process.env.NODE_ENV !== 'production' || Boolean(req.user);
 detail: isApi && showDetail ? err.message + detail : undefined,
 ```
+
+**并入本项的追加问题：上传的用户错误返回 500**
+
+做 #3 的回归测试时确认（既有行为，非升级引入）：
+
+```
+9MB 文件（超过 8MB 上限）  → HTTP 500 {"error":"internal_error","detail":"File too large (LIMIT_FILE_SIZE)"}
+application/x-msdownload   → HTTP 500 {"error":"internal_error","detail":"file_type_not_allowed: ..."}
+```
+
+两者都是客户端错误，却走了 500 通道。multer 的 `MulterError` 和 `fileFilter`
+抛出的错误直接冒泡到了 `server/index.js` 的通用错误处理器。
+
+应在两个上传路由后各挂一个 multer 错误中间件，把
+`LIMIT_FILE_SIZE` → **413**、`LIMIT_FILE_COUNT` → **413**、
+类型不允许 → **415**，并返回稳定的错误码而非内部消息。
 
 ### 5. `/admin/list` 无分页
 
