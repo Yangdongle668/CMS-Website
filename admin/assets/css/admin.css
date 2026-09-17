@@ -1152,3 +1152,32 @@ code { font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace; 
   .topbar__user-name { display: none; }
   .page { padding: 18px 18px 32px; }
 }
+
+/* ── Pager ──────────────────────────────────────────────────
+   Shown under a paged list table. AdminAPI.renderPager emits nothing when
+   the whole set fits on one page, so short lists are unaffected. */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.pager__info {
+  font-size: 12px;
+  color: var(--text-mute2);
+}
+.pager__nav {
+  display: flex;
+  gap: 8px;
+}
+.pager__nav .btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+@media (max-width: 480px) {
+  .pager { justify-content: center; }
+}

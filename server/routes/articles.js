@@ -97,15 +97,24 @@ router.get('/:slug', async (req, res) => {
   res.json(payload);
 });
 
-router.get('/admin/list', requireAuth, async (_req, res) => {
+// Paged so the three-way join does not grow without bound as the article
+// count does. The response carries `total` alongside the page so the admin
+// UI can tell the operator what it is not showing — a bare LIMIT would make
+// older articles disappear from the list with no indication.
+router.get('/admin/list', requireAuth, async (req, res) => {
+  const limit = clamp(req.query.limit, 1, 500, 100);
+  const offset = clamp(req.query.offset, 0, 1e6, 0);
   const rows = await many(
     `SELECT ${FIELDS} FROM articles a
      LEFT JOIN categories c ON c.id = a.category_id
      LEFT JOIN pillar_pages p ON p.id = a.pillar_id
      LEFT JOIN authors au ON au.id = a.author_id
-     ORDER BY a.created_at DESC`
+     ORDER BY a.created_at DESC
+     LIMIT $1 OFFSET $2`,
+    [limit, offset]
   );
-  res.json({ items: rows });
+  const total = await one('SELECT count(*)::int AS n FROM articles');
+  res.json({ items: rows, total: total ? total.n : rows.length, limit, offset });
 });
 
 router.post('/', requireAuth, async (req, res) => {

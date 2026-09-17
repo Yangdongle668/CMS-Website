@@ -15,7 +15,8 @@
 <script src="/admin/assets/js/seo-panel.js"></script>
 <script>
 (async function () {
-  const { api, escapeHtml, formatDate, toast, bootShell } = window.AdminAPI;
+  const { api, escapeHtml, formatDate, toast, bootShell, renderPager, bindPager } = window.AdminAPI;
+  let listOffset = 0;
   let contentEditor = null;
   const shell = await bootShell({ title: '博客文章', crumbs: '内容 / 博客文章' });
   if (!shell) return;
@@ -34,7 +35,8 @@
 
   async function refresh() {
     const wantId = new URLSearchParams(location.search).get('id');
-    const { items } = await api('/api/articles/admin/list');
+    const page = await api('/api/articles/admin/list?offset=' + listOffset);
+    const items = page.items;
     LAST_ITEMS = items;
     shell.content.innerHTML = `
       <div class="panel" id="list-panel">
@@ -55,9 +57,11 @@
             `).join('') : '<tr><td colspan="5"><div class="empty">还没有文章。</div></td></tr>'}
           </tbody>
         </table>
+        ${renderPager(page)}
       </div>
       <div id="edit-panel"></div>
     `;
+    bindPager(shell.content, (offset) => { listOffset = offset; refresh(); });
     if (wantId) {
       const a = items.find((x) => String(x.id) === wantId);
       if (a) renderEditor(a);

@@ -9,6 +9,44 @@
 
 ## P0 — 安全，上线前必须修
 
+### 0. 全新部署根本起不来 — ✅ 已完成（做 #5 时意外发现）
+
+**这条不在原始审查范围内**，是搭本地 Postgres 做 #5 验证时撞上的：
+在一个全新的空数据库上执行 `npm run db:init`，**直接失败**：
+
+```
+[db:init] applying schema...
+error: relation "analytics_hits" does not exist
+```
+
+**成因**：两个独立提交造成的错配。
+
+| | 位置 | 引入提交 |
+|---|---|---|
+| `analytics_hits` 的 `CREATE TABLE` | `server/index.js:496`（应用**启动时**才跑的自愈迁移） | `d5e88ea` |
+| 该表上的两个索引 | `server/db/schema.sql:417-421` | `0689a24` |
+
+`schema.sql` 先于应用启动执行，此时表还不存在，建索引失败。
+node-postgres 的多语句查询是隐式事务，一条失败整体回滚并抛出。
+
+**为什么影响严重**：`Dockerfile:68` 是
+
+```dockerfile
+CMD ["sh", "-c", "node server/db/init.js --seed && node server/index.js"]
+```
+
+`&&` 意味着 **db:init 失败则应用永远不启动**。也就是说空数据卷跑
+`docker compose up -d`（README 主推的「一行部署」）会直接起不来。
+既有部署感知不到，是因为它们的卷里早就有这张表了。
+
+**怎么改**：把 `CREATE TABLE IF NOT EXISTS analytics_hits` 补进 `schema.sql`，
+放在其索引之前。`server/index.js` 里那份保留不动——两处都是 `IF NOT EXISTS`，
+谁先跑谁生效，另一处成为空操作，老部署的升级路径不受影响。
+
+**验证**：在全新数据库上重跑 `npm run db:init --seed`，schema、
+2026-q2-seo 迁移、seed、cover-url 回填、applications 迁移、localize-images、
+SEO/GEO 默认值全部依次成功。
+
 ### 1. 默认弱密钥导致管理员身份可被伪造 — ✅ 已完成
 
 **实际实现与原计划的差异**（两处，均为验证后的调整）：
@@ -306,13 +344,40 @@ application/x-msdownload   → HTTP 500 {"error":"internal_error","detail":"file
 
 </details>
 
-### 5. `/admin/list` 无分页
+### 5. `/admin/list` 无分页 — ✅ 已完成
 
-**位置**：`server/routes/articles.js:100-109`
+**范围比原记录大一处**：`server/routes/products.js:62` 有同样的问题，一并修了。
+其余无 `LIMIT` 的列表端点（pillars / applications / authors / users / settings）
+是天然有界的小集合（支柱 3 个、应用 ~10 个），不做处理。
 
-带 3 个 `LEFT JOIN` 且无 `LIMIT`。文章量增长后后台列表页会持续变慢。
+**关键约束**：两个后台页面都是 `const { items } = await api(...)` 一次性全渲染，
+**没有分页 UI**。只加 `LIMIT` 会让超出部分从界面里静默消失——那比现在慢一点更糟。
+因此服务端与前端必须一起改。
 
-**怎么改**：加 `LIMIT/OFFSET`（复用 `clamp()`），响应中返回 `total`。
+**改动**
+
+- 服务端：两个 `/admin/list` 加 `limit`/`offset`（复用 `clamp()`，默认 100、上限 500），
+  响应返回 `{ items, total, limit, offset }`。
+- 前端：`admin/assets/js/admin.js` 新增共用的 `renderPager` / `bindPager`
+  （而非两个页面各写一份），`admin/articles.html` 与 `admin/products.html` 接入。
+- 样式：`admin/assets/css/admin.css` 追加 `.pager`，全部使用既有设计令牌。
+- **数据装得下一页时 `renderPager` 返回空字符串**，界面与改动前完全一致。
+
+**实测数据（诚实结论：查询耗时从来不是瓶颈）**
+
+| 场景 | 无 LIMIT | LIMIT 100 |
+|---|---|---|
+| 298 行查询耗时 | 0.438 ms | 0.441 ms（**无差异**） |
+| 9998 行查询耗时 | 5.685 ms | 4.643 ms（快约 18%，绝对值仍很小） |
+| 298 行响应体积 | 556.1 KB | **376.3 KB** |
+
+排序仍需处理全部行才能取出前 100，所以 DB 侧收益有限。真正的价值在于
+**响应体积与浏览器渲染量有界**，以及内容增长时不会无限膨胀
+（后台页面是用字符串拼接逐行构建 DOM 的）。
+
+**验证**：分页控件 14 项边界断言（装得下不渲染 / 首页末页禁用 / 页码向上取整 /
+meta 缺失安全返回空）；真实 Postgres 上端到端验证 `offset=100/200/280` 取数正确、
+`limit=999999` 被钳到 500、`limit=-5` 钳到 1、`offset=abc` 回退到 0。
 
 ### 6. 上传时同步阻塞 I/O — ✅ 已完成（随 #2 一并修复）
 

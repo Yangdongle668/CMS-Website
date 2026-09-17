@@ -411,6 +411,31 @@ CREATE INDEX IF NOT EXISTS idx_inquiries_active_score
   ON inquiries(score DESC, created_at DESC)
   WHERE is_deleted = FALSE;
 
+-- ----- analytics_hits -----
+-- First-party analytics — every public HTML page-view writes one row.
+-- Privacy: visitor_hash uses a daily-rotating salt so cross-day
+-- identification is impossible; raw IP is never stored here by default.
+--
+-- This table is also created by the self-healing migrations in
+-- server/index.js, which is where it originally lived. It has to exist here
+-- too: the indexes below are part of this file, so on a brand-new database
+-- `npm run db:init` aborted on "relation analytics_hits does not exist", and
+-- since the Docker CMD chains init and start with &&, the app never came up.
+-- Both definitions are IF NOT EXISTS, so whichever runs first wins and the
+-- other is a no-op.
+CREATE TABLE IF NOT EXISTS analytics_hits (
+  id           BIGSERIAL PRIMARY KEY,
+  ts           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  path         VARCHAR(500) NOT NULL,
+  country      VARCHAR(2)   NOT NULL DEFAULT '',
+  browser      VARCHAR(40)  NOT NULL DEFAULT '',
+  os           VARCHAR(40)  NOT NULL DEFAULT '',
+  referer_host VARCHAR(190) NOT NULL DEFAULT '',
+  visitor_hash VARCHAR(64)  NOT NULL DEFAULT '',
+  ip_text      VARCHAR(45)  NOT NULL DEFAULT '',
+  is_bot       BOOLEAN      NOT NULL DEFAULT FALSE
+);
+
 -- analytics_hits is the hottest table once traffic ramps up. The path
 -- index serves "top pages" panels; the (visitor_hash, ts) one already
 -- exists for unique-visitor counts.
