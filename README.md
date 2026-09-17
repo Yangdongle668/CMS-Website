@@ -109,6 +109,7 @@ docker compose restart app          # restart only the app
 docker compose down                 # stop (data preserved)
 docker compose down -v              # stop + WIPE database & uploads
 docker compose exec app npm run retention   # GDPR purge job
+docker compose exec app npm run smtp:doctor  # diagnose SMTP TLS / certificate errors
 docker compose exec db psql -U postgres battery_cms   # open a psql shell
 ```
 
@@ -247,6 +248,41 @@ Run it nightly via cron / systemd timer:
 17 3 * * *  cd /opt/cms-website && /usr/bin/npm run retention >> /var/log/cms-retention.log 2>&1
 ```
 
+### Troubleshooting mail: `certificate has expired` (ESOCKET / CONN)
+
+Node verifies the SMTP server's **entire** certificate chain and refuses the
+connection when any certificate in it is expired. Desktop clients (Outlook,
+Foxmail, Thunderbird) show a "trust this certificate?" dialog instead and
+remember the exception — so "it works in my mail client" does not mean the
+chain is valid.
+
+Find out which certificate is at fault before changing anything:
+
+```bash
+docker compose exec app node scripts/smtp-doctor.js
+# or, for a server that is not configured yet:
+docker compose exec app node scripts/smtp-doctor.js mail.example.com:465
+```
+
+The same report is available in the admin UI: **/admin/smtp.html → 证书诊断**.
+It prints every certificate in the chain with its validity window, whether
+Node accepts it, and the clock difference between the container and the mail
+server. Read it like this:
+
+| What the report shows | Cause | Fix |
+|---|---|---|
+| Container clock differs from the server by minutes/days | Host clock drift (common after a VM suspend) | Fix time on the **host** (NTP) and restart the container — a valid certificate is being misjudged |
+| The **server** certificate is expired | The certificate really did expire | Renew it on the mail server / with the provider |
+| An **intermediate** or root in the chain is expired, leaf still valid | Mail server is sending a stale chain | Have the provider update the chain; meanwhile paste the correct CA into `SMTP_TLS_CA` |
+| `self signed certificate` | Private/self-hosted mail server | Put that CA's PEM in `SMTP_TLS_CA` (admin UI: 自定义 CA 证书) — keep verification on |
+| `Hostname/IP does not match certificate's altnames` | Connecting by IP or a CNAME | Use the name on the certificate, or set `SMTP_TLS_SERVERNAME` |
+
+`SMTP_TLS_REJECT_UNAUTHORIZED=false` (admin UI: uncheck 校验服务器证书) makes
+mail flow again immediately, but the connection is then encrypted **without**
+being authenticated — anyone able to intercept the traffic can read the
+mailbox password. Treat it as a stopgap while the certificate is repaired,
+not as the fix.
+
 ---
 
 ## 5. Project layout
@@ -277,6 +313,7 @@ server/
     audit.js            Audit recording helper
   services/
     mailer.js           Nodemailer wrapper, inquiry & DSAR templates
+    smtp-diagnostics.js TLS/certificate probe behind `npm run smtp:doctor`
     turnstile.js        Cloudflare Turnstile verification
   utils/
     hash.js             SHA-256, reference IDs, random tokens

@@ -12,6 +12,7 @@
     "db:init": "node server/db/init.js",
     "db:seed": "node server/db/init.js --seed",
     "retention": "node server/jobs/retention.js",
+    "smtp:doctor": "node scripts/smtp-doctor.js",
     "images:localize": "node scripts/download-unsplash-images.js"
   },
   "engines": {

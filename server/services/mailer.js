@@ -24,6 +24,44 @@ const {
 let transporter = null;
 let configSnapshot = null;   // last-resolved config (for /test endpoint)
 
+// Env vars can't hold real newlines, so SMTP_TLS_CA is usually pasted
+// with literal "\n". Accept both that and a genuine multi-line PEM.
+function normalizePem(v) {
+  if (!v) return '';
+  return String(v).replace(/\\n/g, '\n').trim();
+}
+
+// Translate our config fields into nodemailer's `tls` option bag
+// (passed through to tls.connect).
+function tlsOptions(cfg) {
+  const t = { rejectUnauthorized: cfg.tls_reject_unauthorized !== false };
+  if (cfg.tls_ca) t.ca = cfg.tls_ca;
+  if (cfg.tls_servername) t.servername = cfg.tls_servername;
+  if (cfg.tls_min_version) t.minVersion = cfg.tls_min_version;
+  return t;
+}
+
+// TLS handshake failures arrive as ESOCKET/CONN with a terse OpenSSL
+// string ("certificate has expired"). Run the diagnostic probe and
+// attach what it found so the caller can show the actual dates, the
+// offending cert in the chain, and any clock skew.
+const CERT_ERROR_RE = /certificate|CERT_|self[- ]signed|altname|unable to verify|DEPTH_ZERO|ssl|tls/i;
+
+async function explainSmtpError(err, cfg) {
+  const looksTls = !!err && (
+    err.code === 'ESOCKET' ||
+    err.code === 'ECONNECTION' ||
+    CERT_ERROR_RE.test(String(err.message || ''))
+  );
+  if (!looksTls) return null;
+  try {
+    const { probeSmtpTls } = require('./smtp-diagnostics');
+    return await probeSmtpTls(cfg, { timeoutMs: 8000 });
+  } catch (_) {
+    return null;
+  }
+}
+
 // Read SMTP config from DB (settings.smtp) first; env vars are
 // fallback. Synchronous-friendly: caller can `await loadConfig()` once
 // at boot and again whenever settings.smtp is PUT.
@@ -49,6 +87,25 @@ async function loadConfig() {
     auto_reply:     dbCfg.auto_reply != null
                     ? !!dbCfg.auto_reply
                     : String(process.env.AUTO_REPLY_ENABLED || 'true') === 'true',
+
+    // --- TLS knobs -------------------------------------------------
+    // Node validates the whole chain the server sends, including the
+    // expiry of intermediates; desktop clients let the user click past
+    // that. These let an operator work around a server whose chain is
+    // broken without patching code.
+    tls_reject_unauthorized:
+                    dbCfg.tls_reject_unauthorized != null
+                    ? !!dbCfg.tls_reject_unauthorized
+                    : String(process.env.SMTP_TLS_REJECT_UNAUTHORIZED || 'true') !== 'false',
+    // PEM of a private/self-signed CA to trust *in addition to* the
+    // built-in roots. Preferred over turning verification off.
+    tls_ca:         normalizePem(dbCfg.tls_ca || process.env.SMTP_TLS_CA || ''),
+    // Override the SNI / hostname checked against the certificate,
+    // for servers reached by IP or by a CNAME.
+    tls_servername: dbCfg.tls_servername || process.env.SMTP_TLS_SERVERNAME || '',
+    // Old on-premise mail servers may only speak TLSv1/1.1, which Node
+    // 20 refuses by default (min is TLSv1.2).
+    tls_min_version: dbCfg.tls_min_version || process.env.SMTP_TLS_MIN_VERSION || '',
   };
   configSnapshot = cfg;
   // Push the resolved config to mail-templates so that defaultFrom() /
@@ -84,11 +141,15 @@ async function buildTransporter() {
       },
     };
   }
+  if (cfg.tls_reject_unauthorized === false) {
+    console.warn(`[mailer] TLS certificate verification is DISABLED for ${cfg.host}:${cfg.port} — the connection is encrypted but not authenticated (MITM-able). Fix the server certificate or supply a CA and turn this back on.`);
+  }
   return nodemailer.createTransport({
     host: cfg.host,
     port: cfg.port,
     secure: cfg.secure,
     auth: { user: cfg.user, pass: cfg.pass },
+    tls: tlsOptions(cfg),
     connectionTimeout: 15000,
     greetingTimeout: 15000,
     socketTimeout: 20000,
@@ -106,6 +167,12 @@ async function getTransporter() {
 function resetTransporter() {
   transporter = null;
   configSnapshot = null;
+  // nodemailer memoises DNS per hostname for 5 minutes and stores the
+  // servername (SNI) used on first resolution alongside it. Without
+  // dropping that entry, editing the host/SNI in the admin UI and
+  // hitting "test" again would silently reuse the old SNI and report a
+  // certificate error for settings that are actually fine.
+  try { require('nodemailer/lib/shared').dnsCache.clear(); } catch (_) { /* internal API — best effort */ }
 }
 
 // Inspect last-loaded config (for admin "current config" panel).
@@ -123,6 +190,12 @@ async function describeConfig() {
     from: c.from,
     recipients: c.recipients,
     auto_reply: c.auto_reply,
+    tls_reject_unauthorized: c.tls_reject_unauthorized !== false,
+    tls_ca: c.tls_ca || '',
+    tls_servername: c.tls_servername || '',
+    tls_min_version: c.tls_min_version || '',
+    server_time: new Date().toISOString(),
+    server_timezone: process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || '',
     source: {
       host: process.env.SMTP_HOST ? 'env+db' : (c.host ? 'db' : 'unset'),
       user: process.env.SMTP_USER ? 'env+db' : (c.user ? 'db' : 'unset'),
@@ -145,12 +218,20 @@ async function sendTestEmail(toAddr, fromOverride) {
     port: cfg.port,
     secure: cfg.secure,
     auth: { user: cfg.user, pass: cfg.pass },
+    tls: tlsOptions(cfg),
     connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 15000,
   });
-  // Verify connection (catches bad credentials / TLS issues early)
-  await t.verify();
+  // Verify connection (catches bad credentials / TLS issues early).
+  // On a TLS failure, re-probe the server so the admin gets the actual
+  // certificate dates instead of a bare "certificate has expired".
+  try {
+    await t.verify();
+  } catch (err) {
+    err.diagnostics = await explainSmtpError(err, cfg);
+    throw err;
+  }
   // Send the test
   const info = await t.sendMail({
     from: fromOverride || cfg.from || cfg.user,
@@ -201,11 +282,29 @@ async function sendGdprConfirmation(req, link) {
   return t.sendMail({ from: cfg.from || defaultFrom(), ...msg });
 }
 
+// Run the TLS probe against the currently-saved config (admin
+// "证书诊断" button / scripts/smtp-doctor.js).
+async function diagnose() {
+  const cfg = await loadConfig();
+  const { probeSmtpTls } = require('./smtp-diagnostics');
+  const report = await probeSmtpTls(cfg, { timeoutMs: 10000 });
+  report.verify_enabled = cfg.tls_reject_unauthorized !== false;
+  if (report.ok && !report.authorized && !report.verify_enabled) {
+    report.hints = (report.hints || []).concat(
+      '当前已关闭证书校验，所以邮件仍能发出去；连接是加密的但对方身份未经验证，建议尽快修好证书后重新勾选校验。'
+    );
+  }
+  return report;
+}
+
 module.exports = {
   getTransporter,
   resetTransporter,
   loadConfig,
   describeConfig,
+  diagnose,
+  explainSmtpError,
+  tlsOptions,
   sendTestEmail,
   sendInquiryEmails,
   sendGdprConfirmation,

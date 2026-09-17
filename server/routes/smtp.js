@@ -40,6 +40,18 @@ router.put('/', requireAuth, async (req, res) => {
           ? b.recipients.split(',').map((s) => trimStr(s, 200)).filter(Boolean)
           : []),
     auto_reply: asBool(b.auto_reply),
+
+    // TLS knobs. `tls_reject_unauthorized` defaults to true — only an
+    // explicit false from the form turns verification off.
+    tls_reject_unauthorized: b.tls_reject_unauthorized == null ? true : asBool(b.tls_reject_unauthorized),
+    // A CA certificate is public material, so unlike the password it is
+    // round-tripped to the form in full and saved verbatim — clearing
+    // the textarea clears the setting.
+    tls_ca: b.tls_ca === undefined ? (prev.tls_ca || '') : trimStr(b.tls_ca, 32768),
+    tls_servername: trimStr(b.tls_servername, 190),
+    tls_min_version: ['TLSv1', 'TLSv1.1', 'TLSv1.2', 'TLSv1.3'].includes(b.tls_min_version)
+      ? b.tls_min_version
+      : '',
   };
 
   await query(
@@ -76,13 +88,25 @@ router.post('/test', requireAuth, async (req, res) => {
   } catch (err) {
     // Surface the SMTP error verbatim so admins can debug (e.g.
     // "Invalid login", "ETIMEDOUT", "self signed certificate", etc.)
+    // `diagnostics` is present for TLS failures: certificate chain,
+    // expiry dates and clock skew, so "certificate has expired" comes
+    // with the evidence instead of just the verdict.
     res.status(502).json({
       error: 'smtp_failed',
       detail: (err && err.message) || 'unknown SMTP error',
       code: err && err.code,
       command: err && err.command,
+      diagnostics: (err && err.diagnostics) || null,
     });
   }
+});
+
+// Probe the SMTP server's TLS without sending anything: returns the
+// certificate chain with validity dates, whether Node accepts it, and
+// the server's clock vs ours. Read-only, so a GET is fine.
+router.get('/diagnose', requireAuth, async (_req, res) => {
+  const report = await mailer.diagnose();
+  res.json({ report });
 });
 
 module.exports = router;
