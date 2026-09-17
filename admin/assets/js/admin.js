@@ -27,6 +27,8 @@
     { group: '内容', items: [
       { label: '页面',       href: '/admin/pages.html',
         icon: ico('<rect x="2.5" y="1.5" width="11" height="13" rx="1.5"/><line x1="5" y1="5.5" x2="11" y2="5.5"/><line x1="5" y1="8.5" x2="11" y2="8.5"/><line x1="5" y1="11.5" x2="8.5" y2="11.5"/>') },
+      { label: '区块编辑',   href: '/admin/blocks.html',
+        icon: ico('<rect x="2" y="2" width="12" height="3.5" rx=".8"/><rect x="2" y="6.5" width="12" height="3.5" rx=".8"/><rect x="2" y="11" width="7" height="3" rx=".8"/>') },
       { label: '支柱页',     href: '/admin/pillars.html',
         icon: ico('<polygon points="8,2 14,5 8,8 2,5"/><polyline points="2,8 8,11 14,8"/><polyline points="2,11 8,14 14,11"/>') },
       { label: '产品',       href: '/admin/products.html',

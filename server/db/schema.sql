@@ -445,3 +445,26 @@ CREATE INDEX IF NOT EXISTS idx_analytics_path_ts
 CREATE INDEX IF NOT EXISTS idx_analytics_country_ts
   ON analytics_hits(country, ts DESC)
   WHERE country <> '';
+
+-- ----- page_blocks -----
+-- The block model described in docs/ARCHITECTURE_BLOCKS.md. One row per
+-- section of a page, ordered by sort_order, with the section's own fields in
+-- `data`.
+--
+-- `data` is JSONB on purpose: adding a block type means adding one file under
+-- server/blocks/, with no migration. `type` is not a foreign key for the same
+-- reason — the registry lives in code, and a row whose type is no longer
+-- registered is skipped at render time rather than breaking the page.
+CREATE TABLE IF NOT EXISTS page_blocks (
+  id         SERIAL PRIMARY KEY,
+  page_id    INT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+  type       VARCHAR(60)  NOT NULL,
+  sort_order INT          NOT NULL DEFAULT 0,
+  data       JSONB        NOT NULL DEFAULT '{}'::jsonb,
+  status     VARCHAR(20)  NOT NULL DEFAULT 'published',  -- draft|published
+  created_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+
+-- The render path always reads one page's blocks in order.
+CREATE INDEX IF NOT EXISTS idx_page_blocks_page ON page_blocks(page_id, sort_order);

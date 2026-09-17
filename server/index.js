@@ -221,6 +221,7 @@ app.use('/api/gdpr', require('./routes/gdpr'));
 app.use('/api/audit', require('./routes/audit'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/pages', require('./routes/pages'));
+app.use('/api/blocks', require('./routes/blocks'));
 app.use('/api/authors', require('./routes/authors'));
 app.use('/api/media/overrides', require('./routes/media-overrides'));
 app.use('/api/text-overrides', require('./routes/text-overrides'));
@@ -517,6 +518,20 @@ async function autoMigrate() {
     // The loop below runs each statement on its own and logs failures, so
     // without the extension the search simply falls back to a sequential
     // scan: slower, still correct.
+    // Blocks (docs/ARCHITECTURE_BLOCKS.md). Also in schema.sql; both are
+    // IF NOT EXISTS so whichever runs first wins. Here as well so an existing
+    // deployment picks it up on the next boot without a manual migration.
+    `CREATE TABLE IF NOT EXISTS page_blocks (
+       id         SERIAL PRIMARY KEY,
+       page_id    INT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+       type       VARCHAR(60)  NOT NULL,
+       sort_order INT          NOT NULL DEFAULT 0,
+       data       JSONB        NOT NULL DEFAULT '{}'::jsonb,
+       status     VARCHAR(20)  NOT NULL DEFAULT 'published',
+       created_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
+       updated_at TIMESTAMPTZ  NOT NULL DEFAULT now()
+     )`,
+    `CREATE INDEX IF NOT EXISTS idx_page_blocks_page ON page_blocks(page_id, sort_order)`,
     `CREATE EXTENSION IF NOT EXISTS pg_trgm`,
     `CREATE INDEX IF NOT EXISTS idx_inquiries_search_trgm ON inquiries
        USING GIN ((email || ' ' || company || ' ' || full_name || ' ' || reference) gin_trgm_ops)`,

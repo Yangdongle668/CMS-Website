@@ -456,7 +456,7 @@ async function applyPageOverrides(html) {
   try {
     const { one } = require('../db/client');
     page = await one(
-      `SELECT slug, nav, title, meta_title, meta_description,
+      `SELECT id, slug, nav, title, meta_title, meta_description,
               hero_eyebrow, hero_title, hero_subtitle, hero_image,
               hero_breadcrumbs, body_html, sections, status,
               focus_keyword, canonical_override, robots,
@@ -717,6 +717,44 @@ async function applyPageOverrides(html) {
     }
   }
 
+  // ----- Blocks -----
+  // A page opts in by putting <div data-blocks></div> in its markup. When the
+  // page has blocks, the mount point's contents are replaced with what they
+  // render to; when it has none, the static markup inside stays exactly as it
+  // was. That is what lets a page be converted one at a time instead of in a
+  // flag day, and what makes an empty block list a no-op rather than a blank
+  // page.
+  html = await applyBlocks(html, page);
+
+  return html;
+}
+
+// Replaces <div data-blocks>…</div> with the page's rendered blocks, and
+// appends their JSON-LD. Any failure leaves the page exactly as it was:
+// blocks are an enhancement to a page that already renders without them.
+async function applyBlocks(html, page) {
+  if (!page || !page.id) return html;
+  if (!/<[a-z]+[^>]*\sdata-blocks\b/i.test(html)) return html;
+
+  let out;
+  try {
+    const blockRender = require('../services/block-render');
+    out = await blockRender.renderPage(page.id);
+  } catch (err) {
+    console.error('[blocks] render failed for page %s: %s', page.slug, err && err.message);
+    return html;
+  }
+  if (!out || !out.rendered) return html;
+
+  html = html.replace(
+    /(<([a-z]+)[^>]*\sdata-blocks\b[^>]*>)([\s\S]*?)(<\/\2>)/i,
+    (whole, open, _tag, _inner, close) => open + '\n' + out.html + '\n' + close
+  );
+
+  if (out.jsonLd.length) {
+    const tags = require('../services/block-render').jsonLdTags(out.jsonLd);
+    html = html.replace('</head>', tags + '\n</head>');
+  }
   return html;
 }
 

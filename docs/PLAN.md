@@ -298,14 +298,71 @@ psql 对裸布尔渲染成 `t`、经 `||` 拼接则是 `true`（断言要显式 
 
 ---
 
-## 步骤 6 — 区块系统阶段 1（1 ~ 2 周）
+## 步骤 6 — 区块系统阶段 1 — ✅ 已完成
 
 见 `ARCHITECTURE_BLOCKS.md` 第三、四节。
 
-区块注册表 + 服务端渲染器 + 后台区块编辑器，**只实现 3 种区块类型**
-（`hero` / `rich_text` / `faq`），在**一个**页面上跑通。目的是验证模型，不是铺量。
+### 交付物
 
-此时步骤 2 的 `image-render.js` 直接成为区块 `render()` 的图片输出层。
+| 文件 | 作用 |
+|---|---|
+| `server/blocks/index.js` | 注册表：加载目录下每个区块文件，提供目录清单与**按 schema 的写入校验** |
+| `server/blocks/{hero,rich-text,faq,cta-band}.js` | 四种区块类型 |
+| `server/services/block-render.js` | 服务端渲染器 + JSON-LD 汇总 |
+| `server/routes/blocks.js` | 增删改排序 + 预览接口 |
+| `server/utils/html-sanitize.js` | 富文本白名单清洗 |
+| `admin/blocks.html` | 后台编辑器，**表单由 schema 自动生成** |
+| `server/middleware/html-tokens.js` | `applyBlocks()` 接入页面渲染路径 |
+
+### 接入方式：逐页迁移，不是一刀切
+
+静态页里放一个挂载点即可opt-in：
+
+```html
+<body data-page="about-us">
+  <div data-blocks>
+    <!-- 该页没有区块时，这里的静态内容原样保留 -->
+  </div>
+</body>
+```
+
+有区块 → 挂载点内容被替换；没有 → **一个字节都不动**。
+这正是 Phase 3 能一页一页转、而不必搞 flag day 的原因。
+
+### 验证（16 条断言，全绿）
+
+- **整页端到端**：没有区块时静态兜底保留 → 添加区块后由数据库驱动渲染 →
+  顺序正确 → `FAQPage` 结构化数据出现在 `<head>`
+- **富文本清洗**：`<script>` / `onclick` / `javascript:` / `<iframe>` 全部剥离，
+  正常段落存活，`target="_blank"` 自动补 `rel="noopener noreferrer"`
+- **容错**：未注册的类型被跳过而非 500；某个区块 `render()` 抛错只损失它自己那一节
+- **权限**：四个接口匿名访问全部 401
+- **草稿**：`status='draft'` 的区块不出现在公开渲染中
+
+### 扩展性主张是验证过的，不是声称的
+
+第四种区块 `cta_band` 是**为了验证这条主张**加的：加完之后 `git status` 显示
+**没有改动任何已有文件**，重启后注册表、后台表单（含 select 选项）、
+必填校验、渲染全部自动生效。
+
+```
+注册表: cta_band, faq, rich_text, hero
+后台表单字段（自动生成）: heading, body, cta_text, cta_link, tone
+必填校验: cta_text: required / cta_link: required
+```
+
+### 与前面步骤的衔接
+
+- `hero` 区块的背景图直接调用步骤 2 的 `imageRender.backgroundImageSet()`，
+  自动拿到 AVIF/WebP 变体——不是第二条需要同步维护的代码路径
+- 区块渲染出的 class 全部使用步骤 3 的设计令牌
+- 步骤 5 的 41 条测试保证这次改动没有破坏既有链路（现共 57 条）
+
+### 过程中修掉的一个缺陷
+
+`toPlainText()` 把行内标签换成空格，于是 `<em>x</em>.` 变成 `"x ."`。
+这段文本正是 Google 在 FAQ 富媒体结果里展示的内容，标点前的空格会直接可见。
+已修正（标点前后的空白归一化）。
 
 后续阶段 2 / 3 / 4 见架构文档。
 
@@ -333,4 +390,4 @@ psql 对裸布尔渲染成 `t`、经 `||` 拼接则是 `true`（断言要显式 
 - [x] 步骤 3 — 设计 token 层（0 → 19 个令牌，硬编码色 478 → 63）
 - [ ] 步骤 4 — 冻结 overrides（**待你拍板**：会让后台可视化文字编辑降级为只读）
 - [x] 步骤 5 — 工程安全网（41 条测试 + lint + CI，全绿）
-- [ ] 步骤 6 — 区块系统阶段 1
+- [x] 步骤 6 — 区块系统阶段 1（4 种区块，57 条测试全绿）

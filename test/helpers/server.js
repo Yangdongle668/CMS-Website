@@ -33,8 +33,11 @@ function psqlEnv(db) {
   return { ...process.env, ...PG, PGDATABASE: db || 'postgres' };
 }
 
+// -q matters: without it an INSERT ... RETURNING prints the returned value AND
+// psql's command tag ("1\nINSERT 0 1"), so callers reading a single id back get
+// NaN and every dependent assertion fails somewhere far from the cause.
 async function psql(sql, db) {
-  const { stdout } = await execFileAsync('psql', ['-tAc', sql], { env: psqlEnv(db) });
+  const { stdout } = await execFileAsync('psql', ['-tAqc', sql], { env: psqlEnv(db) });
   return stdout.trim();
 }
 
