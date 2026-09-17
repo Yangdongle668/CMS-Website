@@ -236,7 +236,30 @@ app.use('/uploads', express.static(path.join(ROOT, 'uploads'), {
 
 ## P1 — 性能与信息泄露
 
-### 4. 错误详情无条件返回给所有客户端
+### 4. 错误详情无条件返回给所有客户端 — ✅ 已完成
+
+**改动**
+
+1. `server/index.js` 错误处理器：`detail` 改为仅在
+   `NODE_ENV !== 'production' || Boolean(req.user)` 时返回。
+   已登录的管理员仍拿得到诊断信息（保留原设计意图的 toast 体验），
+   本地开发不受影响，匿名调用者在生产环境下什么也拿不到。
+2. `server/services/upload-guard.js` 新增 `uploadErrorHandler`，挂在两个上传路由上，
+   把 multer 的 `LIMIT_*` 错误和 `fileFilter` 的拒绝映射为正确状态码。
+3. **附带修正**：`.gitignore` 增加 `data/`。#1 生成的 `data/secrets.json`
+   在非 Docker 运行时会落在仓库根目录——此前没有被忽略，存在误提交签名密钥的风险。
+
+**实测对比**
+
+| 请求 | 改动前 | 改动后 |
+|---|---|---|
+| 9MB 超限上传 | `500 {"error":"internal_error","detail":"File too large (LIMIT_FILE_SIZE)"}` | **`413 {"error":"file_too_large"}`** |
+| `application/x-msdownload` | `500 {"error":"internal_error","detail":"file_type_not_allowed: ..."}` | **`415 {"error":"file_type_not_allowed"}`** |
+| 生产 + 匿名触发 500 | 含 `detail`（曾泄露服务器绝对路径） | **`{"error":"internal_error"}`** |
+| 开发模式触发 500 | 含 `detail` | 含 `detail`（不变） |
+
+<details>
+<summary>原始问题记录</summary>
 
 **位置**：`server/index.js:390-393`
 
@@ -280,6 +303,8 @@ application/x-msdownload   → HTTP 500 {"error":"internal_error","detail":"file
 应在两个上传路由后各挂一个 multer 错误中间件，把
 `LIMIT_FILE_SIZE` → **413**、`LIMIT_FILE_COUNT` → **413**、
 类型不允许 → **415**，并返回稳定的错误码而非内部消息。
+
+</details>
 
 ### 5. `/admin/list` 无分页
 

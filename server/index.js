@@ -420,12 +420,19 @@ app.use((err, req, res, _next) => {
   console.error('[error] %s %s', req.method, req.originalUrl);
   console.error(err && err.stack ? err.stack : err);
   if (res.headersSent) return;
-  // Surface the actual error code to admin clients so the toast is helpful.
+  // Surface the actual error code to admin clients so the toast is helpful —
+  // but only to them. This used to go to every API caller regardless of who
+  // they were, which handed anonymous callers of the public endpoints
+  // (/api/inquiries in particular) Postgres constraint names and server
+  // filesystem paths. req.user is set by requireAuth, so an authenticated
+  // operator still gets the diagnosis they need, and so does anyone running
+  // the stack outside production.
   const isApi = req.originalUrl.startsWith('/api/');
+  const showDetail = process.env.NODE_ENV !== 'production' || Boolean(req.user);
   const detail = err && err.code ? ` (${err.code})` : '';
   res.status(err.status || 500).json({
     error: err.expose ? err.message : 'internal_error',
-    detail: isApi && err && err.message ? err.message + detail : undefined,
+    detail: isApi && showDetail && err && err.message ? err.message + detail : undefined,
   });
 });
 

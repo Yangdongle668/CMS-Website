@@ -11,3 +11,6 @@ uploads/*
 coverage/
 dist/
 backups/
+# Persistent app data outside Docker. Holds secrets.json (the generated
+# JWT/cookie signing keys) and the emergency inquiry store — never commit it.
+data/

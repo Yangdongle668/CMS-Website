@@ -140,7 +140,8 @@ router.get('/', requireAuth, async (req, res) => {
   res.json({ items });
 });
 
-router.post('/', requireAuth, upload.single('file'), async (req, res) => {
+router.post('/', requireAuth, upload.single('file'),
+    uploadGuard.uploadErrorHandler, async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'no_file' });
 
   const rejection = await screenWrittenUpload(

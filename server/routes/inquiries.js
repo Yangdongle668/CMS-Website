@@ -94,7 +94,8 @@ const attachmentUpload = multer({
   },
 });
 
-router.post('/upload', uploadLimiter, attachmentUpload.single('file'), async (req, res) => {
+router.post('/upload', uploadLimiter, attachmentUpload.single('file'),
+    uploadGuard.uploadErrorHandler, async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'no_file' });
 
   const filePath = path.join(INQUIRY_UPLOADS, req.file.filename);

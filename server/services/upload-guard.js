@@ -248,7 +248,41 @@ function sanitizeSvg(source) {
   return out;
 }
 
+// Multer reports a rejected upload by calling next(err), which without this
+// lands in the generic handler as a 500 "internal_error" — wrong for what is
+// always a caller mistake, and on the public RFQ endpoint it also meant an
+// anonymous visitor who attached an oversized datasheet got a server error
+// instead of being told the file is too big. Mount this directly after the
+// multer middleware on a route so the mapping applies before anything else.
+const MULTER_STATUS = {
+  LIMIT_FILE_SIZE: [413, 'file_too_large'],
+  LIMIT_FILE_COUNT: [413, 'too_many_files'],
+  LIMIT_PART_COUNT: [413, 'too_many_parts'],
+  LIMIT_FIELD_KEY: [400, 'field_name_too_long'],
+  LIMIT_FIELD_VALUE: [413, 'field_value_too_large'],
+  LIMIT_FIELD_COUNT: [400, 'too_many_fields'],
+  LIMIT_UNEXPECTED_FILE: [400, 'unexpected_field'],
+};
+
+function uploadErrorHandler(err, _req, res, next) {
+  if (!err) return next();
+
+  const mapped = err.code && MULTER_STATUS[err.code];
+  if (mapped) {
+    const [status, code] = mapped;
+    return res.status(status).json({ error: code });
+  }
+
+  // Thrown by our own fileFilter / filename callbacks.
+  if (typeof err.message === 'string' && err.message.startsWith('file_type_not_allowed')) {
+    return res.status(415).json({ error: 'file_type_not_allowed' });
+  }
+
+  return next(err);
+}
+
 module.exports = {
+  uploadErrorHandler,
   EXT_BY_MIME,
   ALLOWED_MIMES,
   ATTACHMENT_EXT_BY_MIME,
