@@ -505,6 +505,21 @@ async function autoMigrate() {
        ip_text VARCHAR(45) NOT NULL DEFAULT '',
        is_bot BOOLEAN NOT NULL DEFAULT FALSE
      )`,
+    // Trigram search index for the admin inquiry search box. The query in
+    // routes/inquiries.js compares the four searchable columns as one
+    // concatenated string, and this index has to match that expression
+    // exactly for the planner to use it.
+    //
+    // Deliberately here and not in schema.sql: CREATE EXTENSION needs rights
+    // a managed Postgres may withhold, and schema.sql runs as one implicit
+    // transaction, so a refusal there would abort db:init and — because the
+    // Docker CMD chains init and start with && — stop the app from booting.
+    // The loop below runs each statement on its own and logs failures, so
+    // without the extension the search simply falls back to a sequential
+    // scan: slower, still correct.
+    `CREATE EXTENSION IF NOT EXISTS pg_trgm`,
+    `CREATE INDEX IF NOT EXISTS idx_inquiries_search_trgm ON inquiries
+       USING GIN ((email || ' ' || company || ' ' || full_name || ' ' || reference) gin_trgm_ops)`,
     `CREATE INDEX IF NOT EXISTS idx_analytics_ts ON analytics_hits(ts DESC)`,
     `CREATE INDEX IF NOT EXISTS idx_analytics_path ON analytics_hits(path)`,
     `CREATE INDEX IF NOT EXISTS idx_analytics_country ON analytics_hits(country)`,
