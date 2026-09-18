@@ -56,6 +56,21 @@ async function loadBlocks(ownerId, { includeDrafts = false, owner = 'page' } = {
 // A row whose type is not in the registry is skipped, not fatal: page_blocks
 // deliberately has no foreign key to the registry, so removing a block file
 // must degrade to "that section disappears", never to "the page 500s".
+// Stamps a rendered block with the row it came from, so the editor's preview
+// can map a click on the page back to the block that produced it.
+//
+// Only in editing mode, and only ever added to the opening tag a block already
+// emits — nothing is wrapped. Wrapping would change the DOM the site's own CSS
+// selects against (`.section + .section`, `:first-child`, the grid rules that
+// count children), so the preview would stop looking like the page, which
+// defeats the point of having one.
+function tagForEditor(html, row) {
+  return html.replace(
+    /^(\s*<[a-zA-Z][a-zA-Z0-9-]*)/,
+    `$1 data-block-id="${row.id}" data-block-type="${esc(row.type)}"`
+  );
+}
+
 function renderRows(rows, extraCtx) {
   const ctx = makeContext(extraCtx);
   const html = [];
@@ -73,7 +88,7 @@ function renderRows(rows, extraCtx) {
     try {
       const out = def.render(data, ctx);
       if (out && out.trim()) {
-        html.push(out);
+        html.push(ctx.editing ? tagForEditor(out, row) : out);
         rendered++;
       }
     } catch (err) {
@@ -129,7 +144,7 @@ async function resolveRows(rows) {
 
 async function renderPage(ownerId, opts = {}) {
   const rows = await resolveRows(await loadBlocks(ownerId, opts));
-  return renderRows(rows, opts.ctx);
+  return renderRows(rows, { ...opts.ctx, editing: Boolean(opts.editing) });
 }
 
 // The <script type="application/ld+json"> tags for a page's blocks. Each block

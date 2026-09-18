@@ -16,7 +16,7 @@
 const fs = require('fs');
 const path = require('path');
 const { one, many } = require('../db/client');
-const { replaceTokens, buildContext, applyPageOverrides } = require('./html-tokens');
+const { replaceTokens, buildContext, applyPageOverrides, wantsEditPreview, injectEditorBridge } = require('./html-tokens');
 const imageRender = require('../services/image-render');
 
 const PUBLIC_DIR = path.resolve(__dirname, '..', '..', 'public');
@@ -943,7 +943,9 @@ async function renderHomepage(req, res) {
   // etc. (saved via /admin/pages.html → home) ship in the initial HTML.
   // Without this, cms-page.js was re-applying them in the browser and the
   // visitor saw the static fallback flash to the DB value on every load.
-  html = await applyPageOverrides(html);
+  const editing = await wantsEditPreview(req);
+  html = await applyPageOverrides(html, { editing });
+  if (editing) html = injectEditorBridge(html);
 
   res.type('html').send(html);
   return true;
@@ -1293,7 +1295,9 @@ async function renderBlogIndex(req, res) {
   }
 
   // Apply pages-table overrides for the blog index too (data-page="blog/index").
-  html = await applyPageOverrides(html);
+  const editing = await wantsEditPreview(req);
+  html = await applyPageOverrides(html, { editing });
+  if (editing) html = injectEditorBridge(html);
 
   res.type('html').send(html);
   return true;
