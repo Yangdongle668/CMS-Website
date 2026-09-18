@@ -26,3 +26,8 @@ public/assets/img/**/*-480.*
 public/assets/img/**/*-768.*
 public/assets/img/**/*-1280.*
 public/assets/img/**/*-1920.*
+
+# Screenshot runs from `npm run visual:shoot`. Hundreds of full-page PNGs per
+# run — a comparison artefact, not source. Keep a baseline outside the repo if
+# you need one to survive a branch switch.
+.visual/

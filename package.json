@@ -22,7 +22,10 @@
     "test": "node --test \"test/**/*.test.js\"",
     "blocks:migrate-pillars": "node scripts/migrate-pillars-to-blocks.js",
     "blocks:extract": "node scripts/extract-page-blocks.js",
-    "overrides:retire": "node scripts/retire-text-overrides.js"
+    "overrides:retire": "node scripts/retire-text-overrides.js",
+    "visual:shoot": "node scripts/visual-snapshot.js shoot",
+    "visual:diff": "node scripts/visual-snapshot.js diff",
+    "visual:check": "node scripts/visual-snapshot.js check"
   },
   "engines": {
     "node": ">=18.0.0"
