@@ -261,6 +261,33 @@ Visit:
 - If SMTP credentials are missing, mails are logged to stdout instead of sent.
 - `NODE_ENV=production` enables Secure cookies and strict Turnstile / SMTP enforcement.
 
+### Checking a CSS change against the layout
+
+`public/styles.css` is one file serving every page at every width, so a change
+to it has no blast radius you can read off the diff. Two commands make the
+blast radius visible:
+
+```bash
+npm run visual:check                                  # clipped content, any page, any width
+npm run visual:shoot -- --out .visual/before          # before the change
+npm run visual:shoot -- --out .visual/after           # after it
+npm run visual:diff  -- .visual/before .visual/after  # what moved, and by how much
+```
+
+`visual:check` loads every page at every breakpoint and fails if anything is
+wider than the box that clips it — the failure mode `body { overflow-x: hidden }`
+would otherwise hide. `visual:shoot` takes full-page screenshots; `visual:diff`
+reports the changed-pixel percentage and height delta per page/width and writes
+diff images to `.visual/after/_diff/`.
+
+It drives whatever Chromium it can find (`CHROME_PATH` overrides) and decodes
+with `sharp`, which is already a dependency — nothing new to install. Point it
+at a running server with `--base` (default `http://127.0.0.1:3960`).
+
+A pixel diff says two renders differ, not that either is right: moving a
+breakpoint is *meant* to change pixels between the old threshold and the new
+one. The diff is where to look; `visual:check` is the part that fails on its own.
+
 ---
 
 ## 4. Daily operations
