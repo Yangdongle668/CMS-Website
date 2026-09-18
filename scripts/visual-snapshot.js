@@ -166,63 +166,183 @@ async function launch(chrome) {
 // Waits for the page to stop changing rather than for a fixed delay: a fixed
 // delay is either slower than it needs to be or a source of flaky diffs, and
 // this site hydrates from its own API after first paint.
+//
+// Waiting on scrollHeight alone was not enough, and the way it failed is worth
+// recording. Shooting the same stylesheet twice should produce identical
+// images; instead 24 of 37 pairs at the control widths differed, one page by
+// 730px of height at a width where no rule can change. The cause was images:
+// this site lazy-loads them, captureBeyondViewport rasterises the whole
+// document, and whether a given image had decoded by screenshot time came down
+// to timing. So the settle step now also waits for every image to finish —
+// decode() rather than .complete, because a complete-but-undecoded image still
+// lays out at its placeholder size.
 const SETTLE_JS = `
-new Promise((resolve) => {
-  const t0 = Date.now();
-  let last = document.documentElement.scrollHeight;
-  let stable = 0;
-  (function tick() {
-    const h = document.documentElement.scrollHeight;
-    if (h === last) stable++; else { stable = 0; last = h; }
-    if (stable >= 3 || Date.now() - t0 > 6000) {
-      resolve(document.documentElement.scrollHeight);
-      return;
-    }
-    setTimeout(tick, 100);
-  })();
-})`;
+(async () => {
+  // Every wait is capped. An image whose request never completes — and with
+  // external DNS pointed at NOTFOUND there are some — would otherwise leave
+  // decode() pending forever and stop the whole run on one page.
+  const capped = (p, ms) => Promise.race([
+    Promise.resolve(p).catch(() => {}),
+    new Promise((r) => setTimeout(r, ms)),
+  ]);
+  await capped(Promise.all([...document.images].map((img) => {
+    if (img.complete) return img.decode ? img.decode().catch(() => {}) : null;
+    return new Promise((r) => { img.onload = img.onerror = r; })
+      .then(() => (img.decode ? img.decode().catch(() => {}) : null));
+  })), 8000);
+  if (document.fonts && document.fonts.ready) await capped(document.fonts.ready, 1500);
+
+  await new Promise((resolve) => {
+    const t0 = Date.now();
+    let last = document.documentElement.scrollHeight;
+    let stable = 0;
+    (function tick() {
+      const h = document.documentElement.scrollHeight;
+      if (h === last) stable++; else { stable = 0; last = h; }
+      if (stable >= 3 || Date.now() - t0 > 5000) return resolve();
+      setTimeout(tick, 80);
+    })();
+  });
+
+  // Hide fixed and sticky overlays before measuring. captureBeyondViewport
+  // rasterises the whole document but paints a fixed element wherever the
+  // scroll position happens to put it, so the cookie banner landed at a
+  // different height in two runs of the same stylesheet — 4 of 20 pairs
+  // differing, on pages whose layout was otherwise identical. They are also
+  // beside the point: a breakpoint governs flow layout, and an out-of-flow
+  // overlay is not part of it. visibility rather than display, so a sticky
+  // element still occupies its box and the flow below it does not shift.
+  let hidden = 0;
+  for (const el of document.querySelectorAll('body *')) {
+    const pos = getComputedStyle(el).position;
+    if (pos === 'fixed' || pos === 'sticky') { el.style.visibility = 'hidden'; hidden++; }
+  }
+
+  return {
+    url: location.href,
+    vw: document.documentElement.clientWidth,
+    h: document.documentElement.scrollHeight,
+    pending: [...document.images].filter((i) => !i.complete).length,
+    hidden,
+  };
+})()`;
+
+// Kills every animation and transition, and pins anything time-based, so two
+// runs of the same stylesheet cannot disagree about where a carousel happens to
+// be. Injected as a document-level stylesheet rather than a CSS file so it
+// applies to every page without touching the site's own source.
+const FREEZE_CSS = `
+*, *::before, *::after {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+  scroll-behavior: auto !important;
+  caret-color: transparent !important;
+}`;
 
 const shotName = (p, w) =>
   `${p.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '') || 'home'}@${w}.png`;
 
-// Resize, navigate, wait for load, then wait for the page to settle.
-//
-// The wait for Page.loadEventFired is not optional, and leaving it out of the
-// --check path is what made that path die partway through a run: evaluating
-// against a context the navigation has already destroyed rejects, and the
-// rejection surfaced inside the socket's message handler, far from the call.
-async function visit(cdp, sessionId, url, width, seq) {
-  await cdp.send('Emulation.setDeviceMetricsOverride', {
-    width, height: 900, deviceScaleFactor: 1, mobile: false,
-  }, sessionId);
+// Everything that has to be true of a session before it measures anything.
+// The freeze stylesheet is installed per document rather than injected after
+// load, so a transition cannot run in the gap between the two.
+async function prepareSession(cdp, sessionId) {
+  await cdp.send('Emulation.setEmulatedMedia', {
+    features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
+  }, sessionId).catch(() => {});
+  await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
+    source: `(() => {
+      const install = () => {
+        const s = document.createElement('style');
+        s.textContent = ${JSON.stringify(FREEZE_CSS)};
+        (document.head || document.documentElement).appendChild(s);
+      };
+      if (document.head) install();
+      else document.addEventListener('DOMContentLoaded', install, { once: true });
 
-  const key = `load-${seq}`;
-  const loaded = new Promise((resolve) => {
-    cdp.on(key, (msg) => {
-      if (msg.sessionId === sessionId && msg.method === 'Page.loadEventFired') {
-        cdp.sessions.delete(key);
-        resolve();
-      }
-    });
-  });
-  try {
-    // Clear the page first. Consecutive widths of the same page navigate to a
-    // URL that is already loaded, and Chromium is entitled to coalesce that —
-    // which showed up as "Execution context was destroyed" mid-settle and a
-    // zero-width screenshot on 14 of one page's 19 widths. Going via
-    // about:blank makes every navigation a genuine cross-document one.
-    await cdp.send('Page.navigate', { url: 'about:blank' }, sessionId);
-    await cdp.send('Page.navigate', { url }, sessionId);
-    await Promise.race([loaded, new Promise((r) => setTimeout(r, 15000))]);
-    await cdp.send('Runtime.evaluate', {
-      expression: SETTLE_JS, awaitPromise: true, returnByValue: true,
+      // Load every image eagerly. captureBeyondViewport rasterises the whole
+      // document, but lazy images below the fold only load when they scroll
+      // into view — which never happens headless — so whether one had decoded
+      // by screenshot time was down to timing. That was the single largest
+      // source of run-to-run noise. Forcing eager is cheaper and more reliable
+      // than scrolling the document to bait the IntersectionObserver.
+      const eager = (root) => {
+        for (const img of root.querySelectorAll ? root.querySelectorAll('img[loading]') : []) {
+          img.loading = 'eager';
+        }
+      };
+      new MutationObserver((records) => {
+        for (const r of records) for (const n of r.addedNodes) if (n.nodeType === 1) eager(n);
+      }).observe(document.documentElement, { childList: true, subtree: true });
+      document.addEventListener('DOMContentLoaded', () => eager(document), { once: true });
+    })();`,
+  }, sessionId).catch(() => {});
+}
+
+// Resize, navigate, wait for load, then wait for the page to settle — and
+// prove it worked before the caller measures anything.
+//
+// Two failures made that last part necessary. Leaving out the wait for
+// Page.loadEventFired killed the --check path partway through a run, because
+// evaluating against a context the navigation had already destroyed rejects
+// far from the call site. And a navigation to the URL already loaded can be
+// coalesced, which left the previous width's layout on screen under a resized
+// viewport — a wrong screenshot that looks perfectly plausible. So the settle
+// step reports back the URL and viewport width it actually saw, this checks
+// them, and a mismatch is retried once and then reported rather than silently
+// photographed.
+async function visit(cdp, sessionId, url, width, seq) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width, height: 900, deviceScaleFactor: 1, mobile: false,
     }, sessionId);
-  } catch (err) {
-    // A page that will not settle is worth a line, not an aborted run of 475.
-    console.warn('[visual] %s @ %d: %s', url, width, err && err.message);
-  } finally {
-    cdp.sessions.delete(key);
+
+    const key = `load-${seq}-${attempt}`;
+    const loaded = new Promise((resolve) => {
+      cdp.on(key, (msg) => {
+        if (msg.sessionId === sessionId && msg.method === 'Page.loadEventFired') {
+          cdp.sessions.delete(key);
+          resolve();
+        }
+      });
+    });
+    try {
+      // Clearing the page first makes every navigation a genuine cross-document
+      // one, so there is nothing for Chromium to coalesce.
+      await cdp.send('Page.navigate', { url: 'about:blank' }, sessionId);
+      await cdp.send('Page.navigate', { url }, sessionId);
+      await Promise.race([loaded, new Promise((r) => setTimeout(r, 20000))]);
+      // awaitPromise has no deadline of its own: a settle that never resolves
+      // would hang the run rather than fail it, which is how a 4-shot smoke
+      // test managed to sit for five minutes producing nothing.
+      const result = await Promise.race([
+        cdp.send('Runtime.evaluate', {
+          expression: SETTLE_JS, awaitPromise: true, returnByValue: true,
+        }, sessionId).then((r) => r.result),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('settle timed out')), 30000)),
+      ]);
+      const seen = result && result.value;
+      if (seen && seen.vw === width && seen.url.endsWith(url.slice(url.indexOf('/', 8)))) {
+        return seen;
+      }
+      if (attempt === 1) {
+        console.warn('[visual] %s @ %d: settled at %s width %s — kept anyway',
+          url, width, seen && seen.url, seen && seen.vw);
+        return seen;
+      }
+    } catch (err) {
+      if (attempt === 1) {
+        // A page that will not settle is worth a line, not an aborted run.
+        console.warn('[visual] %s @ %d: %s', url, width, err && err.message);
+        return null;
+      }
+    } finally {
+      cdp.sessions.delete(key);
+    }
   }
+  return null;
 }
 
 async function shoot({ base, outDir, widths, pages, quiet }) {
@@ -239,6 +359,7 @@ async function shoot({ base, outDir, widths, pages, quiet }) {
   const { sessionId } = await cdp.send('Target.attachToTarget', { targetId, flatten: true });
   await cdp.send('Page.enable', {}, sessionId);
   await cdp.send('Runtime.enable', {}, sessionId);
+  await prepareSession(cdp, sessionId);
 
   let n = 0;
   const manifest = [];
@@ -424,6 +545,7 @@ async function check({ base, widths, pages }) {
   const { sessionId } = await cdp.send('Target.attachToTarget', { targetId, flatten: true });
   await cdp.send('Page.enable', {}, sessionId);
   await cdp.send('Runtime.enable', {}, sessionId);
+  await prepareSession(cdp, sessionId);
 
   const failures = [];
   let n = 0;
@@ -470,7 +592,7 @@ async function main() {
   };
   const base = flag('base', process.env.VISUAL_BASE || 'http://127.0.0.1:3960');
   const only = flag('page', null);
-  const pages = only ? [only] : PAGES;
+  const pages = only ? only.split(',').map((s) => s.trim()).filter(Boolean) : PAGES;
   const widthArg = flag('widths', null);
   const widths = widthArg ? widthArg.split(',').map(Number) : WIDTHS;
 
