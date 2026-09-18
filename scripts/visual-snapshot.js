@@ -206,6 +206,12 @@ async function visit(cdp, sessionId, url, width, seq) {
     });
   });
   try {
+    // Clear the page first. Consecutive widths of the same page navigate to a
+    // URL that is already loaded, and Chromium is entitled to coalesce that —
+    // which showed up as "Execution context was destroyed" mid-settle and a
+    // zero-width screenshot on 14 of one page's 19 widths. Going via
+    // about:blank makes every navigation a genuine cross-document one.
+    await cdp.send('Page.navigate', { url: 'about:blank' }, sessionId);
     await cdp.send('Page.navigate', { url }, sessionId);
     await Promise.race([loaded, new Promise((r) => setTimeout(r, 15000))]);
     await cdp.send('Runtime.evaluate', {
