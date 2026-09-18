@@ -16,7 +16,7 @@
 const fs = require('fs');
 const path = require('path');
 const { one, many } = require('../db/client');
-const { replaceTokens, buildContext, applyPageOverrides, applySavedTextOverrides } = require('./html-tokens');
+const { replaceTokens, buildContext, applyPageOverrides } = require('./html-tokens');
 const imageRender = require('../services/image-render');
 
 const PUBLIC_DIR = path.resolve(__dirname, '..', '..', 'public');
@@ -463,7 +463,7 @@ async function renderPillar(req, res, slug) {
   // replaced outright.
   html = await applyPillarBlocks(html, pillar);
 
-  res.type('html').send(applySavedTextOverrides(html));
+  res.type('html').send(html);
   return true;
 }
 
@@ -581,7 +581,7 @@ async function renderProduct(req, res, slug) {
     { kind: 'bg', attr: 'pillar-hero', value: row.cover_url },
   ]);
 
-  res.type('html').send(applySavedTextOverrides(html));
+  res.type('html').send(html);
   return true;
 }
 
@@ -793,7 +793,7 @@ async function renderArticle(req, res, slug) {
     );
   }
 
-  res.type('html').send(applySavedTextOverrides(html));
+  res.type('html').send(html);
   return true;
 }
 
@@ -883,7 +883,7 @@ async function renderApplication(req, res, slug) {
     { kind: 'html', attr: 'pillars', value: pillarsHtml },
   ]);
 
-  res.type('html').send(applySavedTextOverrides(html));
+  res.type('html').send(html);
   return true;
 }
 
@@ -945,7 +945,7 @@ async function renderHomepage(req, res) {
   // visitor saw the static fallback flash to the DB value on every load.
   html = await applyPageOverrides(html);
 
-  res.type('html').send(applySavedTextOverrides(html));
+  res.type('html').send(html);
   return true;
 }
 
@@ -1295,7 +1295,7 @@ async function renderBlogIndex(req, res) {
   // Apply pages-table overrides for the blog index too (data-page="blog/index").
   html = await applyPageOverrides(html);
 
-  res.type('html').send(applySavedTextOverrides(html));
+  res.type('html').send(html);
   return true;
 }
 

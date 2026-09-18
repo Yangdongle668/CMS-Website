@@ -21,7 +21,8 @@
     "format:check": "prettier --check .",
     "test": "node --test \"test/**/*.test.js\"",
     "blocks:migrate-pillars": "node scripts/migrate-pillars-to-blocks.js",
-    "blocks:extract": "node scripts/extract-page-blocks.js"
+    "blocks:extract": "node scripts/extract-page-blocks.js",
+    "overrides:retire": "node scripts/retire-text-overrides.js"
   },
   "engines": {
     "node": ">=18.0.0"

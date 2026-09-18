@@ -224,7 +224,6 @@ app.use('/api/pages', require('./routes/pages'));
 app.use('/api/blocks', require('./routes/blocks'));
 app.use('/api/authors', require('./routes/authors'));
 app.use('/api/media/overrides', require('./routes/media-overrides'));
-app.use('/api/text-overrides', require('./routes/text-overrides'));
 app.use('/api/seo-check', require('./routes/seo-check'));
 app.use('/api/seo-overview', require('./routes/seo-overview'));
 app.use('/api/analytics', require('./routes/analytics'));

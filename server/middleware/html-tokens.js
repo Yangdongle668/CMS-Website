@@ -89,7 +89,6 @@ const settingsCache = {
   site: {},
   organization: {},
   media_overrides: {},
-  text_overrides: {},
   turnstile: {},
   loadedAt: 0,
 };
@@ -98,7 +97,7 @@ async function loadSettingsCache() {
   try {
     const { many } = require('../db/client');
     const rows = await many(
-      `SELECT key, value FROM settings WHERE key IN ('seo','site','organization','media_overrides','text_overrides','turnstile')`
+      `SELECT key, value FROM settings WHERE key IN ('seo','site','organization','media_overrides','turnstile')`
     );
     for (const r of rows) settingsCache[r.key] = r.value || {};
     settingsCache.loadedAt = Date.now();
@@ -358,72 +357,11 @@ function replaceTokens(html, ctx) {
       out = out.split(src).join(dst);
     }
   }
-  // Apply text overrides — admin-edited per-text replacements made via
-  // the click-to-edit iframe editor in /admin/pages.html. We must only
-  // touch real text nodes, never code inside <script> or <style>, so
-  // the safe pattern is to:
-  //   1. Split the doc into segments around <script>...</script> and
-  //      <style>...</style> blocks (which we leave untouched).
-  //   2. Within each non-script/style segment, find runs of >...<
-  //      (raw text between tags) and replace exact matches there.
-  //   3. Re-join.
-  // This avoids the brittle whole-document string-replace that would
-  // corrupt JSON-LD bodies, JS string literals or CSS selectors.
-  const textOverrides = settingsCache.text_overrides || {};
-  if (Object.keys(textOverrides).length) {
-    out = applyTextOverrides(out, textOverrides);
-  }
   // Final pass: swap source asset URLs for content-hashed bundles.
   // Safe to run last because all earlier passes operate on text content
   // and don't touch <script src="..."> / <link href="..."> attributes.
   out = rewriteAssetUrls(out);
   return out;
-}
-
-function applyTextOverrides(html, map) {
-  // Split-preserve regex: matches <script>...</script>, <style>...</style>,
-  // or HTML comments. Anything outside these blocks is fair game.
-  const protectRe = /<(script|style)\b[^>]*>[\s\S]*?<\/\1>|<!--[\s\S]*?-->/gi;
-  const parts = [];
-  let last = 0;
-  let m;
-  while ((m = protectRe.exec(html)) !== null) {
-    parts.push({ kind: 'text', body: html.slice(last, m.index) });
-    parts.push({ kind: 'protected', body: m[0] });
-    last = m.index + m[0].length;
-  }
-  parts.push({ kind: 'text', body: html.slice(last) });
-
-  return parts.map((p) => {
-    if (p.kind !== 'text') return p.body;
-    let s = p.body;
-    for (const [rawFrom, to] of Object.entries(map)) {
-      if (!rawFrom || rawFrom === to) continue;
-      // Two reasons to encode the FROM key before searching:
-      //   1. HTML serialisation turns `&` into `&amp;`, `<` into `&lt;`,
-      //      so a literal "Custom-Shape & Coin Cell" in textContent
-      //      lives in source as "Custom-Shape &amp; Coin Cell".
-      //   2. Operators paste original text from the iframe's textContent
-      //      (i.e. unescaped form), so we have to encode here, not on save.
-      const from = encodeHtmlEntities(rawFrom);
-      const escFrom = from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      // Match the text between > and < (or start/end of segment) only.
-      // The pattern: optional whitespace + EXACT from + optional whitespace,
-      // bookended by a > or start-of-segment on the left and a < or
-      // end-of-segment on the right.
-      const re = new RegExp(`(>|^)(\\s*)${escFrom}(\\s*)(<|$)`, 'g');
-      s = s.replace(re, (_match, openBoundary, leading, trailing, closeBoundary) =>
-        openBoundary + leading + escapeAttr(to) + trailing + closeBoundary
-      );
-    }
-    return s;
-  }).join('');
-}
-
-function encodeHtmlEntities(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  })[c]);
 }
 
 function buildContext(req, canonicalPathOverride) {
@@ -803,23 +741,6 @@ async function tryServeHtml(req, res, candidates, options) {
     // Apply admin pages-table overrides AFTER tokens so the operator's
     // edits beat both the source-file defaults and the {{TOKEN}} fallbacks.
     out = await applyPageOverrides(out);
-    // FINAL pass: re-apply text_overrides AFTER applyPageOverrides so an
-    // operator's inline-edited string ("click the H1 in the preview iframe
-    // → save") wins over pages.hero_title from the DB. Without this pass,
-    // applyPageOverrides re-injects the page row's stale hero_title and
-    // the operator's edit silently disappears.
-    const textOverrides = settingsCache.text_overrides || {};
-    if (Object.keys(textOverrides).length) {
-      out = applyTextOverrides(out, textOverrides);
-    }
-    // Expose the text-overrides map to cms-page.js so client-side hydration
-    // can re-apply the same substitutions after updating the DOM from the
-    // pages API. Without this, hydration overwrites the server's correctly-
-    // rendered text and the operator's edits appear to "revert".
-    if (Object.keys(textOverrides).length) {
-      const safe = JSON.stringify(textOverrides).replace(/<\/script>/gi, '<\\/script>');
-      out = out.replace('</body>', `<script>window.__CMS_TEXT_OVERRIDES__=${safe};</script>\n</body>`);
-    }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     if (!res.getHeader('Cache-Control')) res.setHeader('Cache-Control', 'no-cache');
     if (opts.status) res.status(opts.status);
@@ -861,22 +782,12 @@ async function htmlTokenMiddleware(req, res, next) {
   return next();
 }
 
-// Re-apply the saved text_overrides map to a final HTML string. Called
-// by SSR detail renderers after injectIntoBody so the operator's
-// inline-edited copy wins over entity-row data.
-function applySavedTextOverrides(html) {
-  const map = settingsCache.text_overrides || {};
-  if (!Object.keys(map).length) return html;
-  return applyTextOverrides(html, map);
-}
-
 module.exports = {
   htmlTokenMiddleware,
   tryServeHtml,
   buildContext,
   replaceTokens,
   applyPageOverrides,
-  applySavedTextOverrides,
   invalidateSettingsCache,
   loadSettingsCache,
   resolveCanonicalBase,

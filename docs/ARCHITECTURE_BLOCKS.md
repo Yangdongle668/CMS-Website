@@ -199,6 +199,25 @@ module.exports = {
 `cta_band` · `logo_strip` · `comparison_table` · `rich_text` ·
 `related_articles` · `inquiry_form`
 
+**实际落地的 13 个**（`server/blocks/*.js`，各一个文件）：
+
+`hero` · `rich_text` · `faq` · `cta_band` · `overview` · `variant_grid` ·
+`spec_table` · `customization` · `manufacturing` · `certification_wall` ·
+`application_grid` · `slide_deck` · `article_list`
+
+与提案的三处出入，都是被真实页面纠正的：
+
+| 提案 | 实际 | 为什么 |
+|---|---|---|
+| `logo_strip`、`comparison_table` | 未做 | 页面里没有这两种形状，做了就是猜 |
+| `related_articles` | 归并进 `article_list` | 同一种东西：按筛选条件读文章。多一个 `pillar_slug` 字段就够了 |
+| `inquiry_form` | **明确不做** | 见下 |
+| — | `slide_deck` | 首页轮播。提案没预见到，但正是「一个布局一个文件」该覆盖的 |
+
+`inquiry_form` 写了又删掉了。RFQ 表单是站点的主要转化路径，接着 Turnstile、
+附件上传和一套固定的 API 约定；把它改成区块渲染，收益是运营可以调字段顺序
+（他们不需要），代价是搞错了就丢询盘。没有安全的消费者，就不该有这个区块。
+
 ---
 
 ## 四、迁移路径：增量，不是重写
@@ -245,14 +264,23 @@ module.exports = {
 
 逐页转换。每转完一页，该页从 `cms-page.js` 的补丁逻辑中摘除。
 
-**阶段 4 — 删代码（收益兑现）**
+**阶段 4 — 删代码（收益兑现）** — ✅ 已完成
 
-- 删除 `settings.text_overrides` 及 `server/routes/text-overrides.js`（77 行）
-- 删除 `public/cms-page.js` 中的选择器补丁逻辑
-- 大幅精简 `html-tokens.js`（810 行）与 `ssr-detail.js`（1254 行）中的 override 机制
-  （二者合计 63 处 override 相关引用）
+- ✅ 删除 `settings.text_overrides` 及 `server/routes/text-overrides.js`（−77）
+- ✅ 删除 `admin/assets/js/iframe-text-editor.js`（−230，写入端）
+- ✅ 删除 `public/cms-page.js` 中的选择器补丁逻辑（−37）
+- ✅ 精简 `html-tokens.js`（−90）与 `ssr-detail.js`（−14）中的 override 机制
 
-**净效果：代码量预计减少而非增加，同时能力大幅增强。**
+**实际净效果：−432 行。** 预测成立。
+
+一处对原提案的修正：阶段 0「先冻结、后删除」没有分两次做，合成了一次。
+冻结的意义是在替代路径就位前保住运营的编辑能力；阶段 1–3 完成后替代路径
+（`/admin/blocks.html`）已经在了，再留一个只读的旧入口只会让人困惑。
+
+删除之前先跑 `scripts/retire-text-overrides.js`：把已存的 override 固化进
+现在拥有这些文字的行，放不下的逐条报出来并让运行失败，原始 map 归档保留。
+**删代码不会删数据——只会让数据不再生效，于是运营的每一条改动静默回退。**
+那正是这套机制本身最该被替换掉的毛病，退场时不该再犯一次。
 
 ---
 
