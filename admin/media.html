@@ -127,6 +127,25 @@
     const uploads = items.filter((m) => m.source !== 'seed');
     const seeds = items.filter((m) => m.source === 'seed');
     shell.content.innerHTML = `
+      <div class="panel" id="optimize-panel" style="margin-bottom:16px;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:260px;">
+            <h3 style="margin:0 0 6px;font-size:14px;">图片压缩（响应式变体）</h3>
+            <p style="margin:0;color:var(--a-mute2);font-size:13px;line-height:1.6;">
+              为 <code>/assets/img/</code> 下的图片生成 AVIF / WebP / JPEG 四档尺寸，浏览器按屏幕挑最小的那份。
+              原图始终保留作为兜底，没有变体的图片只是慢，不会坏。<br>
+              <strong>只在你新增或替换了图片之后才需要运行。</strong>已有变体的图片会自动跳过，重复点没有副作用。
+            </p>
+            <p id="optimize-status" style="margin:10px 0 0;font-size:13px;color:var(--a-mute2);">正在检查…</p>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <label style="font-size:12px;color:var(--a-mute2);display:flex;align-items:center;gap:5px;">
+              <input type="checkbox" id="optimize-force"/> 强制重新生成
+            </label>
+            <button class="btn btn--sm" id="optimize-run">开始压缩</button>
+          </div>
+        </div>
+      </div>
       <div class="panel">
         <p style="margin:0 0 16px;color:var(--a-mute2);font-size:13px;">支持格式：PNG / JPEG / WebP / SVG / GIF / PDF，单个文件最大 8 MB。上传路径 <code>/uploads/</code>，内置图片路径 <code>/assets/img/seed/</code>。</p>
         <h3 style="margin:0 0 12px;font-size:14px;">我的上传 · ${uploads.length} 个</h3>
@@ -155,6 +174,97 @@
         toast('删除失败：' + err.message, 'error');
       }
     }));
+
+    wireOptimizePanel();
+  }
+
+  // ---------- Image backfill ----------
+  //
+  // A full pass is minutes of CPU, so the POST returns 202 immediately and the
+  // work continues server-side; this polls GET for progress. Holding the
+  // request open instead would just relocate the timeout.
+  let optimizePoll = null;
+
+  function humanBytes(n) {
+    if (!n) return '0 B';
+    if (n >= 1024 * 1024) return (n / 1024 / 1024).toFixed(1) + ' MB';
+    if (n >= 1024) return Math.round(n / 1024) + ' KB';
+    return n + ' B';
+  }
+
+  function paintOptimize(state) {
+    const el = document.getElementById('optimize-status');
+    const btn = document.getElementById('optimize-run');
+    if (!el || !btn) return;
+    const { survey, job } = state;
+
+    if (job && job.state === 'running') {
+      btn.disabled = true;
+      btn.textContent = '压缩中…';
+      const done = (job.processed || 0) + (job.skipped || 0);
+      el.textContent = `正在处理 ${done}/${job.total || '?'}：${job.current || '…'}`;
+      return;
+    }
+
+    btn.disabled = false;
+    btn.textContent = '开始压缩';
+
+    if (job && job.state === 'failed') {
+      el.innerHTML = `<span style="color:#b91c1c;">上次运行失败：${escapeHtml(job.error || '未知错误')}</span>`;
+      return;
+    }
+    if (job && job.state === 'done') {
+      const bits = [`上次运行：处理 ${job.processed} 张，跳过 ${job.skipped} 张（已有变体）`];
+      if (job.failed) bits.push(`<span style="color:#b91c1c;">失败 ${job.failed} 张</span>`);
+      el.innerHTML = bits.join('，') +
+        `。当前 ${survey.total} 张图片中 ${survey.pending} 张还没有变体。`;
+      return;
+    }
+    el.textContent = survey.pending
+      ? `${survey.total} 张图片中，${survey.pending} 张还没有变体（约 ${humanBytes(survey.pendingBytes)} 原图）。`
+      : `${survey.total} 张图片都已有变体，无需运行。`;
+  }
+
+  async function refreshOptimize() {
+    try {
+      const state = await api('/api/media/optimize');
+      paintOptimize(state);
+      const running = state.job && state.job.state === 'running';
+      if (running && !optimizePoll) {
+        optimizePoll = setInterval(refreshOptimize, 1500);
+      } else if (!running && optimizePoll) {
+        clearInterval(optimizePoll);
+        optimizePoll = null;
+        // Variants changed on disk; reload so the cards show current sizes.
+        refresh();
+      }
+    } catch (err) {
+      const el = document.getElementById('optimize-status');
+      if (el) el.textContent = '状态获取失败：' + err.message;
+    }
+  }
+
+  function wireOptimizePanel() {
+    const btn = document.getElementById('optimize-run');
+    if (!btn || btn.dataset.wired) return;
+    btn.dataset.wired = '1';
+    btn.addEventListener('click', async () => {
+      const force = document.getElementById('optimize-force').checked;
+      if (force && !confirm('强制模式会重新生成所有变体，可能需要几分钟。继续？')) return;
+      btn.disabled = true;
+      try {
+        await api('/api/media/optimize', {
+          method: 'POST',
+          body: JSON.stringify({ force }),
+        });
+        toast('已开始压缩，可离开本页，任务在后台继续', 'success');
+        refreshOptimize();
+      } catch (err) {
+        btn.disabled = false;
+        toast(err.message === 'already_running' ? '已有任务在运行中' : '启动失败：' + err.message, 'error');
+      }
+    });
+    refreshOptimize();
   }
 
   document.addEventListener('click', (ev) => {

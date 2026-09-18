@@ -240,6 +240,17 @@ const FREEZE_CSS = `
   transition-delay: 0s !important;
   scroll-behavior: auto !important;
   caret-color: transparent !important;
+}
+/* Reveal-on-scroll content, forced visible.
+   styles.css gives .reveal opacity:0 until script.js adds .is-visible from an
+   IntersectionObserver. Nothing scrolls headless, so everything below the fold
+   stayed invisible — and identically invisible in both runs, so the diff
+   looked clean while comparing two mostly blank pages. The site's own
+   reduced-motion rule does not help: it drops the transform and shortens the
+   transition but leaves opacity at 0. */
+.reveal, .reveal[data-delay] {
+  opacity: 1 !important;
+  transform: none !important;
 }`;
 
 const shotName = (p, w) =>
@@ -273,10 +284,20 @@ async function prepareSession(cdp, sessionId) {
           img.loading = 'eager';
         }
       };
+      // Put reveal-on-scroll elements into the state a visitor who scrolled
+      // would see. The CSS override above already forces them visible; adding
+      // the class the site's own observer adds keeps the DOM honest for
+      // anything that reads it.
+      const reveal = (root) => {
+        if (!root.querySelectorAll) return;
+        for (const el of root.querySelectorAll('.reveal')) el.classList.add('is-visible');
+      };
       new MutationObserver((records) => {
-        for (const r of records) for (const n of r.addedNodes) if (n.nodeType === 1) eager(n);
+        for (const r of records) for (const n of r.addedNodes) {
+          if (n.nodeType === 1) { eager(n); reveal(n); }
+        }
       }).observe(document.documentElement, { childList: true, subtree: true });
-      document.addEventListener('DOMContentLoaded', () => eager(document), { once: true });
+      document.addEventListener('DOMContentLoaded', () => { eager(document); reveal(document); }, { once: true });
     })();`,
   }, sessionId).catch(() => {});
 }

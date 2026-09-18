@@ -127,9 +127,18 @@ services:
       - uploads:/app/uploads
       - cms-data:/app/data
       - certs:/app/certs
-      # Bind-mount host-downloaded seed images so `npm run images:localize`
-      # results are visible inside the container without rebuilding the image.
-      - ./public/assets/img/seed:/app/public/assets/img/seed
+      # Bind-mount the whole shipped-image directory, not just seed/.
+      #
+      # Two reasons. Host-downloaded seed images from `npm run images:localize`
+      # need to be visible without rebuilding the image — that was the original
+      # reason, and it only needed seed/. The second is that responsive variants
+      # are gitignored build output that is now generated on demand (the button
+      # in /admin/media.html, or `npm run images:optimize`) rather than during
+      # the Docker build. Anything written inside a container layer is discarded
+      # by the next rebuild, so with seed/ alone an operator's backfill of
+      # logo.png would silently evaporate on the next `./update.sh` and the site
+      # would quietly go back to serving the 1 MB original.
+      - ./public/assets/img:/app/public/assets/img
     # Use `node` to probe since the bookworm-slim base image lacks
     # wget/curl. The probe hits /healthz which never touches PG, so it
     # stays reliable even when the database is briefly down.
