@@ -171,10 +171,10 @@
   <aside class="ve-side" id="ve-side">
     <div class="ve-tip-card">
       <strong>这里怎么编辑？</strong><br>
+      • 点页面里任意 <strong>文字</strong> → 直接改，回车或点别处保存，Esc 取消。<br>
       • 点页面里任意 <strong>图片</strong> → 直接上传替换。<br>
-      • 改 <strong>文字</strong> 请去 <a href="/admin/blocks.html" target="_blank">区块编辑</a>：
-        文字属于某一个区块，在那里改只影响那个区块，不会连带改到别的页面。<br>
-      • 改完关掉本页，返回表单调结构化字段或 SEO。
+      • 改动只写回这段文字所属的那一个区块，<strong>不会连带改到别的页面</strong>。<br>
+      • 鼠标移上去没有高亮的文字，说明它还不属于任何区块（见下方状态）。
     </div>
 
     <h3>本页图片 <span class="ve-side__count" id="ve-img-count">扫描中…</span></h3>
@@ -217,7 +217,80 @@
   nameEl.innerHTML = '正在编辑：<strong>' + escapeHtml(target) + '</strong>';
   document.getElementById('ve-back').href = back;
   document.getElementById('ve-open').href = target;
-  frame.src = target;
+
+  // ?__edit=1 asks the server for the same page with each block tagged by the
+  // row that produced it, plus the inline editor. The server only honours it
+  // for a signed-in operator, so this cannot expose anything to a visitor.
+  function previewUrl() {
+    return target + (target.indexOf('?') === -1 ? '?' : '&') + '__edit=1&t=' + Date.now();
+  }
+  frame.src = previewUrl();
+
+  // ----- Inline text editing -----
+  //
+  // The iframe reports a click on editable copy and, on commit, the new value.
+  // Saving happens here rather than in the frame because this is the side that
+  // holds the admin session helpers and can show the operator what happened.
+  const statusEl = document.createElement('div');
+  statusEl.className = 've-tip-card';
+  statusEl.style.cssText = 'border-style:solid;border-color:#cbd5e1;';
+  statusEl.innerHTML = '<strong>文字编辑</strong><br><span id="ve-text-status">正在载入预览…</span>';
+  sideEl.insertBefore(statusEl, sideEl.firstChild.nextSibling);
+  const textStatus = document.getElementById('ve-text-status');
+  // A timestamp rather than a flag: the preview reports 'ready' again
+  // whenever its DOM settles (blocks that hydrate from the API mark late), and
+  // a one-shot flag was cleared by the first report and gone by the second —
+  // so the confirmation flashed and vanished.
+  let savedAt = 0;
+
+  window.addEventListener('message', async (ev) => {
+    if (ev.origin !== location.origin) return;
+    const m = ev.data;
+    if (!m || m.source !== 'cms-inline-edit') return;
+
+    if (m.type === 'ready') {
+      // A save reloads the preview, which reports 'ready' and would otherwise
+      // wipe the confirmation the operator just earned — leaving them unsure
+      // whether it saved. Carry it over the reload it caused.
+      const savedNote = (Date.now() - savedAt < 8000)
+        ? '<strong style="color:#15803d;">已保存。</strong> ' : '';
+      textStatus.innerHTML = savedNote + (m.editable
+        ? '本页 <strong>' + m.editable + '</strong> 处文字可直接点击编辑（共 ' + m.blocks + ' 个区块）。'
+        : (m.blocks
+          ? '这个页面的区块里没有可直接编辑的纯文字字段，请用<a href="/admin/blocks.html" target="_blank">区块编辑</a>的表单。'
+          : '这个页面还没有转成区块，暂时只能替换图片。'));
+      return;
+    }
+    if (m.type === 'begin') {
+      textStatus.textContent = '正在编辑：' + (m.label || m.field) + '（回车保存，Esc 取消）';
+      return;
+    }
+    if (m.type === 'cancel') {
+      textStatus.textContent = '已取消，内容未改动。';
+      return;
+    }
+    if (m.type === 'save') {
+      textStatus.textContent = '保存中…';
+      try {
+        await api('/api/blocks/' + m.blockId + '/field', {
+          method: 'PATCH',
+          body: JSON.stringify({ field: m.field, value: m.value }),
+        });
+        toast('已保存', 'success');
+        savedAt = Date.now();
+        textStatus.textContent = '已保存。预览正在刷新…';
+        // Reload rather than trusting the DOM we just typed into: the server
+        // sanitises richtext on the way in, so what is stored can differ from
+        // what was typed, and the operator should see what actually shipped.
+        frame.src = previewUrl();
+      } catch (err) {
+        const details = err.body && err.body.details;
+        toast(details ? details.join('；') : ('保存失败：' + err.message), 'error');
+        textStatus.textContent = '保存失败：' + (details ? details.join('；') : err.message);
+        frame.src = previewUrl();
+      }
+    }
+  });
 
   // ----- Toolbar wiring -----
   document.querySelectorAll('.ve-tab').forEach((b) => {
@@ -228,8 +301,10 @@
     });
   });
   document.getElementById('ve-reload').addEventListener('click', () => {
-    try { frame.contentWindow.location.reload(); }
-    catch (_) { frame.src = frame.src; }
+    // Re-assign rather than reload(): reload() would drop the ?__edit=1 the
+    // preview needs only if the frame had navigated away, and a fresh URL also
+    // defeats any cached copy of the pre-edit render.
+    frame.src = previewUrl();
   });
   let sideHidden = false;
   document.getElementById('ve-toggle-side').addEventListener('click', (ev) => {
@@ -415,7 +490,7 @@
       }
       await api('/api/media/overrides', { method: 'PUT', body: JSON.stringify({ overrides: map }) });
       toast('已替换该图片，刷新预览…', 'success');
-      try { frame.contentWindow.location.reload(); } catch (_) {}
+      frame.src = previewUrl();
     } catch (err) { toast('替换失败：' + err.message, 'error'); }
   }
 })();

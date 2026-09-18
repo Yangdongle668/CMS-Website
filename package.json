@@ -25,7 +25,8 @@
     "overrides:retire": "node scripts/retire-text-overrides.js",
     "visual:shoot": "node scripts/visual-snapshot.js shoot",
     "visual:diff": "node scripts/visual-snapshot.js diff",
-    "visual:check": "node scripts/visual-snapshot.js check"
+    "visual:check": "node scripts/visual-snapshot.js check",
+    "blocks:decode-entities": "node scripts/decode-block-entities.js"
   },
   "engines": {
     "node": ">=18.0.0"

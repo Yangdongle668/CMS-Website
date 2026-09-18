@@ -767,6 +767,16 @@ const EDITOR_BRIDGE = `
      cookie banner covered a third of the preview. Hidden unless the overlay
      is itself part of a block, which the JS below decides. */
   .cms-edit-overlay-hidden { display: none !important; }
+
+  /* Text the operator can change in place. Kept quiet until hovered: the
+     point is to edit the page, not to look at an editor. */
+  [data-cms-field] { cursor: text; border-radius: 3px; transition: background .12s ease, box-shadow .12s ease; }
+  [data-cms-field]:hover { background: rgba(37,99,235,.08); box-shadow: 0 0 0 2px rgba(37,99,235,.25); }
+  [data-cms-field].cms-editing {
+    background: #fffdf5 !important;
+    box-shadow: 0 0 0 2px #f5a623 !important;
+    outline: none;
+  }
 </style>
 <script id="cms-edit-bridge">
 (function () {
@@ -778,6 +788,10 @@ const EDITOR_BRIDGE = `
     return null;
   }
   document.addEventListener('click', function (ev) {
+    // Editable copy belongs to inline-edit.js. Selecting the block here as
+    // well would be harmless, but preventing the default would also stop the
+    // caret landing where the operator clicked.
+    if (ev.target.closest && ev.target.closest('[data-cms-field]')) return;
     var el = blockAt(ev.target);
     if (!el) return;
     ev.preventDefault();
@@ -831,7 +845,8 @@ const EDITOR_BRIDGE = `
       function (el) { return Number(el.getAttribute('data-block-id')); }),
   }, location.origin);
 })();
-</script>`;
+</script>
+<script src="/admin/assets/js/inline-edit.js"></script>`;
 
 function injectEditorBridge(html) {
   return html.includes('</body>')
