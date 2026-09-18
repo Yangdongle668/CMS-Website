@@ -460,5 +460,20 @@
     });
   }
 
-  window.AdminAPI = { api, el, escapeHtml, formatDate, toast, bootShell, renderPager, bindPager };
+
+  // Maps a pages-table slug to the URL that actually serves it.
+  //
+  // Lived in admin/pages.html and was about to be copied into the block
+  // editor, which is how "home" became "/home.html" and 404'd a preview that
+  // had nothing else wrong with it. One copy, shared.
+  function slugToUrl(slug) {
+    slug = String(slug || '');
+    if (slug === 'home') return '/';
+    if (['faq', 'contact', 'privacy', 'terms', 'legal', 'gdpr'].includes(slug)) return '/' + slug + '.html';
+    if (slug.endsWith('/index')) return '/' + slug.replace(/\/index$/, '/');
+    if (slug.endsWith('.html') || slug.endsWith('/')) return '/' + slug;
+    return '/' + slug + '.html';
+  }
+
+  window.AdminAPI = { api, el, escapeHtml, formatDate, toast, bootShell, renderPager, bindPager, slugToUrl };
 })();

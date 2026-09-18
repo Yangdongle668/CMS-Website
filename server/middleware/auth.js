@@ -30,21 +30,30 @@ function clearAuthCookie(res) {
   res.clearCookie(COOKIE_NAME, { path: '/' });
 }
 
-async function requireAuth(req, res, next) {
+// Resolves the operator behind a request, or null. Separate from requireAuth
+// because the public HTML pipeline needs to *ask* whether a visitor is signed
+// in — the block editor's preview mode is only served to an operator — without
+// a middleware that 401s an anonymous visitor off a public page.
+async function currentUser(req) {
   const token = req.cookies?.[COOKIE_NAME];
-  if (!token) return res.status(401).json({ error: 'unauthorized' });
+  if (!token) return null;
   try {
     const payload = jwt.verify(token, secrets.jwtSecret);
     const user = await one(
       'SELECT id, email, name, role, is_active FROM users WHERE id = $1',
       [payload.sub]
     );
-    if (!user || !user.is_active) return res.status(401).json({ error: 'unauthorized' });
-    req.user = user;
-    next();
-  } catch (err) {
-    return res.status(401).json({ error: 'unauthorized' });
+    return user && user.is_active ? user : null;
+  } catch (_) {
+    return null;
   }
 }
 
-module.exports = { signToken, setAuthCookie, clearAuthCookie, requireAuth, COOKIE_NAME };
+async function requireAuth(req, res, next) {
+  const user = await currentUser(req);
+  if (!user) return res.status(401).json({ error: 'unauthorized' });
+  req.user = user;
+  next();
+}
+
+module.exports = { signToken, setAuthCookie, clearAuthCookie, requireAuth, currentUser, COOKIE_NAME };

@@ -381,7 +381,7 @@ function buildContext(req, canonicalPathOverride) {
 // initial HTML the visitor receives already contains the operator's
 // edits — no JS-driven post-load flash where the page text changes
 // from the static fallback to the DB-driven version.
-async function applyPageOverrides(html) {
+async function applyPageOverrides(html, opts = {}) {
   // The body's data-page="<slug>" attribute identifies which CMS row,
   // if any, governs this page. /admin/pages.html lets the operator
   // manage hero/breadcrumbs/body for that slug.
@@ -662,7 +662,7 @@ async function applyPageOverrides(html) {
   // was. That is what lets a page be converted one at a time instead of in a
   // flag day, and what makes an empty block list a no-op rather than a blank
   // page.
-  html = await applyBlocks(html, page);
+  html = await applyBlocks(html, page, opts);
 
   return html;
 }
@@ -702,14 +702,14 @@ function replaceMountContents(html, replacement) {
   return html; // unbalanced markup — leave the page alone rather than corrupt it
 }
 
-async function applyBlocks(html, page) {
+async function applyBlocks(html, page, opts = {}) {
   if (!page || !page.id) return html;
   if (!MOUNT_RE.test(html)) return html;
 
   let out;
   try {
     const blockRender = require('../services/block-render');
-    out = await blockRender.renderPage(page.id);
+    out = await blockRender.renderPage(page.id, { editing: Boolean(opts.editing) });
   } catch (err) {
     console.error('[blocks] render failed for page %s: %s', page.slug, err && err.message);
     return html;
@@ -727,6 +727,118 @@ async function applyBlocks(html, page) {
 }
 
 // Reads and serves a public/ HTML file with token replacement + pages-
+// True when this request is an operator previewing a page inside the block
+// editor. Both halves matter: the flag says what is wanted, the session says
+// it is allowed. Without the session check, `?__edit=1` would hand any visitor
+// the internal block ids and an editing overlay on a public page.
+async function wantsEditPreview(req) {
+  if (!req || !req.query || req.query.__edit !== '1') return false;
+  try {
+    const { currentUser } = require('./auth');
+    return Boolean(await currentUser(req));
+  } catch (_) {
+    return false;
+  }
+}
+
+// The preview's half of the bridge to /admin/blocks.html.
+//
+// Outlines each block on hover, and turns a click into a postMessage naming
+// the block. Links are suppressed so that clicking a card selects it instead
+// of navigating the preview away from the page being edited.
+//
+// Deliberately small and self-contained: it ships only to an authenticated
+// operator who asked for it, never on a public request, so it has no business
+// growing into a second front-end.
+const EDITOR_BRIDGE = `
+<style id="cms-edit-style">
+  [data-block-id] { position: relative; outline: 1px dashed rgba(37,99,235,.35); outline-offset: -1px; cursor: pointer; }
+  [data-block-id]:hover { outline: 2px solid #2563eb; }
+  [data-block-id].cms-edit-active { outline: 2px solid #f5a623; }
+  [data-block-id]::after {
+    content: attr(data-block-type);
+    position: absolute; top: 0; left: 0; z-index: 2147483000;
+    background: #2563eb; color: #fff; font: 600 11px/1.6 Inter, system-ui, sans-serif;
+    padding: 1px 7px; border-radius: 0 0 4px 0; opacity: 0; pointer-events: none;
+    transition: opacity .12s ease;
+  }
+  [data-block-id]:hover::after, [data-block-id].cms-edit-active::after { opacity: 1; }
+  /* Fixed overlays sit on top of the page and none of them is a block — the
+     cookie banner covered a third of the preview. Hidden unless the overlay
+     is itself part of a block, which the JS below decides. */
+  .cms-edit-overlay-hidden { display: none !important; }
+</style>
+<script id="cms-edit-bridge">
+(function () {
+  var active = null;
+  function blockAt(node) {
+    for (var el = node; el && el !== document.body; el = el.parentElement) {
+      if (el.hasAttribute && el.hasAttribute('data-block-id')) return el;
+    }
+    return null;
+  }
+  document.addEventListener('click', function (ev) {
+    var el = blockAt(ev.target);
+    if (!el) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (active) active.classList.remove('cms-edit-active');
+    active = el;
+    el.classList.add('cms-edit-active');
+    parent.postMessage({
+      source: 'cms-block-preview',
+      type: 'select',
+      id: Number(el.getAttribute('data-block-id')),
+    }, location.origin);
+  }, true);
+
+  // Selecting in the editor list scrolls the preview to the block.
+  addEventListener('message', function (ev) {
+    if (ev.origin !== location.origin) return;
+    var m = ev.data;
+    if (!m || m.source !== 'cms-block-editor') return;
+    if (m.type === 'focus') {
+      var el = document.querySelector('[data-block-id="' + Number(m.id) + '"]');
+      if (!el) return;
+      if (active) active.classList.remove('cms-edit-active');
+      active = el;
+      el.classList.add('cms-edit-active');
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  });
+
+  // Get the floating furniture out of the way: cookie banner, chat bubble,
+  // sticky CTA. None of them is a block, and between them they covered a good
+  // third of the preview.
+  function hideOverlays() {
+    var all = document.querySelectorAll('body *');
+    for (var i = 0; i < all.length; i++) {
+      var el = all[i];
+      if (el.closest('[data-block-id]')) continue;
+      var pos = getComputedStyle(el).position;
+      if (pos === 'fixed') el.classList.add('cms-edit-overlay-hidden');
+    }
+  }
+  hideOverlays();
+  // Some of it arrives after first paint (the consent bar waits on its own
+  // check), so watch for it rather than only sweeping once.
+  new MutationObserver(hideOverlays).observe(document.body, { childList: true, subtree: true });
+
+  parent.postMessage({
+    source: 'cms-block-preview',
+    type: 'ready',
+    ids: [].map.call(document.querySelectorAll('[data-block-id]'),
+      function (el) { return Number(el.getAttribute('data-block-id')); }),
+  }, location.origin);
+})();
+</script>`;
+
+function injectEditorBridge(html) {
+  return html.includes('</body>')
+    ? html.replace('</body>', EDITOR_BRIDGE + '\n</body>')
+    : html + EDITOR_BRIDGE;
+}
+
 // table overrides. Returns true if a file was served, false if no
 // candidate matched. Async because applyPageOverrides hits the DB.
 async function tryServeHtml(req, res, candidates, options) {
@@ -738,9 +850,15 @@ async function tryServeHtml(req, res, candidates, options) {
     catch (_) { return false; }
     const ctx = buildContext(req, opts.canonicalPath);
     let out = replaceTokens(html, ctx);
+    // The block editor's preview asks for the real page, with each block
+    // tagged so a click can be mapped back to the row that produced it. Gated
+    // on a live operator session: an anonymous visitor asking for ?__edit=1
+    // gets the ordinary page, not internal row ids.
+    const editing = await wantsEditPreview(req);
     // Apply admin pages-table overrides AFTER tokens so the operator's
     // edits beat both the source-file defaults and the {{TOKEN}} fallbacks.
-    out = await applyPageOverrides(out);
+    out = await applyPageOverrides(out, { editing });
+    if (editing) out = injectEditorBridge(out);
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     if (!res.getHeader('Cache-Control')) res.setHeader('Cache-Control', 'no-cache');
     if (opts.status) res.status(opts.status);
@@ -788,6 +906,8 @@ module.exports = {
   buildContext,
   replaceTokens,
   applyPageOverrides,
+  wantsEditPreview,
+  injectEditorBridge,
   invalidateSettingsCache,
   loadSettingsCache,
   resolveCanonicalBase,

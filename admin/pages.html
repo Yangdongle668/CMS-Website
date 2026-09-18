@@ -16,7 +16,7 @@
 <script src="/admin/assets/js/seo-panel.js"></script>
 <script>
 (async function () {
-  const { api, escapeHtml, formatDate, toast, bootShell } = window.AdminAPI;
+  const { api, escapeHtml, formatDate, toast, bootShell, slugToUrl } = window.AdminAPI;
   const shell = await bootShell({ title: '页面', crumbs: '内容 / 静态页面' });
   if (!shell) return;
   shell.actions.innerHTML = `<button class="btn btn--sm" id="new">+ 新建页面</button>`;
@@ -62,14 +62,6 @@
     }
   }
 
-  function slugToUrl(slug) {
-    if (slug === 'home') return '/';
-    if (slug === 'faq') return '/faq.html';
-    if (slug === 'contact') return '/contact.html';
-    if (['privacy','terms','legal','gdpr'].includes(slug)) return '/' + slug + '.html';
-    if (slug.endsWith('/index')) return '/' + slug.replace(/\/index$/, '/');
-    return '/' + slug + '.html';
-  }
 
   function renderEditor(p) {
     p = p || { slug: '', status: 'published', hero_breadcrumbs: [], sections: {} };
