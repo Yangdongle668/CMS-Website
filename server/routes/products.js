@@ -59,18 +59,27 @@ router.get('/:slug', async (req, res) => {
 });
 
 // ----- Admin -----
-router.get('/admin/list', requireAuth, async (_req, res) => {
+// Paged for the same reason as the article admin list — see the comment
+// there. `total` lets the UI say what it is holding back.
+router.get('/admin/list', requireAuth, async (req, res) => {
+  const limit = clamp(req.query.limit, 1, 500, 100);
+  const offset = clamp(req.query.offset, 0, 1e6, 0);
   const rows = await many(
     `SELECT p.${PRODUCT_FIELDS.split(',').map((s) => 'p.' + s.trim()).join(', p.').replace(/^p\./, '')}, pp.slug AS pillar_slug
      FROM products p LEFT JOIN pillar_pages pp ON pp.id = p.pillar_id
-     ORDER BY p.sort_order, p.id`
+     ORDER BY p.sort_order, p.id
+     LIMIT $1 OFFSET $2`,
+    [limit, offset]
   ).catch(async () =>
     many(
       `SELECT ${PRODUCT_FIELDS}, (SELECT slug FROM pillar_pages WHERE id = products.pillar_id) AS pillar_slug
-       FROM products ORDER BY sort_order, id`
+       FROM products ORDER BY sort_order, id
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
     )
   );
-  res.json({ items: rows });
+  const total = await one('SELECT count(*)::int AS n FROM products');
+  res.json({ items: rows, total: total ? total.n : rows.length, limit, offset });
 });
 
 router.post('/', requireAuth, async (req, res) => {

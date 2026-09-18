@@ -1,12 +1,13 @@
 const jwt = require('jsonwebtoken');
 const { one } = require('../db/client');
+const secrets = require('../config/secrets');
 
 const COOKIE_NAME = 'cms_session';
 
 function signToken(user) {
   return jwt.sign(
     { sub: user.id, email: user.email, role: user.role, name: user.name },
-    process.env.JWT_SECRET || 'dev-secret',
+    secrets.jwtSecret,
     { expiresIn: process.env.JWT_EXPIRES_IN || '12h' }
   );
 }
@@ -33,7 +34,7 @@ async function requireAuth(req, res, next) {
   const token = req.cookies?.[COOKIE_NAME];
   if (!token) return res.status(401).json({ error: 'unauthorized' });
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret');
+    const payload = jwt.verify(token, secrets.jwtSecret);
     const user = await one(
       'SELECT id, email, name, role, is_active FROM users WHERE id = $1',
       [payload.sub]

@@ -16,7 +16,8 @@
 const fs = require('fs');
 const path = require('path');
 const { one, many } = require('../db/client');
-const { replaceTokens, buildContext, applyPageOverrides, applySavedTextOverrides } = require('./html-tokens');
+const { replaceTokens, buildContext, applyPageOverrides } = require('./html-tokens');
+const imageRender = require('../services/image-render');
 
 const PUBLIC_DIR = path.resolve(__dirname, '..', '..', 'public');
 
@@ -59,18 +60,24 @@ function parseImageUrl(rawUrl) {
   };
 }
 function cssPosition(p) { return (p || 'center').replace(/-/g, ' '); }
+// Every image this middleware renders is a background — there are no <img>
+// tags in the SSR output — so this is the single place where format
+// negotiation can happen. imageRender emits a plain url() declaration
+// followed by an image-set() one, so browsers that support image-set() take
+// the AVIF or WebP variant and the rest keep the original. When an image has
+// never been processed, it returns just the original declaration and this
+// behaves exactly as it did before.
 function backgroundStyle(rawUrl) {
   const { url, position, fit } = parseImageUrl(rawUrl);
   if (!url) return '';
   const bgSize = fit === 'contain' ? 'contain' : 'cover';
-  const safe = String(url).replace(/'/g, "\\'");
-  return `background-image:url('${safe}'); background-position:${cssPosition(position)}; background-size:${bgSize}; background-repeat:no-repeat;`;
+  const image = imageRender.backgroundImageSet(url);
+  return `${image} background-position:${cssPosition(position)}; background-size:${bgSize}; background-repeat:no-repeat;`;
 }
-function imgStyle(rawUrl) {
-  const { url, position, fit } = parseImageUrl(rawUrl);
-  if (!url) return '';
-  return `object-position:${cssPosition(position)}; object-fit:${fit === 'contain' ? 'contain' : 'cover'};`;
-}
+// The <img> counterpart to backgroundStyle once lived here. Nothing ever
+// called it — this middleware renders every image as a background — so it was
+// removed. When the block renderer needs object-fit for a real <img>, build it
+// there alongside imageRender.renderPicture rather than reviving this.
 function urlOnly(rawUrl) {
   if (!rawUrl) return '';
   const i = rawUrl.indexOf('#');
@@ -444,8 +451,52 @@ async function renderPillar(req, res, slug) {
   }
   html = injectIntoBody(html, bodyEntries);
 
-  res.type('html').send(applySavedTextOverrides(html));
+  // ----- Blocks (phase 2) -----
+  // A pillar that has blocks renders them in place of the eight
+  // [data-legacy-section] elements above; one that has none renders exactly as
+  // it did before. That makes the switch per-pillar and reversible — rolling
+  // back is deleting that pillar's block rows.
+  //
+  // The hero is deliberately not part of this. The template's hero carries
+  // breadcrumbs and sibling links the hero block does not emit, so rendering
+  // both would produce two heroes; it moves in phase 3, when this template is
+  // replaced outright.
+  html = await applyPillarBlocks(html, pillar);
+
+  res.type('html').send(html);
   return true;
+}
+
+async function applyPillarBlocks(html, pillar) {
+  if (!pillar || !pillar.id) return html;
+  if (!/<[a-z]+[^>]*\sdata-blocks\b/i.test(html)) return html;
+
+  let out;
+  try {
+    const blockRender = require('../services/block-render');
+    out = await blockRender.renderPage(pillar.id, { owner: 'pillar' });
+  } catch (err) {
+    console.error('[blocks] pillar %s failed: %s', pillar.slug, err && err.message);
+    return html;
+  }
+  if (!out || !out.rendered) return html;
+
+  // Drop the legacy sections only once there is something to replace them
+  // with, so a render failure above leaves the page intact rather than blank.
+  html = html.replace(
+    /<section[^>]*\sdata-legacy-section\b[\s\S]*?<\/section>/gi,
+    ''
+  );
+  html = html.replace(
+    /(<([a-z]+)[^>]*\sdata-blocks\b[^>]*>)([\s\S]*?)(<\/\2>)/i,
+    (whole, open, _tag, _inner, close) => open + '\n' + out.html + '\n' + close
+  );
+  const blockRender2 = require('../services/block-render');
+  const fresh = blockRender2.dropDuplicateTypes(out.jsonLd, html);
+  if (fresh.length) {
+    html = html.replace('</head>', blockRender2.jsonLdTags(fresh) + '\n</head>');
+  }
+  return html;
 }
 
 // Individual product (SKU) — uses the same /products/_template.html shell
@@ -530,7 +581,7 @@ async function renderProduct(req, res, slug) {
     { kind: 'bg', attr: 'pillar-hero', value: row.cover_url },
   ]);
 
-  res.type('html').send(applySavedTextOverrides(html));
+  res.type('html').send(html);
   return true;
 }
 
@@ -643,7 +694,7 @@ async function renderArticle(req, res, slug) {
   // sidebar TOC on first paint.
   const tpl = article.template || 'standard';
   let layoutHtml = '';
-  let tocItems = [];
+  const tocItems = [];
   if (tpl === 'guide') {
     const content = article.content || '';
     layoutHtml = `<article class="article-body">${content.replace(
@@ -742,7 +793,7 @@ async function renderArticle(req, res, slug) {
     );
   }
 
-  res.type('html').send(applySavedTextOverrides(html));
+  res.type('html').send(html);
   return true;
 }
 
@@ -832,7 +883,7 @@ async function renderApplication(req, res, slug) {
     { kind: 'html', attr: 'pillars', value: pillarsHtml },
   ]);
 
-  res.type('html').send(applySavedTextOverrides(html));
+  res.type('html').send(html);
   return true;
 }
 
@@ -894,7 +945,7 @@ async function renderHomepage(req, res) {
   // visitor saw the static fallback flash to the DB value on every load.
   html = await applyPageOverrides(html);
 
-  res.type('html').send(applySavedTextOverrides(html));
+  res.type('html').send(html);
   return true;
 }
 
@@ -1244,7 +1295,7 @@ async function renderBlogIndex(req, res) {
   // Apply pages-table overrides for the blog index too (data-page="blog/index").
   html = await applyPageOverrides(html);
 
-  res.type('html').send(applySavedTextOverrides(html));
+  res.type('html').send(html);
   return true;
 }
 

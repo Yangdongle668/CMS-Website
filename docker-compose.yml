@@ -65,12 +65,22 @@ services:
       PGPASSWORD: ${PGPASSWORD:-postgres}
       PGDATABASE: ${PGDATABASE:-battery_cms}
 
-      # Auth — CHANGE THESE BEFORE EXPOSING TO THE INTERNET
-      JWT_SECRET: ${JWT_SECRET:-please-change-this-very-long-random-string}
+      # Auth.
+      #
+      # JWT_SECRET / COOKIE_SECRET are intentionally left empty by default.
+      # The app generates a random key on first boot and persists it to the
+      # cms-data volume, so the stack still starts with no .env file while
+      # no two deployments share a signing key. Set them here (via .env) to
+      # pin your own values. A previously shipped placeholder is rejected.
+      JWT_SECRET: ${JWT_SECRET:-}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-12h}
-      COOKIE_SECRET: ${COOKIE_SECRET:-please-change-this-too-please}
-      ADMIN_DEFAULT_EMAIL: ${ADMIN_DEFAULT_EMAIL:-admin@example.com}
-      ADMIN_DEFAULT_PASSWORD: ${ADMIN_DEFAULT_PASSWORD:-ChangeMe!2026}
+      COOKIE_SECRET: ${COOKIE_SECRET:-}
+      # Also empty by default: with no seeded admin, the first POST to
+      # /api/auth/login creates the admin account from the credentials you
+      # submit (server/routes/auth.js). That is safer than shipping a
+      # password this repository publishes.
+      ADMIN_DEFAULT_EMAIL: ${ADMIN_DEFAULT_EMAIL:-}
+      ADMIN_DEFAULT_PASSWORD: ${ADMIN_DEFAULT_PASSWORD:-}
 
       # SMTP — leave blank for dev (mails will be logged to stdout)
       SMTP_HOST: ${SMTP_HOST:-}

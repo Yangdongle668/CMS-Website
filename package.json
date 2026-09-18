@@ -13,30 +13,50 @@
     "db:seed": "node server/db/init.js --seed",
     "retention": "node server/jobs/retention.js",
     "smtp:doctor": "node scripts/smtp-doctor.js",
-    "images:localize": "node scripts/download-unsplash-images.js"
+    "images:localize": "node scripts/download-unsplash-images.js",
+    "images:optimize": "node scripts/optimize-images.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "node --test \"test/**/*.test.js\"",
+    "blocks:migrate-pillars": "node scripts/migrate-pillars-to-blocks.js",
+    "blocks:extract": "node scripts/extract-page-blocks.js",
+    "overrides:retire": "node scripts/retire-text-overrides.js"
   },
   "engines": {
     "node": ">=18.0.0"
   },
+  "overridesRationale": {
+    "qs": "Reaches us transitively through express 4 and body-parser, which pin a range npm audit fix will not lift on its own. Versions up to 6.15.3 carry a parse-side DoS and an array-limit bypass, both reachable through ordinary query strings. Drop the override once express 4 resolves to a fixed qs by itself."
+  },
+  "overrides": {
+    "qs": "^6.15.4"
+  },
   "dependencies": {
     "acme-client": "^5.4.0",
-    "bcrypt": "^5.1.1",
+    "bcrypt": "^6.0.0",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.7",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-async-errors": "^3.1.1",
     "express-rate-limit": "^7.4.0",
-    "geoip-lite": "^1.4.10",
+    "geoip-lite": "^2.0.3",
     "helmet": "^7.1.0",
     "ioredis": "^5.4.1",
     "jsonwebtoken": "^9.0.2",
-    "multer": "^1.4.5-lts.1",
-    "nodemailer": "^6.9.14",
+    "multer": "^2.4.0",
+    "nodemailer": "^10.0.10",
     "pg": "^8.12.0",
-    "sharp": "^0.33.5"
+    "sharp": "^0.35.4"
   },
   "devDependencies": {
-    "esbuild": "^0.24.0"
+    "@eslint/js": "^10.0.1",
+    "esbuild": "^0.24.0",
+    "eslint": "^10.10.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.12.0",
+    "prettier": "^3.9.7"
   }
 }

@@ -14,7 +14,8 @@
 <script src="/admin/assets/js/seo-panel.js"></script>
 <script>
 (async function () {
-  const { api, escapeHtml, toast, bootShell } = window.AdminAPI;
+  const { api, escapeHtml, toast, bootShell, renderPager, bindPager } = window.AdminAPI;
+  let listOffset = 0;
   const shell = await bootShell({ title: '产品', crumbs: '内容 / 产品' });
   if (!shell) return;
   shell.actions.innerHTML = `<button class="btn btn--sm" id="new">+ 新建产品</button>`;
@@ -23,7 +24,8 @@
   const wantId = new URLSearchParams(location.search).get('id');
 
   async function refresh() {
-    const { items } = await api('/api/products/admin/list');
+    const page = await api('/api/products/admin/list?offset=' + listOffset);
+    const items = page.items;
     shell.content.innerHTML = `
       <div class="panel" id="list-panel">
         <table class="table">
@@ -41,9 +43,11 @@
             `).join('') : '<tr><td colspan="6"><div class="empty">还没有产品。</div></td></tr>'}
           </tbody>
         </table>
+        ${renderPager(page)}
       </div>
       <div id="edit-panel"></div>
     `;
+    bindPager(shell.content, (offset) => { listOffset = offset; refresh(); });
     if (wantId) {
       const p = items.find((x) => String(x.id) === wantId);
       if (p) renderEditor(p);

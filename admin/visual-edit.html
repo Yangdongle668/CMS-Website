@@ -172,8 +172,8 @@
     <div class="ve-tip-card">
       <strong>这里怎么编辑？</strong><br>
       • 点页面里任意 <strong>图片</strong> → 直接上传替换。<br>
-      • 点页面里任意 <strong>文字</strong> → 弹窗修改文字，保存即时生效。<br>
-      • 同一段文字出现在多个页面会一起变（因为是站点级文字替换）。<br>
+      • 改 <strong>文字</strong> 请去 <a href="/admin/blocks.html" target="_blank">区块编辑</a>：
+        文字属于某一个区块，在那里改只影响那个区块，不会连带改到别的页面。<br>
       • 改完关掉本页，返回表单调结构化字段或 SEO。
     </div>
 
@@ -184,7 +184,6 @@
 </main>
 
 <script src="/admin/assets/js/admin.js"></script>
-<script src="/admin/assets/js/iframe-text-editor.js"></script>
 <script>
 (async function () {
   const { api, escapeHtml, toast, bootShell } = window.AdminAPI;
@@ -240,7 +239,14 @@
     ev.target.textContent = sideHidden ? '显示右栏' : '隐藏右栏';
   });
 
-  // ----- Wire iframe-text-editor + image grid on every (re)load -----
+  // ----- Wire the image grid on every (re)load -----
+  //
+  // This page used to carry an inline text editor too: click any paragraph in
+  // the preview, type over it, and the new string was saved as a global
+  // find-and-replace over rendered HTML. It has been removed. Text now lives in
+  // blocks, so it is edited at /admin/blocks.html, where a change applies to
+  // the one block an operator meant rather than to every page that happened to
+  // contain the same words. Images are still replaced from here.
   frame.addEventListener('load', async () => {
     let doc = null;
     try { doc = frame.contentDocument; } catch (_) {}
@@ -249,20 +255,6 @@
       counter.textContent = '0 张';
       return;
     }
-
-    // Inline text editor — turns every clickable paragraph/heading into
-    // an editable target. The handler PATCHes /api/text-overrides on save.
-    let overrides = {};
-    try {
-      const r = await fetch('/api/text-overrides', { credentials: 'include' });
-      if (r.ok) overrides = (await r.json()).overrides || {};
-    } catch (_) {}
-    try {
-      window.IframeTextEditor.enable(frame, {
-        overrides,
-        onSave: () => { /* iframe reload handled inside the editor */ },
-      });
-    } catch (_) {}
 
     // Scan for replaceable images (both <img src> and CSS background-image).
     await scanIframeImages(doc);

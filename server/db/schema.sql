@@ -411,6 +411,31 @@ CREATE INDEX IF NOT EXISTS idx_inquiries_active_score
   ON inquiries(score DESC, created_at DESC)
   WHERE is_deleted = FALSE;
 
+-- ----- analytics_hits -----
+-- First-party analytics — every public HTML page-view writes one row.
+-- Privacy: visitor_hash uses a daily-rotating salt so cross-day
+-- identification is impossible; raw IP is never stored here by default.
+--
+-- This table is also created by the self-healing migrations in
+-- server/index.js, which is where it originally lived. It has to exist here
+-- too: the indexes below are part of this file, so on a brand-new database
+-- `npm run db:init` aborted on "relation analytics_hits does not exist", and
+-- since the Docker CMD chains init and start with &&, the app never came up.
+-- Both definitions are IF NOT EXISTS, so whichever runs first wins and the
+-- other is a no-op.
+CREATE TABLE IF NOT EXISTS analytics_hits (
+  id           BIGSERIAL PRIMARY KEY,
+  ts           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  path         VARCHAR(500) NOT NULL,
+  country      VARCHAR(2)   NOT NULL DEFAULT '',
+  browser      VARCHAR(40)  NOT NULL DEFAULT '',
+  os           VARCHAR(40)  NOT NULL DEFAULT '',
+  referer_host VARCHAR(190) NOT NULL DEFAULT '',
+  visitor_hash VARCHAR(64)  NOT NULL DEFAULT '',
+  ip_text      VARCHAR(45)  NOT NULL DEFAULT '',
+  is_bot       BOOLEAN      NOT NULL DEFAULT FALSE
+);
+
 -- analytics_hits is the hottest table once traffic ramps up. The path
 -- index serves "top pages" panels; the (visitor_hash, ts) one already
 -- exists for unique-visitor counts.
@@ -420,3 +445,46 @@ CREATE INDEX IF NOT EXISTS idx_analytics_path_ts
 CREATE INDEX IF NOT EXISTS idx_analytics_country_ts
   ON analytics_hits(country, ts DESC)
   WHERE country <> '';
+
+-- ----- page_blocks -----
+-- The block model described in docs/ARCHITECTURE_BLOCKS.md. One row per
+-- section of a page, ordered by sort_order, with the section's own fields in
+-- `data`.
+--
+-- `data` is JSONB on purpose: adding a block type means adding one file under
+-- server/blocks/, with no migration. `type` is not a foreign key for the same
+-- reason — the registry lives in code, and a row whose type is no longer
+-- registered is skipped at render time rather than breaking the page.
+CREATE TABLE IF NOT EXISTS page_blocks (
+  id         SERIAL PRIMARY KEY,
+  -- Ownership is polymorphic but still a real foreign key on each branch, so
+  -- deleting a page or a pillar takes its blocks with it and an orphan cannot
+  -- accumulate silently. Exactly one owner is set; the CHECK below enforces it.
+  -- Adding another owner (products, articles) is one more nullable column and
+  -- one more name in that CHECK.
+  --
+  -- The alternative — giving every pillar a mirror row in `pages` — would have
+  -- meant two sources of truth for one page's identity, which is the shape of
+  -- most of the bugs this branch has been fixing.
+  page_id    INT REFERENCES pages(id) ON DELETE CASCADE,
+  pillar_id  INT REFERENCES pillar_pages(id) ON DELETE CASCADE,
+  type       VARCHAR(60)  NOT NULL,
+  sort_order INT          NOT NULL DEFAULT 0,
+  data       JSONB        NOT NULL DEFAULT '{}'::jsonb,
+  status     VARCHAR(20)  NOT NULL DEFAULT 'published',  -- draft|published
+  created_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+
+ALTER TABLE page_blocks ADD COLUMN IF NOT EXISTS pillar_id INT REFERENCES pillar_pages(id) ON DELETE CASCADE;
+ALTER TABLE page_blocks ALTER COLUMN page_id DROP NOT NULL;
+
+DO $$ BEGIN
+  ALTER TABLE page_blocks ADD CONSTRAINT page_blocks_one_owner
+    CHECK (num_nonnulls(page_id, pillar_id) = 1);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- The render path always reads one owner's blocks in order.
+CREATE INDEX IF NOT EXISTS idx_page_blocks_page ON page_blocks(page_id, sort_order);
+CREATE INDEX IF NOT EXISTS idx_page_blocks_pillar ON page_blocks(pillar_id, sort_order);

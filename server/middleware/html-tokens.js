@@ -22,6 +22,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const imageRender = require('../services/image-render');
 
 const PUBLIC_DIR = path.resolve(__dirname, '..', '..', 'public');
 
@@ -88,7 +89,6 @@ const settingsCache = {
   site: {},
   organization: {},
   media_overrides: {},
-  text_overrides: {},
   turnstile: {},
   loadedAt: 0,
 };
@@ -97,7 +97,7 @@ async function loadSettingsCache() {
   try {
     const { many } = require('../db/client');
     const rows = await many(
-      `SELECT key, value FROM settings WHERE key IN ('seo','site','organization','media_overrides','text_overrides','turnstile')`
+      `SELECT key, value FROM settings WHERE key IN ('seo','site','organization','media_overrides','turnstile')`
     );
     for (const r of rows) settingsCache[r.key] = r.value || {};
     settingsCache.loadedAt = Date.now();
@@ -357,72 +357,11 @@ function replaceTokens(html, ctx) {
       out = out.split(src).join(dst);
     }
   }
-  // Apply text overrides — admin-edited per-text replacements made via
-  // the click-to-edit iframe editor in /admin/pages.html. We must only
-  // touch real text nodes, never code inside <script> or <style>, so
-  // the safe pattern is to:
-  //   1. Split the doc into segments around <script>...</script> and
-  //      <style>...</style> blocks (which we leave untouched).
-  //   2. Within each non-script/style segment, find runs of >...<
-  //      (raw text between tags) and replace exact matches there.
-  //   3. Re-join.
-  // This avoids the brittle whole-document string-replace that would
-  // corrupt JSON-LD bodies, JS string literals or CSS selectors.
-  const textOverrides = settingsCache.text_overrides || {};
-  if (Object.keys(textOverrides).length) {
-    out = applyTextOverrides(out, textOverrides);
-  }
   // Final pass: swap source asset URLs for content-hashed bundles.
   // Safe to run last because all earlier passes operate on text content
   // and don't touch <script src="..."> / <link href="..."> attributes.
   out = rewriteAssetUrls(out);
   return out;
-}
-
-function applyTextOverrides(html, map) {
-  // Split-preserve regex: matches <script>...</script>, <style>...</style>,
-  // or HTML comments. Anything outside these blocks is fair game.
-  const protectRe = /<(script|style)\b[^>]*>[\s\S]*?<\/\1>|<!--[\s\S]*?-->/gi;
-  const parts = [];
-  let last = 0;
-  let m;
-  while ((m = protectRe.exec(html)) !== null) {
-    parts.push({ kind: 'text', body: html.slice(last, m.index) });
-    parts.push({ kind: 'protected', body: m[0] });
-    last = m.index + m[0].length;
-  }
-  parts.push({ kind: 'text', body: html.slice(last) });
-
-  return parts.map((p) => {
-    if (p.kind !== 'text') return p.body;
-    let s = p.body;
-    for (const [rawFrom, to] of Object.entries(map)) {
-      if (!rawFrom || rawFrom === to) continue;
-      // Two reasons to encode the FROM key before searching:
-      //   1. HTML serialisation turns `&` into `&amp;`, `<` into `&lt;`,
-      //      so a literal "Custom-Shape & Coin Cell" in textContent
-      //      lives in source as "Custom-Shape &amp; Coin Cell".
-      //   2. Operators paste original text from the iframe's textContent
-      //      (i.e. unescaped form), so we have to encode here, not on save.
-      const from = encodeHtmlEntities(rawFrom);
-      const escFrom = from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      // Match the text between > and < (or start/end of segment) only.
-      // The pattern: optional whitespace + EXACT from + optional whitespace,
-      // bookended by a > or start-of-segment on the left and a < or
-      // end-of-segment on the right.
-      const re = new RegExp(`(>|^)(\\s*)${escFrom}(\\s*)(<|$)`, 'g');
-      s = s.replace(re, (_match, openBoundary, leading, trailing, closeBoundary) =>
-        openBoundary + leading + escapeAttr(to) + trailing + closeBoundary
-      );
-    }
-    return s;
-  }).join('');
-}
-
-function encodeHtmlEntities(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  })[c]);
 }
 
 function buildContext(req, canonicalPathOverride) {
@@ -455,7 +394,7 @@ async function applyPageOverrides(html) {
   try {
     const { one } = require('../db/client');
     page = await one(
-      `SELECT slug, nav, title, meta_title, meta_description,
+      `SELECT id, slug, nav, title, meta_title, meta_description,
               hero_eyebrow, hero_title, hero_subtitle, hero_image,
               hero_breadcrumbs, body_html, sections, status,
               focus_keyword, canonical_override, robots,
@@ -594,11 +533,16 @@ async function applyPageOverrides(html) {
       let heroBlock = html.slice(heroStart, closeIdx + '</section>'.length);
 
       // Background image (replace existing inline style="background-image:...").
+      // Goes through imageRender for the same reason backgroundStyle in
+      // ssr-detail.js does — this is the second place the server writes a
+      // background URL, and an image only gets AVIF/WebP negotiation on the
+      // paths that ask for it. Falls back to a plain url() declaration when
+      // the image has no variants.
       if (page.hero_image) {
-        const safeBg = String(page.hero_image).replace(/'/g, "\\'");
+        const bgDecl = imageRender.backgroundImageSet(String(page.hero_image));
         heroBlock = heroBlock.replace(
           /(<section\s+class="(?:page-)?hero"[^>]*?)\sstyle="[^"]*"/i,
-          `$1 style="background-image:url('${safeBg}');"`
+          `$1 style="${bgDecl}"`
         );
       }
 
@@ -711,6 +655,74 @@ async function applyPageOverrides(html) {
     }
   }
 
+  // ----- Blocks -----
+  // A page opts in by putting <div data-blocks></div> in its markup. When the
+  // page has blocks, the mount point's contents are replaced with what they
+  // render to; when it has none, the static markup inside stays exactly as it
+  // was. That is what lets a page be converted one at a time instead of in a
+  // flag day, and what makes an empty block list a no-op rather than a blank
+  // page.
+  html = await applyBlocks(html, page);
+
+  return html;
+}
+
+// Replaces <div data-blocks>…</div> with the page's rendered blocks, and
+// appends their JSON-LD. Any failure leaves the page exactly as it was:
+// blocks are an enhancement to a page that already renders without them.
+// Two attributes are accepted as the mount. `data-blocks` is the explicit one;
+// `data-page-body` is the mount these pages already had for pages.body_html,
+// and reusing it means phase 3 converts a page without editing its markup at
+// all. Blocks win over body_html when both exist — the operator's blocks are
+// the newer intent.
+const MOUNT_RE = /<[a-z]+[^>]*\s(?:data-blocks|data-page-body)\b/i;
+
+
+// Replaces the mount element's contents. Counts nesting rather than matching
+// the first close tag: a data-page-body wraps whole sections, so a non-greedy
+// match would splice the blocks in after the first inner </div> and leave the
+// rest of the old markup behind.
+function replaceMountContents(html, replacement) {
+  const open = /<([a-z]+)[^>]*\s(?:data-blocks|data-page-body)\b[^>]*>/i;
+  const m = html.match(open);
+  if (!m) return html;
+  const tag = m[1];
+  const contentStart = m.index + m[0].length;
+
+  const scan = new RegExp(`<${tag}\\b[^>]*>|</${tag}\\s*>`, 'gi');
+  scan.lastIndex = contentStart;
+  let depth = 1;
+  let s;
+  while ((s = scan.exec(html))) {
+    depth += s[0][1] === '/' ? -1 : 1;
+    if (depth === 0) {
+      return html.slice(0, contentStart) + '\n' + replacement + '\n' + html.slice(s.index);
+    }
+  }
+  return html; // unbalanced markup — leave the page alone rather than corrupt it
+}
+
+async function applyBlocks(html, page) {
+  if (!page || !page.id) return html;
+  if (!MOUNT_RE.test(html)) return html;
+
+  let out;
+  try {
+    const blockRender = require('../services/block-render');
+    out = await blockRender.renderPage(page.id);
+  } catch (err) {
+    console.error('[blocks] render failed for page %s: %s', page.slug, err && err.message);
+    return html;
+  }
+  if (!out || !out.rendered) return html;
+
+  html = replaceMountContents(html, out.html);
+
+  const blockRender2 = require('../services/block-render');
+  const fresh = blockRender2.dropDuplicateTypes(out.jsonLd, html);
+  if (fresh.length) {
+    html = html.replace('</head>', blockRender2.jsonLdTags(fresh) + '\n</head>');
+  }
   return html;
 }
 
@@ -729,23 +741,6 @@ async function tryServeHtml(req, res, candidates, options) {
     // Apply admin pages-table overrides AFTER tokens so the operator's
     // edits beat both the source-file defaults and the {{TOKEN}} fallbacks.
     out = await applyPageOverrides(out);
-    // FINAL pass: re-apply text_overrides AFTER applyPageOverrides so an
-    // operator's inline-edited string ("click the H1 in the preview iframe
-    // → save") wins over pages.hero_title from the DB. Without this pass,
-    // applyPageOverrides re-injects the page row's stale hero_title and
-    // the operator's edit silently disappears.
-    const textOverrides = settingsCache.text_overrides || {};
-    if (Object.keys(textOverrides).length) {
-      out = applyTextOverrides(out, textOverrides);
-    }
-    // Expose the text-overrides map to cms-page.js so client-side hydration
-    // can re-apply the same substitutions after updating the DOM from the
-    // pages API. Without this, hydration overwrites the server's correctly-
-    // rendered text and the operator's edits appear to "revert".
-    if (Object.keys(textOverrides).length) {
-      const safe = JSON.stringify(textOverrides).replace(/<\/script>/gi, '<\\/script>');
-      out = out.replace('</body>', `<script>window.__CMS_TEXT_OVERRIDES__=${safe};</script>\n</body>`);
-    }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     if (!res.getHeader('Cache-Control')) res.setHeader('Cache-Control', 'no-cache');
     if (opts.status) res.status(opts.status);
@@ -787,22 +782,12 @@ async function htmlTokenMiddleware(req, res, next) {
   return next();
 }
 
-// Re-apply the saved text_overrides map to a final HTML string. Called
-// by SSR detail renderers after injectIntoBody so the operator's
-// inline-edited copy wins over entity-row data.
-function applySavedTextOverrides(html) {
-  const map = settingsCache.text_overrides || {};
-  if (!Object.keys(map).length) return html;
-  return applyTextOverrides(html, map);
-}
-
 module.exports = {
   htmlTokenMiddleware,
   tryServeHtml,
   buildContext,
   replaceTokens,
   applyPageOverrides,
-  applySavedTextOverrides,
   invalidateSettingsCache,
   loadSettingsCache,
   resolveCanonicalBase,

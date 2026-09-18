@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>区块编辑 · CMS</title>
+<link rel="stylesheet" href="/admin/assets/css/admin.css">
+</head>
+<body>
+<script src="/admin/assets/js/admin.js"></script>
+<script>
+(async function () {
+  'use strict';
+  // Every form on this page is generated from the block's `schema`, fetched
+  // from /api/blocks/types. That is the whole point of the registry: adding a
+  // block type is adding one file under server/blocks/, and its editor appears
+  // here without this file changing.
+  const { api, escapeHtml, toast, bootShell } = window.AdminAPI;
+  const shell = await bootShell({ title: '区块编辑', crumbs: '内容 / 区块编辑' });
+  if (!shell) return;
+
+  let TYPES = [];          // the registry catalogue
+  let PAGES = [];
+  let pageId = Number(new URLSearchParams(location.search).get('page')) || 0;
+  let blocks = [];
+  let editing = null;      // { id|null, type, data }
+
+  const typeOf = (t) => TYPES.find((x) => x.type === t) || null;
+
+  // ── Field rendering, driven by schema ─────────────────────
+  function fieldInput(key, def, value, path) {
+    const id = 'f-' + path.replace(/[^a-z0-9]/gi, '-');
+    const label = escapeHtml(def.label || key);
+    const req = def.required ? ' <span style="color:var(--danger)">*</span>' : '';
+    const v = value == null ? '' : value;
+
+    if (def.type === 'textarea' || def.type === 'richtext') {
+      const rows = def.type === 'richtext' ? 8 : 3;
+      const hint = def.type === 'richtext'
+        ? '<div class="form-hint">允许的标签：p / 标题 / 列表 / 链接 / 表格 / 强调。脚本与事件属性会在保存和渲染时被剥离。</div>'
+        : '';
+      return `<div class="form-row"><label for="${id}">${label}${req}</label>
+        <textarea id="${id}" data-path="${escapeHtml(path)}" rows="${rows}">${escapeHtml(v)}</textarea>${hint}</div>`;
+    }
+
+    if (def.type === 'select') {
+      const opts = (def.options || []).map((o) => {
+        const val = typeof o === 'string' ? o : o.value;
+        const text = typeof o === 'string' ? o : (o.label || o.value);
+        return `<option value="${escapeHtml(val)}"${String(v) === String(val) ? ' selected' : ''}>${escapeHtml(text)}</option>`;
+      }).join('');
+      return `<div class="form-row"><label for="${id}">${label}${req}</label>
+        <select id="${id}" data-path="${escapeHtml(path)}">${opts}</select></div>`;
+    }
+
+    if (def.type === 'image') {
+      return `<div class="form-row"><label for="${id}">${label}${req}</label>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input id="${id}" data-path="${escapeHtml(path)}" type="text" value="${escapeHtml(v)}" placeholder="/assets/img/… 或 /uploads/…" style="flex:1;">
+          <button type="button" class="btn btn--ghost btn--sm" data-pick-image="${escapeHtml(path)}">选择</button>
+        </div>
+        ${v ? `<div style="margin-top:6px;"><img src="${escapeHtml(v)}" alt="" style="max-height:72px; border-radius:6px; border:1px solid var(--border);"></div>` : ''}
+      </div>`;
+    }
+
+    return `<div class="form-row"><label for="${id}">${label}${req}</label>
+      <input id="${id}" data-path="${escapeHtml(path)}" type="text" value="${escapeHtml(v)}"
+             ${def.max ? `maxlength="${def.max}"` : ''}></div>`;
+  }
+
+  function repeaterField(key, def, list, path) {
+    const items = Array.isArray(list) ? list : [];
+    const rows = items.map((item, i) => {
+      const inner = Object.entries(def.fields || {})
+        .map(([k, sub]) => fieldInput(k, sub, item ? item[k] : '', `${path}.${i}.${k}`))
+        .join('');
+      const title = def.itemLabel && item && item[def.itemLabel]
+        ? escapeHtml(String(item[def.itemLabel]).slice(0, 60))
+        : `第 ${i + 1} 项`;
+      return `<div class="repeater__item" data-index="${i}">
+        <div class="repeater__head">
+          <strong>${title}</strong>
+          <span style="display:flex; gap:4px;">
+            <button type="button" class="btn btn--ghost btn--sm" data-rep-up="${escapeHtml(path)}" data-i="${i}" ${i === 0 ? 'disabled' : ''}>↑</button>
+            <button type="button" class="btn btn--ghost btn--sm" data-rep-down="${escapeHtml(path)}" data-i="${i}" ${i === items.length - 1 ? 'disabled' : ''}>↓</button>
+            <button type="button" class="btn btn--ghost btn--sm" data-rep-del="${escapeHtml(path)}" data-i="${i}">删除</button>
+          </span>
+        </div>
+        ${inner}
+      </div>`;
+    }).join('');
+    const count = items.length;
+    const limit = def.max ? ` / 最多 ${def.max}` : '';
+    return `<div class="form-row">
+      <label>${escapeHtml(def.label || key)} <span class="form-hint" style="display:inline;">（${count} 项${limit}）</span></label>
+      <div class="repeater">${rows || '<div class="empty">还没有条目。</div>'}</div>
+      <button type="button" class="btn btn--ghost btn--sm" data-rep-add="${escapeHtml(path)}" style="margin-top:8px;">+ 添加一项</button>
+    </div>`;
+  }
+
+  function renderForm(def, data) {
+    return Object.entries(def.schema || {}).map(([key, f]) =>
+      f.type === 'repeater' ? repeaterField(key, f, data[key], key) : fieldInput(key, f, data[key], key)
+    ).join('');
+  }
+
+  // ── Reading the form back ─────────────────────────────────
+  function setPath(obj, path, value) {
+    const parts = path.split('.');
+    let cur = obj;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const p = parts[i];
+      const nextIsIndex = /^\d+$/.test(parts[i + 1]);
+      if (cur[p] == null) cur[p] = nextIsIndex ? [] : {};
+      cur = cur[p];
+    }
+    cur[parts[parts.length - 1]] = value;
+  }
+
+  function collect(root) {
+    const out = {};
+    root.querySelectorAll('[data-path]').forEach((input) => {
+      setPath(out, input.getAttribute('data-path'), input.value);
+    });
+    // A repeater with every item deleted must come back as [], not be absent,
+    // or the server keeps the previous list.
+    const def = typeOf(editing.type);
+    for (const [key, f] of Object.entries(def.schema || {})) {
+      if (f.type === 'repeater' && !Array.isArray(out[key])) out[key] = [];
+    }
+    return out;
+  }
+
+  // ── Views ─────────────────────────────────────────────────
+  function renderList() {
+    const pageOptions = PAGES.map((p) =>
+      `<option value="${p.id}"${p.id === pageId ? ' selected' : ''}>${escapeHtml(p.title || p.slug)} — /${escapeHtml(p.slug)}</option>`
+    ).join('');
+
+    shell.content.innerHTML = `
+      <div class="panel">
+        <div class="panel__head">
+          <h2>选择页面</h2>
+          <select id="page-select" style="min-width:320px;">
+            <option value="0">— 请选择 —</option>${pageOptions}
+          </select>
+        </div>
+      </div>
+      ${pageId ? `
+      <div class="panel" style="margin-top:16px;">
+        <div class="panel__head">
+          <h2>区块（${blocks.length}）</h2>
+          <div style="display:flex; gap:8px;">
+            <a class="btn btn--ghost btn--sm" id="view-page" target="_blank" rel="noopener">预览页面 ↗</a>
+            <button class="btn btn--sm" id="add-block">+ 添加区块</button>
+          </div>
+        </div>
+        <div id="block-list">${blocks.length ? blocks.map(blockRow).join('') : '<div class="empty">这个页面还没有区块。页面会显示其静态内容。</div>'}</div>
+      </div>` : '<div class="panel" style="margin-top:16px;"><div class="empty">先选择一个页面。</div></div>'}
+      <div id="editor"></div>
+    `;
+
+    document.getElementById('page-select').addEventListener('change', (e) => {
+      pageId = Number(e.target.value) || 0;
+      history.replaceState(null, '', pageId ? `?page=${pageId}` : location.pathname);
+      load();
+    });
+
+    const view = document.getElementById('view-page');
+    if (view) {
+      const p = PAGES.find((x) => x.id === pageId);
+      view.href = p ? '/' + p.slug + (p.slug.endsWith('.html') ? '' : '.html') : '#';
+    }
+    const add = document.getElementById('add-block');
+    if (add) add.addEventListener('click', showGallery);
+
+    document.querySelectorAll('[data-edit]').forEach((b) =>
+      b.addEventListener('click', () => openEditor(Number(b.getAttribute('data-edit')))));
+    document.querySelectorAll('[data-del]').forEach((b) =>
+      b.addEventListener('click', () => removeBlock(Number(b.getAttribute('data-del')))));
+    document.querySelectorAll('[data-move]').forEach((b) =>
+      b.addEventListener('click', () => move(Number(b.getAttribute('data-move')), b.getAttribute('data-dir'))));
+  }
+
+  function blockRow(b, i) {
+    const def = typeOf(b.type);
+    const label = def ? def.label : b.type;
+    const unknown = def ? '' : ' <span class="pill pill--draft">未注册的类型</span>';
+    const draft = b.status === 'draft' ? ' <span class="pill pill--draft">草稿</span>' : '';
+    const summary = def ? summarise(def, b.data) : '该类型的区块文件已不存在，页面会跳过它';
+    return `<div class="block-row">
+      <div class="block-row__ord">${i + 1}</div>
+      <div class="block-row__main">
+        <div><strong>${escapeHtml(label)}</strong>${draft}${unknown}</div>
+        <div class="block-row__sub">${escapeHtml(summary)}</div>
+      </div>
+      <div class="block-row__actions">
+        <button class="btn btn--ghost btn--sm" data-move="${b.id}" data-dir="up" ${i === 0 ? 'disabled' : ''}>↑</button>
+        <button class="btn btn--ghost btn--sm" data-move="${b.id}" data-dir="down" ${i === blocks.length - 1 ? 'disabled' : ''}>↓</button>
+        ${def ? `<button class="btn btn--ghost btn--sm" data-edit="${b.id}">编辑</button>` : ''}
+        <button class="btn btn--ghost btn--sm" data-del="${b.id}">删除</button>
+      </div>
+    </div>`;
+  }
+
+  function summarise(def, data) {
+    for (const key of ['title', 'q', 'body', 'subtitle']) {
+      if (data && data[key]) return String(data[key]).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 90);
+    }
+    return def.description || '';
+  }
+
+  function showGallery() {
+    const cards = TYPES.map((t) => `
+      <button type="button" class="type-card" data-type="${escapeHtml(t.type)}">
+        <strong>${escapeHtml(t.label)}</strong>
+        <span>${escapeHtml(t.description || '')}</span>
+      </button>`).join('');
+    document.getElementById('editor').innerHTML = `
+      <div class="panel" style="margin-top:16px;">
+        <div class="panel__head"><h2>添加区块</h2>
+          <button class="btn btn--ghost btn--sm" id="gal-cancel">取消</button></div>
+        <div class="type-grid">${cards}</div>
+      </div>`;
+    document.getElementById('gal-cancel').addEventListener('click', () => { document.getElementById('editor').innerHTML = ''; });
+    document.querySelectorAll('[data-type]').forEach((b) =>
+      b.addEventListener('click', () => openEditor(null, b.getAttribute('data-type'))));
+  }
+
+  function openEditor(id, type) {
+    const existing = id ? blocks.find((b) => b.id === id) : null;
+    const t = existing ? existing.type : type;
+    const def = typeOf(t);
+    if (!def) return toast('未知的区块类型', 'error');
+    editing = { id, type: t, data: existing ? JSON.parse(JSON.stringify(existing.data || {})) : {} };
+    drawEditor();
+  }
+
+  function drawEditor() {
+    const def = typeOf(editing.type);
+    const isNew = !editing.id;
+    document.getElementById('editor').innerHTML = `
+      <div class="panel" style="margin-top:16px;">
+        <div class="panel__head">
+          <h2>${isNew ? '新建' : '编辑'}：${escapeHtml(def.label)}</h2>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn--ghost btn--sm" id="ed-preview">预览</button>
+            <button class="btn btn--ghost btn--sm" id="ed-cancel">取消</button>
+            <button class="btn btn--sm" id="ed-save">保存</button>
+          </div>
+        </div>
+        <form id="block-form" onsubmit="return false;">${renderForm(def, editing.data)}</form>
+        <div id="preview-out"></div>
+      </div>`;
+
+    const form = document.getElementById('block-form');
+    document.getElementById('ed-cancel').addEventListener('click', () => { editing = null; document.getElementById('editor').innerHTML = ''; });
+    document.getElementById('ed-save').addEventListener('click', save);
+    document.getElementById('ed-preview').addEventListener('click', preview);
+
+    form.querySelectorAll('[data-rep-add]').forEach((b) => b.addEventListener('click', () => {
+      const key = b.getAttribute('data-rep-add');
+      editing.data = collect(form);
+      if (!Array.isArray(editing.data[key])) editing.data[key] = [];
+      editing.data[key].push({});
+      drawEditor();
+    }));
+    form.querySelectorAll('[data-rep-del]').forEach((b) => b.addEventListener('click', () => {
+      const key = b.getAttribute('data-rep-del');
+      const i = Number(b.getAttribute('data-i'));
+      editing.data = collect(form);
+      editing.data[key].splice(i, 1);
+      drawEditor();
+    }));
+    const swap = (key, i, j) => {
+      editing.data = collect(form);
+      const arr = editing.data[key];
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      drawEditor();
+    };
+    form.querySelectorAll('[data-rep-up]').forEach((b) => b.addEventListener('click', () =>
+      swap(b.getAttribute('data-rep-up'), Number(b.getAttribute('data-i')), Number(b.getAttribute('data-i')) - 1)));
+    form.querySelectorAll('[data-rep-down]').forEach((b) => b.addEventListener('click', () =>
+      swap(b.getAttribute('data-rep-down'), Number(b.getAttribute('data-i')), Number(b.getAttribute('data-i')) + 1)));
+
+    form.querySelectorAll('[data-pick-image]').forEach((b) => b.addEventListener('click', async () => {
+      const path = b.getAttribute('data-pick-image');
+      const url = window.prompt('图片 URL（媒体库里的 /uploads/… 或 /assets/img/…）', '');
+      if (!url) return;
+      editing.data = collect(form);
+      setPath(editing.data, path, url);
+      drawEditor();
+    }));
+  }
+
+  async function preview() {
+    const form = document.getElementById('block-form');
+    editing.data = collect(form);
+    try {
+      const res = await api('/api/blocks/preview', {
+        method: 'POST',
+        body: JSON.stringify({ type: editing.type, data: editing.data }),
+      });
+      const errs = (res.errors || []).length
+        ? `<div class="form-hint" style="color:var(--danger)">${escapeHtml(res.errors.join('；'))}</div>` : '';
+      const ld = (res.jsonLd || []).length
+        ? `<details style="margin-top:10px;"><summary>结构化数据（自动生成）</summary>
+             <pre style="white-space:pre-wrap; font-size:12px;">${escapeHtml(JSON.stringify(res.jsonLd, null, 2))}</pre></details>` : '';
+      document.getElementById('preview-out').innerHTML =
+        `<div class="preview"><div class="preview__label">预览</div>${errs}
+           <iframe class="preview__frame" sandbox=""></iframe>${ld}</div>`;
+      // The rendered block goes into a sandboxed iframe rather than this
+      // document: it is operator HTML, and the admin page holds the session.
+      const frame = document.querySelector('.preview__frame');
+      frame.srcdoc = `<link rel="stylesheet" href="/styles.css"><base target="_blank">${res.html}`;
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  }
+
+  async function save() {
+    const form = document.getElementById('block-form');
+    editing.data = collect(form);
+    try {
+      if (editing.id) {
+        await api('/api/blocks/' + editing.id, {
+          method: 'PUT',
+          body: JSON.stringify({ data: editing.data, status: 'published' }),
+        });
+      } else {
+        await api('/api/blocks/page/' + pageId, {
+          method: 'POST',
+          body: JSON.stringify({ type: editing.type, data: editing.data, status: 'published' }),
+        });
+      }
+      toast('已保存');
+      editing = null;
+      await load();
+    } catch (err) {
+      const details = err.body && err.body.details;
+      toast(details ? details.join('；') : err.message, 'error');
+    }
+  }
+
+  async function removeBlock(id) {
+    if (!window.confirm('删除这个区块？')) return;
+    await api('/api/blocks/' + id, { method: 'DELETE' });
+    toast('已删除');
+    await load();
+  }
+
+  // Sends the complete order, which is what the API requires — a partial list
+  // would leave the other blocks at stale positions.
+  async function move(id, dir) {
+    const i = blocks.findIndex((b) => b.id === id);
+    const j = dir === 'up' ? i - 1 : i + 1;
+    if (j < 0 || j >= blocks.length) return;
+    const ids = blocks.map((b) => b.id);
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+    await api(`/api/blocks/page/${pageId}/order`, { method: 'PUT', body: JSON.stringify({ ids }) });
+    await load();
+  }
+
+  async function load() {
+    if (pageId) {
+      try {
+        const res = await api('/api/blocks/page/' + pageId);
+        blocks = res.items || [];
+      } catch (err) {
+        blocks = [];
+        toast(err.message, 'error');
+      }
+    } else {
+      blocks = [];
+    }
+    renderList();
+  }
+
+  TYPES = (await api('/api/blocks/types')).types || [];
+  PAGES = (await api('/api/pages/admin')).items || [];
+  await load();
+})();
+</script>
+</body>
+</html>

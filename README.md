@@ -64,12 +64,20 @@ That's it. Open `http://localhost:3000`. Admin at `http://localhost:3000/admin/l
 - DB data is persisted in the `db-data` named volume.
 - Uploaded media is persisted in the `uploads` named volume.
 
-### Default credentials (change before going live)
+### First login (there is no default password)
 
-```
-Email     : admin@example.com
-Password  : ChangeMe!2026
-```
+The stack ships with no admin account and no default credentials. Open
+`http://localhost:3000/admin/login.html` and submit the email and password you
+want to use — the first submission creates the admin account with exactly those
+credentials. The password must be at least 8 characters.
+
+Because the account is claimed by whoever logs in first, do this before putting
+the site on a public address (or seed the account non-interactively by setting
+`ADMIN_DEFAULT_EMAIL` and `ADMIN_DEFAULT_PASSWORD` in `.env` beforehand).
+
+Session signing keys (`JWT_SECRET`, `COOKIE_SECRET`) are generated on first boot
+and stored on the `cms-data` volume, so every deployment gets its own. Set them
+in `.env` if you would rather pin your own values.
 
 ### Customise via environment
 
@@ -187,11 +195,13 @@ PGUSER=postgres
 PGPASSWORD=postgres
 PGDATABASE=battery_cms
 
-JWT_SECRET=<generate a long random string>
-COOKIE_SECRET=<generate another>
+# Leave empty to have these generated on first boot and persisted to ./data
+JWT_SECRET=
+COOKIE_SECRET=
 
-ADMIN_DEFAULT_EMAIL=admin@example.com
-ADMIN_DEFAULT_PASSWORD=ChangeMe!2026
+# Leave empty to claim the admin account at first login instead
+ADMIN_DEFAULT_EMAIL=
+ADMIN_DEFAULT_PASSWORD=
 ```
 
 For real email + bot protection in production:
@@ -415,14 +425,20 @@ The article will:
 
 ---
 
-## 8. Default admin
+## 8. Admin account
 
-```
-Email     : <ADMIN_DEFAULT_EMAIL>     (admin@example.com unless overridden)
-Password  : <ADMIN_DEFAULT_PASSWORD>  (ChangeMe!2026 unless overridden)
-```
+There is no default password. On a fresh database the first POST to
+`/api/auth/login` creates the admin account from the submitted credentials, so
+opening `/admin/login.html` and entering the email and password you want is the
+whole setup (minimum 8 characters).
 
-Change immediately on first login via **Users → Edit → New password**.
+Claim the account before the site is publicly reachable — until it exists, any
+visitor who reaches the login page can create it. To seed it ahead of time
+instead, set `ADMIN_DEFAULT_EMAIL` and `ADMIN_DEFAULT_PASSWORD` in `.env` before
+the first start.
+
+Further accounts are managed in **Users**; change a password via
+**Users → Edit → New password**.
 
 ---
 

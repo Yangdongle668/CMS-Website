@@ -11,3 +11,18 @@ uploads/*
 coverage/
 dist/
 backups/
+# Persistent app data outside Docker. Holds secrets.json (the generated
+# JWT/cookie signing keys) and the emergency inquiry store — never commit it.
+data/
+
+# Responsive image variants produced by `npm run images:optimize`. They are
+# build output (~41MB for the shipped assets), regenerated in the Dockerfile's
+# builder stage, so they do not belong in history.
+#
+# Matched by the exact widths in image-processor.js SIZES rather than a
+# digit glob: the seed files are named photo-<unsplash-id>.jpg, so a pattern
+# like *-[0-9]*.jpg would ignore the sources themselves.
+public/assets/img/**/*-480.*
+public/assets/img/**/*-768.*
+public/assets/img/**/*-1280.*
+public/assets/img/**/*-1920.*

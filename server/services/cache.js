@@ -21,7 +21,7 @@ const MAX_MEMORY_KEYS = parseInt(process.env.CACHE_MAX_KEYS || '500', 10);
 let backend = null;          // 'redis' | 'memory' | 'disabled'
 let redisClient = null;
 const memStore = new Map();  // key -> { v, exp }
-let stats = { hits: 0, misses: 0, sets: 0, invalidations: 0, errors: 0 };
+const stats = { hits: 0, misses: 0, sets: 0, invalidations: 0, errors: 0 };
 
 function nowMs() { return Date.now(); }
 

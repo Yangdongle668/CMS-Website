@@ -241,7 +241,7 @@
     };
   }
 
-  // Expose the parser/encoder so other admin scripts (iframe-text-editor,
+  // Expose the parser/encoder so other admin scripts (visual-edit,
   // media-overrides, …) can keep the fragment intact when manipulating URLs.
   window.ImagePicker = { mount, parseImageUrl, encodeImageUrl };
 })();

@@ -10,7 +10,7 @@
 const path = require('path');
 const fs = require('fs');
 const express = require('express');
-const { many, one, query } = require('../db/client');
+const { one, query } = require('../db/client');
 const { requireAuth } = require('../middleware/auth');
 const { recordAudit } = require('../middleware/audit');
 const { invalidateSettingsCache } = require('../middleware/html-tokens');

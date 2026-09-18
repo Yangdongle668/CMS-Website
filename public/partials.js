@@ -668,6 +668,13 @@ const MINI_RFQ_HTML = `
   </div>
 `;
 
+// Not called: the toggle was removed deliberately (see the note in the boot
+// sequence below — one CTA per page). Kept rather than deleted because the
+// markup, the dismissal keys and the matching .mini-rfq styles are a working
+// unit somebody may want back, and MINI_RFQ_SUBMITTED_KEY is still read by the
+// exit-intent modal. Deleting it is a separate cleanup, tracked in
+// docs/IMPROVEMENTS.md.
+// eslint-disable-next-line no-unused-vars
 function injectMiniRFQ() {
   if (!shouldShowMiniRFQ()) return;
   if (document.querySelector('.mini-rfq')) return;

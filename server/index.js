@@ -17,6 +17,13 @@ const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
+const secrets = require('./config/secrets');
+
+// Surface secrets this process cannot fix itself (weak PGPASSWORD, a
+// well-known ADMIN_DEFAULT_PASSWORD) before anything starts listening.
+// JWT_SECRET / COOKIE_SECRET need no check here — they are generated and
+// persisted on first boot if not supplied. See server/config/secrets.js.
+secrets.assertDeploymentSanity();
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
@@ -102,7 +109,7 @@ app.use(
   })
 );
 
-app.use(cookieParser(process.env.COOKIE_SECRET || 'dev-cookie-secret'));
+app.use(cookieParser(secrets.cookieSecret));
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
@@ -214,9 +221,9 @@ app.use('/api/gdpr', require('./routes/gdpr'));
 app.use('/api/audit', require('./routes/audit'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/pages', require('./routes/pages'));
+app.use('/api/blocks', require('./routes/blocks'));
 app.use('/api/authors', require('./routes/authors'));
 app.use('/api/media/overrides', require('./routes/media-overrides'));
-app.use('/api/text-overrides', require('./routes/text-overrides'));
 app.use('/api/seo-check', require('./routes/seo-check'));
 app.use('/api/seo-overview', require('./routes/seo-overview'));
 app.use('/api/analytics', require('./routes/analytics'));
@@ -293,11 +300,38 @@ const staticHeaders = (res, filePath) => {
 };
 
 // ----- Static uploads -----
-// Uploads use UUID-style filenames so the URL itself is the cache key.
+// Filenames keep the uploader's original basename (slugified) plus an
+// extension derived from the file's type, so the URL stays readable and
+// works as a cache key. See server/routes/media.js.
+//
+// These headers are the boundary that keeps user-supplied files from running
+// as code on our own origin. `sandbox` with no allow-* tokens drops the
+// response into an opaque origin with scripting disabled, which is what stops
+// an uploaded SVG (or any HTML that reaches this directory) from calling the
+// admin API with the operator's cookies. `default-src 'none'` blocks
+// subresource loads, and nosniff keeps a mislabelled file from being
+// reinterpreted. Uploads are validated on the way in as well
+// (server/services/upload-guard.js); this is the layer that has to hold if
+// that validation is ever bypassed.
 app.use('/uploads', express.static(path.join(ROOT, 'uploads'), {
   maxAge: '30d',
   immutable: false,
   index: false,
+  setHeaders: (res, filePath) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    // Only the types that can run script against our origin when navigated to
+    // directly get `sandbox`, which drops them into an opaque origin with
+    // scripting off. Applying it to everything would also stop the browser
+    // previewing an uploaded PDF inline, and a PDF's own scripting cannot
+    // reach our DOM or cookies anyway. The extension list stays broader than
+    // what upload validation now admits, so files written before that
+    // validation existed are covered too.
+    const executable = /\.(svgz?|x?html?|xht|xml)$/i.test(filePath);
+    res.setHeader(
+      'Content-Security-Policy',
+      executable ? "default-src 'none'; sandbox" : "default-src 'none'"
+    );
+  },
 }));
 
 // ----- Static admin -----
@@ -386,12 +420,19 @@ app.use((err, req, res, _next) => {
   console.error('[error] %s %s', req.method, req.originalUrl);
   console.error(err && err.stack ? err.stack : err);
   if (res.headersSent) return;
-  // Surface the actual error code to admin clients so the toast is helpful.
+  // Surface the actual error code to admin clients so the toast is helpful —
+  // but only to them. This used to go to every API caller regardless of who
+  // they were, which handed anonymous callers of the public endpoints
+  // (/api/inquiries in particular) Postgres constraint names and server
+  // filesystem paths. req.user is set by requireAuth, so an authenticated
+  // operator still gets the diagnosis they need, and so does anyone running
+  // the stack outside production.
   const isApi = req.originalUrl.startsWith('/api/');
+  const showDetail = process.env.NODE_ENV !== 'production' || Boolean(req.user);
   const detail = err && err.code ? ` (${err.code})` : '';
   res.status(err.status || 500).json({
     error: err.expose ? err.message : 'internal_error',
-    detail: isApi && err && err.message ? err.message + detail : undefined,
+    detail: isApi && showDetail && err && err.message ? err.message + detail : undefined,
   });
 });
 
@@ -464,6 +505,46 @@ async function autoMigrate() {
        ip_text VARCHAR(45) NOT NULL DEFAULT '',
        is_bot BOOLEAN NOT NULL DEFAULT FALSE
      )`,
+    // Trigram search index for the admin inquiry search box. The query in
+    // routes/inquiries.js compares the four searchable columns as one
+    // concatenated string, and this index has to match that expression
+    // exactly for the planner to use it.
+    //
+    // Deliberately here and not in schema.sql: CREATE EXTENSION needs rights
+    // a managed Postgres may withhold, and schema.sql runs as one implicit
+    // transaction, so a refusal there would abort db:init and — because the
+    // Docker CMD chains init and start with && — stop the app from booting.
+    // The loop below runs each statement on its own and logs failures, so
+    // without the extension the search simply falls back to a sequential
+    // scan: slower, still correct.
+    // Blocks (docs/ARCHITECTURE_BLOCKS.md). Also in schema.sql; both are
+    // IF NOT EXISTS so whichever runs first wins. Here as well so an existing
+    // deployment picks it up on the next boot without a manual migration.
+    `CREATE TABLE IF NOT EXISTS page_blocks (
+       id         SERIAL PRIMARY KEY,
+       page_id    INT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+       type       VARCHAR(60)  NOT NULL,
+       sort_order INT          NOT NULL DEFAULT 0,
+       data       JSONB        NOT NULL DEFAULT '{}'::jsonb,
+       status     VARCHAR(20)  NOT NULL DEFAULT 'published',
+       created_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
+       updated_at TIMESTAMPTZ  NOT NULL DEFAULT now()
+     )`,
+    `CREATE INDEX IF NOT EXISTS idx_page_blocks_page ON page_blocks(page_id, sort_order)`,
+    // Polymorphic ownership, added in phase 2 so pillar pages can carry blocks
+    // without being mirrored into `pages`. Each branch keeps its own foreign
+    // key, so a delete still cascades and orphans cannot accumulate.
+    `ALTER TABLE page_blocks ADD COLUMN IF NOT EXISTS pillar_id INT REFERENCES pillar_pages(id) ON DELETE CASCADE`,
+    `ALTER TABLE page_blocks ALTER COLUMN page_id DROP NOT NULL`,
+    `DO $$ BEGIN
+       ALTER TABLE page_blocks ADD CONSTRAINT page_blocks_one_owner
+         CHECK (num_nonnulls(page_id, pillar_id) = 1);
+     EXCEPTION WHEN duplicate_object THEN NULL;
+     END $$`,
+    `CREATE INDEX IF NOT EXISTS idx_page_blocks_pillar ON page_blocks(pillar_id, sort_order)`,
+    `CREATE EXTENSION IF NOT EXISTS pg_trgm`,
+    `CREATE INDEX IF NOT EXISTS idx_inquiries_search_trgm ON inquiries
+       USING GIN ((email || ' ' || company || ' ' || full_name || ' ' || reference) gin_trgm_ops)`,
     `CREATE INDEX IF NOT EXISTS idx_analytics_ts ON analytics_hits(ts DESC)`,
     `CREATE INDEX IF NOT EXISTS idx_analytics_path ON analytics_hits(path)`,
     `CREATE INDEX IF NOT EXISTS idx_analytics_country ON analytics_hits(country)`,
