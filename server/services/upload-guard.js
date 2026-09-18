@@ -231,7 +231,7 @@ function sanitizeSvg(source) {
     /((?:xlink:)?href|src|from|to|values|begin)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi,
     (match, _attr, rawValue) => {
       const value = rawValue.replace(/^(["'])([\s\S]*)\1$/, '$2');
-      const scheme = decodeEntities(value).replace(/[\s -]+/g, '').toLowerCase();
+      const scheme = decodeEntities(value).replace(/[\s\u0000-\u001f]+/g, '').toLowerCase();
       return DANGEROUS_SCHEME.test(scheme) ? '' : match;
     }
   );

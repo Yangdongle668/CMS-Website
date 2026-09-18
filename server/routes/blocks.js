@@ -99,6 +99,53 @@ router.put('/:id', requireAuth, async (req, res) => {
   res.json({ block: r.rows[0] });
 });
 
+// PATCH /api/blocks/:id/field — change one field, leaving the rest alone.
+//
+// What inline editing in the preview writes to. A PUT would make the caller
+// send the whole data object back, so an operator who fixed one heading would
+// also be rewriting every other field from whatever the page happened to have
+// loaded — and would quietly clobber a colleague's change to a different field
+// of the same block.
+//
+// The field must exist in the block's schema. Without that check this is an
+// arbitrary-key writer into a JSONB column, and a typo would silently create a
+// field nothing renders rather than failing.
+router.patch('/:id/field', requireAuth, async (req, res) => {
+  const id = clamp(req.params.id, 1, 1e9, 0);
+  if (!id) return res.status(400).json({ error: 'invalid_id' });
+
+  const existing = await one(
+    'SELECT id, page_id, pillar_id, type, data FROM page_blocks WHERE id = $1', [id]
+  );
+  if (!existing) return res.status(404).json({ error: 'not_found' });
+
+  const def = blocks.get(existing.type);
+  if (!def) return res.status(400).json({ error: 'unknown_block_type' });
+
+  const field = String((req.body && req.body.field) || '');
+  const spec = def.schema && def.schema[field];
+  if (!spec) return res.status(400).json({ error: 'unknown_field', field });
+  if (spec.type === 'repeater') {
+    return res.status(400).json({ error: 'field_not_inline_editable', field });
+  }
+
+  const merged = Object.assign({}, existing.data || {}, { [field]: req.body.value });
+  // Validated as a whole so the field goes through the same coercion, length
+  // caps and HTML sanitising as a save from the form. Inline editing is a
+  // different way in, not a different set of rules.
+  const { data, errors } = blocks.validate(existing.type, merged);
+  if (errors.length) return res.status(400).json({ error: 'invalid_block_data', details: errors });
+
+  const r = await query(
+    `UPDATE page_blocks SET data = $1, updated_at = now()
+     WHERE id = $2 RETURNING id, type, sort_order, data, status`,
+    [JSON.stringify(data), id]
+  );
+  await recordAudit({ req, action: 'update', entity: 'page_block', entityId: id,
+    detail: { page_id: existing.page_id, pillar_id: existing.pillar_id, type: existing.type, field, inline: true } });
+  res.json({ block: r.rows[0] });
+});
+
 // PUT /api/blocks/page/:pageId/order — reorder in one statement.
 //
 // Takes the full ordered list of ids. Sending the whole order rather than

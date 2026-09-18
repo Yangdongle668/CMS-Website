@@ -65,9 +65,27 @@ async function loadBlocks(ownerId, { includeDrafts = false, owner = 'page' } = {
 // count children), so the preview would stop looking like the page, which
 // defeats the point of having one.
 function tagForEditor(html, row) {
+  const def = blocks.get(row.type);
+  // The editable text this block owns, as { field: value, … }, so the preview
+  // can match a clicked element back to the field that produced it. Scoped to
+  // this row: matching is per block, never across the site, which is the whole
+  // difference from the find-and-replace layer this replaces.
+  //
+  // Only scalar copy fields — a repeater's items are edited in the form,
+  // because "which of the eight slides is this" is not answerable from the
+  // text alone when two of them say the same thing.
+  const fields = {};
+  for (const [key, spec] of Object.entries((def && def.schema) || {})) {
+    if (spec.type === 'repeater' || spec.type === 'image' || spec.type === 'number') continue;
+    const v = row.data && row.data[key];
+    if (typeof v === 'string' && v.trim()) {
+      fields[key] = { value: v, type: spec.type || 'text', label: spec.label || key };
+    }
+  }
+  const payload = escAttr(JSON.stringify(fields)).replace(/</g, '&lt;').replace(/>/g, '&gt;');
   return html.replace(
     /^(\s*<[a-zA-Z][a-zA-Z0-9-]*)/,
-    `$1 data-block-id="${row.id}" data-block-type="${esc(row.type)}"`
+    `$1 data-block-id="${row.id}" data-block-type="${esc(row.type)}" data-block-fields="${payload}"`
   );
 }
 
