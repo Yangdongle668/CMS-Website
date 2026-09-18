@@ -10,6 +10,7 @@ const { clamp, trimStr } = require('../utils/validate');
 const imageProcessor = require('../services/image-processor');
 const uploadGuard = require('../services/upload-guard');
 const imageRender = require('../services/image-render');
+const imageBackfill = require('../services/image-backfill');
 
 const router = express.Router();
 
@@ -238,6 +239,101 @@ router.post('/:id/reprocess', requireAuth, async (req, res) => {
   );
   await recordAudit({ req, action: 'reprocess', entity: 'media', entityId: id });
   res.json({ ok: true, variants: result.variants, srcset: result.srcset });
+});
+
+// ----- Backfill for the images shipped under public/assets/img ---------------
+//
+// Distinct from /:id/reprocess above, which re-encodes one uploaded file in the
+// media library. This one covers the photographs and logo that ship with the
+// site, which never went through the upload pipeline and so never had a single
+// variant generated.
+//
+// It is a button rather than a build step on purpose. Generating these used to
+// run in the Docker builder stage, so every `./update.sh` re-encoded fifty
+// photographs to ship a one-line code change — the build cannot know the images
+// did not change. Images change when an operator changes them, so an operator
+// starts it.
+//
+// Run in the background with the response returned immediately: a full backfill
+// is minutes of CPU, far past any sensible request timeout, and holding a
+// connection open for it would just move the failure. Progress is polled from
+// GET below. One run at a time, because two concurrent passes would write the
+// same variant files.
+let backfillJob = null;
+
+router.get('/optimize', requireAuth, async (_req, res) => {
+  const survey = await imageBackfill.survey();
+  res.json({
+    survey,
+    job: backfillJob && {
+      state: backfillJob.state,
+      startedAt: backfillJob.startedAt,
+      finishedAt: backfillJob.finishedAt,
+      current: backfillJob.current,
+      processed: backfillJob.processed,
+      skipped: backfillJob.skipped,
+      failed: backfillJob.failed,
+      total: backfillJob.total,
+      error: backfillJob.error,
+      failures: backfillJob.failures,
+    },
+  });
+});
+
+router.post('/optimize', requireAuth, async (req, res) => {
+  if (backfillJob && backfillJob.state === 'running') {
+    return res.status(409).json({ error: 'already_running', startedAt: backfillJob.startedAt });
+  }
+  const force = Boolean(req.body && req.body.force);
+
+  backfillJob = {
+    state: 'running',
+    startedAt: new Date().toISOString(),
+    finishedAt: null,
+    current: null,
+    processed: 0,
+    skipped: 0,
+    failed: 0,
+    total: (await imageBackfill.survey()).total,
+    failures: [],
+    error: null,
+  };
+
+  await recordAudit({ req, action: 'optimize', entity: 'media', entityId: 'assets', detail: { force } });
+
+  // Deliberately not awaited — see the note above.
+  imageBackfill.run({
+    force,
+    onProgress: (p) => {
+      backfillJob.current = p.file;
+      backfillJob.processed = p.processed;
+      backfillJob.skipped = p.skipped;
+      backfillJob.failed = p.failed;
+    },
+  }).then((result) => {
+    Object.assign(backfillJob, {
+      state: 'done',
+      finishedAt: new Date().toISOString(),
+      current: null,
+      processed: result.processed,
+      skipped: result.skipped,
+      failed: result.failed,
+      failures: result.failures,
+      sourceBytes: result.sourceBytes,
+      variantBytes: result.variantBytes,
+    });
+    // New files on disk: drop the cached variant lookups so pages pick them up.
+    imageRender.invalidate();
+  }).catch((err) => {
+    Object.assign(backfillJob, {
+      state: 'failed',
+      finishedAt: new Date().toISOString(),
+      current: null,
+      error: (err && err.message) || String(err),
+    });
+  });
+
+  res.status(202).json({ ok: true, state: 'running', total: backfillJob.total });
 });
 
 router.delete('/:id', requireAuth, async (req, res) => {

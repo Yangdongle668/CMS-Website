@@ -18,12 +18,21 @@ COPY scripts ./scripts
 COPY public ./public
 COPY server ./server
 RUN npm run build || echo "[build] skipped or failed — runtime will serve source files"
-# Responsive variants for the shipped images. They are gitignored build
-# output, so they have to be produced here — the runtime stage copies this
-# whole public/ directory. Non-fatal for the same reason as the build above:
-# server/services/image-render.js falls back to the original file whenever an
-# image has no variants, so a failure here costs bytes, not correctness.
-RUN npm run images:optimize || echo "[images] optimization skipped — originals will be served"
+
+# Image variants are deliberately NOT generated here.
+#
+# They used to be, and it made every `./update.sh` re-encode fifty photographs
+# to deploy a one-line code change — the build has no way to know the images
+# did not change. Re-encoding shipped content is an operator action, not a
+# compile step, so it now lives behind a button in the media library
+# (/admin/media.html) and `npm run images:optimize` on the command line.
+#
+# What makes that safe: public/assets/img is bind-mounted from the host (see
+# docker-compose.yml), so variants written by either route persist across
+# rebuilds instead of living inside a layer that the next build throws away.
+# And server/services/image-render.js falls back to the original file for any
+# image with no variants, so a site that has never run the backfill is slower,
+# not broken.
 
 # ---------- runtime ----------
 FROM node:20-bookworm-slim AS runtime

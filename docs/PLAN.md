@@ -56,7 +56,16 @@ public/assets/img/logo.png 1.1MB，未处理
 
 **为什么先做**：零风险、零依赖、立即见效，且图片资产本身不会被区块化冲掉。
 
-**结果**：`scripts/optimize-images.js`（薄驱动，不含编码逻辑）+ `npm run images:optimize`
+**结果**：`server/services/image-backfill.js`（薄驱动，不含编码逻辑），
+两个入口共用它：后台「媒体库 → 图片压缩」按钮，和 `npm run images:optimize`。
+
+> **修正（运行方式）**：最初把 `npm run images:optimize` 放进了 Dockerfile 的
+> builder 阶段。那是错的——每跑一次 `./update.sh` 就会重新编码 50 张照片，
+> 只为了发布一行代码的改动，而构建根本无法知道图片没变过。
+> 重新编码站点自带图片是**运营对内容的操作**，不是编译步骤，所以现在由运营
+> 在后台点按钮触发。配套改动：`public/assets/img` 整个目录改为 bind-mount，
+> 否则容器内生成的变体会被下一次重建丢掉（`seed/` 原本就是挂载的，
+> 但 `logo.png` 的变体会静默消失，站点悄悄退回 1 MB 原图）。
 
 | | |
 |---|---|
