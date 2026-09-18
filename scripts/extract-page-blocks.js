@@ -124,6 +124,16 @@ const visibleText = (html) =>
     html.replace(/<!--[\s\S]*?-->/g, ' ').replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, ' ')
   );
 
+
+// First element of `tag` carrying `className`, inner HTML only.
+function firstTagByClass(html, tag, className) {
+  const re = new RegExp(`<${tag}\\b[^>]*class="[^"]*\\b${className.replace(/[-]/g, '\\-')}\\b[^"]*"[^>]*>`, 'i');
+  const m = html.match(re);
+  if (!m) return '';
+  const el = matchElement(html, tag, m.index);
+  return el ? el.inner : '';
+}
+
 // ----- Conversion -----------------------------------------------------------
 
 function planFor(fileHtml) {
@@ -155,6 +165,71 @@ function planFor(fileHtml) {
     const cls = attrOf(section.html, 'class');
     const inner = innerOf(section.html);
     const innerBody = firstTag(inner, 'div') || inner; // most sections wrap in .section-inner
+
+    // Two bespoke layouts get their own block rather than a rich_text copy.
+    // Both carry elements the sanitiser refuses in operator prose — a slider's
+    // arrows are <button>s — which is the refusal working: a block owns its
+    // controls, so the operator supplies content and the markup comes from the
+    // block file.
+    const slider = matchElement(inner, 'div');
+    if (/\btesla-slider\b/.test(inner)) {
+      const slides = [];
+      for (const a of topLevelElements(matchElement(inner, 'div', inner.indexOf('tesla-slider__track')) ? inner.slice(inner.indexOf('tesla-slider__track')) : '', 'a')) {
+        if (!/\btesla-slide\b/.test(a.openTag)) continue;
+        slides.push({
+          label: toPlainText(firstTagByClass(a.inner, 'div', 'tesla-slide__label')),
+          title: toPlainText(firstTag(a.inner, 'h3')),
+          sub: toPlainText(firstTagByClass(a.inner, 'span', 'tesla-slide__sub')),
+          image: (attrOf(a.openTag, 'style').match(/url\(\s*['"]?([^'")]+)/i) || [])[1] || '',
+          link: attrOf(a.openTag, 'href'),
+          cta_primary: toPlainText(firstTagByClass(a.inner, 'span', 'tesla-slide__cta--primary')),
+          cta_secondary: toPlainText(firstTagByClass(a.inner, 'span', 'tesla-slide__cta--secondary')),
+        });
+      }
+      if (slides.length) {
+        planned.push({
+          type: 'slide_deck',
+          data: {
+            eyebrow: toPlainText(firstTagByClass(inner, 'span', 'eyebrow')),
+            title: toPlainText(firstTag(inner, 'h2')),
+            intro: toPlainText(firstTagByClass(inner, 'p', 'lead')),
+            slides,
+          },
+        });
+        continue;
+      }
+    }
+
+    if (/\bdata-insights-grid\b/.test(inner)) {
+      // A grid filled from the articles table — by ssr-detail's renderHomepage
+      // on the server and by the page's own script in the browser. The block
+      // renders the same cards from the same rows, so the section keeps its
+      // contents while the copy around them becomes editable.
+      //
+      // The trailing "Browse all insights →" link is part of the section, so it
+      // comes along. Left behind it would be deleted with the markup the block
+      // replaces, which the word check would catch — but as a block field the
+      // operator can also change where it points.
+      const more = inner.match(
+        /<a\b[^>]*class="[^"]*\bnews-link\b[^"]*"[^>]*>([\s\S]*?)<\/a>/i
+      );
+      const moreTag = more ? more[0].slice(0, more[0].indexOf('>') + 1) : '';
+      planned.push({
+        type: 'article_list',
+        data: {
+          eyebrow: toPlainText(firstTagByClass(inner, 'span', 'eyebrow')),
+          title: toPlainText(firstTag(inner, 'h2')),
+          intro: toPlainText(firstTagByClass(inner, 'p', 'lead')),
+          limit: 3,
+          // The arrow is the block's, not the operator's: it re-adds one, and
+          // keeping this one here would render two.
+          more_text: more ? toPlainText(more[1]).replace(/\s*(?:→|&rarr;)\s*$/, '') : '',
+          more_link: moreTag ? attrOf(moreTag, 'href') : '',
+        },
+      });
+      continue;
+    }
+    void slider;
 
     if (/\bcta-band\b/.test(cls)) {
       const link = inner.match(/<a\b[^>]*href="([^"]*)"[^>]*class="[^"]*\bbtn\b[^"]*"[^>]*>([\s\S]*?)<\/a>/i)
@@ -215,15 +290,20 @@ function tagsIn(html) {
 }
 
 // The check that decides whether a conversion is allowed to be written.
-function verify(fileHtml, planned) {
+async function verify(fileHtml, planned) {
   const before = visibleText(convertedRegion(fileHtml));
-  const rendered = planned
+  // Resolve first. A block that reads other rows (article_list) renders empty
+  // without it, which looks like it lost the heading the operator wrote.
+  const blockRender = require('../server/services/block-render');
+  const rows = await blockRender.resolveRows(
+    planned.map((b, i) => ({ id: i, type: b.type, data: blocks.validate(b.type, b.data).data }))
+  );
+  const rendered = rows
     .map((b) => {
       const def = blocks.get(b.type);
       if (!def) return '';
-      const { data } = blocks.validate(b.type, b.data);
       try {
-        return def.render(data, {
+        return def.render(b.data, {
           esc: (s) => String(s == null ? '' : s),
           escAttr: (s) => String(s == null ? '' : s),
           safeUrl: (u) => u,
@@ -296,7 +376,7 @@ async function convert(file) {
   const { planned, notes, ok } = planFor(html);
   if (!ok) return { rel, slug, status: notes.join('; ') || 'nothing extractable', notes };
 
-  const check = verify(html, planned);
+  const check = await verify(html, planned);
   if (check.lostTags.length) {
     return {
       rel,
