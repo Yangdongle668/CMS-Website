@@ -26,7 +26,8 @@
     "visual:shoot": "node scripts/visual-snapshot.js shoot",
     "visual:diff": "node scripts/visual-snapshot.js diff",
     "visual:check": "node scripts/visual-snapshot.js check",
-    "blocks:decode-entities": "node scripts/decode-block-entities.js"
+    "blocks:decode-entities": "node scripts/decode-block-entities.js",
+    "visual:layout": "node scripts/layout-diff.js"
   },
   "engines": {
     "node": ">=18.0.0"
