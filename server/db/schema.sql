@@ -135,6 +135,13 @@ CREATE TABLE IF NOT EXISTS articles (
   reading_minutes INT NOT NULL DEFAULT 5,
   template      VARCHAR(40) NOT NULL DEFAULT 'standard',  -- standard | guide | case-study
   hero_image    VARCHAR(500) NOT NULL DEFAULT '',
+  -- Outbound citations: [{label, url, publisher}]. A technical article
+  -- that cites no primary source is asking the reader to take its word
+  -- for the numbers, and "cites the standard it is explaining" is a
+  -- cheap, durable trust signal for both readers and search engines.
+  -- Rendered as a References section and mirrored into the Article
+  -- JSON-LD `citation` property.
+  citations     JSONB NOT NULL DEFAULT '[]'::jsonb,
   published_at  TIMESTAMPTZ,
   status        VARCHAR(20) NOT NULL DEFAULT 'draft',
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -145,6 +152,7 @@ CREATE TABLE IF NOT EXISTS articles (
 ALTER TABLE articles ADD COLUMN IF NOT EXISTS template VARCHAR(40) NOT NULL DEFAULT 'standard';
 ALTER TABLE articles ADD COLUMN IF NOT EXISTS hero_image VARCHAR(500) NOT NULL DEFAULT '';
 ALTER TABLE articles ADD COLUMN IF NOT EXISTS author_id INT REFERENCES authors(id) ON DELETE SET NULL;
+ALTER TABLE articles ADD COLUMN IF NOT EXISTS citations JSONB NOT NULL DEFAULT '[]'::jsonb;
 
 CREATE INDEX IF NOT EXISTS idx_articles_pillar ON articles(pillar_id);
 CREATE INDEX IF NOT EXISTS idx_articles_status ON articles(status, published_at DESC);

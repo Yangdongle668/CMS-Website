@@ -73,6 +73,7 @@
     <div id="setup-hint" style="display:none;" class="so-setup-hint">
       还没配置 API 凭证 — 去 <a href="/admin/settings.html">设置 → 站长工具</a> 粘贴 Service Account JSON / Bing API Key 后回来。
     </div>
+    <div id="freshness-pane" class="so-section"></div>
     <div id="gsc-pane"  class="so-section"></div>
     <div id="ga4-pane"  class="so-section"></div>
     <div id="bing-pane" class="so-section"></div>
@@ -108,6 +109,60 @@
     return `<div class="so-error">${escapeHtml(p.error)}</div>`;
   }
   function emptyTable(msg) { return `<div class="so-empty">${escapeHtml(msg)}</div>`; }
+
+  // Content freshness. Unlike the three panels below it, this needs no
+  // external credentials — it reads our own articles table — so it is
+  // the one panel that always has something to say, and it goes first
+  // because a blog that stopped publishing outranks every other number
+  // on this page in importance.
+  function renderFreshness(p) {
+    const root = document.getElementById('freshness-pane');
+    if (!p || p.error) {
+      root.innerHTML = `
+        <div class="so-section__hdr"><h2>内容新鲜度</h2></div>
+        <div class="so-card so-error">${escapeHtml((p && p.error) || '加载失败')}</div>`;
+      return;
+    }
+    const tag = p.status === 'stale' ? '<span class="so-tag so-tag--err">已断更</span>'
+      : p.status === 'warning' ? '<span class="so-tag so-tag--off">接近断更</span>'
+      : p.status === 'empty' ? '<span class="so-tag so-tag--off">暂无文章</span>'
+      : '<span class="so-tag so-tag--ok">正常</span>';
+
+    const days = p.days_since_last_publish;
+    const last = p.last_published_at ? String(p.last_published_at).slice(0, 10) : '—';
+    const rows = (p.oldest_unrevised || []).map((a) => `
+      <tr>
+        <td><a href="/blog/${escapeHtml(a.slug)}" target="_blank" rel="noopener">${escapeHtml(a.title)}</a></td>
+        <td class="num">${a.days_since_touched}</td>
+      </tr>`).join('');
+
+    root.innerHTML = `
+      <div class="so-section__hdr"><h2>内容新鲜度</h2>${tag}</div>
+      <div class="so-row">
+        <div class="so-card">
+          <h3>距上次发布</h3>
+          <div style="font-size:26px; font-weight:600; font-variant-numeric:tabular-nums;">
+            ${days == null ? '—' : days + ' 天'}
+          </div>
+          <div style="color:var(--a-mute2); font-size:12px; margin-top:4px;">最近一篇：${escapeHtml(last)}</div>
+          <div style="color:var(--a-mute2); font-size:12px; margin-top:2px;">
+            阈值：${p.thresholds.warn_days} 天提醒 / ${p.thresholds.stale_days} 天判定断更
+          </div>
+        </div>
+        <div class="so-card">
+          <h3>发布节奏</h3>
+          <table>
+            <tr><th>近 30 天</th><td class="num">${p.published_last_30d}</td></tr>
+            <tr><th>近 90 天</th><td class="num">${p.published_last_90d}</td></tr>
+            <tr><th>已发布总数</th><td class="num">${p.published_count}</td></tr>
+          </table>
+        </div>
+        <div class="so-card">
+          <h3>最久未更新（优先翻新）</h3>
+          ${rows ? `<table><tr><th>文章</th><th style="text-align:right;">天</th></tr>${rows}</table>` : emptyTable('暂无数据')}
+        </div>
+      </div>`;
+  }
 
   function renderGsc(p) {
     const root = document.getElementById('gsc-pane');
@@ -260,6 +315,14 @@
     </table>`;
   }
 
+  // Freshness is a separate request on purpose: it reads our own DB and
+  // always succeeds, so it must not be taken down by a GSC/GA4 timeout
+  // in the aggregated call below.
+  async function loadFreshness() {
+    try { renderFreshness(await api('/api/content-freshness')); }
+    catch (err) { renderFreshness({ error: err.message || '加载失败' }); }
+  }
+
   async function loadData(forceRefresh) {
     const url = '/api/seo-overview?days=' + currentDays + (forceRefresh ? '&t=' + Date.now() : '');
     document.getElementById('gsc-pane').innerHTML  = '<div class="so-card so-empty">加载中…</div>';
@@ -277,6 +340,7 @@
     }
   }
 
+  loadFreshness();
   loadData();
 })();
 </script>

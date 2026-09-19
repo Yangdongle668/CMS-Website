@@ -1821,6 +1821,48 @@ footer {
   color: var(--text-muted);
 }
 
+/* Outbound citations rendered after the article body. Sits on the same
+   720px measure as .article-body so the rule lines up with the text
+   above it rather than with the wider page gutter. */
+.article-references {
+  max-width: 720px;
+  margin: 48px auto 0;
+  padding-top: 26px;
+  border-top: 1px solid var(--border, #e5e5e5);
+  text-align: left;
+}
+
+.article-references h2 {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0 0 14px;
+}
+
+.article-references__list {
+  padding-left: 20px;
+  margin: 0;
+}
+
+.article-references__list li {
+  font-size: 15px;
+  line-height: 1.6;
+  margin-bottom: 9px;
+  color: var(--text-muted);
+}
+
+.article-references__list a {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.article-references__list a:hover { color: var(--accent); }
+
+.article-references .ref-publisher { color: var(--text-muted); }
+
 .article-body table {
   width: 100%;
   border-collapse: collapse;

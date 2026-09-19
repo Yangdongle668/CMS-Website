@@ -143,6 +143,35 @@
     }
   }
 
+  // Citations are stored as [{label, url, publisher}] but edited as one
+  // line per reference, because a JSON textarea in an admin form is a
+  // syntax-error trap for the editorial staff who actually maintain
+  // this — a missing comma should not be able to wipe the field.
+  function citationsToText(list) {
+    if (!Array.isArray(list)) return '';
+    return list
+      .map((c) => [c && c.label, c && c.url, c && c.publisher].filter(Boolean).join(' | '))
+      .join('\n');
+  }
+
+  function citationsFromText(text) {
+    return String(text || '')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const parts = line.split('|').map((p) => p.trim());
+        // Accept the url in either the first or second column, so a
+        // pasted bare URL on its own line still works.
+        const urlIdx = parts.findIndex((p) => /^https?:\/\//i.test(p));
+        if (urlIdx === -1) return null;
+        const url = parts[urlIdx];
+        const rest = parts.filter((_, i) => i !== urlIdx);
+        return { label: rest[0] || url, url, publisher: rest[1] || '' };
+      })
+      .filter(Boolean);
+  }
+
   function renderEditor(a) {
     a = a || { reading_minutes: 5, status: 'draft' };
     const isNew = !a.id;
@@ -213,6 +242,13 @@
           <div class="field"><label>状态</label><select id="f-status"><option value="draft" ${a.status === 'draft' ? 'selected' : ''}>草稿</option><option value="published" ${a.status === 'published' ? 'selected' : ''}>已发布</option></select></div>
         </div>
         <div class="field"><label>Meta 描述</label><textarea id="f-md" rows="2">${escapeHtml(a.meta_description || '')}</textarea></div>
+
+        <div class="field">
+          <label>参考来源 / 外部引用
+            <span class="hint">（每行一条：标题 | 网址 | 出版方。文章底部会渲染 References 区块，并写入 Article JSON-LD 的 citation）</span>
+          </label>
+          <textarea id="f-citations" rows="4" placeholder="IEC 62133-2 — Safety requirements | https://webstore.iec.ch/ | International Electrotechnical Commission">${escapeHtml(citationsToText(a.citations))}</textarea>
+        </div>
 
         <div id="f-seo-mount"></div>
 
@@ -295,6 +331,7 @@
         hero_image: panel.querySelector('#f-hero').value,
         meta_title: panel.querySelector('#f-mt').value,
         meta_description: panel.querySelector('#f-md').value,
+        citations: citationsFromText(panel.querySelector('#f-citations').value),
         status: panel.querySelector('#f-status').value,
       }, seoVals);
       try {

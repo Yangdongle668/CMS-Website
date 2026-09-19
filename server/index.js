@@ -226,6 +226,7 @@ app.use('/api/authors', require('./routes/authors'));
 app.use('/api/media/overrides', require('./routes/media-overrides'));
 app.use('/api/seo-check', require('./routes/seo-check'));
 app.use('/api/seo-overview', require('./routes/seo-overview'));
+app.use('/api/content-freshness', require('./routes/content-freshness'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/ai-generate', require('./routes/ai-generate'));
 app.use('/api/mail-queue', require('./routes/mail-queue'));
@@ -647,6 +648,12 @@ async function autoMigrate() {
     `ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS replied_at TIMESTAMPTZ`,
     `CREATE INDEX IF NOT EXISTS idx_inquiries_widget ON inquiries(source_widget, created_at DESC) WHERE is_deleted = FALSE`,
     // ----- Acme → Zufek cleanup (legacy seed data) -----
+    // Text columns only. The JSONB content columns (pillar overview /
+    // manufacturing / faq, product specs, page_blocks.data) are handled
+    // by migrate-2026-q3-brand-purge.sql, which discovers its columns
+    // from information_schema rather than from a hand-kept list like
+    // this one — a list that silently missed every JSONB column and
+    // left "Acme manufactures Li-Po cells" on a live product page.
     `UPDATE articles SET author = 'Zufek Engineering' WHERE author ILIKE '%acme%' OR author = '' OR author IS NULL`,
     `UPDATE articles SET content = REPLACE(content, 'Acme Engineering', 'Zufek Engineering') WHERE content LIKE '%Acme%'`,
     `UPDATE articles SET content = REPLACE(content, 'Acme', 'Zufek') WHERE content LIKE '%Acme%'`,
@@ -680,6 +687,8 @@ async function autoMigrate() {
   const sqlMigrations = [
     'migrate-2026-q2-seo.sql',          // adds RankMath-style SEO columns + cleans Acme strings
     'migrate-2026-q2-seo-content.sql',  // pre-fills focus_keyword + meta on every entity
+    'migrate-2026-q3-brand-purge.sql',  // finishes the Acme→Zufek rename inside JSONB columns
+    'migrate-2026-q3-article-citations.sql', // backfills outbound references on standards articles
   ];
   for (const fname of sqlMigrations) {
     const fpath = path.join(__dirname, 'db', fname);

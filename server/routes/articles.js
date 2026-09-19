@@ -2,16 +2,41 @@ const express = require('express');
 const { many, one, query } = require('../db/client');
 const { requireAuth } = require('../middleware/auth');
 const { recordAudit } = require('../middleware/audit');
-const { isSlug, trimStr, clamp } = require('../utils/validate');
+const { isSlug, trimStr, clamp, asJson } = require('../utils/validate');
 const { SEO_FIELDS, extractSeoValues, seoValuesPlaceholders, seoSetClause } = require('../utils/seo-fields');
+const { findRelated } = require('../utils/related-articles');
 const cache = require('../services/cache');
 
 const router = express.Router();
 const CACHE_TTL = parseInt(process.env.CACHE_TTL_ARTICLE || '300', 10);
+
+// Sanitise the operator-supplied citation list into the stored shape:
+// [{label, url, publisher}]. Anything that is not an absolute http(s)
+// URL is dropped — the renderer would refuse to link it anyway, and
+// storing a "javascript:" href invites someone to render it unguarded
+// later. Capped at 20 so one paste cannot turn an article into a link
+// farm.
+const MAX_CITATIONS = 20;
+function extractCitations(raw) {
+  const list = asJson(raw, []);
+  if (!Array.isArray(list)) return [];
+  return list
+    .map((c) => {
+      const url = trimStr(c && c.url, 500);
+      if (!/^https?:\/\//i.test(url)) return null;
+      return {
+        url,
+        label: trimStr((c && c.label) || url, 200),
+        publisher: trimStr(c && c.publisher, 120),
+      };
+    })
+    .filter(Boolean)
+    .slice(0, MAX_CITATIONS);
+}
 const FIELDS = `
   a.id, a.pillar_id, a.category_id, a.author_id, a.slug, a.title, a.excerpt, a.cover_url,
   a.content, a.author, a.meta_title, a.meta_description, a.reading_minutes,
-  a.template, a.hero_image,
+  a.template, a.hero_image, a.citations,
   a.published_at, a.status, a.created_at, a.updated_at,
   ${SEO_FIELDS.map((f) => 'a.' + f).join(', ')},
   c.name AS category_name, c.slug AS category_slug,
@@ -83,14 +108,10 @@ router.get('/:slug', async (req, res) => {
       [slug]
     );
     if (!row) return null;
-    const related = row.pillar_id
-      ? await many(
-          `SELECT id, slug, title, excerpt, cover_url, reading_minutes, published_at
-           FROM articles WHERE pillar_id = $1 AND id <> $2 AND status='published'
-           ORDER BY published_at DESC LIMIT 3`,
-          [row.pillar_id, row.id]
-        )
-      : [];
+    // Tiered: pillar → category → author → recent. Never gated on
+    // pillar_id, so a cross-pillar article still carries neighbours
+    // instead of rendering as a link island. See utils/related-articles.
+    const related = await findRelated(many, row, 4);
     return { article: row, related };
   });
   if (!payload) return res.status(404).json({ error: 'not_found' });
@@ -133,8 +154,9 @@ router.post('/', requireAuth, async (req, res) => {
        focus_keyword, secondary_keywords, canonical_override, robots,
        og_title, og_description, og_image_url,
        twitter_title, twitter_description, twitter_image_url,
-       schema_type, schema_extra, seo_score, seo_checks
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16, ${seoValuesPlaceholders(17)}) RETURNING id`,
+       schema_type, schema_extra, seo_score, seo_checks,
+       citations
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16, ${seoValuesPlaceholders(17)}, $${17 + seoVals.length}) RETURNING id`,
     [
       b.pillar_id || null,
       b.category_id || null,
@@ -153,6 +175,7 @@ router.post('/', requireAuth, async (req, res) => {
       status === 'published' ? new Date() : null,
       status,
       ...seoVals,
+      JSON.stringify(extractCitations(b.citations)),
     ]
   );
   await recordAudit({ req, action: 'create', entity: 'article', entityId: r.rows[0].id, detail: { slug } });
@@ -170,14 +193,17 @@ router.put('/:id', requireAuth, async (req, res) => {
   const tpl = ['standard','guide','case-study'].includes(b.template) ? b.template : 'standard';
   const seoVals = extractSeoValues(b);
   // SEO columns sit at $15..$28; status at $14 (referenced twice via $14);
-  // WHERE id parameter sits at $29.
+  // citations is appended after the SEO block rather than slotted in
+  // mid-list so the offsets above keep holding, and the WHERE id
+  // parameter follows it.
   await query(
     `UPDATE articles SET pillar_id=$1, category_id=$2, author_id=$3, title=$4, excerpt=$5, cover_url=$6,
        content=$7, author=$8, meta_title=$9, meta_description=$10, reading_minutes=$11,
        template=$12, hero_image=$13,
        status=$14, published_at=COALESCE(published_at, CASE WHEN $14='published' THEN now() END),
        ${seoSetClause(15)},
-       updated_at=now() WHERE id = $${15 + seoVals.length}`,
+       citations=$${15 + seoVals.length},
+       updated_at=now() WHERE id = $${16 + seoVals.length}`,
     [
       b.pillar_id || null,
       b.category_id || null,
@@ -194,6 +220,7 @@ router.put('/:id', requireAuth, async (req, res) => {
       trimStr(b.hero_image, 500),
       status,
       ...seoVals,
+      JSON.stringify(extractCitations(b.citations)),
       id,
     ]
   );

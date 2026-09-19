@@ -18,6 +18,7 @@ const path = require('path');
 const { one, many } = require('../db/client');
 const { replaceTokens, buildContext, applyPageOverrides, wantsEditPreview, injectEditorBridge } = require('./html-tokens');
 const imageRender = require('../services/image-render');
+const { findRelated } = require('../utils/related-articles');
 
 const PUBLIC_DIR = path.resolve(__dirname, '..', '..', 'public');
 
@@ -30,6 +31,49 @@ function escapeHtml(s) {
 function abs(u, base) {
   if (!u) return '';
   return /^https?:\/\//.test(u) ? u : base + u;
+}
+
+/* Outbound citations for an article.
+
+   Rendered server-side and appended to the article body so a crawler
+   that does not run JS still sees them — an external reference nobody
+   can crawl is not a reference.
+
+   Only absolute http(s) URLs are emitted. citations is operator-edited
+   JSON, so a "javascript:" or "data:" href would otherwise reach the
+   page intact; anything that is not http(s) is dropped rather than
+   escaped, because there is no safe way to render it as a link.
+
+   These deliberately carry no rel="nofollow". They point at primary
+   sources — IEC, the UN model regulations, EUR-Lex — and a citation
+   you refuse to vouch for is not doing the job a citation is for. */
+function renderCitations(citations) {
+  const list = Array.isArray(citations) ? citations : [];
+  const safe = list
+    .map((c) => {
+      const url = String((c && c.url) || '').trim();
+      if (!/^https?:\/\//i.test(url)) return null;
+      return {
+        url,
+        label: String((c && c.label) || url).trim(),
+        publisher: String((c && c.publisher) || '').trim(),
+      };
+    })
+    .filter(Boolean);
+  if (!safe.length) return { html: '', items: safe };
+
+  const items = safe.map((c) => {
+    const pub = c.publisher ? ` <span class="ref-publisher">— ${escapeHtml(c.publisher)}</span>` : '';
+    return `<li><a href="${escapeHtml(c.url)}" target="_blank" rel="noopener">${escapeHtml(c.label)}</a>${pub}</li>`;
+  }).join('');
+
+  return {
+    html: `<section class="article-references" aria-labelledby="article-references-heading">
+      <h2 id="article-references-heading">References</h2>
+      <ol class="article-references__list">${items}</ol>
+    </section>`,
+    items: safe,
+  };
 }
 
 /* Image-position fragment: a URL like "/uploads/foo.jpg#pos=top-left&fit=cover"
@@ -616,6 +660,10 @@ async function renderArticle(req, res, slug) {
   const ogImage = abs(urlOnly(article.hero_image || article.cover_url) || ctx.defaultOgImage, ctx.canonicalBase);
   const canonicalUrl = ctx.canonicalBase + req.path;
 
+  // Computed here rather than next to the body markup because the
+  // Article JSON-LD below needs the same validated list.
+  const citations = renderCitations(article.citations);
+
   // Build a fully-described Person node when an authors row is linked.
   // Falls back to a Person typed by the legacy free-text author field.
   const authorNode = article.author_slug ? {
@@ -651,6 +699,14 @@ async function renderArticle(req, res, slug) {
       dateModified: article.updated_at ? new Date(article.updated_at).toISOString() : undefined,
       mainEntityOfPage: canonicalUrl,
       articleSection: article.category_name || undefined,
+      citation: citations.items.length
+        ? citations.items.map((c) => ({
+            '@type': 'CreativeWork',
+            name: c.label,
+            url: c.url,
+            publisher: c.publisher ? { '@type': 'Organization', name: c.publisher } : undefined,
+          }))
+        : undefined,
       url: canonicalUrl,
     },
     {
@@ -715,6 +771,10 @@ async function renderArticle(req, res, slug) {
     layoutHtml = `<article class="article-body">${article.content || ''}</article>`;
   }
 
+  // References go after the body for every template, so the markup is
+  // the same whichever layout the article uses.
+  if (citations.html) layoutHtml += citations.html;
+
   // Author block (avatar initial + name + role).
   const authorName = article.author_name || article.author || `${ctx.siteName} Engineering`;
   const authorRole = article.author_job_title
@@ -726,21 +786,17 @@ async function renderArticle(req, res, slug) {
     ? `<a href="/products/${escapeHtml(article.pillar_slug)}">${escapeHtml(article.pillar_name || article.pillar_short_name || 'Pillar')} &rarr;</a>`
     : '';
 
-  // Related articles in the same cluster (up to 4).
+  // Related articles: pillar → category → author → recent, so an article
+  // with no pillar still links out. Crucially this runs server-side —
+  // the client-side builder in _template.html produces the same list,
+  // but a crawler that does not execute the page's JS would see none of
+  // it, and these links exist to be crawled.
   let relatedRows = [];
-  if (article.pillar_id) {
-    try { relatedRows = await many(
-      `SELECT slug, title, reading_minutes, category_id
-         FROM articles
-        WHERE pillar_id = $1 AND id <> $2 AND status='published'
-        ORDER BY published_at DESC NULLS LAST LIMIT 4`,
-      [article.pillar_id, article.id]
-    ); } catch (_) {}
-  }
+  try { relatedRows = await findRelated(many, article, 4); } catch (_) {}
   const relatedHtml = relatedRows.length
     ? relatedRows.map((r) => `<a href="/blog/${escapeHtml(r.slug)}">
         <strong>${escapeHtml(r.title)}</strong>
-        <span class="meta">${escapeHtml(article.category_name || article.pillar_short_name || 'Article')} &middot; ${r.reading_minutes || 5} min read</span>
+        <span class="meta">${escapeHtml(r.category_name || r.pillar_short_name || 'Article')} &middot; ${r.reading_minutes || 5} min read</span>
       </a>`).join('')
     : '';
 
