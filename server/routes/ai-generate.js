@@ -23,6 +23,8 @@ const { trimStr, isSlug, clamp } = require('../utils/validate');
 const { query } = require('../db/client');
 const aiGen = require('../services/ai-generator');
 const aiPrompts = require('../services/ai-prompts');
+const aiPlaybooks = require('../services/ai-playbooks');
+const aiComposer = require('../services/ai-composer');
 
 const router = express.Router();
 
@@ -75,6 +77,86 @@ function pickProviderModel(req) {
   const model = trimStr(req.body && req.body.model, 80) || undefined;
   return { provider, model };
 }
+
+// ---------------------------------------------------------------------
+// GET /api/ai-generate/playbooks
+//   The hundred corpus-aware briefs. Unlike /prompts these take no
+//   variables — everything they need is read from the database — so the
+//   admin UI renders them as a pick-list, not a form.
+// ---------------------------------------------------------------------
+router.get('/playbooks', (_req, res) => {
+  res.json({
+    total: aiPlaybooks.count(),
+    items: aiPlaybooks.all().map((pb) => ({
+      key: pb.k, title: pb.t, pillar: pb.p, category: pb.c, shape: pb.s, angle: pb.a,
+    })),
+  });
+});
+
+// ---------------------------------------------------------------------
+// GET /api/ai-generate/suggest?limit=&pillar=
+//   Ranks the playbooks by how little they overlap what is already
+//   published, so "what should we write next" is answered from the
+//   catalogue rather than from a hunch.
+// ---------------------------------------------------------------------
+router.get('/suggest', async (req, res) => {
+  const limit = clamp(req.query.limit, 1, 100, 20);
+  const pillar = trimStr(req.query.pillar, 20) || null;
+  try {
+    res.json(await aiComposer.suggest({ limit, pillar }));
+  } catch (err) {
+    res.status(500).json({ error: 'suggest_failed', detail: err.message });
+  }
+});
+
+// ---------------------------------------------------------------------
+// GET /api/ai-generate/preview-prompt?key=
+//   Returns the prompt that WOULD be sent, fully resolved against the
+//   live corpus. An operator should be able to read what the model is
+//   asked before paying for a generation, and it is the fastest way to
+//   see that the link list and the avoid list are real.
+// ---------------------------------------------------------------------
+router.get('/preview-prompt', async (req, res) => {
+  const key = trimStr(req.query.key, 60);
+  try {
+    const { user, meta } = await aiComposer.compose(key);
+    res.json({ ok: true, key, prompt: user, context: {
+      pillar_id: meta.pillar_id, pillar_slug: meta.pillar_slug,
+      category_id: meta.category_id, author_id: meta.author_id,
+      shape: meta.shape, corpus_size: meta.corpus_size,
+      link_pool: meta.link_pool.articles.map((a) => a.url),
+    } });
+  } catch (err) {
+    res.status(400).json({ error: 'compose_failed', detail: err.message });
+  }
+});
+
+// ---------------------------------------------------------------------
+// POST /api/ai-generate/playbook
+//   body: { key, provider?, model?, allowDuplicate? }
+//   Generates from a playbook: prompt built from the database, invented
+//   internal links stripped, result checked against every published
+//   article. Returns 409 when the draft duplicates existing content.
+// ---------------------------------------------------------------------
+router.post('/playbook', async (req, res) => {
+  const key = trimStr(req.body && req.body.key, 60);
+  if (!aiPlaybooks.get(key)) return res.status(400).json({ error: 'invalid_playbook' });
+  const { provider, model } = pickProviderModel(req);
+  const allowDuplicate = Boolean(req.body && req.body.allowDuplicate);
+  try {
+    const out = await aiGen.generateFromPlaybook({ playbookKey: key, provider, model, allowDuplicate });
+    await recordAudit({
+      req, action: 'ai_generate_playbook', entity: 'article',
+      detail: {
+        playbook: key, provider: out.provider, model: out.model,
+        duplicate: out.duplicate.verdict, dropped_links: out.links.dropped.length,
+      },
+    });
+    res.json({ ok: true, ...out });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.code || 'ai_failed', detail: err.message });
+  }
+});
 
 // ---------------------------------------------------------------------
 // POST /api/ai-generate/generate

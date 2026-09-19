@@ -509,6 +509,107 @@ async function detectAi({ text }) {
   return heuristic;
 }
 
+// ---------------------------------------------------------------------
+// Playbook generation — the corpus-aware path
+// ---------------------------------------------------------------------
+// generateArticle() above renders one of the five hand-filled templates.
+// This renders one of the hundred playbooks instead, and differs in
+// three ways that matter:
+//
+//   * the prompt is built from the live database, so nothing is typed
+//   * the model is handed real internal-link targets, and any link it
+//     invents anyway is unwrapped before the draft is returned
+//   * the result is compared against every published article, and a
+//     draft too close to one already on the site is refused
+//
+// The caller gets the metadata too — title, excerpt, meta pair, focus
+// keyword — parsed off the trailing META line, so a draft can be saved
+// without a second round trip.
+
+const META_LINE = /^META:\s*(\{[\s\S]*\})\s*$/m;
+
+function splitMeta(raw) {
+  const m = String(raw || '').match(META_LINE);
+  if (!m) return { body: raw, meta: null };
+  let meta = null;
+  try { meta = JSON.parse(m[1]); } catch (_) { meta = null; }
+  return { body: String(raw).replace(m[0], '').trim(), meta };
+}
+
+/**
+ * Generate from a playbook key.
+ * @returns {Promise<object>} { html, meta, duplicate, styleWarnings,
+ *   links, model, provider, usage }
+ *   `duplicate.verdict` is 'ok' | 'review' | 'duplicate'. A 'duplicate'
+ *   result still returns the html so an operator can see what was
+ *   refused and why, but callers must not save it unattended.
+ */
+async function generateFromPlaybook({ playbookKey, provider, model, allowDuplicate = false }) {
+  const composer = require('./ai-composer');
+  const dedup = require('./ai-dedup');
+  const { many } = require('../db/client');
+
+  const { user, meta: ctx } = await composer.compose(playbookKey);
+
+  const result = await callLLM({
+    provider, model,
+    system: SYSTEM_PROMPT,
+    user,
+    maxTokens: 6000,
+    // Higher than the template path: a hundred articles from one voice
+    // need the variation, and the brief constrains the substance tightly
+    // enough that the looseness lands on phrasing rather than on facts.
+    temperature: 0.9,
+  });
+
+  const split = splitMeta(result.text);
+  let html = cleanHtmlOutput(split.body);
+
+  // Unwrap any internal link the model invented despite the list.
+  const linkCheck = dedup.sanitiseLinks(html, ctx.valid);
+  html = linkCheck.html;
+
+  // Compare against every published body. Loaded here rather than in the
+  // corpus snapshot because full article text is large and only this
+  // path needs it.
+  let existing = [];
+  try {
+    existing = await many(
+      `SELECT slug, title, content FROM articles WHERE status='published'`
+    );
+  } catch (_) { /* no corpus to compare against */ }
+  const duplicate = dedup.checkAgainstCorpus(html, existing);
+
+  if (duplicate.verdict === 'duplicate' && !allowDuplicate) {
+    throw new AiError(
+      'duplicate_content',
+      `生成内容与已发布文章「${duplicate.nearest ? duplicate.nearest.title : '未知'}」重复度过高 `
+      + `(${(duplicate.score * 100).toFixed(1)}%)。请换一个选题，或确认后强制保存。`,
+      409
+    );
+  }
+
+  return {
+    html,
+    meta: split.meta,
+    context: {
+      playbook: ctx.playbook,
+      pillar_id: ctx.pillar_id,
+      category_id: ctx.category_id,
+      author_id: ctx.author_id,
+      author_name: ctx.author_name,
+      shape: ctx.shape,
+      corpus_size: ctx.corpus_size,
+    },
+    duplicate,
+    styleWarnings: dedup.styleWarnings(html),
+    links: { kept: linkCheck.kept, dropped: linkCheck.dropped },
+    model: result.model,
+    provider: result.provider,
+    usage: result.usage,
+  };
+}
+
 module.exports = {
   AiError,
   PROVIDER_META,
@@ -516,8 +617,10 @@ module.exports = {
   listProviders,
   getEnv,
   generateArticle,
+  generateFromPlaybook,
   translateArticle,
   humanizeArticle,
   detectAi,
   htmlToText,
+  splitMeta,
 };
