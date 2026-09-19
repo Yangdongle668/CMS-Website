@@ -749,6 +749,7 @@ async function autoMigrate() {
     'migrate-2026-q3-brand-purge.sql',  // finishes the Acme→Zufek rename inside JSONB columns
     'migrate-2026-q3-article-citations.sql', // backfills outbound references on standards articles
     'migrate-2026-q3-canonical-links.sql',   // internal links point at clean URLs, not .html twins
+    'migrate-2026-q3-new-articles.sql',      // five posts closing the Jun-Sep publishing gap
   ];
   for (const fname of sqlMigrations) {
     const fpath = path.join(__dirname, 'db', fname);
