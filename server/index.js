@@ -226,6 +226,7 @@ app.use('/api/authors', require('./routes/authors'));
 app.use('/api/media/overrides', require('./routes/media-overrides'));
 app.use('/api/seo-check', require('./routes/seo-check'));
 app.use('/api/seo-overview', require('./routes/seo-overview'));
+app.use('/api/content-freshness', require('./routes/content-freshness'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/ai-generate', require('./routes/ai-generate'));
 app.use('/api/mail-queue', require('./routes/mail-queue'));
@@ -254,6 +255,16 @@ const { htmlTokenMiddleware, tryServeHtml } = require('./middleware/html-tokens'
 // Mounted BEFORE htmlTokenMiddleware so we replace the token-only
 // service for these specific URLs with our own DB-aware renderer.
 const ssrDetail = require('./middleware/ssr-detail');
+
+// Server-render the header nav and footer into every HTML response.
+// Registered ahead of the renderers because it works by wrapping
+// res.send, so the wrapper has to be in place before a route calls it.
+// Without this the nav and footer existed only in partials.js, and the
+// rendered HTML carried no link to /solutions/, /terms.html or
+// /legal.html for a crawler that had not yet run the page's JS.
+const { siteChromeMiddleware } = require('./middleware/site-chrome');
+app.use(siteChromeMiddleware);
+
 app.get(['/', '/index.html'], async (req, res, next) => {
   try { if (await ssrDetail.renderHomepage(req, res)) return; }
   catch (err) { console.error('[ssr] / failed:', err && err.message); }
@@ -370,11 +381,53 @@ app.use(
 //      initial HTML.
 //   3. Final fallback: ship _template.html with token replacement only
 //      (JS will hydrate body, but head is already populated by tokens).
+// Does a clean slug resolve to published content in this section?
+// Used to decide whether a ".html" spelling is worth a 301 or should
+// simply 404. Errors resolve false: a redirect we are not sure about is
+// worse than letting the request fall through.
+async function slugExists(dir, slug) {
+  try {
+    const { one: qOne } = require('./db/client');
+    if (dir === 'blog') {
+      return Boolean(await qOne(
+        `SELECT 1 FROM articles WHERE slug = $1 AND status = 'published'`, [slug]
+      ));
+    }
+    if (dir === 'products') {
+      return Boolean(await qOne(
+        `SELECT 1 FROM pillar_pages WHERE slug = $1 AND status = 'published'
+          UNION ALL
+         SELECT 1 FROM products     WHERE slug = $1 AND status = 'published'
+         LIMIT 1`, [slug]
+      ));
+    }
+  } catch (_) { /* fall through to false */ }
+  return false;
+}
+
 app.get(['/products/:slug', '/applications/:slug', '/blog/:slug'], async (req, res, next) => {
   const segments = req.path.split('/').filter(Boolean);
   const dir = segments[0];
   const slug = segments[1];
   if (!slug) return next();
+
+  // 0. Collapse the ".html" spelling of a clean URL.
+  //    /blog/cell-sizing.html used to answer 200 with the bare
+  //    _template.html — no article, the placeholder title "Engineering
+  //    Insight", and a canonical pointing at *itself*. Every article
+  //    therefore had a contentless twin that claimed to be canonical,
+  //    and seeded article bodies linked to the twins. That is index
+  //    bloat of exactly the kind that suppresses a site's indexed
+  //    count, so send the crawler to the real URL instead.
+  //    /applications/<slug>.html is excluded: there the .html spelling
+  //    IS canonical and is what the sitemap emits.
+  if ((dir === 'blog' || dir === 'products') && slug.endsWith('.html')) {
+    const bare = slug.slice(0, -'.html'.length);
+    if (bare && await slugExists(dir, bare)) {
+      const qs = req.originalUrl.slice(req.path.length);
+      return res.redirect(301, `/${dir}/${bare}${qs}`);
+    }
+  }
 
   // 1. SSR detail render based on the URL section. Order matters under
   //    /products/:slug — try the pillar first (the three pillar slugs are
@@ -393,12 +446,19 @@ app.get(['/products/:slug', '/applications/:slug', '/blog/:slug'], async (req, r
     // Fall through to token-only rendering rather than 500ing.
   }
 
-  // 2. Token-only fallback (per-slug .html or _template.html with placeholders).
+  // 2. Token-only fallback (per-slug .html, or the section template).
+  //    _template.html is deliberately NOT a candidate under /blog/ and
+  //    /products/: those sections are fully DB-driven, so reaching here
+  //    means the slug does not exist, and answering 200 with an empty
+  //    template is a soft 404. Falling through to the real 404 handler
+  //    keeps an unbounded supply of thin pages out of the index.
   const candidates = [
     path.join(ROOT, 'public', dir, `${slug}.html`),
     path.join(ROOT, 'public', dir, slug, 'index.html'),
-    path.join(ROOT, 'public', dir, '_template.html'),
   ];
+  if (dir !== 'blog' && dir !== 'products') {
+    candidates.push(path.join(ROOT, 'public', dir, '_template.html'));
+  }
   if (await tryServeHtml(req, res, candidates, { canonicalPath: req.path })) return;
   return next();
 });
@@ -647,6 +707,12 @@ async function autoMigrate() {
     `ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS replied_at TIMESTAMPTZ`,
     `CREATE INDEX IF NOT EXISTS idx_inquiries_widget ON inquiries(source_widget, created_at DESC) WHERE is_deleted = FALSE`,
     // ----- Acme → Zufek cleanup (legacy seed data) -----
+    // Text columns only. The JSONB content columns (pillar overview /
+    // manufacturing / faq, product specs, page_blocks.data) are handled
+    // by migrate-2026-q3-brand-purge.sql, which discovers its columns
+    // from information_schema rather than from a hand-kept list like
+    // this one — a list that silently missed every JSONB column and
+    // left "Acme manufactures Li-Po cells" on a live product page.
     `UPDATE articles SET author = 'Zufek Engineering' WHERE author ILIKE '%acme%' OR author = '' OR author IS NULL`,
     `UPDATE articles SET content = REPLACE(content, 'Acme Engineering', 'Zufek Engineering') WHERE content LIKE '%Acme%'`,
     `UPDATE articles SET content = REPLACE(content, 'Acme', 'Zufek') WHERE content LIKE '%Acme%'`,
@@ -680,6 +746,10 @@ async function autoMigrate() {
   const sqlMigrations = [
     'migrate-2026-q2-seo.sql',          // adds RankMath-style SEO columns + cleans Acme strings
     'migrate-2026-q2-seo-content.sql',  // pre-fills focus_keyword + meta on every entity
+    'migrate-2026-q3-brand-purge.sql',  // finishes the Acme→Zufek rename inside JSONB columns
+    'migrate-2026-q3-article-citations.sql', // backfills outbound references on standards articles
+    'migrate-2026-q3-canonical-links.sql',   // internal links point at clean URLs, not .html twins
+    'migrate-2026-q3-new-articles.sql',      // five posts closing the Jun-Sep publishing gap
   ];
   for (const fname of sqlMigrations) {
     const fpath = path.join(__dirname, 'db', fname);

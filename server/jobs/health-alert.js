@@ -12,6 +12,7 @@ const { one } = require('../db/client');
 const { enqueue } = require('../services/mail-outbox');
 const { buildHealthAlertMail } = require('../services/mail-templates');
 const emergency = require('../services/emergency-store');
+const contentFreshness = require('../services/content-freshness');
 
 const DEFAULT_INTERVAL_MS = 5 * 60 * 1000;
 const DEBOUNCE_MS = 30 * 60 * 1000;
@@ -52,6 +53,15 @@ async function checks() {
   try {
     const c = await emergency.count();
     if (c > 0) out.push(`${c} inquiry record(s) sitting in the emergency store waiting for DB replay`);
+  } catch (_) {}
+
+  // 4. Publishing has stopped. Not an outage — the site serves fine
+  //    with a stale blog — but it is the failure mode that cost this
+  //    site four months of unnoticed decay, and the 30-minute debounce
+  //    plus a 45-day threshold means it cannot become noise.
+  try {
+    const reason = await contentFreshness.alertReason();
+    if (reason) out.push(reason);
   } catch (_) {}
 
   return out;

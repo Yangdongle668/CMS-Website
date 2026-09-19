@@ -130,8 +130,11 @@
 
   // --- App state -----------------------------------------------------
   const state = {
-    mode: 'generate',     // 'generate' | 'translate'
+    mode: 'generate',     // 'generate' | 'playbooks' | 'translate'
     promptKey: null,
+    playbookKey: null,    // selected brief in the 100-topic library
+    playbookFilter: '',   // pillar filter for that library
+    lastRun: null,        // { duplicate, links, styleWarnings, context }
     vars: {},
     html: '',             // current article HTML
     detection: null,      // last detection result
@@ -142,14 +145,19 @@
   };
 
   // --- Boot ----------------------------------------------------------
-  const [statusRes, promptsRes, pillarsRes, catsRes, authorsRes] = await Promise.all([
+  const [statusRes, promptsRes, suggestRes, pillarsRes, catsRes, authorsRes] = await Promise.all([
     api('/api/ai-generate/status'),
     api('/api/ai-generate/prompts'),
+    // The 100-brief library, ranked by how little each overlaps what is
+    // already published, so the top of the list is the most useful thing
+    // to write next rather than an arbitrary order.
+    api('/api/ai-generate/suggest?limit=100').catch(() => ({ items: [] })),
     api('/api/pillars?status=all').catch(() => ({ items: [] })),
     api('/api/articles/categories/list').catch(() => ({ items: [] })),
     api('/api/authors?all=1').catch(() => ({ items: [] })),
   ]);
   const PROMPTS = promptsRes.items;
+  const PLAYBOOKS = suggestRes.items || [];
   const PILLARS = pillarsRes.items || [];
   const CATS = catsRes.items || [];
   const AUTHORS = authorsRes.items || [];
@@ -165,14 +173,30 @@
   `;
 
   function render() {
+    // The old copy told the operator to edit .env and restart the
+    // server. That has not been necessary since API keys moved into the
+    // settings table: the save path stores the key, re-hydrates the
+    // in-memory snapshot and the next request picks it up. Sending
+    // someone to a shell for something that is two clicks away in the
+    // UI is bad advice, and on a hosted deployment it may not even be
+    // possible.
     const banner = STATUS.configured ? '' : `
       <div class="config-banner">
         <strong>未配置任何 LLM Provider API Key</strong> —
-        请在服务器 .env 中设置以下任意一个并重启：
-        <code>ANTHROPIC_API_KEY</code> · <code>OPENAI_API_KEY</code> ·
-        <code>DEEPSEEK_API_KEY</code> · <code>MOONSHOT_API_KEY</code> ·
-        <code>ZHIPU_API_KEY</code> · <code>QWEN_API_KEY</code>。
-        当前查重提供方：<code>${escapeHtml(STATUS.detectProvider)}</code>。
+        到 <a href="/admin/settings.html?tab=ai"><strong>设置 → AI 接入</strong></a>
+        填入任意一家的 API Key，点底部「保存全部设置」即可生效，<strong>无需重启服务器</strong>。
+        支持 Anthropic Claude · OpenAI · DeepSeek · 月之暗面 Kimi · 智谱 GLM · 通义千问，
+        以及任何 OpenAI 兼容网关（vLLM / Ollama / OneAPI）。
+        <br>
+        当前查重提供方：<code>${escapeHtml(STATUS.detectProvider)}</code>
+        ${STATUS.detectProvider === 'heuristic'
+          ? '（内置启发式，无需 Key；如需接入 GPTZero / Sapling 也在同一页配置）'
+          : ''}。
+        <br>
+        <span style="font-size:12px; opacity:.8;">
+          服务器环境变量（<code>ANTHROPIC_API_KEY</code> 等）仍作为后备读取，
+          但界面里填写的值优先，且立即生效。
+        </span>
       </div>
     `;
     const providerSelector = `
@@ -208,6 +232,7 @@
     const tabs = `
       <div class="tabs">
         <button class="tabs__btn ${state.mode === 'generate' ? 'is-active' : ''}" data-mode="generate">使用 Prompt 生成</button>
+        <button class="tabs__btn ${state.mode === 'playbooks' ? 'is-active' : ''}" data-mode="playbooks">选题库 (${PLAYBOOKS.length})</button>
         <button class="tabs__btn ${state.mode === 'translate' ? 'is-active' : ''}" data-mode="translate">翻译已有文章</button>
       </div>
     `;
@@ -219,7 +244,9 @@
       ${tabs}
       <div class="ai-grid">
         <div class="panel">
-          ${state.mode === 'generate' ? renderGeneratePane() : renderTranslatePane()}
+          ${state.mode === 'generate' ? renderGeneratePane()
+            : state.mode === 'playbooks' ? renderPlaybookPane()
+            : renderTranslatePane()}
         </div>
         <div class="panel">
           ${renderOutputPane()}
@@ -228,6 +255,96 @@
     `;
 
     bind();
+  }
+
+  // --- Pane: Playbook library ----------------------------------------
+  // The 100 briefs. Unlike the Prompt templates these take no input:
+  // the server reads the pillar, the sibling articles to link and the
+  // list of what has already been written straight from the database.
+  // So this pane is a pick-list, not a form.
+  const PILLAR_LABEL = {
+    polymer: '聚合物 Li-Po', custom: '异形定制', coin: '钢壳扣式', cross: '跨集群 / 合规',
+  };
+
+  function renderPlaybookPane() {
+    const filtered = state.playbookFilter
+      ? PLAYBOOKS.filter((p) => p.pillar === state.playbookFilter)
+      : PLAYBOOKS;
+
+    const filters = ['', 'polymer', 'custom', 'coin', 'cross'].map((f) => `
+      <button class="btn btn--ghost ${state.playbookFilter === f ? 'is-active' : ''}"
+              data-pbfilter="${f}" style="font-size:12px; padding:4px 10px;">
+        ${f ? escapeHtml(PILLAR_LABEL[f]) : '全部'}
+      </button>`).join('');
+
+    const rows = filtered.map((p) => `
+      <div class="prompt-card ${state.playbookKey === p.key ? 'is-active' : ''}"
+           data-pbkey="${escapeHtml(p.key)}" style="padding:10px 12px;">
+        <h3 style="font-size:13.5px; margin:0 0 4px;">
+          ${escapeHtml(p.title)}
+          ${p.covered
+            ? `<span class="so-tag so-tag--err" style="font-size:10px; margin-left:6px;">已有近似</span>`
+            : ''}
+        </h3>
+        <p style="font-size:11.5px; margin:0; color:var(--a-mute2);">
+          ${escapeHtml(PILLAR_LABEL[p.pillar] || p.pillar)} · ${escapeHtml(p.shape)}
+          · 重合度 ${(p.overlap * 100).toFixed(0)}%
+          ${p.nearest ? `· 最接近：${escapeHtml(p.nearest.title)}` : ''}
+        </p>
+      </div>`).join('');
+
+    const sel = PLAYBOOKS.find((p) => p.key === state.playbookKey);
+    const detail = sel ? `
+      <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--a-line);">
+        <p style="font-size:12.5px; margin:0 0 10px;">
+          已选：<strong>${escapeHtml(sel.title)}</strong>
+        </p>
+        <p style="font-size:11.5px; color:var(--a-mute2); margin:0 0 12px;">
+          选题、内链目标、已写过的主题全部由服务器从数据库读取，无需填写任何参数。
+          ${sel.covered ? '<br><strong style="color:#991b1b;">注意：站内已有高度近似的文章，生成后可能被判重复。</strong>' : ''}
+        </p>
+        <button class="btn" id="pb-preview" style="margin-right:8px;">预览 Prompt</button>
+        <button class="btn btn--primary" id="pb-generate">生成文章</button>
+      </div>` : '<p style="color:var(--a-mute2); font-size:12.5px; margin-top:12px;">← 选择一个选题</p>';
+
+    return `
+      <h2 class="panel__title">选题库</h2>
+      <p style="font-size:12px; color:var(--a-mute2); margin:0 0 10px;">
+        按与现有文章的重合度排序，最上面的是最值得写的。
+      </p>
+      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">${filters}</div>
+      <div style="max-height:420px; overflow:auto; display:flex; flex-direction:column; gap:6px;">
+        ${rows || '<p style="color:var(--a-mute2); font-size:12.5px;">没有匹配的选题</p>'}
+      </div>
+      ${detail}
+    `;
+  }
+
+  // Post-generation report: what the duplicate gate decided, which
+  // invented links were removed, and any phrasing the lint flagged.
+  function renderRunReport() {
+    const r = state.lastRun;
+    if (!r) return '';
+    const dup = r.duplicate || {};
+    const tone = dup.verdict === 'duplicate' ? '#991b1b'
+      : dup.verdict === 'review' ? '#92400e' : '#166534';
+    const label = dup.verdict === 'duplicate' ? '判定为重复'
+      : dup.verdict === 'review' ? '建议人工复核' : '查重通过';
+    const dropped = (r.links && r.links.dropped) || [];
+    const warns = r.styleWarnings || [];
+    return `
+      <div style="margin:10px 0; padding:10px 12px; border:1px solid var(--a-line); border-radius:8px; font-size:12px;">
+        <div style="color:${tone}; font-weight:600;">
+          ${label}（与已发布文章最高重合 ${((dup.score || 0) * 100).toFixed(1)}%${
+            dup.nearest ? `，最接近：${escapeHtml(dup.nearest.title)}` : ''}）
+        </div>
+        ${dropped.length ? `<div style="margin-top:6px; color:var(--a-mute2);">
+          已移除 ${dropped.length} 个模型虚构的站内链接：${dropped.map(escapeHtml).join('、')}
+        </div>` : '<div style="margin-top:6px; color:var(--a-mute2);">站内链接全部有效</div>'}
+        ${warns.length ? `<div style="margin-top:6px; color:#92400e;">
+          文风提示：${warns.map(escapeHtml).join('；')}
+        </div>` : ''}
+      </div>`;
   }
 
   // --- Pane: Generate ------------------------------------------------
@@ -330,6 +447,7 @@
           <button class="btn btn--ghost btn--sm" id="btn-edit-html">编辑 HTML</button>
         </div>
       </div>
+      ${renderRunReport()}
       ${detBlock}
       <div class="ai-output" id="output-render">${state.html}</div>
       <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top: 14px;">
@@ -363,17 +481,38 @@
         state.html = '';
         state.detection = null;
         state.history = [];
+        // Clear the previous run's report and resolved ids, or a saved
+        // draft could inherit the cluster of an article from another tab.
+        state.lastRun = null;
+        state.saveMeta = null;
+        state.savePillarId = null;
+        state.saveCategoryId = null;
+        state.saveAuthorId = null;
         render();
       });
     });
 
     document.querySelectorAll('.prompt-card').forEach((c) => {
       c.addEventListener('click', () => {
+        if (c.dataset.pbkey) { state.playbookKey = c.dataset.pbkey; render(); return; }
         state.promptKey = c.dataset.key;
         state.vars = {};
         render();
       });
     });
+
+    document.querySelectorAll('[data-pbfilter]').forEach((b) => {
+      b.addEventListener('click', () => {
+        state.playbookFilter = b.dataset.pbfilter;
+        render();
+      });
+    });
+
+    const pbGen = document.getElementById('pb-generate');
+    if (pbGen) pbGen.addEventListener('click', generateFromPlaybook);
+
+    const pbPrev = document.getElementById('pb-preview');
+    if (pbPrev) pbPrev.addEventListener('click', previewPlaybookPrompt);
 
     document.querySelectorAll('[data-var]').forEach((el) => {
       el.addEventListener('input', () => {
@@ -432,6 +571,53 @@
       state.history = [];
       toast('文章已生成（' + out.provider + ' / ' + out.model + '）', 'success');
     } catch (err) { toast('生成失败：' + err.message, 'error'); }
+    setBusy(null);
+  }
+
+  async function previewPlaybookPrompt() {
+    if (!state.playbookKey) return;
+    try {
+      const out = await api('/api/ai-generate/preview-prompt?key='
+        + encodeURIComponent(state.playbookKey));
+      // A plain window is enough here: the operator wants to read what
+      // the model will be asked, not edit it.
+      const w = window.open('', '_blank');
+      if (!w) return toast('浏览器拦截了新窗口', 'error');
+      w.document.write('<pre style="white-space:pre-wrap; font:13px/1.55 ui-monospace,monospace; padding:24px; max-width:900px;">'
+        + escapeHtml(out.prompt) + '</pre>');
+      w.document.close();
+    } catch (err) { toast('预览失败：' + err.message, 'error'); }
+  }
+
+  async function generateFromPlaybook() {
+    if (!state.playbookKey) return toast('请先选择一个选题', 'error');
+    setBusy('generate');
+    try {
+      const out = await api('/api/ai-generate/playbook', {
+        method: 'POST',
+        body: JSON.stringify(Object.assign({ key: state.playbookKey }, providerPayload())),
+      });
+      state.html = out.html;
+      state.detection = null;
+      state.history = [];
+      state.lastRun = out;
+      // The server resolved the pillar, category and author from the
+      // corpus; carry them into the save form so the draft lands in the
+      // right cluster without the operator re-picking them.
+      const ctx = out.context || {};
+      if (ctx.pillar_id) state.savePillarId = ctx.pillar_id;
+      if (ctx.category_id) state.saveCategoryId = ctx.category_id;
+      if (ctx.author_id) state.saveAuthorId = ctx.author_id;
+      if (out.meta) state.saveMeta = out.meta;
+      const dup = out.duplicate || {};
+      toast(dup.verdict === 'review'
+        ? '已生成，但与现有文章有一定重合，请复核'
+        : '文章已生成（' + out.provider + ' / ' + out.model + '）',
+      dup.verdict === 'review' ? 'error' : 'success');
+    } catch (err) {
+      // 409 is the duplicate gate refusing to hand back a near-copy.
+      toast(/重复度过高/.test(err.message) ? err.message : '生成失败：' + err.message, 'error');
+    }
     setBusy(null);
   }
 
@@ -519,10 +705,17 @@
 
   async function saveDraft() {
     if (!state.html) return;
-    // Extract a title — first <h1> if present, else prompt the user.
-    let title = '';
-    const m = state.html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
-    if (m) title = m[1].replace(/<[^>]+>/g, '').trim();
+    // A playbook run returns its own metadata on a trailing META line —
+    // title, excerpt, meta pair and focus keyword — so there is nothing
+    // to scrape. The template path has no such line and the body has no
+    // <h1> either (the page renders the title), so fall back to the
+    // first heading and then to asking.
+    const pbMeta = state.saveMeta || {};
+    let title = pbMeta.title || '';
+    if (!title) {
+      const m = state.html.match(/<h[12][^>]*>([\s\S]*?)<\/h[12]>/i);
+      if (m) title = m[1].replace(/<[^>]+>/g, '').trim();
+    }
     title = prompt('文章标题（用于显示和 SEO）:', title) || title;
     if (!title) return toast('标题不能为空', 'error');
 
@@ -533,9 +726,10 @@
       return toast('slug 格式不合法（仅 a-z 0-9 -）', 'error');
     }
 
-    // Pull a meta description from the first <p>.
     const pm = state.html.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
-    const metaDesc = pm ? pm[1].replace(/<[^>]+>/g, '').trim().slice(0, 200) : '';
+    const firstPara = pm ? pm[1].replace(/<[^>]+>/g, '').trim().slice(0, 200) : '';
+    const excerpt = pbMeta.excerpt || firstPara;
+    const metaDesc = pbMeta.meta_description || firstPara;
 
     setBusy('save');
     try {
@@ -544,12 +738,20 @@
         body: JSON.stringify({
           slug,
           title,
-          excerpt: metaDesc,
+          excerpt,
           content: state.html,
-          meta_title: title,
+          meta_title: pbMeta.meta_title || title,
           meta_description: metaDesc,
-          focus_keyword: (state.vars && state.vars.focus_keyword) || '',
-          source: state.mode === 'translate' ? 'ai-translate' : 'ai-generate',
+          focus_keyword: pbMeta.focus_keyword || (state.vars && state.vars.focus_keyword) || '',
+          reading_minutes: pbMeta.reading_minutes || undefined,
+          // Resolved server-side from the corpus. Without these the
+          // draft saves unbound, and an article with no pillar is the
+          // link-island problem all over again.
+          pillar_id: state.savePillarId || undefined,
+          category_id: state.saveCategoryId || undefined,
+          author_id: state.saveAuthorId || undefined,
+          source: state.mode === 'translate' ? 'ai-translate'
+            : state.mode === 'playbooks' ? 'ai-playbook' : 'ai-generate',
         }),
       });
       toast('草稿已保存，跳转到编辑页…', 'success');

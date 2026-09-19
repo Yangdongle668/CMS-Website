@@ -600,8 +600,8 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <p>Spec the thickest cell you can physically fit, not the thinnest that meets runtime. Every 0.1 mm of additional thickness typically buys you 12&ndash;18% capacity, much better cycle life, and noticeably more mechanical tolerance. The moment you start chasing the absolute physical minimum, you are trading warranty returns for a spec-sheet win.</p>
 
         <nav class="article-nav">
-          <a href="/blog/wearable-chemistry.html" class="prev">&larr; Previous: Wearable Chemistry</a>
-          <a href="/blog/un-iec-compliance.html" class="next">Next: UN 38.3 &amp; IEC 62133 &rarr;</a>
+          <a href="/blog/wearable-chemistry" class="prev">&larr; Previous: Wearable Chemistry</a>
+          <a href="/blog/un-iec-compliance" class="next">Next: UN 38.3 &amp; IEC 62133 &rarr;</a>
         </nav>$art$, 'Zufek Engineering', 12, (SELECT id FROM categories WHERE slug='technology'), now() - interval '10 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('ar-vr-market-2026', $art$The AR/VR Battery Market in 2026$art$, $art$A sober look at AR/VR headset shipment forecasts and what they mean for pouch-cell supply.$art$, '/assets/img/seed/photo-1617802690992-15d93263d3a3.jpg', $art$<p class="lede">The AR/VR category enters 2026 with three distinct sub-segments forming, each with its own battery-sourcing reality. For pouch-cell suppliers, these segments are not equally attractive &mdash; and the wrong bet could leave a factory stranded on cell sizes that nobody orders in 2027.</p>
@@ -641,8 +641,8 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         </ol>
 
         <nav class="article-nav">
-          <a href="/blog/industry.html" class="prev">&larr; Back to Industry Articles</a>
-          <a href="/blog/solid-state-reality.html" class="next">Next: Solid-State Reality &rarr;</a>
+          <a href="/blog/?category=industry-insights" class="prev">&larr; Back to Industry Articles</a>
+          <a href="/blog/solid-state-reality" class="next">Next: Solid-State Reality &rarr;</a>
         </nav>$art$, 'Zufek Engineering', 5, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '13 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('bms-pcm-smart', $art$Protection PCM vs Smart Battery: When to Use Which$art$, $art$Cost, complexity and firmware implications of the two main BMS topologies in consumer electronics.$art$, '/assets/img/seed/photo-1518770660439-4636190af475.jpg', $art$<p class="lede">Every lithium cell needs protection. The question is only how much of it lives on the cell itself versus on the host system. A protection PCM (PCM = protection circuit module) handles the basics for pennies. A smart battery pack negotiates with the host at the cost of dollars. Between those two there is no middle ground worth defending.</p>
@@ -698,8 +698,8 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <p>Any design with wireless charging de-facto needs dynamic thermal throttling, which a standalone PCM can&rsquo;t do. USB-PD adds a second negotiation loop (host &harr; charger &harr; battery). For both cases, a smart battery or at minimum a fuel-gauge IC with thermal reporting becomes mandatory.</p>
 
         <nav class="article-nav">
-          <a href="/blog/cell-sizing.html" class="prev">&larr; Previous: Cell Sizing</a>
-          <a href="/blog/wearable-thermal.html" class="next">Next: Skin-Contact Thermal &rarr;</a>
+          <a href="/blog/cell-sizing" class="prev">&larr; Previous: Cell Sizing</a>
+          <a href="/blog/wearable-thermal" class="next">Next: Skin-Contact Thermal &rarr;</a>
         </nav>$art$, 'Zufek Engineering', 7, (SELECT id FROM categories WHERE slug='technology'), now() - interval '16 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('cell-sizing', $art$Sizing a Cell From a Power Profile$art$, $art$How to turn a current-vs-time trace into a real-world capacity specification — with a worked IoT example.$art$, '/assets/img/seed/photo-1581092921461-eab62e97a780.jpg', $art$<p class="lede">Most &ldquo;battery dies too fast&rdquo; complaints trace back to the same mistake: picking a cell capacity that matches nameplate runtime, not real-world runtime. The right method is uncomfortable because it forces you to give up capacity on paper to gain it in the field.</p>
@@ -751,8 +751,8 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         </ol>
 
         <nav class="article-nav">
-          <a href="/blog/un-iec-compliance.html" class="prev">&larr; Previous: UN 38.3 &amp; IEC 62133</a>
-          <a href="/blog/bms-pcm-smart.html" class="next">Next: PCM vs Smart Battery &rarr;</a>
+          <a href="/blog/un-iec-compliance" class="prev">&larr; Previous: UN 38.3 &amp; IEC 62133</a>
+          <a href="/blog/bms-pcm-smart" class="next">Next: PCM vs Smart Battery &rarr;</a>
         </nav>$art$, 'Zufek Engineering', 9, (SELECT id FROM categories WHERE slug='technology'), now() - interval '19 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('china-medical-battery', $art$China's Medical Device Battery Landscape$art$, $art$How NMPA-driven localisation is reshaping the supplier base for wearable medical devices in China and globally.$art$, '/assets/img/seed/photo-1530026405186-ed1f139313f8.jpg', $art$<p class="lede">Medical-device batteries sit in a category of their own: small volumes, long qualification cycles, and regulatory exposure that scales with end-device approval rather than with the battery itself. In China, the last three years have brought real consolidation on the supply side, along with policy pressure to localise. The net effect is a supplier base that&rsquo;s more capable but more concentrated than it was.</p>
@@ -807,8 +807,8 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <p>Our read is that by 2028 the Chinese medical-cell supplier base will have consolidated to five or six serious players with dedicated lines, plus a long tail of opportunistic suppliers that will drift out of the category as qualification demands rise. Global OEMs should build relationships with at least two of the serious players now, because by the time the consolidation completes, capacity will be spoken for.</p>
 
         <nav class="article-nav">
-          <a href="/blog/hv-lco-density.html" class="prev">&larr; Previous: HV LCO at 4.48 V</a>
-          <a href="/blog/industry.html" class="next">Back to Industry Articles &rarr;</a>
+          <a href="/blog/hv-lco-density" class="prev">&larr; Previous: HV LCO at 4.48 V</a>
+          <a href="/blog/?category=industry-insights" class="next">Back to Industry Articles &rarr;</a>
         </nav>$art$, 'Zufek Engineering', 4, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '22 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('cobalt-nickel-lfp', $art$Supply Chain Notes: Cobalt, Nickel, LFP Outlook$art$, $art$Raw-material pricing, geographic concentration risks, and what procurement teams should lock in for 2026–2027.$art$, '/assets/img/seed/photo-1578662996442-48f60103fc96.jpg', $art$<p class="lede">Three raw materials dictate lithium-cell pricing: cobalt, nickel, and the lithium compounds themselves. For small-format cells, cobalt is still the structural factor; for bigger-format packs, nickel-heavy NMC chemistries and LFP are competing on total cost of ownership. Here&rsquo;s how we read the next 12&ndash;24 months.</p>
@@ -841,8 +841,8 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <p>A disruption in Indonesian nickel supply (weather, policy, or export-control shift) remains our most-watched downside risk. It wouldn&rsquo;t change cobalt-dominated small-cell pricing immediately, but a Class 1 nickel squeeze in 2026 would cascade into NMC cathode prices within six months and affect any product using &gt; 1 Ah cells. It&rsquo;s worth having a contingency in the buy plan, even if it stays dormant.</p>
 
         <nav class="article-nav">
-          <a href="/blog/solid-state-reality.html" class="prev">&larr; Previous: Solid-State Reality</a>
-          <a href="/blog/eu-battery-passport.html" class="next">Next: EU Battery Passport &rarr;</a>
+          <a href="/blog/solid-state-reality" class="prev">&larr; Previous: Solid-State Reality</a>
+          <a href="/blog/eu-battery-passport" class="next">Next: EU Battery Passport &rarr;</a>
         </nav>$art$, 'Zufek Engineering', 4, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '25 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('cycle-life-curves', $art$Reading a Cycle-Life Curve Honestly$art$, $art$Why$art$, '/assets/img/seed/photo-1451187580459-43490279c0fa.jpg', $art$<p class="lede">When you look at a cell datasheet and see a single cycle-life number, someone has already made four decisions on your behalf &mdash; decisions that determine whether you&rsquo;ll see that number in the field or half of it. Before you trust a cycle-life claim, learn to ask for the conditions.</p>
@@ -888,8 +888,8 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <p>If the vendor can answer all three without qualification, the cycle-life number on the datasheet probably survives field use. If not, plan to run the aging test yourself &mdash; or expect surprises.</p>
 
         <nav class="article-nav">
-          <a href="/blog/lithium-shipping.html" class="prev">&larr; Previous: DGR Basics</a>
-          <a href="/blog/thermal-runaway.html" class="next">Next: Thermal Runaway &rarr;</a>
+          <a href="/blog/lithium-shipping" class="prev">&larr; Previous: DGR Basics</a>
+          <a href="/blog/thermal-runaway" class="next">Next: Thermal Runaway &rarr;</a>
         </nav>$art$, 'Zufek Engineering', 10, (SELECT id FROM categories WHERE slug='technology'), now() - interval '28 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('eu-battery-passport', $art$The EU Battery Passport: Timeline & Data Requirements$art$, $art$What the new EU Battery Regulation asks for, which product categories are in scope, and what OEMs need from their cell suppliers.$art$, '/assets/img/seed/photo-1529421308418-eab98863cee4.jpg', $art$<p class="lede">The EU Battery Regulation (2023/1542) introduces the concept of a digital &ldquo;Battery Passport&rdquo; &mdash; a machine-readable record that travels with a battery through its life. For consumer electronics brands this is not yet the same burden as for EV makers, but the data-collection habits you build now determine how painful the 2030 wave will be.</p>
@@ -967,8 +967,8 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         </ol>
 
         <nav class="article-nav">
-          <a href="/blog/cobalt-nickel-lfp.html" class="prev">&larr; Previous: Cobalt, Nickel, LFP</a>
-          <a href="/blog/second-life-cells.html" class="next">Next: Second-Life Cells &rarr;</a>
+          <a href="/blog/cobalt-nickel-lfp" class="prev">&larr; Previous: Cobalt, Nickel, LFP</a>
+          <a href="/blog/second-life-cells" class="next">Next: Second-Life Cells &rarr;</a>
         </nav>$art$, 'Zufek Engineering', 6, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '31 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('hv-lco-density', $art$HV LCO at 4.48 V: Density Gains for Wearables$art$, $art$An update on high-voltage lithium-cobalt-oxide cathode platforms and what they actually buy at the pack level.$art$, '/assets/img/seed/photo-1518770660439-4636190af475.jpg', $art$<p class="lede">High-voltage lithium-cobalt-oxide is the quiet cathode upgrade that reshaped premium wearables over the last three years. Pushing the charge cut-off from 4.35 V to 4.45 V, and now to 4.48 V, buys roughly 8&ndash;12% more volumetric energy density at the cell. Here&rsquo;s what that looks like in real products.</p>
@@ -1031,8 +1031,8 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         </ol>
 
         <nav class="article-nav">
-          <a href="/blog/lithium-air-freight.html" class="prev">&larr; Previous: Lithium Air Freight</a>
-          <a href="/blog/china-medical-battery.html" class="next">Next: China Medical Battery &rarr;</a>
+          <a href="/blog/lithium-air-freight" class="prev">&larr; Previous: Lithium Air Freight</a>
+          <a href="/blog/china-medical-battery" class="next">Next: China Medical Battery &rarr;</a>
         </nav>$art$, 'Zufek Engineering', 6, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '34 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('lithium-air-freight', $art$Lithium Air Freight in 2025: New Rules, Higher Costs$art$, $art$IATA's recent updates to lithium-battery air-cargo rules and their real impact on sample shipping and volume logistics for OEMs outside China.$art$, '/assets/img/seed/photo-1583414692941-2dcf8e0e1ea4.jpg', $art$<p class="lede">Air-freight pricing for lithium batteries has risen faster than general cargo every year since 2022. The drivers are a mix of genuine safety updates and insurance-market tightening. For OEMs outside China who depend on air for samples and low-volume launches, the change is already reshaping procurement cadence.</p>
@@ -1091,8 +1091,8 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <p>Neither is an immediate crisis, but both argue for building resilience into logistics plans now rather than discovering the cost later.</p>
 
         <nav class="article-nav">
-          <a href="/blog/tws-earbuds-next.html" class="prev">&larr; Previous: TWS Earbuds Next</a>
-          <a href="/blog/hv-lco-density.html" class="next">Next: HV LCO at 4.48 V &rarr;</a>
+          <a href="/blog/tws-earbuds-next" class="prev">&larr; Previous: TWS Earbuds Next</a>
+          <a href="/blog/hv-lco-density" class="next">Next: HV LCO at 4.48 V &rarr;</a>
         </nav>$art$, 'Zufek Engineering', 9, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '37 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('lithium-shipping', $art$Shipping Lithium: DGR Basics for Product Managers$art$, $art$Class 9 labels, state-of-charge limits, quantity caps per package — what dangerous-goods regs actually require when you ship lithium cells.$art$, '/assets/img/seed/photo-1568057373560-8d71ccf43b26.jpg', $art$<p class="lede">Lithium cells and batteries are dangerous goods. Not dangerous in the &ldquo;explodes in your warehouse&rdquo; sense, but dangerous in the regulatory sense: they move under IATA Dangerous Goods Regulations (DGR) for air, IMO IMDG code for sea, and ADR for road in the EU. Get the paperwork wrong and the shipment stops at origin.</p>
@@ -1144,8 +1144,8 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         </ul>
 
         <nav class="article-nav">
-          <a href="/blog/wearable-thermal.html" class="prev">&larr; Previous: Skin-Contact Thermal</a>
-          <a href="/blog/cycle-life-curves.html" class="next">Next: Reading Cycle-Life Curves &rarr;</a>
+          <a href="/blog/wearable-thermal" class="prev">&larr; Previous: Skin-Contact Thermal</a>
+          <a href="/blog/cycle-life-curves" class="next">Next: Reading Cycle-Life Curves &rarr;</a>
         </nav>$art$, 'Zufek Engineering', 5, (SELECT id FROM categories WHERE slug='technology'), now() - interval '40 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('second-life-cells', $art$Second-Life Cells: Who's Buying, Who's Selling$art$, $art$The emerging re-qualification market for used lithium cells, and whether it makes commercial sense for small formats.$art$, '/assets/img/seed/photo-1518770660439-4636190af475.jpg', $art$<p class="lede">Second-life cells &mdash; lithium cells retired from one application and repurposed for another &mdash; have moved from concept to commercial reality in the last three years, but almost entirely for EV-scale formats. The economics for consumer-electronics cells look different, and mostly don&rsquo;t pencil.</p>
@@ -1196,8 +1196,8 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <p>Second-life is a real and growing market for EV-format cells. For consumer electronics, it&rsquo;s mostly marketing. Recycling is the honest path to circularity for the small stuff, and the sooner OEMs tell that story clearly, the better it lands.</p>
 
         <nav class="article-nav">
-          <a href="/blog/eu-battery-passport.html" class="prev">&larr; Previous: EU Battery Passport</a>
-          <a href="/blog/tws-earbuds-next.html" class="next">Next: TWS Earbuds Next &rarr;</a>
+          <a href="/blog/eu-battery-passport" class="prev">&larr; Previous: EU Battery Passport</a>
+          <a href="/blog/tws-earbuds-next" class="next">Next: TWS Earbuds Next &rarr;</a>
         </nav>$art$, 'Zufek Engineering', 8, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '43 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('solid-state-reality', $art$Solid-State: Hype vs Reality for Consumer Electronics$art$, $art$Where solid-state batteries make sense today, where they don't, and a realistic timeline for wearables adoption.$art$, '/assets/img/seed/photo-1581091226825-a6a2a5aee158.jpg', $art$<p class="lede">Solid-state batteries have been &ldquo;five years away&rdquo; for fifteen years. In 2026 we can finally say with confidence that partial solid-state &mdash; specifically semi-solid and polymer-hybrid designs &mdash; is shipping in limited volumes. Fully sulfide-based solid-state remains a laboratory and prototype technology outside of a handful of EV pilot programs.</p>
@@ -1251,8 +1251,8 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <p>Solid-state is real and progressing. But the most likely outcome for consumer electronics is a gradual shift through semi-solid, not a dramatic leap to all-solid. Energy density will creep up 8&ndash;12% per generation; safety margins will improve; cost will fall slowly. Revolutionary framing of this technology sells magazines but misleads product planning.</p>
 
         <nav class="article-nav">
-          <a href="/blog/ar-vr-market-2026.html" class="prev">&larr; Previous: AR/VR Market 2026</a>
-          <a href="/blog/cobalt-nickel-lfp.html" class="next">Next: Cobalt, Nickel, LFP &rarr;</a>
+          <a href="/blog/ar-vr-market-2026" class="prev">&larr; Previous: AR/VR Market 2026</a>
+          <a href="/blog/cobalt-nickel-lfp" class="next">Next: Cobalt, Nickel, LFP &rarr;</a>
         </nav>$art$, 'Zufek Engineering', 7, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '46 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('thermal-runaway', $art$Thermal Runaway: What Triggers It, How to Design Against It$art$, $art$Separator shutdown, vent design, cell spacing and the role of BMS early-warning in lithium cell safety.$art$, '/assets/img/seed/photo-1532456745301-b2c645d8b80d.jpg', $art$<p class="lede">Thermal runaway is the chain reaction inside a lithium cell where internal temperature rises faster than it can dissipate &mdash; eventually triggering electrolyte decomposition, gas generation, and in the worst case, venting or fire. It is always the result of one of three triggers: mechanical, thermal, or electrical abuse. Design against all three and you&rsquo;ve covered nearly every real-world failure mode.</p>
@@ -1309,8 +1309,8 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <p>None of these are catastrophic on their own, but all three together are a reliable signal to disable charging and log the event. A product that quietly retires a suspect cell and prompts the user to replace the battery is better than one that lets the cell keep cycling toward a failure.</p>
 
         <nav class="article-nav">
-          <a href="/blog/cycle-life-curves.html" class="prev">&larr; Previous: Cycle-Life Curves</a>
-          <a href="/blog/guides.html" class="next">Back to Battery Guides &rarr;</a>
+          <a href="/blog/cycle-life-curves" class="prev">&larr; Previous: Cycle-Life Curves</a>
+          <a href="/blog/?category=technology" class="next">Back to Battery Guides &rarr;</a>
         </nav>$art$, 'Zufek Engineering', 8, (SELECT id FROM categories WHERE slug='technology'), now() - interval '49 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('tws-earbuds-next', $art$Why TWS Earbuds Plateaued — And What Comes Next$art$, $art$Battery form factor and acoustic volume are in direct conflict. Here's how the next generation of earbuds can break past it.$art$, '/assets/img/seed/photo-1590658006821-04f4008d5717.jpg', $art$<p class="lede">True-wireless earbuds have stopped getting smaller. The last three generations of flagship TWS from the major brands are within a few tenths of a gram of each other. That plateau is not a design choice &mdash; it&rsquo;s a physical limit dictated by the conflict between battery volume and acoustic chamber volume inside the earbud shell.</p>
@@ -1361,8 +1361,8 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         </ol>
 
         <nav class="article-nav">
-          <a href="/blog/second-life-cells.html" class="prev">&larr; Previous: Second-Life Cells</a>
-          <a href="/blog/lithium-air-freight.html" class="next">Next: Lithium Air Freight 2025 &rarr;</a>
+          <a href="/blog/second-life-cells" class="prev">&larr; Previous: Second-Life Cells</a>
+          <a href="/blog/lithium-air-freight" class="next">Next: Lithium Air Freight 2025 &rarr;</a>
         </nav>$art$, 'Zufek Engineering', 5, (SELECT id FROM categories WHERE slug='industry-insights'), now() - interval '52 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('un-iec-compliance', $art$UN 38.3 & IEC 62133: What OEMs Need to Know$art$, $art$A plain-English walkthrough of the two safety standards every lithium cell has to pass before it can ship.$art$, '/assets/img/seed/photo-1618477388954-7852f32655ec.jpg', $art$<p class="lede">Every lithium cell that ships by air, sea, road, or rail has to clear UN 38.3. Every cell sold for portable consumer use has to clear IEC 62133-2. Miss either and the shipment stops at customs. Plan for both from week one of a program.</p>
@@ -1424,8 +1424,8 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <p>Ask your cell supplier for the full test reports, not just the certificates &mdash; you&rsquo;ll need them for your own FCC and CE files.</p>
 
         <nav class="article-nav">
-          <a href="/blog/ar-thin-battery.html" class="prev">&larr; Previous: Ultra-Thin for AR</a>
-          <a href="/blog/cell-sizing.html" class="next">Next: Sizing a Cell from Power Profile &rarr;</a>
+          <a href="/blog/ar-thin-battery" class="prev">&larr; Previous: Ultra-Thin for AR</a>
+          <a href="/blog/cell-sizing" class="next">Next: Sizing a Cell from Power Profile &rarr;</a>
         </nav>$art$, 'Zufek Engineering', 6, (SELECT id FROM categories WHERE slug='technology'), now() - interval '55 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('wearable-chemistry', $art$Choosing Between LiPo, Li-ion and LiFePO4 for Wearables$art$, $art$A decision framework for picking the right lithium chemistry for wearables: energy density, safety, cycle life and form factor.$art$, '/assets/img/seed/photo-1523275335684-37898b6baf30.jpg', $art$<p class="lede">When a product manager asks &ldquo;which chemistry should we use?&rdquo;, the honest first answer is almost always a counter-question: how small, how long, and how safe does it have to be? Those three constraints collapse the choice faster than any spec sheet.</p>
@@ -1475,8 +1475,8 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <p>Engineering teams pick a chemistry based on a single metric — usually energy density — and discover six months later that cycle life at their actual operating temperature is half the datasheet number. Always ask a vendor for cycle data at <em>your</em> C-rate, depth of discharge and ambient temperature, not the lab conditions.</p>
 
         <nav class="article-nav">
-          <a href="/blog/guides.html" class="prev">← Back to Battery Guides</a>
-          <a href="/blog/ar-thin-battery.html" class="next">Next: Ultra-Thin Battery for AR Glasses →</a>
+          <a href="/blog/?category=technology" class="prev">← Back to Battery Guides</a>
+          <a href="/blog/ar-thin-battery" class="next">Next: Ultra-Thin Battery for AR Glasses →</a>
         </nav>$art$, 'Zufek Engineering', 8, (SELECT id FROM categories WHERE slug='technology'), now() - interval '58 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_minutes, category_id, published_at, status) VALUES ('wearable-thermal', $art$Managing Skin-Contact Temperature on Wearables$art$, $art$Why 41 °C is an industrial-design problem, and what the BMS can do to stay under it without ruining runtime.$art$, '/assets/img/seed/photo-1510017098667-27dfc7150acb.jpg', $art$<p class="lede">A wearable is a heater strapped to a person. The battery is one source of that heat; the SoC, display driver, and charging circuit are others. The design goal isn&rsquo;t to minimise temperature &mdash; it&rsquo;s to keep the skin-facing surface below a threshold the user&rsquo;s nerves won&rsquo;t complain about.</p>
@@ -1521,8 +1521,8 @@ INSERT INTO articles (slug, title, excerpt, cover_url, content, author, reading_
         <p>The most useful thermal test we run is a 30-minute continuous-worst-case session: maximum brightness, continuous streaming audio, GPS on, BT on, ambient at 30 &deg;C. Measure at five surface points every 10 seconds. If any point crosses 41 &deg;C during the session, the design is not done. Repeat at 40 &deg;C ambient for the outdoor-use worst case.</p>
 
         <nav class="article-nav">
-          <a href="/blog/bms-pcm-smart.html" class="prev">&larr; Previous: PCM vs Smart Battery</a>
-          <a href="/blog/lithium-shipping.html" class="next">Next: Lithium Shipping Basics &rarr;</a>
+          <a href="/blog/bms-pcm-smart" class="prev">&larr; Previous: PCM vs Smart Battery</a>
+          <a href="/blog/lithium-shipping" class="next">Next: Lithium Shipping Basics &rarr;</a>
         </nav>$art$, 'Zufek Engineering', 11, (SELECT id FROM categories WHERE slug='technology'), now() - interval '61 days', 'published')
 ON CONFLICT (slug) DO NOTHING;
 
