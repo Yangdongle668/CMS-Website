@@ -122,6 +122,16 @@ const apiLimiter = rateLimit({
 });
 app.use('/api/', apiLimiter);
 
+// ----- One hostname -----
+// Mounted before everything that renders, so a request on the wrong
+// hostname is answered with a 301 instead of a page. Health probes and
+// ACME challenges are exempt inside the middleware, and it does nothing
+// at all unless a canonical host has actually been configured — see
+// middleware/canonical-host for why guessing one would be worse than
+// leaving the duplicate in place.
+const { canonicalHostRedirect } = require('./middleware/canonical-host');
+app.use(canonicalHostRedirect);
+
 // ----- Health probes -----
 // /healthz is the cheap "is the process alive" check used by load
 // balancers and container orchestrators. It must not touch the DB so

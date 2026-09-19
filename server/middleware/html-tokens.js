@@ -125,11 +125,27 @@ function hasValidHost(u) {
   try { return !!(new URL(u).hostname); } catch (_) { return false; }
 }
 
-function resolveCanonicalBase(req) {
+// The canonical base as CONFIGURED — PUBLIC_URL or settings.seo — with
+// no fall back to the request's own host. Anything deciding "is this
+// request on the right hostname" has to use this: a base derived from
+// the request can never disagree with the request, so resolveCanonicalBase
+// below would always report a match and the question could not be asked.
+//
+// Empty return means the operator has not declared a canonical host.
+// Callers must then do nothing rather than guess one.
+function configuredCanonicalBase() {
   const fromEnv = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
   if (fromEnv && !isLocalhostUrl(fromEnv) && hasValidHost(fromEnv)) return fromEnv;
   const fromDb = String((settingsCache.seo && settingsCache.seo.public_url) || '').replace(/\/$/, '');
   if (fromDb && !isLocalhostUrl(fromDb) && hasValidHost(fromDb)) return fromDb;
+  return '';
+}
+
+function resolveCanonicalBase(req) {
+  const configured = configuredCanonicalBase();
+  if (configured) return configured;
+  const fromEnv = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
+  const fromDb = String((settingsCache.seo && settingsCache.seo.public_url) || '').replace(/\/$/, '');
   if (req && req.headers && req.headers.host) {
     const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
     return `${proto}://${req.headers.host}`;
@@ -926,5 +942,6 @@ module.exports = {
   invalidateSettingsCache,
   loadSettingsCache,
   resolveCanonicalBase,
+  configuredCanonicalBase,
   settingsCache,
 };
