@@ -35,8 +35,22 @@ function httpHandler(req, res) {
     res.writeHead(404);
     return res.end('Not found');
   }
+  // Upgrade to HTTPS, and land on the canonical hostname while we are
+  // at it. Preserving the request's own host here meant http://www took
+  // two redirects to reach https://apex — one to add TLS, another from
+  // the Express canonical-host middleware to fix the hostname. Crawl
+  // budget is the thing this site has least of; a chain costs it twice.
+  //
+  // Falls back to the request host when no canonical is configured,
+  // which is the behaviour this had before.
   const host = (req.headers.host || '').replace(/:\d+$/, '');
-  res.writeHead(301, { Location: `https://${host}${req.url}` });
+  let target = host;
+  try {
+    const { configuredCanonicalBase } = require('../middleware/html-tokens');
+    const base = configuredCanonicalBase();
+    if (base) target = new URL(base).host;
+  } catch (_) { /* keep the request host */ }
+  res.writeHead(301, { Location: `https://${target}${req.url}` });
   res.end();
 }
 
