@@ -306,6 +306,18 @@ async function renderPillar(req, res, slug) {
     [Array.isArray(pillar.applications) ? pillar.applications : []]
   ); } catch (_) {}
 
+  // Catalogue SKUs under this pillar. These product detail pages were
+  // in the sitemap with nothing on the site linking to them — the only
+  // way in was the sitemap itself, which is the weakest discovery path
+  // there is. The pillar is their natural parent, so it links them.
+  let skuRows = [];
+  try { skuRows = await many(
+    `SELECT slug, name, model_no, tagline FROM products
+      WHERE pillar_id = $1 AND status='published'
+      ORDER BY sort_order, id`,
+    [pillar.id]
+  ); } catch (_) {}
+
   // Pillar cluster articles. The pillar page is the topic-hub for SEO,
   // so we surface every cluster article we have rather than capping at
   // the first few — a low limit silently buries the rest of the cluster.
@@ -457,6 +469,15 @@ async function renderPillar(req, res, slug) {
        ).join('')}</ul>`
     : '';
 
+  const skusHtml = skuRows.length
+    ? `<p class="pillar-skus__lead">Catalogue models in this series:</p>
+       <ul class="pillar-skus__list">${skuRows.map((s) =>
+         `<li><a href="/products/${escapeHtml(s.slug)}">${escapeHtml(s.name)}${
+           s.model_no ? ` <span class="pillar-skus__model">${escapeHtml(s.model_no)}</span>` : ''
+         }</a>${s.tagline ? `<span class="pillar-skus__tagline">${escapeHtml(s.tagline)}</span>` : ''}</li>`
+       ).join('')}</ul>`
+    : '';
+
   const siblingsHtml = siblings.map((s) =>
     `<a class="news-link" style="color:#171a20; padding:6px 12px; border-radius:20px; background:#fff; border:1px solid #e4e4e4;" href="/products/${escapeHtml(s.slug)}">${escapeHtml(s.short_name || s.name)} &rarr;</a>`
   ).join('');
@@ -481,6 +502,7 @@ async function renderPillar(req, res, slug) {
     { kind: 'html', attr: 'applications', value: appsHtml },
     { kind: 'html', attr: 'articles', value: articlesHtml },
     { kind: 'html', attr: 'article-links', value: articleLinksHtml },
+    { kind: 'html', attr: 'skus', value: skusHtml },
     { kind: 'html', attr: 'certifications', value: certsHtml },
     { kind: 'html', attr: 'faq', value: faqHtml },
     { kind: 'text', attr: 'cta-title', value: 'Ready for a feasibility review?' },

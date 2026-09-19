@@ -7,66 +7,20 @@ const { invalidateSettingsCache } = require('../middleware/html-tokens');
 const { invalidateExcludedIps } = require('../middleware/analytics');
 const aiSettings = require('../services/ai-settings');
 const seoIntegrations = require('../services/seo-integrations');
+const publicSettings = require('../services/public-settings');
+const { loadPublicSettings } = publicSettings;
 
 const router = express.Router();
 
-const PUBLIC_KEYS = new Set(['site', 'social', 'seo', 'gdpr', 'navigation', 'organization']);
 // Settings entries that contain secrets. Their values are masked when
 // returned to the admin browser (last 4 chars only) and preserved in
 // place when the admin re-submits them with the mask still attached.
 const SECRET_KEYS = new Set(['ai_providers', 'seo_integrations']);
 
 router.get('/public', async (_req, res) => {
-  const rows = await many(`SELECT key, value FROM settings WHERE key = ANY($1::text[])`, [
-    Array.from(PUBLIC_KEYS),
-  ]);
-  const out = {};
-  for (const r of rows) out[r.key] = r.value;
-
-  // Auto-expand navigation children from live DB tables. The
-  // settings.navigation JSON acts as the SKELETON; nodes whose
-  // `nav` key matches a known content collection get their
-  // children replaced with the current published rows. This means
-  // adding a new application or pillar in the admin shows up in
-  // the header dropdown / footer columns automatically — no JSON
-  // editing required.
-  if (out.navigation && Array.isArray(out.navigation.header)) {
-    try {
-      const [apps, pillars] = await Promise.all([
-        many(
-          `SELECT slug, name FROM applications WHERE status='published' ORDER BY sort_order, id`
-        ),
-        many(
-          `SELECT slug, name FROM pillar_pages WHERE status='published' ORDER BY sort_order, id`
-        ),
-      ]);
-      const appChildren = apps.map((a) => ({
-        label: a.name,
-        url: `/applications/${a.slug}.html`,
-      }));
-      const pillarChildren = pillars.map((p) => ({
-        label: p.name,
-        url: `/products/${p.slug}`,
-      }));
-      out.navigation = {
-        ...out.navigation,
-        header: out.navigation.header.map((item) => {
-          if (item.nav === 'applications' && appChildren.length) {
-            return { ...item, children: appChildren };
-          }
-          if (item.nav === 'products' && pillarChildren.length) {
-            return { ...item, children: pillarChildren };
-          }
-          return item;
-        }),
-      };
-    } catch (_e) {
-      // If the auto-expand fails (e.g. tables not yet migrated),
-      // fall back to the static skeleton already in `out.navigation`.
-    }
-  }
-
-  res.json({ settings: out });
+  // Shared with the server-side chrome renderer so the nav the browser
+  // fetches and the nav baked into the HTML cannot disagree.
+  res.json({ settings: await loadPublicSettings() });
 });
 
 router.get('/', requireAuth, async (_req, res) => {
@@ -145,6 +99,10 @@ router.put('/:key', requireAuth, async (req, res) => {
   // edit is reflected on the very next page load (no need to wait for the
   // 30s polling interval).
   invalidateSettingsCache();
+  // Same for the public bundle behind /api/settings/public and the
+  // server-rendered nav, or an operator's nav edit would not show in
+  // the HTML until the TTL lapsed.
+  publicSettings.invalidate();
   // Hot-reload the AI snapshot so the next /api/ai-generate/* request
   // picks up the new keys / models without a server restart.
   if (key === 'ai_providers') {
