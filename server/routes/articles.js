@@ -196,11 +196,20 @@ router.put('/:id', requireAuth, async (req, res) => {
   // citations is appended after the SEO block rather than slotted in
   // mid-list so the offsets above keep holding, and the WHERE id
   // parameter follows it.
+  //
+  // $14 is cast on both uses, and it has to be. Postgres deduces a
+  // parameter's type from how it is used, and this one is used twice:
+  // `status = $14` says character varying, `$14 = 'published'` resolves
+  // through the text equality operator and says text. Two deductions,
+  // one parameter, so the parse fails with 42P08 "inconsistent types
+  // deduced for parameter $14" and every save from the article editor
+  // returns 500. Naming the type once removes the ambiguity.
   await query(
     `UPDATE articles SET pillar_id=$1, category_id=$2, author_id=$3, title=$4, excerpt=$5, cover_url=$6,
        content=$7, author=$8, meta_title=$9, meta_description=$10, reading_minutes=$11,
        template=$12, hero_image=$13,
-       status=$14, published_at=COALESCE(published_at, CASE WHEN $14='published' THEN now() END),
+       status=$14::text,
+       published_at=COALESCE(published_at, CASE WHEN $14::text='published' THEN now() END),
        ${seoSetClause(15)},
        citations=$${15 + seoVals.length},
        updated_at=now() WHERE id = $${16 + seoVals.length}`,

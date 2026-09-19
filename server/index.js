@@ -550,6 +550,12 @@ async function autoMigrate() {
        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
      )`,
     `ALTER TABLE articles ADD COLUMN IF NOT EXISTS author_id INT REFERENCES authors(id) ON DELETE SET NULL`,
+    // Outbound citations. schema.sql declares this too, but schema.sql
+    // only runs under `npm run db:init` — a deployment that restarts the
+    // app does not re-run it. Without the line below the column never
+    // appears in production and every article save 500s on an UPDATE
+    // that writes it. Any column added to schema.sql needs a twin here.
+    `ALTER TABLE articles ADD COLUMN IF NOT EXISTS citations JSONB NOT NULL DEFAULT '[]'::jsonb`,
     // First-party analytics — every public HTML page-view writes one row.
     // Privacy: visitor_hash uses a daily-rotating salt so cross-day
     // identification is impossible; raw IP is never stored.
