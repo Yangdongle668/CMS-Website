@@ -290,8 +290,24 @@ router.get('/sitemap.xml', async (req, res) => {
   // -------- Articles --------
   let articles = [];
   try {
+    // GREATEST, not COALESCE. A published article always has
+    // published_at set, so COALESCE(published_at, updated_at) never
+    // reached updated_at — revising an article left its <lastmod> at
+    // the original publication date. lastmod is the one sitemap
+    // attribute Google actually uses to decide whether to re-crawl, so
+    // every edit to an article was invisible to it, and articles are
+    // the content type that gets revised most.
+    //
+    // GREATEST ignores NULLs in Postgres, so this still yields
+    // updated_at if published_at were somehow unset, and NULL only if
+    // both are — in which case isoDate() returns null and the entry is
+    // emitted without a <lastmod>, which is correct.
+    //
+    // published_at stays in the expression as a floor: updated_at alone
+    // would report a date earlier than publication if a row were ever
+    // touched out of order.
     articles = await many(
-      `SELECT slug, cover_url, hero_image, COALESCE(published_at, updated_at) AS lastmod
+      `SELECT slug, cover_url, hero_image, GREATEST(published_at, updated_at) AS lastmod
          FROM articles WHERE status='published'`
     );
   } catch (_) {}
