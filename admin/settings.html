@@ -452,10 +452,27 @@ https://twitter.com/zufek">${escapeHtml((org.sameAs || []).join('\n'))}</textare
     </div>
   `;
 
+  function showTab(name) {
+    const btn = document.querySelector(`.tabs__btn[data-tab="${name}"]`);
+    if (!btn) return false;
+    document.querySelectorAll('.tabs__btn').forEach((x) => x.classList.toggle('is-active', x === btn));
+    document.querySelectorAll('[data-pane]').forEach((x) => {
+      x.style.display = x.dataset.pane === name ? '' : 'none';
+    });
+    return true;
+  }
+
   document.querySelectorAll('.tabs__btn').forEach((b) => b.addEventListener('click', () => {
-    document.querySelectorAll('.tabs__btn').forEach((x) => x.classList.toggle('is-active', x === b));
-    document.querySelectorAll('[data-pane]').forEach((x) => x.style.display = x.dataset.pane === b.dataset.tab ? '' : 'none');
+    showTab(b.dataset.tab);
+    // Reflect the tab in the URL so it can be linked to and so a reload
+    // keeps the operator where they were.
+    history.replaceState(null, '', '?tab=' + encodeURIComponent(b.dataset.tab));
   }));
+
+  // Open the tab named in ?tab= — other pages deep-link here, notably the
+  // AI page pointing an operator at ?tab=ai to paste an API key.
+  const wantTab = new URLSearchParams(location.search).get('tab');
+  if (wantTab) showTab(wantTab);
 
   document.getElementById('save-all').addEventListener('click', async () => {
     // Group inputs by top-level settings key. data-key supports dotted

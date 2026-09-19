@@ -173,14 +173,30 @@
   `;
 
   function render() {
+    // The old copy told the operator to edit .env and restart the
+    // server. That has not been necessary since API keys moved into the
+    // settings table: the save path stores the key, re-hydrates the
+    // in-memory snapshot and the next request picks it up. Sending
+    // someone to a shell for something that is two clicks away in the
+    // UI is bad advice, and on a hosted deployment it may not even be
+    // possible.
     const banner = STATUS.configured ? '' : `
       <div class="config-banner">
         <strong>未配置任何 LLM Provider API Key</strong> —
-        请在服务器 .env 中设置以下任意一个并重启：
-        <code>ANTHROPIC_API_KEY</code> · <code>OPENAI_API_KEY</code> ·
-        <code>DEEPSEEK_API_KEY</code> · <code>MOONSHOT_API_KEY</code> ·
-        <code>ZHIPU_API_KEY</code> · <code>QWEN_API_KEY</code>。
-        当前查重提供方：<code>${escapeHtml(STATUS.detectProvider)}</code>。
+        到 <a href="/admin/settings.html?tab=ai"><strong>设置 → AI 接入</strong></a>
+        填入任意一家的 API Key，点底部「保存全部设置」即可生效，<strong>无需重启服务器</strong>。
+        支持 Anthropic Claude · OpenAI · DeepSeek · 月之暗面 Kimi · 智谱 GLM · 通义千问，
+        以及任何 OpenAI 兼容网关（vLLM / Ollama / OneAPI）。
+        <br>
+        当前查重提供方：<code>${escapeHtml(STATUS.detectProvider)}</code>
+        ${STATUS.detectProvider === 'heuristic'
+          ? '（内置启发式，无需 Key；如需接入 GPTZero / Sapling 也在同一页配置）'
+          : ''}。
+        <br>
+        <span style="font-size:12px; opacity:.8;">
+          服务器环境变量（<code>ANTHROPIC_API_KEY</code> 等）仍作为后备读取，
+          但界面里填写的值优先，且立即生效。
+        </span>
       </div>
     `;
     const providerSelector = `
