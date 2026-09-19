@@ -243,6 +243,30 @@
     ? `Cell engineering — ${a.pillar_short_name || a.pillar_name}`
     : 'Cell engineering team';
 
+  // ------- Outbound references -------
+  // The server renders this block after the body, but every branch
+  // below replaces layoutEl.innerHTML wholesale from `content`, which
+  // threw the server's copy away. The result was references a crawler
+  // could see and a reader could not. Rebuilt here so both do.
+  //
+  // The http(s) filter is repeated from the server on purpose: this
+  // path never passes through the server renderer, so dropping it here
+  // would put a "javascript:" href back into the page for anyone with
+  // JS enabled — which is everyone this branch runs for.
+  function citationsHtml(list) {
+    if (!Array.isArray(list)) return '';
+    const safe = list.filter((c) => c && typeof c.url === 'string' && /^https?:\/\//i.test(c.url));
+    if (!safe.length) return '';
+    const items = safe.map((c) => {
+      const pub = c.publisher ? ` <span class="ref-publisher">&mdash; ${escape(c.publisher)}</span>` : '';
+      return `<li><a href="${escape(c.url)}" target="_blank" rel="noopener">${escape(c.label || c.url)}</a>${pub}</li>`;
+    }).join('');
+    return `<section class="article-references" aria-labelledby="article-references-heading">
+      <h2 id="article-references-heading">References</h2>
+      <ol class="article-references__list">${items}</ol>
+    </section>`;
+  }
+
   // ------- Body — branch by template -------
   const layoutEl = document.querySelector('[data-art-layout]');
   const tpl = a.template || 'standard';
@@ -297,6 +321,10 @@
   } else {
     layoutEl.innerHTML = `<article class="article-body">${content}</article>`;
   }
+
+  // Appended after whichever branch ran, so all three templates carry it.
+  const refsHtml = citationsHtml(a.citations);
+  if (refsHtml) layoutEl.insertAdjacentHTML('beforeend', refsHtml);
 
   // ------- Sidebar pillar callout -------
   if (a.pillar_slug) {

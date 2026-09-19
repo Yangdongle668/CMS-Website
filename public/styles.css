@@ -28,6 +28,12 @@
   --accent-text:    #b67500;  /* 琥珀文字（浅底上对比度足够） */
   --ink-3:          #0f1115;  /* 深色区块底 2 */
   --text-mute2:     #8a8d92;  /* 二级灰 */
+
+  /* 正文内链接（仅用于文章/法务长文，不影响导航与卡片）。
+     色相沿用品牌琥珀，但压暗到白底 4.5:1 以上 —— --accent-text
+     (#b67500) 只有 3.80:1，作为正文链接色不够。 */
+  --link:           #9a6200;  /* 正文链接（白底 5.10:1） */
+  --link-hover:     #7d4f00;  /* 正文链接 hover（白底 7.02:1） */
 }
 
 /* ===== 断点标尺 =====================================================
@@ -1906,13 +1912,8 @@ footer {
   color: var(--text-muted);
 }
 
-.article-references__list a {
-  color: var(--text);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.article-references__list a:hover { color: var(--accent); }
+/* Colour and underline come from the prose-link rule further down, so
+   references match the links in the body above them. */
 
 .article-references .ref-publisher { color: var(--text-muted); }
 
@@ -3745,11 +3746,57 @@ a:hover > .news-link::after,
 .news-link:hover::after { transform: translateX(3px); }
 .news-link::after { display: inline-block; transition: transform 0.18s ease; }
 
-/* All <a> in articles get a subtle color shift on hover */
-.article-body a:hover,
-.legal-doc a:hover {
-  color: var(--accent-text);
+/* ===== Prose links =============================================
+   The global `a { color: inherit; text-decoration: none }` near the
+   top of this file is right for navigation, cards and buttons, where
+   the surrounding component already says the thing is clickable. It is
+   wrong inside body copy: a link in an article rendered as the same
+   near-black as the text around it, with no underline, so the only way
+   to find one was to sweep the mouse across the paragraph. Until now
+   the only rule these had was a :hover colour — there was no resting
+   state at all.
+
+   Colour alone would not be enough even if it were visible: a
+   colour-only distinction fails for readers who cannot separate the
+   two hues. The underline is what carries the meaning; the colour is
+   reinforcement.
+
+   Scope is deliberately narrow — article bodies, legal long-form and
+   the references block. Nav, cards, the CTA band and prev/next keep
+   inheriting, which is what they want. */
+.article-body a,
+.legal-doc a,
+.article-references__list a {
+  color: var(--link);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  transition: color 0.15s ease;
 }
+
+.article-body a:hover,
+.legal-doc a:hover,
+.article-references__list a:hover {
+  color: var(--link-hover);
+  text-decoration-thickness: 2px;
+}
+
+/* Keyboard users need to see where they are. The global reset leaves
+   these with no focus treatment of their own, and a focus ring that
+   only shows on keyboard navigation costs mouse users nothing. */
+.article-body a:focus-visible,
+.legal-doc a:focus-visible,
+.article-references__list a:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Prev/next inside an article body is navigation, not prose. It has
+   its own muted colour further up; this stops it inheriting the
+   underline along with it. */
+.article-body .article-nav a { text-decoration: none; }
+.article-body .article-nav a:hover { text-decoration: underline; }
 
 
 /* =============================================================
