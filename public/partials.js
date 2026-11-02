@@ -104,7 +104,7 @@ function navHtml(nav) {
     <nav class="nav">
       <a href="/" class="brand">${escapeHtml(STATE.config.siteName || 'Zufek')}</a>
       <ul class="nav-main">${lis}</ul>
-      <button class="menu-btn" id="menuBtn" type="button" aria-label="Open navigation" aria-controls="sideMenu" aria-expanded="false"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+      <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-controls="sideMenu" aria-expanded="false">Menu</button>
     </nav>
   </header>`;
 }
