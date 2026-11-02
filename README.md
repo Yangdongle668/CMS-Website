@@ -472,3 +472,35 @@ Further accounts are managed in **Users**; change a password via
 ## 9. License
 
 Proprietary. All rights reserved.
+
+## External reverse proxy (current deployment)
+
+The CMS serves HTTP on port 3000. Domain routing, HTTPS certificates and renewal
+are managed by your own Nginx, Caddy or hosting panel. The CMS does not bind
+ports 80/443 or provide the former Domain & SSL screen/API.
+
+Docker publishes `127.0.0.1:${APP_PORT:-3000}` by default. Set `PUBLIC_URL` to your
+public HTTPS URL. For a host-based Nginx proxy, the location can be:
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+If your proxy is another container, connect it to the application's Docker
+network and use `app:3000`. `APP_BIND_ADDRESS` can explicitly change the host
+binding where needed. Existing database, upload and signing-key volumes are
+preserved; old certificate volumes are no longer mounted and are not deleted.
+
+To apply the update on an existing server:
+
+```sh
+git pull
+docker compose up -d --build --force-recreate app
+curl -fsS http://127.0.0.1:3000/readyz
+```

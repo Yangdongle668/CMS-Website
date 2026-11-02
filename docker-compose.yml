@@ -120,13 +120,11 @@ services:
       # CACHE_TTL_ARTICLE: 300
       # CACHE_TTL_PRODUCT: 300
     ports:
-      - "${APP_PORT:-3000}:3000"
-      - "80:80"    # ACME HTTP-01 challenges + HTTP→HTTPS redirect
-      - "443:443"  # HTTPS (started automatically once a cert is provisioned)
+      # Host Nginx/Caddy/BT handles domains and HTTPS; Docker never binds 80/443.
+      - "${APP_BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-3000}:3000"
     volumes:
       - uploads:/app/uploads
       - cms-data:/app/data
-      - certs:/app/certs
       # Bind-mount the whole shipped-image directory, not just seed/.
       #
       # Two reasons. Host-downloaded seed images from `npm run images:localize`
@@ -155,4 +153,3 @@ volumes:
   db-data:
   uploads:
   cms-data:
-  certs:

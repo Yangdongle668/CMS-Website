@@ -41,7 +41,6 @@
     "qs": "^6.15.4"
   },
   "dependencies": {
-    "acme-client": "^5.4.0",
     "bcrypt": "^6.0.0",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.7",

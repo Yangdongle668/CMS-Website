@@ -33,7 +33,10 @@ async function main() {
   }
   for (const file of htmlFiles(PUBLIC)) {
     const html = fs.readFileSync(file, 'utf8');
-    if (/\/assets\/img\/seed\/photo-|images\.unsplash\.com/.test(html)) failures.push(`Legacy stock reference: ${path.relative(ROOT, file)}`);
+    // The operator explicitly restored this one original homepage image.
+    const inspected = file === path.join(PUBLIC, 'index.html')
+      ? html.replaceAll('/assets/img/seed/photo-1593642634443-44adaa06623a.jpg', '') : html;
+    if (/\/assets\/img\/seed\/photo-|images\.unsplash\.com/.test(inspected)) failures.push(`Legacy stock reference: ${path.relative(ROOT, file)}`);
     for (const match of html.matchAll(/\/assets\/img\/generated\/[a-z0-9-]+\.webp/g)) {
       if (!fs.existsSync(path.join(PUBLIC, match[0]))) failures.push(`Broken image in ${path.relative(ROOT, file)}: ${match[0]}`);
     }

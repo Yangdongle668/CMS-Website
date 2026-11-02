@@ -5,13 +5,12 @@
 #      the unprivileged `app` user could not write to it).
 #   2. Drop privileges via `gosu` and exec the main process as `app`.
 #
-# Node itself was already given CAP_NET_BIND_SERVICE via `setcap` at
-# image build time, so binding ports 80 / 443 from the `app` user works.
+# The application listens on an unprivileged HTTP port behind an external proxy.
 set -e
 
 # Best-effort chown of any mounted volumes. Silently ignored if a
 # directory does not exist (e.g. user removed a volume from compose).
-for dir in /app/certs /app/uploads /app/data; do
+for dir in /app/uploads /app/data; do
   if [ -d "$dir" ]; then
     chown -R app:app "$dir" 2>/dev/null || true
   fi

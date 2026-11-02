@@ -27,10 +27,7 @@ const { configuredCanonicalBase } = require('./html-tokens');
 
 // Never redirect these, whatever the hostname.
 function isExempt(pathname) {
-  // ACME HTTP-01. The :80 listener in services/ssl-server answers these
-  // before Express sees them, so this is belt-and-braces — but a cert
-  // renewal that starts 301ing mid-validation is a bad way to find out
-  // the layering changed.
+  // Leave well-known verification paths available to the external proxy.
   if (pathname.startsWith('/.well-known/')) return true;
   // Load balancers and uptime checks connect by IP or an internal name
   // and must get an answer, not a redirect to the public hostname.

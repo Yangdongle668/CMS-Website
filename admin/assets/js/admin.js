@@ -55,8 +55,6 @@
     { group: '设置', items: [
       { label: 'Robots.txt',    href: '/admin/robots.html',
         icon: ico('<rect x="3" y="5.5" width="10" height="8" rx="2"/><circle cx="6" cy="9" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="9" r="1" fill="currentColor" stroke="none"/><path d="M5.5 12.5h5"/><path d="M8 2v3.5"/><path d="M5.5 2h5"/>') },
-      { label: '域名 & SSL',   href: '/admin/domain.html',
-        icon: ico('<circle cx="8" cy="8" r="6.5"/><ellipse cx="8" cy="8" rx="3" ry="6.5"/><line x1="1.5" y1="8" x2="14.5" y2="8"/>') },
       { label: '站点设置',     href: '/admin/settings.html',
         icon: ico('<circle cx="8" cy="8" r="2.5"/><path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1.06 1.06M11.54 11.54l1.06 1.06M3.4 12.6l1.06-1.06M11.54 4.46l1.06-1.06"/>') },
       { label: 'SMTP / 邮件', href: '/admin/smtp.html',

@@ -387,7 +387,7 @@ INSERT INTO pages (slug, nav, title, meta_title, meta_description, hero_eyebrow,
  'Custom lithium batteries for AR/VR, medical, wearable and IoT devices. OEM/ODM polymer, custom-shaped and cylindrical Li-Ion cells.',
  '', 'Custom Batteries, Engineered Precisely.',
  'Lithium-polymer and lithium-ion solutions for AR/VR, medical, wearable and IoT devices.',
- '/assets/img/generated/home-battery-range.webp',
+ '/assets/img/seed/photo-1593642634443-44adaa06623a.jpg',
  '[]'::jsonb,
  '{
    "hero_cta_primary":  {"text":"Request a Quote","link":"/contact.html"},

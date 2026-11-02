@@ -4730,7 +4730,7 @@ img, video, iframe { max-width: 100%; }
   margin-block: 20px 24px;
   border-radius: 8px;
 }
-.responsive-table > table { min-width: 560px; margin: 0; }
+.responsive-table > table { min-width: 560px; margin: 0 auto; }
 .responsive-table:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .article-body pre { max-width: 100%; overflow-x: auto; }
 .article-body, .article-references, .legal-doc { overflow-wrap: anywhere; }
@@ -4796,3 +4796,17 @@ img, video, iframe { max-width: 100%; }
 @media (max-width: 1024px) {
   :is(.contact-form, .article-side-cta, .mini-rfq) :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) { font-size: 16px; }
 }
+
+/* Restore the original homepage presentation without reverting other device fixes. */
+.home .hero { display: flex; min-height: 100vh; height: auto; gap: normal; padding: 140px 24px max(80px, calc(var(--cookie-banner-height, 0px) + 24px)); }
+.home .hero h1 { font-size: 56px; text-wrap: wrap; }
+.home .hero .subtitle { font-size: 18px; max-width: 620px; text-wrap: wrap; }
+@media (max-width: 768px) {
+  .home .hero h1 { font-size: 38px; }
+  .home .hero .subtitle { font-size: 15px; }
+  .home .hero .cta-group > .btn { min-width: 85vw; width: auto; }
+}
+
+/* An icon button keeps the mobile header compact while retaining an accessible name. */
+.menu-btn { width: 44px; height: 44px; padding: 10px; line-height: 0; text-align: center; }
+.menu-btn svg { display: block; width: 24px; height: 24px; margin: 0 auto; }

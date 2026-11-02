@@ -72,6 +72,12 @@ async function main() {
       if (page.startsWith('/admin/') && page !== '/admin/login.html' && state.path === '/admin/login.html') {
         failures.push({ page, width, reason: 'Admin authentication lost' }); continue;
       }
+      const offCenterTables = await evaluate(`Array.from(document.querySelectorAll('.responsive-table > .spec-table')).filter(table => {
+        const box = table.getBoundingClientRect();
+        const region = table.parentElement.getBoundingClientRect();
+        return box.width <= table.parentElement.clientWidth && Math.abs((box.left + box.right) / 2 - (region.left + region.right) / 2) > 2;
+      }).length`);
+      if (offCenterTables) failures.push({ page, width, reason: 'Specification table is not centered', count: offCenterTables });
       const layout = await evaluate(CHECK_JS);
       rows.push({ page, width, ...layout });
       if (!layout || layout.vw !== width || layout.scrollW > width + 1 || layout.count) {
