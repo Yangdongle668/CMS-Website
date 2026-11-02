@@ -1279,3 +1279,77 @@ code { font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace; 
   .block-row { flex-wrap: wrap; }
   .block-row__actions { width: 100%; justify-content: flex-end; }
 }
+
+/* Keep navigation, editors and tables available on touch devices. */
+.admin-shell { grid-template-columns: var(--sidebar-w) minmax(0, 1fr); }
+.admin-shell--auth { grid-template-columns: minmax(0, 1fr); padding: 20px; }
+.admin-shell--auth .auth-card { width: min(100%, 420px); min-width: 0; }
+.admin-menu-toggle, .admin-nav-close, .admin-nav-backdrop { display: none; }
+.admin-table-scroll { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+.admin-table-scroll > table { min-width: 600px; }
+.admin-table-scroll:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.field, .field-row > *, .field-row-3 > *, .toolbar, .toolbar__filters, .topbar__search { min-width: 0; }
+.field input, .field textarea, .field select, .toolbar select { max-width: 100%; }
+.page-head__actions, [data-topbar-actions], .form-actions { flex-wrap: wrap; }
+.tabs { max-width: 100%; overflow-x: auto; }
+@media (max-width: 900px) {
+  .admin-shell:not(.admin-shell--auth) { grid-template-columns: minmax(0, 1fr); }
+  .topbar { padding-inline: 12px; gap: 8px; }
+  .topbar__brand { padding-inline: 4px; }
+  .admin-menu-toggle, .admin-nav-close {
+    display: grid; place-items: center; width: 44px; height: 44px;
+    flex-shrink: 0; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text); font-size: 22px; cursor: pointer;
+  }
+  .sidebar {
+    display: flex; position: fixed; inset: 0 auto 0 0; width: min(300px, 86vw);
+    height: 100dvh; z-index: 100; transform: translateX(-100%);
+    visibility: hidden; transition: transform .2s ease, visibility .2s;
+    padding-top: 12px;
+  }
+  .admin-nav-close { align-self: flex-end; margin: 0 12px 8px; }
+  .admin-nav-open .sidebar { transform: translateX(0); visibility: visible; }
+  .admin-nav-backdrop:not([hidden]) {
+    display: block; position: fixed; inset: 0; z-index: 90;
+    border: 0; background: rgba(15,23,42,.45); cursor: pointer;
+  }
+  .sidebar__link, .sidebar__footer a { min-height: 44px; }
+  .page-head { flex-wrap: wrap; }
+  .page-head__actions, [data-topbar-actions] { flex-shrink: 1; max-width: 100%; }
+  .popmenu, .popmenu--wide { min-width: 0; max-width: calc(100vw - 24px); }
+}
+@media (max-width: 600px) {
+  .topbar__brand > span, .topbar__search-kbd, .topbar__user-chev { display: none; }
+  .topbar__search { flex: 1 1 80px; }
+  .topbar__actions { gap: 4px; }
+  .topbar__brand-mark { width: 28px; height: 28px; }
+  .topbar__icon-btn, .topbar__user { min-width: 44px; min-height: 44px; }
+  .field-row, .field-row-3 { grid-template-columns: minmax(0, 1fr); }
+  .page { padding-inline: 14px; }
+  .toolbar, .toolbar__filters { width: 100%; }
+  .toolbar input[type="search"], .toolbar select, #page-select { min-width: 0 !important; width: 100%; }
+  .toolbar__filters { flex: 1 1 100%; }
+  .field input:not([type="checkbox"]):not([type="radio"]), .field select, .field textarea { font-size: 16px; }
+  .form-actions .btn, .page-head__actions .btn { min-height: 44px; }
+  .auth-card { padding: 24px; }
+}
+@media (prefers-reduced-motion: reduce) { .sidebar { transition: none; } }
+.panel, .split > *, [data-page-content] { min-width: 0; max-width: 100%; }
+.admin-table-scroll { width: 100%; min-width: 0; }
+.topbar__search-icon svg, .topbar__user-chev svg, .topbar__icon-btn svg, .nav-icon svg {
+  display: block; width: 16px; height: 16px; flex-shrink: 0;
+}
+@media (max-width: 900px) {
+  .field input:not([type="checkbox"]):not([type="radio"]), .field select, .field textarea { font-size: 16px; }
+}
+@media (max-width: 900px) {
+  .sidebar { flex-direction: column; }
+  .sidebar > nav { min-height: 0; flex: 1; overflow-y: auto; }
+  .sidebar__footer { flex-shrink: 0; }
+}
+.panel__head { flex-wrap: wrap; }
+.panel__head > div { min-width: 0; max-width: 100%; flex-wrap: wrap; }
+.panel__head h2 { overflow-wrap: anywhere; }
+.a-ranges { flex-wrap: wrap; max-width: 100%; }
+/* Long API URLs and service-account examples must wrap inside narrow help panels. */
+[data-page-content] { overflow-wrap: anywhere; }

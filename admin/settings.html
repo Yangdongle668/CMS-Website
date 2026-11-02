@@ -207,7 +207,7 @@
         <p style="font-size:13px; color:var(--a-mute2); margin-top:0;">公开 URL 用于 canonical / sitemap 的绝对地址。优先级：环境变量 PUBLIC_URL &gt; 此处的设置 &gt; 请求 Host。</p>
         <div class="field"><label>公开 URL <span class="hint">（如 https://zufek.com，无尾斜杠）</span></label><input data-key="seo.public_url" value="${escapeHtml(s('seo').public_url || '')}" placeholder="https://zufek.com"/></div>
         <div class="field"><label>默认 Meta 描述 <span class="hint">（160 字符内）</span></label><textarea data-key="seo.default_meta_description" rows="3" maxlength="200">${escapeHtml(s('seo').default_meta_description || '')}</textarea></div>
-        <div class="field"><label>默认 OG 图 URL <span class="hint">（推荐 1200×630 PNG/JPG）</span></label><input data-key="seo.default_meta_image" value="${escapeHtml(s('seo').default_meta_image || '')}" placeholder="/assets/img/og-default.png"/></div>
+        <div class="field"><label>默认 OG 图 URL <span class="hint">（推荐 1200×630 PNG/JPG）</span></label><input data-key="seo.default_meta_image" value="${escapeHtml(s('seo').default_meta_image || '')}" placeholder="/assets/img/generated/home-battery-range.webp"/></div>
 
         <h3 style="margin:24px 0 12px; font-size:14px; padding-top:18px; border-top:1px solid var(--a-line);">Google Search Console 验证</h3>
         <div style="font-size:12.5px; color:var(--a-mute2); line-height:1.6; margin-bottom:10px;">

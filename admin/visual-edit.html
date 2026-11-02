@@ -136,6 +136,26 @@
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 10px;
   }
+  .ve-stage { grid-template-columns: minmax(0, 1fr) 320px; }
+  .ve-stage--no-sidebar { grid-template-columns: minmax(0, 1fr); }
+  .ve-frame-wrap, .ve-side { min-width: 0; }
+  @media (max-width: 1280px) {
+    body { grid-template-rows: auto minmax(0, 1fr); }
+    .ve-bar { flex-wrap: wrap; padding: 12px; gap: 10px; }
+    .ve-bar__title { flex: 1 1 100%; order: 1; }
+    .ve-bar__url { flex: 1 1 180px; max-width: 100%; }
+    .ve-bar__actions { flex-wrap: wrap; }
+  }
+  @media (max-width: 768px) {
+    html, body { height: auto; min-height: 100dvh; overflow: auto; }
+    .ve-stage { grid-template-columns: minmax(0, 1fr); overflow: visible; }
+    .ve-frame-wrap { padding: 10px; }
+    .ve-frame--desktop { height: 75dvh; min-height: 360px; }
+    .ve-side { border-left: 0; border-top: 1px solid #e5e7eb; max-height: 60dvh; }
+    .ve-bar__actions { width: 100%; }
+    .ve-btn, .ve-tab { min-height: 44px; }
+    .ve-bar__actions > * { flex: 1 1 130px; text-align: center; }
+  }
 </style>
 </head>
 <body>

@@ -1,0 +1,736 @@
+{
+  "generated_at": "2026-11-02",
+  "disclosure": "AI-generated editorial illustrations. Not documentary photographs of Zufek products, facilities or personnel. Not technical diagrams, test evidence or certification documents.",
+  "assets": [
+    {
+      "key": "article-how-to-choose-li-po-capacity-iot",
+      "url": "/assets/img/generated/article-how-to-choose-li-po-capacity-iot.webp",
+      "scene": "A tiny wireless environmental sensor PCB and its silver LiPo pouch cell beside a precision current meter on an electronics workbench.",
+      "bytes": 110846,
+      "sha256": "beebc3de39b71d114207c3810ef715122c0685ef68ec12b817a2177963f2f594",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-designing-curved-batteries-for-wearables",
+      "url": "/assets/img/generated/article-designing-curved-batteries-for-wearables.webp",
+      "scene": "A gently curved silver lithium pouch cell fitted alongside the curved open wristband housing of a fitness tracker, macro view.",
+      "bytes": 101120,
+      "sha256": "7bccb88eccc0f95488e5b42d8a04d76da4a6736b5da4d7faf5def20db85ac72d",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-lir-vs-ml-coin-cell-which-to-choose",
+      "url": "/assets/img/generated/article-lir-vs-ml-coin-cell-which-to-choose.webp",
+      "scene": "Two different unbranded rechargeable steel coin cell formats arranged side by side on a blue-gray bench with precision calipers.",
+      "bytes": 81878,
+      "sha256": "0c27b7531563e6eb73326a13d530006a0725f0333fbd2d1c0945bf7e2364706b",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-ar-thin-battery",
+      "url": "/assets/img/generated/article-ar-thin-battery.webp",
+      "scene": "Slim AR eyeglass frame with one temple housing open revealing an extremely thin silver pouch cell, precise realistic wearable electronics.",
+      "bytes": 71092,
+      "sha256": "3ed9265a1e7ff1f1339560c180c67c4bd6c5c1e4b2d5275ee27d75a7457f704b",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-ar-vr-market-2026",
+      "url": "/assets/img/generated/article-ar-vr-market-2026.webp",
+      "scene": "Modern lightweight AR glasses and a standalone VR headset arranged beside their very different compact battery modules on a studio bench.",
+      "bytes": 100150,
+      "sha256": "debe16afc159e3938fd7f3019f6cc2be3f598e4d406c88141fbeecd650c5e5ed",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-bms-pcm-smart",
+      "url": "/assets/img/generated/article-bms-pcm-smart.webp",
+      "scene": "Small single-cell battery protection PCB and larger smart battery management PCB side by side beside a pouch cell, tidy realistic components.",
+      "bytes": 107164,
+      "sha256": "3c0d20e9053926e98b31dbca4032dedadaa2d4f7d4b56e23146620a8153308e7",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-cell-sizing",
+      "url": "/assets/img/generated/article-cell-sizing.webp",
+      "scene": "Engineer measuring a rectangular silver pouch cell with digital calipers beside a handheld device's open battery compartment.",
+      "bytes": 161880,
+      "sha256": "4cbebb5e39b7ba5be4fd3f2bef905d382868821e5f960d8f053b03cfc48f6119",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-china-medical-battery",
+      "url": "/assets/img/generated/article-china-medical-battery.webp",
+      "scene": "Portable medical infusion pump and pulse oximeter on a clean clinical engineering workbench, a compact silver battery module in foreground.",
+      "bytes": 79098,
+      "sha256": "805463a3cec3fba597e363d9cb2b21c09d342519d3ca6ed31790f8036af4d9ce",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-cobalt-nickel-lfp",
+      "url": "/assets/img/generated/article-cobalt-nickel-lfp.webp",
+      "scene": "Sealed glass sample jars of dark cathode powders, metallic nickel pieces and cobalt mineral samples beside unbranded lithium cells, material science laboratory.",
+      "bytes": 180028,
+      "sha256": "923666ce1da2832e974fa02cd40d7688e4f127195ccc78cdc15238696f08acac",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-cycle-life-curves",
+      "url": "/assets/img/generated/article-cycle-life-curves.webp",
+      "scene": "Rows of silver pouch cells connected neatly to a precision battery cycling instrument on a lab bench, soft monitor traces out of focus.",
+      "bytes": 96528,
+      "sha256": "b169004bd3c538353ae3f7dadf1717c1b9d921cd979c8fb9a0c3d38324ded855",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-eu-battery-passport",
+      "url": "/assets/img/generated/article-eu-battery-passport.webp",
+      "scene": "Lithium battery module in recyclable packaging beside a handheld data scanner and a generic unreadable square traceability code, meticulous product traceability concept.",
+      "bytes": 126816,
+      "sha256": "f7be534bc733bc232ee886b416deb01b2ff5e70bff41f196d8d55a8c24b5f136",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-hv-lco-density",
+      "url": "/assets/img/generated/article-hv-lco-density.webp",
+      "scene": "Tiny high energy-density silver pouch cells with golden sealed tabs beside an open smartwatch case, premium macro engineering photograph.",
+      "bytes": 94440,
+      "sha256": "d6b28f81e2b0c101d390b960178d4baf568fbbcbaaf58ab9d9f026ebd94334a3",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-lithium-air-freight",
+      "url": "/assets/img/generated/article-lithium-air-freight.webp",
+      "scene": "Air cargo pallet with protected small battery shipping cartons near a freight aircraft cargo loading door, no shipping brands or readable markings.",
+      "bytes": 238124,
+      "sha256": "282695fbaae985a84120d56d10af7c0450717fe0ceacd45353ef07019d675326",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-lithium-shipping",
+      "url": "/assets/img/generated/article-lithium-shipping.webp",
+      "scene": "Protected lithium pouch cells separated in fitted insulating packaging beside closed corrugated transport cartons on a logistics workbench.",
+      "bytes": 127802,
+      "sha256": "798b0c2375f4a8346ad57a67e3d9693179c658880612dd138bcfdbee4eb3f561",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-second-life-cells",
+      "url": "/assets/img/generated/article-second-life-cells.webp",
+      "scene": "Technician sorting used and refurbished lithium cells in separated nonconductive trays with a diagnostic meter, clean recycling and screening laboratory.",
+      "bytes": 162032,
+      "sha256": "e77cd92b7cffbe703eec7bb76d6985cd2c9d12bffd008d74c03b8fe87ded9c45",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-solid-state-reality",
+      "url": "/assets/img/generated/article-solid-state-reality.webp",
+      "scene": "Laboratory researcher using tweezers to handle a small solid electrolyte ceramic disc beside a sealed experimental battery fixture, grounded scientific realism.",
+      "bytes": 79546,
+      "sha256": "e3e8910b52425939cd090269d093694605b02c9441f724b5eadee18098cebca3",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-thermal-runaway",
+      "url": "/assets/img/generated/article-thermal-runaway.webp",
+      "scene": "Unbranded pouch cell enclosed in a transparent-window battery safety test chamber with thermocouple wires, clean safe controlled lab, no fire or sparks.",
+      "bytes": 135586,
+      "sha256": "aa4594e38954b4f2c04de640df2197571725f82e477cef242209b6003ef43340",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-tws-earbuds-next",
+      "url": "/assets/img/generated/article-tws-earbuds-next.webp",
+      "scene": "Disassembled wireless earbuds and charging case with tiny rechargeable coin cells and a compact pouch cell laid neatly alongside, macro product engineering.",
+      "bytes": 93740,
+      "sha256": "8acdb4cd12ffbeb67a986bd45dc6923a2b3bd8007283113cf31f1bcb0adb7289",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-un-iec-compliance",
+      "url": "/assets/img/generated/article-un-iec-compliance.webp",
+      "scene": "Battery safety testing laboratory with vibration table, enclosed test fixture and neatly mounted pouch cells, no certificates or certification logos.",
+      "bytes": 164182,
+      "sha256": "3241293bf2888f56c20c788e181e5891b4decca3c7ce474f061baa438f728d06",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-wearable-chemistry",
+      "url": "/assets/img/generated/article-wearable-chemistry.webp",
+      "scene": "Three small pouch and steel lithium cell formats beside a smartwatch and a slim fitness tracker on a cool neutral workbench.",
+      "bytes": 107532,
+      "sha256": "eb4fe53df7757a79ff5a1cf2880327ff5364a15baebfee484b412e8c7f9fcab3",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-wearable-thermal",
+      "url": "/assets/img/generated/article-wearable-thermal.webp",
+      "scene": "Smartwatch fitted to a skin-tone silicone wrist test fixture with a small thermocouple attached to the back case, subtle thermal camera instrument blurred behind.",
+      "bytes": 92994,
+      "sha256": "9ea7fd88c1a3feda4a33affa081d638aa039c7a3d25d72a9926e3724bc50d68e",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-reflow-profile-ml-coin-cell",
+      "url": "/assets/img/generated/article-reflow-profile-ml-coin-cell.webp",
+      "scene": "Small SMD rechargeable coin cell mounted on a PCB entering a compact industrial reflow oven conveyor, macro electronic assembly scene.",
+      "bytes": 131568,
+      "sha256": "e723664e0663f414476a337bb61d2e9d033766c909eeab0533da3fabecb11cca",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-coin-cell-tab-welding",
+      "url": "/assets/img/generated/article-coin-cell-tab-welding.webp",
+      "scene": "Close-up of a rechargeable coin cell with welded nickel tabs held in a precision welding fixture, clean joints, no sparks.",
+      "bytes": 132870,
+      "sha256": "0d747080deb6308a002d8606a288f4af55a1a43a9876e0c057b61f15672fd32a",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-coin-cell-hearing-aid",
+      "url": "/assets/img/generated/article-coin-cell-hearing-aid.webp",
+      "scene": "Tiny behind-the-ear hearing aid with its shell opened and miniature rechargeable pin battery placed alongside, blue-gray clean audiology engineering bench.",
+      "bytes": 94256,
+      "sha256": "8b9126456b149291dc276b848e8d71f8298c4072d6af39ad62529c5b7ad4c315",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-coin-cell-rtc-backup",
+      "url": "/assets/img/generated/article-coin-cell-rtc-backup.webp",
+      "scene": "Industrial controller PCB with a small rechargeable coin cell next to a real-time-clock crystal and integrated circuit, realistic macro electronics.",
+      "bytes": 158706,
+      "sha256": "3960272d3648af64438f82b58e21cb2d75dc526c44e5cc623147f625601adade",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-coin-cell-low-temp",
+      "url": "/assets/img/generated/article-coin-cell-low-temp.webp",
+      "scene": "Rechargeable coin cells on a tray inside a laboratory environmental chamber, lightly frosted window edge and temperature probe, no exaggerated ice.",
+      "bytes": 113178,
+      "sha256": "1e8d52e852612cb819566a1fe973668b1376cf50596d229fd9e883ccd17e5558",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-coin-cell-iec-62133-2",
+      "url": "/assets/img/generated/article-coin-cell-iec-62133-2.webp",
+      "scene": "Steel coin cells secured individually in a battery safety laboratory fixture with protected terminals, precision test cables, no certifications.",
+      "bytes": 131842,
+      "sha256": "24fac05d96564762cc5daf432032b6b66ccf556a037c84209025b8a6434f3c7c",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-iec-62133-2-full-walkthrough",
+      "url": "/assets/img/generated/article-iec-62133-2-full-walkthrough.webp",
+      "scene": "Wide engineering laboratory bench with battery charge-discharge analyzer, compact vibration fixture and thermal chamber, pouch cells arranged for testing.",
+      "bytes": 164262,
+      "sha256": "e7cb3a004aec1c4cc4dcdd0738f050acfeeb2e048cb48b2c2c8ed2db79c38512",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-lipo-battery-swelling-causes",
+      "url": "/assets/img/generated/article-lipo-battery-swelling-causes.webp",
+      "scene": "Side-by-side healthy flat pouch cell and slightly swollen pouch cell in separate ceramic safety trays with a small caliper, controlled inspection setting, no punctures.",
+      "bytes": 69964,
+      "sha256": "94c10eeebd04d97c22af97c6c4a7dd1e8eea3f36c2221c08f9364b407e510e37",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-lithium-battery-capacity-fade",
+      "url": "/assets/img/generated/article-lithium-battery-capacity-fade.webp",
+      "scene": "New and aged silver lithium pouch cells connected to separate precision capacity measurement channels in an orderly battery aging laboratory.",
+      "bytes": 180214,
+      "sha256": "24846b79c7400e467b2df610007336f44779f7bfa54f1948c9c1a183196f6208",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-cc-cv-charging-protocol",
+      "url": "/assets/img/generated/article-cc-cv-charging-protocol.webp",
+      "scene": "Silver pouch cell connected to a compact battery charger evaluation PCB and precision bench power supply, close-up orderly red black leads, no readable graphs.",
+      "bytes": 125312,
+      "sha256": "8a7c7e7cdd621809c3538ac8aa0333331808bcf9939fb4ee21a6741de114778d",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-parallel-series-cell-configuration",
+      "url": "/assets/img/generated/article-parallel-series-cell-configuration.webp",
+      "scene": "Two small battery pack assemblies showing orderly parallel and series physical groupings of identical cylindrical cells with insulated nickel busbars, no wiring diagram.",
+      "bytes": 133556,
+      "sha256": "8b3480e20a109fcaa5fcd23664fe67352562baf37f31c305981874fac5021953",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-bms-topology-selection-guide",
+      "url": "/assets/img/generated/article-bms-topology-selection-guide.webp",
+      "scene": "Battery module with a realistic green BMS circuit board and balanced sense-wire harness laid out neatly, focus on hardware topology.",
+      "bytes": 179194,
+      "sha256": "8e2107e5cc52cb3915fc9b49bbfef63912d71b39766c102418034c58d44bc65e",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-formation-cycling-impact",
+      "url": "/assets/img/generated/article-formation-cycling-impact.webp",
+      "scene": "Rows of newly manufactured silver pouch cells clamped in organized formation and grading racks inside a pristine battery factory.",
+      "bytes": 139136,
+      "sha256": "bfb2b095a3225085009e57ab84c0e1f367fe1fcfb938ca6c29d6692feb76b5b1",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-electrolyte-additives-lipo",
+      "url": "/assets/img/generated/article-electrolyte-additives-lipo.webp",
+      "scene": "Gloved hands using a micropipette over sealed glass electrolyte sample vials in a clean battery chemistry lab, pouch cell and safety glasses nearby.",
+      "bytes": 95886,
+      "sha256": "f398415803158e9832140a9f8b933c806b99a322678ba36baf1b237593405cfd",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-stepped-battery-geometry",
+      "url": "/assets/img/generated/article-stepped-battery-geometry.webp",
+      "scene": "Three physically plausible custom L-shaped and stepped silver pouch cells arranged beside an open curved wearable housing, clear distinct geometries.",
+      "bytes": 83800,
+      "sha256": "e7963061ceccc95a77dde7763c7d70a0d8ccdadc7a1a5ced4ff658f1fbdad69f",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-custom-battery-tooling-cost",
+      "url": "/assets/img/generated/article-custom-battery-tooling-cost.webp",
+      "scene": "Precision aluminum battery forming die and matching small silver pouch cell with calipers and a technical notebook, no readable cost numbers.",
+      "bytes": 135614,
+      "sha256": "87690ffcac632ccda62e55064fd852a658895b21a97c02fb71c97d8144e0f422",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-co-design-battery-workflow",
+      "url": "/assets/img/generated/article-co-design-battery-workflow.webp",
+      "scene": "Two battery engineers reviewing an open device housing and a matching custom-shaped pouch cell on a workbench, CAD screen softly blurred, conceptual team.",
+      "bytes": 156744,
+      "sha256": "778f52001ab7e54de29c68478f307df0215145ebf2d5628f83d1ea5198870e06",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-flexible-battery-wearable",
+      "url": "/assets/img/generated/article-flexible-battery-wearable.webp",
+      "scene": "Very thin flexible research battery strip bent gently around a large smooth radius fixture beside a wearable patch enclosure, no folding or impossible sharp bend.",
+      "bytes": 93754,
+      "sha256": "6bf6a0353cc7e4fc88894371686a60729a0d7a054b3cfa75717d5d32576da4af",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-smart-ring-battery-design",
+      "url": "/assets/img/generated/article-smart-ring-battery-design.webp",
+      "scene": "Exploded smart ring housing with a tiny curved battery segment and miniature flexible PCB arranged precisely on a dark studio bench.",
+      "bytes": 156592,
+      "sha256": "2a25e0b4244e1f99e2a84912ab0591065c3c2264d34077e20165e015cfbddf55",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-custom-battery-reliability-testing",
+      "url": "/assets/img/generated/article-custom-battery-reliability-testing.webp",
+      "scene": "Custom L-shaped pouch cell mounted carefully in a thermal cycling test fixture with fine thermocouple wires, engineering reliability laboratory.",
+      "bytes": 134556,
+      "sha256": "c89244e5485dfa384edc77e1e8a7cac7dc135bfc7f953121bbe16cf64e2f0fd2",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-cr-vs-lir-vs-ml-coin-cell-comparison",
+      "url": "/assets/img/generated/article-cr-vs-lir-vs-ml-coin-cell-comparison.webp",
+      "scene": "Three unbranded steel coin cell types arranged in evenly spaced separate shallow trays with digital calipers in foreground, precision macro product comparison.",
+      "bytes": 162924,
+      "sha256": "42cfc2e193bdbdeb372abaaeaa54a52069515211e54707c7ff9b7a6c21acc644",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-coin-cell-cycle-life-curves",
+      "url": "/assets/img/generated/article-coin-cell-cycle-life-curves.webp",
+      "scene": "Bank of small coin cells in individual spring-contact holders linked to a multi-channel cycle life analyzer, clean lab macro.",
+      "bytes": 126516,
+      "sha256": "31b0abe5a1f53fd1fcd041f46488535fdae4e4b62e104aaa1416d0e565179ce5",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-coin-cell-self-discharge-shelf-life",
+      "url": "/assets/img/generated/article-coin-cell-self-discharge-shelf-life.webp",
+      "scene": "Coin cells stored individually in orderly dated-looking but unreadable tray compartments beside a precision low-current meter, shelf-life laboratory scene.",
+      "bytes": 152380,
+      "sha256": "368d48a8269375db2ff3b313f75873bfa1ea7c7acf6d7ee97b023ab86b50ba0b",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-coin-cell-charging-ic-design",
+      "url": "/assets/img/generated/article-coin-cell-charging-ic-design.webp",
+      "scene": "Macro of a compact coin-cell charging evaluation board with a small integrated circuit, charge connector and coin cell holder, realistic PCB layout.",
+      "bytes": 153946,
+      "sha256": "5002a3368043cd54c26f239ebaf08c6dfa9b5cc12e44a9a17eb1fc52414aa98a",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-coin-cell-mounting-holder-tab-smd",
+      "url": "/assets/img/generated/article-coin-cell-mounting-holder-tab-smd.webp",
+      "scene": "Three coin-cell mounting approaches arranged on a bench: plastic holder on PCB, welded solder tabs, and low-profile SMD tabbed cell, close-up.",
+      "bytes": 115988,
+      "sha256": "89b4a179157e5a961d4f42c16c4eb10aca0ac7a409f885a0ea45b024829a5ed2",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-coin-cell-safety-abuse-behavior",
+      "url": "/assets/img/generated/article-coin-cell-safety-abuse-behavior.webp",
+      "scene": "Small steel coin cell secured inside a protected metal battery abuse-test enclosure with insulated contacts, remote camera and safety window, no fire.",
+      "bytes": 139332,
+      "sha256": "28318329419f336c9464eed3c6cb2ee6f4dc820f0707b4bdd432c607f54d84ff",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-ble-beacon-ml-coin-cell-design",
+      "url": "/assets/img/generated/article-ble-beacon-ml-coin-cell-design.webp",
+      "scene": "Open compact BLE environmental beacon showing a small PCB, antenna and rechargeable coin cell, beside the closed white enclosure.",
+      "bytes": 86704,
+      "sha256": "ee361c6e473583d4956fcab13c323c71ea8afd8b45256879fbf531f922d0b336",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-reading-a-lipo-datasheet",
+      "url": "/assets/img/generated/article-reading-a-lipo-datasheet.webp",
+      "scene": "Engineer comparing a small silver pouch cell to a technical specification sheet with blurred non-readable text and digital calipers, close-up workbench.",
+      "bytes": 88040,
+      "sha256": "cd201e052489cbcea55d759aff2ec5b928eaef80902d3b6a3df831ed17dadcbd",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-battery-connector-harness-selection",
+      "url": "/assets/img/generated/article-battery-connector-harness-selection.webp",
+      "scene": "Neatly laid out silver pouch cell leads with several small white keyed battery connectors, red-black wire harnesses and a crimp tool, macro engineering.",
+      "bytes": 163682,
+      "sha256": "c4647b60978a270c9a3313be7f751f2352e53633197131c6d783a6596dcb3347",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-c-rate-selection-lipo",
+      "url": "/assets/img/generated/article-c-rate-selection-lipo.webp",
+      "scene": "Pouch battery attached to an electronic load through thick insulated wires with a surface temperature probe, controlled high-current laboratory evaluation.",
+      "bytes": 116818,
+      "sha256": "cfd656992529e74fac3e3c96aaf5ce62002fbdcd52b6d51ed4727fa4cd776f06",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-pse-kc-bis-regional-certification",
+      "url": "/assets/img/generated/article-pse-kc-bis-regional-certification.webp",
+      "scene": "Unbranded lithium battery samples in organized laboratory trays next to plain compliance report folders and test equipment, no logos or fake certificates.",
+      "bytes": 129908,
+      "sha256": "956c0ae3e9c75eb9dad31edf6bf580a1811840f95d13ee5cc240cd5a1e17b9cd",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "article-lithium-storage-state-of-charge",
+      "url": "/assets/img/generated/article-lithium-storage-state-of-charge.webp",
+      "scene": "Orderly battery warehouse shelf with insulated trays of pouch cells and a technician measuring storage voltage, cool clean industrial lighting.",
+      "bytes": 135490,
+      "sha256": "dfecdc88f678147e5923eb895d9f5ed22461c75573b10fadaf6761eb82c62104",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "home-battery-range",
+      "url": "/assets/img/generated/home-battery-range.webp",
+      "scene": "An orderly selection of silver pouch lithium cells, custom shaped cells and polished coin cells on a dark navy engineering workbench, products positioned to the right, generous negative space to left.",
+      "bytes": 71800,
+      "sha256": "aa0f80b77634475cb4fbd0c9f2a0a5d96f8eb559848a58db3c1690046a4b27a1",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "polymer-cells",
+      "url": "/assets/img/generated/polymer-cells.webp",
+      "scene": "Several rectangular silver lithium polymer pouch cells in graduated sizes with realistic sealed edges and short red black leads, premium close-up product photograph.",
+      "bytes": 78702,
+      "sha256": "ce74a515cc9ed864412fec23ecd71a09d8ef5cbf81d0810b2bfceb85b8c85c4c",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "custom-cells",
+      "url": "/assets/img/generated/custom-cells.webp",
+      "scene": "A carefully spaced range of custom-shaped silver pouch cells: L-shaped, shallow curved, narrow and stepped, physically credible sealed edges, no conventional cylindrical batteries.",
+      "bytes": 79518,
+      "sha256": "0d21dfa64219e0d00059a9fcb31121246feff7120b3f3fdd0b7bc6ec22fa52b7",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "coin-cells",
+      "url": "/assets/img/generated/coin-cells.webp",
+      "scene": "Polished steel rechargeable coin cells in several diameters and thicknesses arranged on a blue-gray matte studio bench, subtle specular light and clear macro detail.",
+      "bytes": 156390,
+      "sha256": "0d386b3eed5e5204db347ce630490bff2839aa990cbbf8240a6b51a1630fa3cb",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "battery-production",
+      "url": "/assets/img/generated/battery-production.webp",
+      "scene": "Wide conceptual modern lithium battery assembly cleanroom with orderly stainless steel production equipment, enclosed pouch cell stacking and sealing stations, unbranded facility, no people posing.",
+      "bytes": 222086,
+      "sha256": "fa261205aed8c30bc9ed9aca04730202761dee777c8d7509c964af995e531ffc",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "battery-engineering",
+      "url": "/assets/img/generated/battery-engineering.webp",
+      "scene": "Conceptual battery engineers at an electronics bench reviewing a custom pouch cell and open device shell, precision tools, bright clean laboratory, no readable screens.",
+      "bytes": 133736,
+      "sha256": "0dfd894337ff2a993455fdedda2c2ac9244fbc51635a891dd68290795f1dcc8e",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "battery-prototyping",
+      "url": "/assets/img/generated/battery-prototyping.webp",
+      "scene": "Prototype lithium pouch cells, precision forming die, digital calipers and a compact vacuum sealing machine on an orderly engineering laboratory bench.",
+      "bytes": 152922,
+      "sha256": "022c5a8a62b777c7bdad449bdc133bdda1290fc8ef58fa61eeb6ca8a521e66e0",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "battery-formation",
+      "url": "/assets/img/generated/battery-formation.webp",
+      "scene": "Rows of individual silver pouch cells clamped in neat formation cycling racks with orderly cables in a clean bright battery facility.",
+      "bytes": 175488,
+      "sha256": "980717bd1849f5300a95091d1bd0ce24823521f86ad6dda0411f37ca1db459bd",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "battery-office",
+      "url": "/assets/img/generated/battery-office.webp",
+      "scene": "Conceptual contemporary industrial technology office reception with glass-walled battery engineering laboratory visible behind, no logos or signage, quiet premium blue gray palette.",
+      "bytes": 165342,
+      "sha256": "ff0432e92aa099fafc0e37599fd703746bc50684e546aaf9fc553d346abfaccd",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "battery-team",
+      "url": "/assets/img/generated/battery-team.webp",
+      "scene": "Conceptual diverse electronics engineering team of four collaborating around small battery prototypes at a clean laboratory workbench, candid natural interaction, no name badges or logos.",
+      "bytes": 124398,
+      "sha256": "5c219089c243150fe4fcc53d8e077961d0a25d7447a0b73d8e7adfe4b23b72ae",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "battery-knowledge",
+      "url": "/assets/img/generated/battery-knowledge.webp",
+      "scene": "Open engineering notebook with abstract unreadable sketches, pouch cell, coin cell, calipers and a pencil neatly arranged on a dark blue-gray laboratory desk, premium editorial photograph.",
+      "bytes": 127982,
+      "sha256": "d52efce9aed02892d2c1d7a2edaf1a7adb0706e2848b44445f9f1e77b7e42c1c",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "data-privacy",
+      "url": "/assets/img/generated/data-privacy.webp",
+      "scene": "Abstract product editorial still life: compact silver battery module beside a small brushed-metal padlock and a plain closed document folder on a dark navy desk, data protection concept, no text.",
+      "bytes": 69152,
+      "sha256": "c9086794ef8f044a943669c13491707faae532357cbb4b75780e238b87a835ff",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "medical-patch",
+      "url": "/assets/img/generated/medical-patch.webp",
+      "scene": "Small adhesive wearable medical monitoring patch with a slim battery module and sealed clean packaging on a clinical engineering bench, conceptual medical device not worn by a patient.",
+      "bytes": 127044,
+      "sha256": "1dfc3c26e9c5111c444678159ed9cf801add9d2061fa28a025cb7811ebc625b6",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "smart-home",
+      "url": "/assets/img/generated/smart-home.webp",
+      "scene": "White wireless door sensor, temperature sensor and smart lock component beside their compact lithium battery modules on a clean modern home worktop, no logos.",
+      "bytes": 77030,
+      "sha256": "c48719174c9ab741772163dc2d544f884c5a7921d0c69bc8ce247ade50bd4c9b",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "industrial-handheld",
+      "url": "/assets/img/generated/industrial-handheld.webp",
+      "scene": "Rugged industrial barcode scanner and open handheld data terminal with removable lithium battery pack, warehouse shelves softly out of focus, product-focused.",
+      "bytes": 130172,
+      "sha256": "6c4499bc8b7ac13aed60da441c282afaf91a616f50e553375a8612ca7a82fb99",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "power-tools",
+      "url": "/assets/img/generated/power-tools.webp",
+      "scene": "Unbranded cordless drill, compact lithium tool battery pack and a row of cylindrical cells on a clean workshop bench, no readable logos or markings.",
+      "bytes": 107278,
+      "sha256": "d7338fac101970432bdf8a76076d4c00f740cd35161d10566f0c2bac9edf1186",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "field-equipment",
+      "url": "/assets/img/generated/field-equipment.webp",
+      "scene": "Rugged portable field radio, compact survey drone and sealed lithium battery modules on a neutral field equipment workbench, civilian surveying scene, no weapons.",
+      "bytes": 169752,
+      "sha256": "c876dce33d69a9fc70a154e477e8da46abefa9698ae4967f994a5bf6dfd2eb46",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "battery-sustainability",
+      "url": "/assets/img/generated/battery-sustainability.webp",
+      "scene": "Used battery modules being sorted into separate insulated trays on a clean recycling laboratory bench, green foliage softly visible through the window, grounded circular materials concept.",
+      "bytes": 153686,
+      "sha256": "86b831b9ae907e52d4eeda535ae14b71c9cbad90d375012f01dee6b6bb7711ed",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "key": "round-polymer-cells",
+      "url": "/assets/img/generated/round-polymer-cells.webp",
+      "scene": "Round aluminum-laminate lithium polymer pouch cells with sealed edges, polyimide tape and short leads; distinct from steel coin cells.",
+      "bytes": 67084,
+      "sha256": "9ef73449415b8a5b0d22511b0dbfd12d58cd8929ab2d1c019f0c72771710ac23",
+      "width": 1536,
+      "height": 1024
+    }
+  ],
+  "legacy_replacements": {
+    "/assets/img/seed/photo-1593642634443-44adaa06623a.jpg": "/assets/img/generated/home-battery-range.webp",
+    "/assets/img/seed/photo-1620455243023-2c80b3a02ee3.jpg": "/assets/img/generated/polymer-cells.webp",
+    "/assets/img/seed/photo-1592478411213-6153e4ebc07d.jpg": "/assets/img/generated/article-ar-thin-battery.webp",
+    "/assets/img/seed/photo-1580407195669-d0c11ee3c1c2.jpg": "/assets/img/generated/coin-cells.webp",
+    "/assets/img/seed/photo-1530026405186-ed1f139313f8.jpg": "/assets/img/generated/article-china-medical-battery.webp",
+    "/assets/img/seed/photo-1523275335684-37898b6baf30.jpg": "/assets/img/generated/article-wearable-chemistry.webp",
+    "/assets/img/seed/photo-1558346490-a72e53ae2d4f.jpg": "/assets/img/generated/article-how-to-choose-li-po-capacity-iot.webp",
+    "/assets/img/seed/photo-1558002038-1055907df827.jpg": "/assets/img/generated/smart-home.webp",
+    "/assets/img/seed/photo-1559131397-f94da358f7ca.jpg": "/assets/img/generated/field-equipment.webp",
+    "/assets/img/seed/photo-1565514020179-026b92b84bb6.jpg": "/assets/img/generated/battery-production.webp",
+    "/assets/img/seed/photo-1434030216411-0b793f4b4173.jpg": "/assets/img/generated/battery-knowledge.webp",
+    "/assets/img/seed/photo-1550751827-4bd374c3f58b.jpg": "/assets/img/generated/data-privacy.webp",
+    "/assets/img/seed/photo-1589994965851-a8f479c573a9.jpg": "/assets/img/generated/data-privacy.webp",
+    "/assets/img/seed/photo-1529070538774-1843cb3265df.jpg": "/assets/img/generated/data-privacy.webp",
+    "/assets/img/seed/photo-1450101499163-c8848c66ca85.jpg": "/assets/img/generated/data-privacy.webp",
+    "/assets/img/seed/photo-1521791136064-7986c2920216.jpg": "/assets/img/generated/data-privacy.webp",
+    "/assets/img/seed/photo-1497366216548-37526070297c.jpg": "/assets/img/generated/battery-office.webp",
+    "/assets/img/seed/photo-1566275529824-cca6d008f3da.jpg": "/assets/img/generated/battery-office.webp",
+    "/assets/img/seed/photo-1581091226825-a6a2a5aee158.jpg": "/assets/img/generated/custom-cells.webp",
+    "/assets/img/seed/photo-1581092918056-0c4c3acd3789.jpg": "/assets/img/generated/battery-engineering.webp",
+    "/assets/img/seed/photo-1581092921461-eab62e97a780.jpg": "/assets/img/generated/battery-engineering.webp",
+    "/assets/img/seed/photo-1581093588401-fbb62a02f120.jpg": "/assets/img/generated/battery-prototyping.webp",
+    "/assets/img/seed/photo-1581092918484-8313fb4ee6f4.jpg": "/assets/img/generated/battery-prototyping.webp",
+    "/assets/img/seed/photo-1565043666747-69f6646db940.jpg": "/assets/img/generated/battery-production.webp",
+    "/assets/img/seed/photo-1565043589221-1a6fd9ae45c7.jpg": "/assets/img/generated/battery-formation.webp",
+    "/assets/img/seed/photo-1581147036324-c1c89c2c8b5c.jpg": "/assets/img/generated/power-tools.webp",
+    "/assets/img/seed/photo-1556157382-97eda2d62296.jpg": "/assets/img/generated/industrial-handheld.webp",
+    "/assets/img/seed/photo-1606220588913-b3aacb4d2f46.jpg": "/assets/img/generated/smart-home.webp",
+    "/assets/img/seed/photo-1561414927-6d86591d0c4f.jpg": "/assets/img/generated/smart-home.webp",
+    "/assets/img/seed/photo-1426927308491-6380b6a9936f.jpg": "/assets/img/generated/power-tools.webp",
+    "/assets/img/seed/photo-1572981779307-38b8cabb2407.jpg": "/assets/img/generated/power-tools.webp",
+    "/assets/img/seed/photo-1617802690992-15d93263d3a3.jpg": "/assets/img/generated/article-ar-vr-market-2026.webp",
+    "/assets/img/seed/photo-1622979135225-d2ba269cf1ac.jpg": "/assets/img/generated/article-ar-vr-market-2026.webp",
+    "/assets/img/seed/photo-1559757175-5700dde675bc.jpg": "/assets/img/generated/medical-patch.webp",
+    "/assets/img/seed/photo-1581595220892-b0739db3ba8c.jpg": "/assets/img/generated/medical-patch.webp",
+    "/assets/img/seed/photo-1554224155-1696413565d3.jpg": "/assets/img/generated/industrial-handheld.webp",
+    "/assets/img/seed/photo-1556761175-5973dc0f32e7.jpg": "/assets/img/generated/industrial-handheld.webp",
+    "/assets/img/seed/photo-1521587760476-6c12a4b040da.jpg": "/assets/img/generated/field-equipment.webp",
+    "/assets/img/seed/photo-1518709268805-4e9042af2176.jpg": "/assets/img/generated/field-equipment.webp",
+    "/assets/img/seed/photo-1607968565043-36af90dde238.jpg": "/assets/img/generated/article-reflow-profile-ml-coin-cell.webp",
+    "/assets/img/seed/photo-1510017098667-27dfc7150acb.jpg": "/assets/img/generated/article-wearable-thermal.webp",
+    "/assets/img/seed/photo-1590658006821-04f4008d5717.jpg": "/assets/img/generated/article-tws-earbuds-next.webp",
+    "/assets/img/seed/photo-1522071820081-009f0129c71c.jpg": "/assets/img/generated/battery-team.webp",
+    "/assets/img/seed/photo-1466611653911-95081537e5b7.jpg": "/assets/img/generated/battery-sustainability.webp",
+    "/assets/img/seed/photo-1612392987824-d63f57e9b1cf.jpg": "/assets/img/generated/home-battery-range.webp",
+    "/assets/img/seed/photo-1456513080510-7bf3a84b82f8.jpg": "/assets/img/generated/battery-knowledge.webp",
+    "/assets/img/seed/photo-1518770660439-4636190af475.jpg": "/assets/img/generated/article-bms-pcm-smart.webp",
+    "/assets/img/seed/photo-1581090464777-f3220bbe1b8b.jpg": "/assets/img/generated/battery-engineering.webp",
+    "/assets/img/seed/photo-1551434678-e076c223a692.jpg": "/assets/img/generated/battery-team.webp",
+    "/assets/img/seed/photo-1454165804606-c3d57bc86b40.jpg": "/assets/img/generated/battery-knowledge.webp",
+    "/assets/img/seed/photo-1578662996442-48f60103fc96.jpg": "/assets/img/generated/article-cobalt-nickel-lfp.webp",
+    "/assets/img/seed/photo-1451187580459-43490279c0fa.jpg": "/assets/img/generated/article-cycle-life-curves.webp",
+    "/assets/img/seed/photo-1529421308418-eab98863cee4.jpg": "/assets/img/generated/article-eu-battery-passport.webp",
+    "/assets/img/seed/photo-1583414692941-2dcf8e0e1ea4.jpg": "/assets/img/generated/article-lithium-air-freight.webp",
+    "/assets/img/seed/photo-1568057373560-8d71ccf43b26.jpg": "/assets/img/generated/article-lithium-shipping.webp",
+    "/assets/img/seed/photo-1532456745301-b2c645d8b80d.jpg": "/assets/img/generated/article-thermal-runaway.webp",
+    "/assets/img/seed/photo-1618477388954-7852f32655ec.jpg": "/assets/img/generated/article-un-iec-compliance.webp",
+    "/assets/img/seed/photo-1610664921890-5d5e6acf5e06.jpg": "/assets/img/generated/article-flexible-battery-wearable.webp",
+    "/assets/img/seed/photo-1556909114-f6e7ad7d3136.jpg": "/assets/img/generated/article-coin-cell-self-discharge-shelf-life.webp",
+    "/assets/img/seed/photo-1532288147748-cccef7a3aaa1.jpg": "/assets/img/generated/article-coin-cell-charging-ic-design.webp",
+    "/assets/img/pillar-polymer.svg": "/assets/img/generated/polymer-cells.webp",
+    "/assets/img/pillar-custom.svg": "/assets/img/generated/custom-cells.webp",
+    "/assets/img/pillar-cylindrical.svg": "/assets/img/generated/coin-cells.webp",
+    "/assets/img/variant-standard.svg": "/assets/img/generated/polymer-cells.webp",
+    "/assets/img/variant-custom.svg": "/assets/img/generated/custom-cells.webp",
+    "/assets/img/manufacturing-polymer.svg": "/assets/img/generated/battery-production.webp",
+    "/assets/img/variant-round.svg": "/assets/img/generated/round-polymer-cells.webp",
+    "/assets/img/variant-curved.svg": "/assets/img/generated/article-designing-curved-batteries-for-wearables.webp",
+    "/assets/img/variant-stepped.svg": "/assets/img/generated/article-stepped-battery-geometry.webp",
+    "/assets/img/variant-thin.svg": "/assets/img/generated/article-ar-thin-battery.webp",
+    "/assets/img/manufacturing-custom.svg": "/assets/img/generated/battery-engineering.webp",
+    "/assets/img/hero-illustration.svg": "/assets/img/generated/home-battery-range.webp",
+    "/assets/img/og-default.svg": "/assets/img/generated/home-battery-range.webp",
+    "/assets/img/cert-un38.svg": "",
+    "/assets/img/cert-iec.svg": "",
+    "/assets/img/cert-ce.svg": "",
+    "/assets/img/cert-rohs.svg": "",
+    "/assets/img/cert-msds.svg": "",
+    "/assets/img/cert-iso13485.svg": "",
+    "/assets/img/og-default.png": "/assets/img/generated/home-battery-range.webp"
+  }
+}

@@ -518,6 +518,8 @@ const CHECK_JS = `(() => {
 
   const clipped = [];
   for (const el of document.querySelectorAll('body *')) {
+    // Anti-spam traps are intentionally offscreen and explicitly hidden from users.
+    if (el.closest('.hp-field[aria-hidden="true"], .article-side-cta__hp[aria-hidden="true"]')) continue;
     const cs = getComputedStyle(el);
     if (cs.display === 'none' || cs.visibility === 'hidden' || cs.position === 'fixed') continue;
     const r = el.getBoundingClientRect();
@@ -641,7 +643,11 @@ async function main() {
   return 1;
 }
 
-main().then((code) => process.exit(code)).catch((err) => {
-  console.error('[visual] failed:', err && err.stack || err);
-  process.exit(1);
-});
+module.exports = { CDP, launch, findChrome, visit, prepareSession, CHECK_JS };
+
+if (require.main === module) {
+  main().then((code) => process.exit(code)).catch((err) => {
+    console.error('[visual] failed:', err && err.stack || err);
+    process.exit(1);
+  });
+}

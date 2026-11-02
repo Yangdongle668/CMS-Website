@@ -19,13 +19,37 @@ function bindSideMenu() {
   if (!menuBtn || !sideMenu || !overlay) return;
   if (menuBtn.__bound) return;
   menuBtn.__bound = true;
-  const open = () => { sideMenu.classList.add('open'); overlay.classList.add('open'); document.body.style.overflow = 'hidden'; };
-  const close = () => { sideMenu.classList.remove('open'); overlay.classList.remove('open'); document.body.style.overflow = ''; };
+  let previousOverflow = '';
+  const close = () => {
+    const wasOpen = sideMenu.classList.contains('open');
+    sideMenu.classList.remove('open');
+    overlay.classList.remove('open');
+    sideMenu.inert = true;
+    menuBtn.setAttribute('aria-expanded', 'false');
+    if (wasOpen) { document.body.style.overflow = previousOverflow; menuBtn.focus(); }
+  };
+  const open = () => {
+    previousOverflow = document.body.style.overflow;
+    sideMenu.inert = false;
+    sideMenu.classList.add('open');
+    overlay.classList.add('open');
+    menuBtn.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+    closeBtn?.focus();
+  };
   menuBtn.addEventListener('click', open);
   if (closeBtn) closeBtn.addEventListener('click', close);
   overlay.addEventListener('click', close);
   sideMenu.querySelectorAll('a').forEach((a) => a.addEventListener('click', close));
+  sideMenu.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab') return;
+    const items = [...sideMenu.querySelectorAll('button, a[href]')];
+    const first = items[0], last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+  matchMedia('(min-width: 1281px)').addEventListener('change', (e) => { if (e.matches) close(); });
 }
 
 // ===== Nav dropdowns =====
@@ -528,4 +552,30 @@ window.addEventListener('scroll', () => {
       if (e.dataTransfer && e.dataTransfer.files) uploadFiles(e.dataTransfer.files);
     });
   });
+})();
+
+// Preserve table columns on phones without making the whole page scroll.
+(function () {
+  function wrap(root) {
+    const tables = root.matches?.('table') ? [root] : [...(root.querySelectorAll?.('table') || [])];
+    for (const table of tables) {
+      if (table.closest('.responsive-table')) continue;
+      if (!table.matches('.spec-table') && !table.closest('.article-body, .legal-doc, [data-spec-table]')) continue;
+      const region = document.createElement('div');
+      region.className = 'responsive-table';
+      region.tabIndex = 0;
+      region.setAttribute('role', 'region');
+      region.setAttribute('aria-label', 'Scrollable table');
+      table.before(region);
+      region.appendChild(table);
+    }
+  }
+  const init = () => {
+    wrap(document);
+    new MutationObserver((records) => {
+      for (const record of records) for (const node of record.addedNodes) if (node.nodeType === 1) wrap(node);
+    }).observe(document.body, { childList: true, subtree: true });
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
+  else init();
 })();

@@ -55,6 +55,9 @@ async function run() {
     console.log('[db:init] SEO/GEO defaults seed applied.');
   }
 
+  await query(fs.readFileSync(path.join(__dirname, 'migrate-2026-scene-imagery.sql'), 'utf8'));
+  console.log('[db:init] scene-matched imagery applied.');
+
   // Optional: pre-create an admin from env. If ADMIN_DEFAULT_EMAIL is not
   // set, we leave the user table empty and let the first POST to /api/auth/login
   // bootstrap an admin with whatever credentials the operator submits.

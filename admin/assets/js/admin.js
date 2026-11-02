@@ -6,7 +6,7 @@
 
   // 16×16 stroke-based SVG icon builder
   function ico(d) {
-    return '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
+    return '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
   }
 
   const NAV = [
@@ -273,6 +273,7 @@
     shell.innerHTML = `
       <!-- ── Topbar ── -->
       <header class="topbar">
+        <button type="button" class="admin-menu-toggle" aria-label="打开导航" aria-controls="admin-navigation" aria-expanded="false" data-admin-menu>☰</button>
         <div class="topbar__brand">
           <div class="topbar__brand-mark">Z</div>
           <span>Zufek CMS</span>
@@ -300,7 +301,9 @@
       </header>
 
       <!-- ── Sidebar ── -->
-      <aside class="sidebar">
+      <button type="button" class="admin-nav-backdrop" aria-label="关闭导航" data-admin-nav-close hidden></button>
+      <aside class="sidebar" id="admin-navigation" aria-label="后台导航">
+        <button type="button" class="admin-nav-close" data-admin-nav-close aria-label="关闭导航">×</button>
         <nav>
           ${NAV.map((g) => `
             <div class="sidebar__group">
@@ -338,6 +341,57 @@
           <div data-page-content></div>
         </div>
       </main>`;
+
+    // The sidebar becomes a keyboard-accessible drawer on tablets and phones.
+    const menu = shell.querySelector('[data-admin-menu]');
+    const sidebar = shell.querySelector('.sidebar');
+    const backdrop = shell.querySelector('.admin-nav-backdrop');
+    const narrow = matchMedia('(max-width: 900px)');
+    let previousOverflow = '';
+    const closeNav = () => {
+      const wasOpen = shell.classList.contains('admin-nav-open');
+      shell.classList.remove('admin-nav-open');
+      menu.setAttribute('aria-expanded', 'false');
+      backdrop.hidden = true;
+      sidebar.inert = narrow.matches;
+      if (wasOpen) { document.body.style.overflow = previousOverflow; menu.focus(); }
+    };
+    menu.addEventListener('click', () => {
+      previousOverflow = document.body.style.overflow;
+      shell.classList.add('admin-nav-open');
+      sidebar.inert = false;
+      backdrop.hidden = false;
+      menu.setAttribute('aria-expanded', 'true');
+      document.body.style.overflow = 'hidden';
+      sidebar.querySelector('.admin-nav-close').focus();
+    });
+    shell.querySelectorAll('[data-admin-nav-close]').forEach((button) => button.addEventListener('click', closeNav));
+    sidebar.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeNav));
+    sidebar.addEventListener('keydown', (e) => {
+      if (!narrow.matches || e.key !== 'Tab') return;
+      const items = [...sidebar.querySelectorAll('button, a[href]')];
+      const first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeNav(); });
+    narrow.addEventListener('change', closeNav);
+    closeNav();
+
+    const wrapTables = () => {
+      for (const table of shell.querySelectorAll('main table')) {
+        if (table.closest('.admin-table-scroll')) continue;
+        const region = document.createElement('div');
+        region.className = 'admin-table-scroll';
+        region.tabIndex = 0;
+        region.setAttribute('role', 'region');
+        region.setAttribute('aria-label', '横向滚动查看完整表格');
+        table.before(region);
+        region.appendChild(table);
+      }
+    };
+    new MutationObserver(wrapTables).observe(shell.querySelector('main'), { childList: true, subtree: true });
+    wrapTables();
 
     // Logout link in sidebar
     shell.querySelector('[data-logout-link]').addEventListener('click', async (ev) => {

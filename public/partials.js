@@ -74,7 +74,7 @@ const STATE = {
     gscVerify: '',
     bingVerify: '',
     twitterHandle: '',
-    defaultOgImage: '/assets/img/og-default.png',
+    defaultOgImage: '/assets/img/generated/home-battery-range.webp',
   },
   settings: FALLBACK,
 };
@@ -104,7 +104,7 @@ function navHtml(nav) {
     <nav class="nav">
       <a href="/" class="brand">${escapeHtml(STATE.config.siteName || 'Zufek')}</a>
       <ul class="nav-main">${lis}</ul>
-      <button class="menu-btn" id="menuBtn" aria-label="Menu">Menu</button>
+      <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-controls="sideMenu" aria-expanded="false">Menu</button>
     </nav>
   </header>`;
 }
@@ -120,7 +120,7 @@ function sidemenuHtml(nav) {
     }
     return `<li><a href="${escapeHtml(item.url)}">${escapeHtml(item.label)}</a></li>`;
   }).join('');
-  return `<aside class="side-menu" id="sideMenu">
+  return `<aside class="side-menu" id="sideMenu" aria-label="Site navigation" inert>
     <button class="close-btn" id="closeBtn" aria-label="Close">&times;</button>
     <ul>${blocks}</ul>
   </aside>
@@ -194,6 +194,7 @@ function footerHtml(settings) {
         <li><a href="/sitemap.xml">Sitemap</a></li>
         <li><a href="#" id="cookie-settings-link">Cookie Settings</a></li>
       </ul>
+      <p class="imagery-note">AI-generated imagery illustrates products, applications and engineering concepts; it is not documentary photography.</p>
       <p class="copyright">&copy; ${year} ${escapeHtml(site.name || 'Zufek')}. All rights reserved.</p>
     </div>
   </footer>`;
@@ -288,8 +289,15 @@ function bindCookieBanner() {
   const overlay = document.getElementById('cookieModalOverlay');
   if (!banner || !modal) return;
 
-  const showBanner = () => banner.classList.add('visible');
-  const hideBanner = () => banner.classList.remove('visible');
+  const syncBannerSpace = () => {
+    const height = banner.classList.contains('visible') ? banner.getBoundingClientRect().height : 0;
+    document.documentElement.style.setProperty('--cookie-banner-height', `${height}px`);
+  };
+  const showBanner = () => { banner.classList.add('visible'); syncBannerSpace(); };
+  const hideBanner = () => { banner.classList.remove('visible'); syncBannerSpace(); };
+  if (window.ResizeObserver) new ResizeObserver(syncBannerSpace).observe(banner);
+  else window.addEventListener('resize', syncBannerSpace);
+
   const openModal = () => {
     const consent = getConsent();
     if (consent && consent.categories) {

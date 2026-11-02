@@ -26,7 +26,10 @@
     "visual:shoot": "node scripts/visual-snapshot.js shoot",
     "visual:diff": "node scripts/visual-snapshot.js diff",
     "visual:check": "node scripts/visual-snapshot.js check",
-    "blocks:decode-entities": "node scripts/decode-block-entities.js"
+    "blocks:decode-entities": "node scripts/decode-block-entities.js",
+    "images:audit": "node scripts/audit-imagery.js",
+    "images:prepare-scenes": "node scripts/prepare-scene-variants.js",
+    "responsive:check": "node scripts/check-responsive.js"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -43,8 +43,8 @@ INSERT INTO articles (
  'reading-a-lipo-datasheet',
  'How to Read a Li-Po Datasheet Without Getting Burned',
  'Every number on a lithium polymer datasheet was measured under conditions the sheet may not print. Here is what each line actually promises, and which ones to ask about before you design around them.',
- '/assets/img/seed/photo-1581092921461-eab62e97a780.jpg',
- '/assets/img/seed/photo-1581092921461-eab62e97a780.jpg',
+ '/assets/img/generated/battery-engineering.webp',
+ '/assets/img/generated/battery-engineering.webp',
  $art$<p class="lede">A cell datasheet is a marketing document with engineering units. Nothing on it is false, but almost every number carries a test condition, and the conditions are where the disagreements between your bench results and the supplier's numbers come from. Here is how to read one properly.</p>
 
 <h2>Capacity: typical, minimum, and at what rate</h2>
@@ -114,8 +114,8 @@ INSERT INTO articles (
  'battery-connector-harness-selection',
  'Choosing Connectors and Harnesses for a Custom Li-Po Pack',
  'Pitch, current rating, polarity protection, wire gauge and strain relief — the interface between a custom cell and your board, and the five ways it goes wrong in the field.',
- '/assets/img/seed/photo-1518770660439-4636190af475.jpg',
- '/assets/img/seed/photo-1518770660439-4636190af475.jpg',
+ '/assets/img/generated/article-bms-pcm-smart.webp',
+ '/assets/img/generated/article-bms-pcm-smart.webp',
  $art$<p class="lede">Custom-shape programs spend months on geometry and capacity, then pick the connector in an afternoon from whatever the last project used. It is the cheapest part of the pack and the one we see fail most often in the field, because it is the only part that gets handled by a human during assembly and service.</p>
 
 <h2>Start from the current, not the catalogue</h2>
@@ -179,8 +179,8 @@ INSERT INTO articles (
  'c-rate-selection-lipo',
  'Picking a C-Rate: Why Your Cell Runs Hot at Spec',
  'Capacity sizing tells you how big the cell is. C-rate sizing tells you whether it survives the load. The two are different calculations and only one of them is usually done.',
- '/assets/img/seed/photo-1532456745301-b2c645d8b80d.jpg',
- '/assets/img/seed/photo-1532456745301-b2c645d8b80d.jpg',
+ '/assets/img/generated/article-thermal-runaway.webp',
+ '/assets/img/generated/article-thermal-runaway.webp',
  $art$<p class="lede">A cell chosen purely on capacity will meet its runtime target on the bench and run hot, sag under load and age early in the product. Capacity answers "how much energy"; C-rate answers "how fast can I take it out without hurting the cell". Most specifications answer only the first.</p>
 
 <h2>What C actually means</h2>
@@ -238,8 +238,8 @@ INSERT INTO articles (
  'pse-kc-bis-regional-certification',
  'PSE, KC and BIS: The Certifications IEC 62133 Does Not Cover',
  'IEC 62133-2 gets you a test report. Japan, Korea and India each want something more before your product clears customs — and each has a lead time your launch plan needs to know about.',
- '/assets/img/seed/photo-1618477388954-7852f32655ec.jpg',
- '/assets/img/seed/photo-1618477388954-7852f32655ec.jpg',
+ '/assets/img/generated/article-un-iec-compliance.webp',
+ '/assets/img/generated/article-un-iec-compliance.webp',
  $art$<p class="lede">Teams often treat battery compliance as solved once they hold an IEC 62133-2 report and a UN 38.3 summary. Those two clear the cell technically and clear the shipment legally. They do not, by themselves, let you sell in Japan, Korea or India. Each of those markets layers a national scheme on top, and each one takes longer than people plan for.</p>
 
 <h2>What IEC 62133-2 actually gives you</h2>
@@ -308,8 +308,8 @@ INSERT INTO articles (
  'lithium-storage-state-of-charge',
  'Storage State of Charge: What Happens to Cells in Your Warehouse',
  'A cell sitting in a box is still ageing. How fast depends almost entirely on two numbers you control: its state of charge and the temperature of the room.',
- '/assets/img/seed/photo-1568057373560-8d71ccf43b26.jpg',
- '/assets/img/seed/photo-1568057373560-8d71ccf43b26.jpg',
+ '/assets/img/generated/article-lithium-shipping.webp',
+ '/assets/img/generated/article-lithium-shipping.webp',
  $art$<p class="lede">Cycle life gets all the attention because it is the number on the datasheet. For a product that ships in volume, calendar ageing during storage often costs more capacity than the cycling does — and unlike cycling, it is almost free to control. Two variables dominate: how charged the cells are, and how warm the room is.</p>
 
 <h2>Why a stored cell degrades at all</h2>
