@@ -4841,3 +4841,7 @@ body.home #site-header:not(.scrolled) .nav-main > li > a:hover { background: rgb
 }
 /* CMS sets the fit inline; the image is painted only in the compact card. */
 .home .hero { background-size: 0 0 !important; }
+
+/* An icon button keeps the mobile header compact while retaining an accessible name. */
+.menu-btn { width: 44px; height: 44px; padding: 10px; line-height: 0; text-align: center; }
+.menu-btn svg { display: block; width: 24px; height: 24px; margin: 0 auto; }
