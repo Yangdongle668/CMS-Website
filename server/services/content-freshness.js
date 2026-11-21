@@ -7,14 +7,11 @@
 // ranking for a while, the articles age out, and the first hard signal
 // is a traffic chart six months later.
 //
-// This computes the numbers once and lets two callers share them —
-// the admin SEO overview, which shows them, and the health-alert job,
-// which emails when they cross a threshold.
+// This computes the numbers for the admin SEO overview, which shows them.
 //
 // The thresholds are deliberately generous. A B2B manufacturer's blog
-// running on a 2-4 week cadence is healthy; the point is to catch a
-// publishing pipeline that has actually stopped, not to nag an editor
-// who took a fortnight over a piece.
+// running on a 2-4 week cadence is healthy; the point is to flag a
+// publishing pipeline that has actually stopped.
 
 const { one, many } = require('../db/client');
 
@@ -80,15 +77,4 @@ async function report() {
   };
 }
 
-// One-line summary for the health-alert email. Returns null when there
-// is nothing worth waking anyone for.
-async function alertReason() {
-  let r;
-  try { r = await report(); } catch (_) { return null; }
-  if (!r || r.status === 'ok' || r.status === 'empty') return null;
-  return `Blog has not published in ${r.days_since_last_publish} days `
-    + `(last: ${new Date(r.last_published_at).toISOString().slice(0, 10)}; `
-    + `${r.published_last_90d} post(s) in the last 90 days)`;
-}
-
-module.exports = { report, alertReason, WARN_DAYS, STALE_DAYS };
+module.exports = { report, WARN_DAYS, STALE_DAYS };
