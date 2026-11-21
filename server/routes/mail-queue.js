@@ -7,6 +7,7 @@
 //   - inspect the full HTML of any queued message
 //   - retry a dead / failed message immediately
 //   - cancel a stuck message (mark as 'dead' without sending)
+//   - permanently delete dead messages (one, or all at once)
 // =====================================================================
 const express = require('express');
 const { many, one, query } = require('../db/client');
@@ -124,6 +125,31 @@ router.post('/retry-all-dead', requireAuth, async (req, res) => {
   await recordAudit({
     req,
     action: 'retry_all_dead',
+    entity: 'mail_outbox',
+    detail: { count: r.rowCount },
+  });
+  res.json({ ok: true, count: r.rowCount });
+});
+
+// Permanent removal is limited to dead letters: anything still pending,
+// failed or sending is live work and should be cancelled first.
+router.delete('/:id', requireAuth, async (req, res) => {
+  const id = clamp(req.params.id, 1, 1e9, 0);
+  if (!id) return res.status(400).json({ error: 'invalid_id' });
+  const r = await query(
+    `DELETE FROM mail_outbox WHERE id=$1 AND status='dead' RETURNING id`,
+    [id]
+  );
+  if (!r.rows.length) return res.status(409).json({ error: 'not_deletable' });
+  await recordAudit({ req, action: 'delete', entity: 'mail_outbox', entityId: id });
+  res.json({ ok: true });
+});
+
+router.post('/delete-all-dead', requireAuth, async (req, res) => {
+  const r = await query(`DELETE FROM mail_outbox WHERE status='dead'`);
+  await recordAudit({
+    req,
+    action: 'delete_all_dead',
     entity: 'mail_outbox',
     detail: { count: r.rowCount },
   });
