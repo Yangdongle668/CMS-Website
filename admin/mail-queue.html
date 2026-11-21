@@ -90,6 +90,7 @@
             </button>
           `).join('')}
           ${stats.dead > 0 ? `<button data-action="retry-all-dead" style="margin-left:auto; color:#dc2626;">↻ 重试全部死信</button>` : ''}
+          ${stats.dead > 0 ? `<button data-action="delete-all-dead" style="color:#dc2626;">🗑 删除全部死信</button>` : ''}
         </div>
 
         <table class="table">
@@ -121,6 +122,7 @@
                   <button class="btn btn--ghost btn--sm" data-view="${m.id}">查看</button>
                   ${['failed','dead'].includes(m.status) ? `<button class="btn btn--ghost btn--sm" data-retry="${m.id}">重试</button>` : ''}
                   ${['pending','failed','sending'].includes(m.status) ? `<button class="btn btn--ghost btn--sm" data-cancel="${m.id}" style="color:#dc2626;">取消</button>` : ''}
+                  ${m.status === 'dead' ? `<button class="btn btn--ghost btn--sm" data-delete="${m.id}" style="color:#dc2626;">删除</button>` : ''}
                 </td>
               </tr>
             `).join('') : '<tr><td colspan="9"><div class="empty">这个分类下没有邮件。</div></td></tr>'}
@@ -162,6 +164,17 @@
         } catch (e) { toast('取消失败: ' + e.message, 'error'); }
       });
     });
+    shell.content.querySelectorAll('[data-delete]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('确定要永久删除这封死信？删除后无法恢复。')) return;
+        const id = btn.dataset.delete;
+        try {
+          await api('/api/mail-queue/' + id, { method: 'DELETE' });
+          toast('已删除', 'success');
+          setTimeout(load, 400);
+        } catch (e) { toast('删除失败: ' + e.message, 'error'); }
+      });
+    });
     shell.content.querySelectorAll('[data-view]').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.view;
@@ -180,6 +193,17 @@
           toast(`已重新加入 ${r.count} 封`, 'success');
           setTimeout(load, 400);
         } catch (e) { toast('失败: ' + e.message, 'error'); }
+      });
+    }
+    const deleteAllBtn = shell.content.querySelector('[data-action="delete-all-dead"]');
+    if (deleteAllBtn) {
+      deleteAllBtn.addEventListener('click', async () => {
+        if (!confirm(`确认永久删除全部 ${stats.dead} 封死信吗？删除后无法恢复。`)) return;
+        try {
+          const r = await api('/api/mail-queue/delete-all-dead', { method: 'POST' });
+          toast(`已删除 ${r.count} 封`, 'success');
+          setTimeout(load, 400);
+        } catch (e) { toast('删除失败: ' + e.message, 'error'); }
       });
     }
   }
